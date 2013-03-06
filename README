@@ -1,0 +1,20 @@
+SciDB R interface package installation notes.
+---------------------------------------------
+
+
+R package checks are run with (assuming package version 0.0-5):
+
+R CMD build scidb && R CMD check scidb_0.0-5.tar.gz
+
+or, if you don't have LaTex utilities on your system:
+
+R CMD build scidb && R CMD check --no-manual scidb_0.0-5.tar.gz
+
+Check output appears in the file scidb.Rcheck/00check.log.
+
+Install the package with:
+
+R CMD build scidb && R CMD INSTALL scidb_0.0.5-tar.gz
+
+The package depends on the 'iterators' package, so you'll also need
+to install that.
