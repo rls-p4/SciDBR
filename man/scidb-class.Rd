@@ -66,7 +66,7 @@ SciDB arrays are general n-dimensional sparse arrays with integer or
 non-integer dimensions. The \code{scidb} class represents SciDB arrays
 in a way that mimics standard R arrays in many ways.
 
-Some matrix arithmetic operations are overloaded for 2-D arrays.
+Matrix arithmetic operations are overloaded for 2-D arrays.
 
 }
 \author{
