@@ -145,5 +145,5 @@ scidbdf_subset = function(x, i)
   N = tmpnam("array")
   query = sprintf("store(%s,%s)",query,N)
   iquery(query)
-  scidb(N, `data.frame`=TRUE)
+  scidb(N, `data.frame`=TRUE, gc=TRUE)
 }

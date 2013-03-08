@@ -60,3 +60,16 @@ setMethod('show', 'scidbdf',
   function(object) {
     cat(sprintf("A data frame-like reference to the 1D SciDB array %s (%.0f rows).\n",object@name, object@D$length))
   })
+
+setGeneric('aggregate', function(formula,data,...) standardGeneric('aggregate'))
+setMethod("aggregate", signature("formula","scidbdf"),
+  function(formula,data,FUN,...)
+  {
+    if(missing(FUN)) stop("You must supply a SciDB aggregate expression")
+    print(data@attributes)
+    print(formula)
+    v = attr(terms(formula),"term.labels")
+    r = setdiff(all.vars(formula),v)
+XXX
+  }
+)

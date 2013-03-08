@@ -33,9 +33,9 @@ scidb = function(name, attribute, `data.frame`, gc)
   if(missing(attribute)) attribute=""
   if(missing(gc)) gc=FALSE
   D = .scidbdim(name)
-  if(missing(`data.frame`)) `data.frame`=(dim(D)[1]==1)
-  if(dim(D)[1]>1 && `data.frame`) stop("SciDB data frame objects can only be associated with 1-D SciDB arrays")
   x = .scidbattributes(name)
+  if(missing(`data.frame`)) `data.frame` = ( (dim(D)[1]==1) &&  (length(x$attributes)>1))
+  if(dim(D)[1]>1 && `data.frame`) stop("SciDB data frame objects can only be associated with 1-D SciDB arrays")
   TYPES = x$types
   A = x$attributes
   NULLABLE = x$nullable
