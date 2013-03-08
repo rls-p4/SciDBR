@@ -27,7 +27,6 @@ setClass("scidbdf",
                         length="numeric",
                         attributes="character",
                         nullable="logical",
-                        type="character",
                         types="character",
                         gc="environment"),
          S3methods=TRUE)
@@ -36,14 +35,14 @@ setGeneric("head")
 setMethod("head", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
-  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start,n),ret=TRUE)
+  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start,n),ret=TRUE)[,-1]
 })
 
 setGeneric("tail")
 setMethod("tail", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
-  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start + x@D$length - n - 1,x@D$start + x@D$length-1),ret=TRUE)
+  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start + x@D$length - n - 1,x@D$start + x@D$length-1),ret=TRUE)[,-1]
 })
 
 setGeneric('is.scidbdf', function(x) standardGeneric('is.scidbdf'))
@@ -59,5 +58,5 @@ setMethod('print', signature(x='scidbdf'),
 
 setMethod('show', 'scidbdf',
   function(object) {
-    cat(sprintf("A data frame-like reference to the 1D SciDB array %s (%.0f rows).\n",x@name, x@D$length))
+    cat(sprintf("A data frame-like reference to the 1D SciDB array %s (%.0f rows).\n",object@name, object@D$length))
   })

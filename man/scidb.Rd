@@ -7,18 +7,22 @@ Create a \code{scidb} reference object.
 Create an array-like R object reference to a SciDB array.
 }
 \usage{
-scidb(name, attribute = "", use_highlow = TRUE, gc = FALSE)
+scidb(name, attribute = "", `data.frame`, gc)
 }
 \arguments{
   \item{name}{Name of the SciDB array to reference. }
   \item{attribute}{Name of an attribute within the array.}
-  \item{use_highlow}{If TRUE, use the array high/low values reported by SciDB. Not always reliable, but can be much faster. If FALSE, compute array bounding range with min/max applied to dimensions.}
+  \item{data.frame}{Return a data.frame-like object (requires 1D SciDB array).}
   \item{gc}{TRUE means SciDB array shall be removed when R object is garbage collected or R exists. FALSE means SciDB array persists.}
 }
 \details{
-The referenced array may be any SciDB array, but only one attribute may be
-referenced per scidb reference object. (The SciDB array may contain multiple
-attributes.) The returned \code{scidb} object behaves similarly to an R array.
+The referenced array may be any SciDB array. One-dimensional SciDB arrays
+may be references as data.frame-like objects in which the SciDB array
+attributes appear as data.frame columns, or as one-column matrices.
+
+SciDB arrays of dimension 2 or more appear as R arrays. In such cases, only one
+attribute may be referenced per object. (The SciDB array may contain multiple
+attributes.)
 
 If the SciDB array contains more than one attribute, use the attribute argument
 to specify which attribute to use in the reference object. The first listed
@@ -93,22 +97,11 @@ A[,2:3,5:8]
 # But, their data can be materialized into an R array with []:
 A[,2:3,5:8] []
 
-# A sparse 2-d array with non-integer dimensions:
-scidbremove(c("A","N"), error=warning)
+# A sparse 2-d array.
+scidbremove(c("A"), error=warning)
 iquery("store(build_sparse(<val:double>[i=0:9,5,0,j=0:9,5,0],i,i=j),A)")
-iquery("create array N<val:double>[x(string)=10,10,0,y(string)=10,10,0]")
-iquery("redimension_store(apply(A,x,'x'+string(i),y,'y'+string(j)),N)")
-N <- scidb("N")
-str(N)
-dimnames(N)
+A <- scidb("A")
 
-# Sparse array dimensions that are completely empty are omitted when
-# the data are materialized to R:
-N[]
-
-# It's OK to mix/match NID and integer indexing:
-P <- N[c("x1","x2","x5"),1:8]
-P[]
 
 # The materialization process from sparse SciDB arrays to R uses a default
 # fill-in value globally specified in options("scidb.default.value").  Or, use

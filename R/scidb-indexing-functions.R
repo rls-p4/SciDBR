@@ -114,7 +114,7 @@ materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
   type = names(.scidbtypes[.scidbtypes==x@type])
   if(length(type)<1) stop("Unsupported data type.")
   tval = vector(mode=type,length=1)
-# Temporary output place
+# Temporary output file
   fn = tempfile(pattern="scidb")
 # Run quey
   query = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL")
@@ -124,7 +124,7 @@ materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
   if(all(x@D$type=="int64"))
   {
     s = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL",schema_only=TRUE)
-    query = sprintf("merge(%s, build(%s, %s))",query,s,as.character(options("scidb.default.value")))
+    query = sprintf("merge(%s, build(%s, %s))",query,s,as.character(default))
     dolabel = FALSE
   }
   query = apply_indices(x,query)
@@ -255,13 +255,13 @@ dimfilter = function(x, i)
   }
   else
   {
-    ans = basename(tempfile(pattern="array"))
+    ans = tmpnam("array")
 #    q = sprintf("store(%s,%s)",q,ans)
 # We use subarray here to conform with R subsetting
     q = sprintf("store(subarray(%s,%s),%s)",q,r,ans)
     iquery(q)
   }
-  scidb(ans,gc=TRUE)
+  scidb(ans,gc=TRUE,`data.frame`=FALSE)
 }
 
 # XXX NOT really working with NIDs. Warnings may occur.
@@ -275,7 +275,7 @@ lookup_subarray = function(x, q, i, ci, mask)
 # Create ancillary arrays for each dimension index list.
   n = length(ci)
   if(n>2) stop ("This kind of indexing not yet supported in the R package yet for arrays of dimension > 2, sorry. Use numeric indices instead.")
-  xdim = unlist(lapply(ci, function(j) basename(tempfile(pattern="tmp"))))
+  xdim = unlist(lapply(ci, function(j) tmpnam()))
   on.exit(scidbremove(xdim[!is.na(xdim)],error=function(e) invisible()),add=TRUE)
   for(j in 1:n)
   {
@@ -288,15 +288,8 @@ lookup_subarray = function(x, q, i, ci, mask)
       {
         df2scidb(X,types="string",nullable=FALSE,name=xdim[j],dimlabel=x@D$name[[j]])
         mask[j] = TRUE
+# XXX Don't support returning NIDS yet.
 warning("Dimension labels were dropped.")
-#        df2scidb(X,types="string",nullable=FALSE,name=xdim[j],dimlabel="dummy__")
-#        newschema = sprintf("<dummy__:int64,xxx__a:string>[%s(string)=*,%.0f,0]",x@D$name[[j]],x@D$chunk_interval[[j]])
-#        newname = basename(tempfile(pattern="tmp"))
-#        iquery(sprintf("create_array(%s,%s)",newname,newschema))
-#        iquery(sprintf("redimension_store(apply(%s,%s,xxx__a),%s)",xdim[j],x@D$name[[j]],newname))
-#        scidbremove(xdim[j])
-#        iquery(sprintf("store(project(%s,xxx__a),%s)",newname,xdim[j]))
-#        scidbremove(newname)
       } else
       {
         df2scidb(X,types="int64",nullable=FALSE,name=xdim[j],real_format="%.0f",dimlabel=x@D$name[[j]])
@@ -321,7 +314,7 @@ warning("Dimension labels were dropped.")
     }
   }
 
-  ans = basename(tempfile(pattern="array"))
+  ans = tmpnam("array")
   if(n==1) q = sprintf("lookup(%s, %s)",xdim[1],q)
   else     q = sprintf("lookup(cross(%s,%s),%s)",xdim[1],xdim[2],q)
   lb = x@D$type
@@ -333,10 +326,10 @@ warning("Dimension labels were dropped.")
     ub[mask] = "int64"
   }
   li = lb == "int64"
-  lb[li] = "-4611686018427387902"
+  lb[li] = .scidb_DIM_MIN
   lb[!li] = "''"
   ui = ub == "int64"
-  ub[ui] = "4611686018427387903"
+  ub[ui] = .scidb_DIM_MAX
   ub[!ui] = "'~~~~~~~~~~~~~~~~~~'"   # XXX only approx upper bound
   lb = paste(lb, collapse=",")
   ub = paste(ub, collapse=",")

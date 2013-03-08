@@ -39,7 +39,7 @@ Ops.scidb = function(e1,e2) {
 # e1 and e2 must each already be SciDB arrays.
 scidbmultiply = function(e1,e2)
 {
-  x = basename(tempfile(pattern="array"))
+  x = tmpnam("array")
   a1 = e1@attribute
   a2 = e2@attribute
   op1 = e1@name
@@ -53,12 +53,12 @@ scidbmultiply = function(e1,e2)
 # subarray always returns an array with dimension indices starting
 # at zero.
   l1 = length(dim(e1))
-  lb = paste(rep("-4611686018427387902",l1),collapse=",")
-  ub = paste(rep("4611686018427387903",l1),collapse=",")
+  lb = paste(rep(.scidb_DIM_MIN,l1),collapse=",")
+  ub = paste(rep(.scidb_DIM_MAX,l1),collapse=",")
   op1 = sprintf("subarray(%s,%s,%s)",op1,lb,ub)
   l2 = length(dim(e2))
-  lb = paste(rep("-4611686018427387902",l2),collapse=",")
-  ub = paste(rep("4611686018427387903",l2),collapse=",")
+  lb = paste(rep(.scidb_DIM_MIN,l2),collapse=",")
+  ub = paste(rep(.scidb_DIM_MAX,l2),collapse=",")
   op2 = sprintf("subarray(%s,%s,%s)",op2,lb,ub)
 
   j = which(e2@attribute == e2@attributes)[[1]]
@@ -79,27 +79,27 @@ scidbmultiply = function(e1,e2)
   e1s = e1
   e2s = e2
   if(!inherits(e1,"scidb")) {
-    x = basename(tempfile(pattern="_tmparray"))
+    x = tmpnam()
     e1 = as.scidb(e1,name=x,gc=TRUE)
   }
   if(!inherits(e2,"scidb")) {
-    x = basename(tempfile(pattern="_tmparray"))
+    x = tmpnam()
     e2 = as.scidb(e2,name=x,gc=TRUE)
   }
 # OK, we've got two scidb arrays, op them:
-  x = basename(tempfile(pattern="array"))
+  x = tmpnam("array")
   e1a = e1@attribute
   e2a = e2@attribute
   v = paste(e1a,e2a,sep="_")
 
 # We use subarray to handle starting index mismatches...
   l1 = length(dim(e1))
-  lb = paste(rep("-4611686018427387902",l1),collapse=",")
-  ub = paste(rep("4611686018427387903",l1),collapse=",")
+  lb = paste(rep(.scidb_DIM_MIN,l1),collapse=",")
+  ub = paste(rep(.scidb_DIM_MAX,l1),collapse=",")
   q1 = sprintf("subarray(%s,%s,%s)",e1@name,lb,ub)
   l = length(dim(e2))
-  lb = paste(rep("-4611686018427387902",l),collapse=",")
-  ub = paste(rep("4611686018427387903",l),collapse=",")
+  lb = paste(rep(.scidb_DIM_MIN,l),collapse=",")
+  ub = paste(rep(.scidb_DIM_MAX,l),collapse=",")
   q2 = sprintf("subarray(%s,%s,%s)",e2@name,lb,ub)
 # Adjust the 2nd array to be schema-compatible with the 1st:
   if(l==2 && l1==l)
@@ -148,7 +148,7 @@ scidbmultiply = function(e1,e2)
   op = gsub("==","=",op)
   tval = vector(mode=type,length=1)
   query = sprintf("filter(%s, %s %s %s)",e1@name, e1@attribute, op, e2)
-  x = basename(tempfile(pattern="_tmparray"))
+  x = tmpnam()
   query = sprintf("store(%s,%s)",query,x)
   scidbquery(query)
   return(scidb(x,gc=TRUE))

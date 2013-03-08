@@ -24,12 +24,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
 #include <math.h>
-#include <poll.h>
 #include <signal.h>
+#ifndef WIN32
+#include <sys/mman.h>
+#endif
 
 #include <R.h>
 #define USE_RINTERNALS
@@ -60,10 +60,17 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
   char *buf;
 
   sprintf(temp,TMPFILE);
+#ifdef WIN32
+  fp = tmpfile();
+  fd = fileno(fp);
+  if(fd<0)
+    error ("df2scidb can't create temporary file");
+#else
   fd = mkstemp(temp);
   if(fd<0)
     error ("df2scidb can't create temporary file");
   fp = fdopen(fd, "w+");
+#endif
   n = length (A);
   m = nrows (VECTOR_ELT (A, 0));
   M = ceil (((double) m) / R);
@@ -140,11 +147,20 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
   fflush(fp);
   fstat (fd, &sb);
   length = sb.st_size;
+#ifdef WIN32
+  buf = (char *)malloc(length);
+  buf = read(fd, buf, length);
+#else
   buf = (char *)mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+#endif
   fclose(fp);
   close(fd);
   ans = mkString(buf);
+#ifdef WIN32
+  free(buf);
+#else
   munmap(buf, length);
+#endif
   unlink(temp);
   return ans;
 }

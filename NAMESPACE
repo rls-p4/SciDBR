@@ -14,6 +14,8 @@ importFrom(utils, head, tail)
 # S4 methods
 exportClasses("scidb")
 exportMethods("%*%",print,is.scidb,show,head,tail,count,image,crossprod,tcrossprod)
+exportClasses("scidbdf")
+exportMethods(is.scidbdf)
 
 # S3 methods
 S3method('Ops',scidb)
@@ -32,3 +34,14 @@ S3method('nrow',scidb)
 S3method('dim',scidb)
 S3method('length',scidb)
 S3method('t',scidb)
+
+S3method('[',scidbdf)
+S3method('names',scidbdf)
+S3method('rownames',scidbdf)
+S3method('colnames',scidbdf)
+S3method('dimnames',scidbdf)
+S3method('str',scidbdf)
+S3method('ncol',scidbdf)
+S3method('nrow',scidbdf)
+S3method('dim',scidbdf)
+S3method('length',scidbdf)

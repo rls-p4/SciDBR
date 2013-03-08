@@ -143,8 +143,8 @@ setMethod('is.scidb', definition=function(x) return(FALSE))
 setGeneric('print', function(x) standardGeneric('print'))
 setMethod('print', signature(x='scidb'),
   function(x) {
-    cat("A reference to the ",paste(nrow(x),ncol(x),sep="x"),
-        "dimensional SciDB array.attribute",paste(x@name,x@attribute,sep="."),"\n")
+    cat("A reference to a ",paste(nrow(x),ncol(x),sep="x"),
+        "dimensional SciDB array\n")
   })
 
 setMethod('show', 'scidb',
@@ -154,9 +154,9 @@ setMethod('show', 'scidb',
       cat("Reference to the SciDB vector.attribute",
           paste(object@name,atr,sep=".")," of length",object@length,"\n")
     else
-      cat("Reference to the ",
+      cat("A reference to a ",
           paste(object@dim,collapse="x"),
-          "dimensional SciDB array.attribute",paste(object@name,atr,sep="."),"\n")
+          "dimensional SciDB array\n")
   })
 
 setGeneric("image", function(x,...) x)

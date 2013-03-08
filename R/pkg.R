@@ -47,3 +47,7 @@
   logical="bool",
   character="char"
 )
+
+# SciDB Integer dimension minimum, maximum
+.scidb_DIM_MIN = "-4611686018427387902"
+.scidb_DIM_MAX = "4611686018427387903"

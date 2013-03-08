@@ -24,12 +24,17 @@
 
 # Create a new scidb reference to an existing SciDB array.
 # name (character): Name of the backing SciDB array
-# attribute (character): Attribute in the backing SciDB array
+# attribute (character): Attribute in the backing SciDB array (applies to n-d arrays)
 # gc (logical): Remove backing SciDB array when R object is garbage collected?
-scidb = function(name, attribute="", gc=FALSE)
+# data.frame (logical): Return a SciDB data frame object (class scidbdf)
+scidb = function(name, attribute, `data.frame`, gc)
 {
   if(missing(name)) stop("array name must be specified")
+  if(missing(attribute)) attribute=""
+  if(missing(gc)) gc=FALSE
   D = .scidbdim(name)
+  if(missing(`data.frame`)) `data.frame`=(dim(D)[1]==1)
+  if(dim(D)[1]>1 && `data.frame`) stop("SciDB data frame objects can only be associated with 1-D SciDB arrays")
   x = .scidbattributes(name)
   TYPES = x$types
   A = x$attributes
@@ -43,7 +48,22 @@ scidb = function(name, attribute="", gc=FALSE)
   DIM = D$length
   LENGTH = prod(DIM)
 
-  obj = new("scidb",
+  if(`data.frame`)
+  {
+    obj = new("scidbdf",
+            call=match.call(),
+            name=name,
+            attributes=A,
+            types=TYPES,
+            nullable=NULLABLE,
+            D=D,
+            dim=c(DIM,length(A)),
+            gc=new.env(),
+            length=length(A)
+        )
+  } else
+  {
+    obj = new("scidb",
             call=match.call(),
             name=name,
             attribute=attribute,
@@ -56,6 +76,7 @@ scidb = function(name, attribute="", gc=FALSE)
             gc=new.env(),
             length=LENGTH
         )
+  }
   if(gc){
     obj@gc$name   = name
     obj@gc$remove = TRUE
@@ -207,18 +228,18 @@ summary.scidb = function(x)
 `dim.scidb` = function(x) {if(length(x@dim)>0) return(x@dim); NULL}
 `length.scidb` = function(x) x@length
 
-
-# Dense matrix or vector to SciDB (user-visible function, see doc for
-# details)
+# Vector, matrix, or data.frame only.
 as.scidb = function(X,
                     name=ifelse(exists(as.character(match.call()[2])),
                                 as.character(match.call()[2]),
-                                basename(tempfile(pattern="array"))),
+                                tmpnam("array")),
                     rowChunkSize=1000L,
                     colChunkSize=1000L,
                     start=c(0L,0L),
                     gc=FALSE)
 {
+  if(inherits(X,"data.frame"))
+    return(df2scidb(X,name=name,chunkSize=rowChunkSize,gc=gc))
   X0 = X
   D = dim(X)
   rowOverlap=0L
@@ -249,7 +270,7 @@ as.scidb = function(X,
   scidbquery(query,async=FALSE)
 
 # Unfortunately SciDB input function requires a named array, not just schema :(
-  tmparray = basename(tempfile(pattern="tmp"))
+  tmparray = tmpnam()
   query = paste("create array",tmparray,schema1d)
   scidbquery(query,async=FALSE)
 
@@ -324,7 +345,7 @@ as.scidb = function(X,
 # Transpose array
 t.scidb = function(x)
 {
-  tmp = basename(tempfile(pattern="array"))
+  tmp = tmpnam("array")
   query = paste("store(transpose(",x@name,"),",tmp,")",sep="")
   scidbquery(query)
   scidb(tmp,gc=TRUE)

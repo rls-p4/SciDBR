@@ -25,12 +25,17 @@
 # An environment to hold connection state
 .scidbenv = new.env()
 
-# store the connection information
+# store the connection information and obtain a unique ID
 scidbconnect = function(host='localhost', port=8080L)
 {
 # check connectivity XXX
   assign("host",host, envir=.scidbenv)
   assign("port",port, envir=.scidbenv)
+# Use the query ID from a bogus query as a unique ID for automated
+# array name generation.
+  x = scidbquery(query="list()",release=1,resp=TRUE)
+  id = gsub(".*\\r\\n","",x$response)
+  assign("uid",id,envir=.scidbenv)
   invisible()
 }
 
@@ -41,10 +46,26 @@ scidbdisconnect = function()
   gc()
 }
 
-URI = function()
+make.names_ = function(x)
+{
+  gsub("\\.","_",make.names(x, unique=TRUE))
+}
+
+# Make a name from a prefix and a unique SciDB identifier.
+tmpnam = function(prefix="_")
+{
+  salt = basename(tempfile(pattern=prefix))
+  if(!exists("uid",envir=.scidbenv)) stop("Not connected...try scidbconnect")
+  paste(salt,get("uid",envir=.scidbenv),sep="")
+}
+
+
+URI = function(q="")
 {
   if(!exists("host",envir=.scidbenv)) stop("Not connected...try scidbconnect")
-  paste("http://",get("host",envir=.scidbenv),":",get("port",envir=.scidbenv),sep="")
+  ans  = paste("http://",get("host",envir=.scidbenv),":",get("port",envir=.scidbenv),sep="")
+  if(nchar(q)>0) ans = paste(ans,q,sep="/")
+  ans
 }
 
 # Send an HTTP GET message
@@ -144,12 +165,13 @@ scidbls = function(...) scidblist(...)
 # save: Save format query string or NULL. If async=FALSE, save is ignored.
 # release: Set to zero preserve web session until manually calling release_session
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
+# resp(logical): return http response
 # Example values of save:
 # save="&save='dcsv'"
 # save="&save='lcsv+'"
 #
 # Returns the HTTP session in each case
-scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, session=NULL)
+scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, session=NULL, resp=FALSE)
 {
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
@@ -172,8 +194,8 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
   }
   if(async)
   {
-    tryCatch(
-      GET(sprintf("/execute_query?id=%s%s&release=%d&query=%s",session[1],save,release,query),async=TRUE),
+    ans =tryCatch(
+      GET(sprintf("/execute_query?id=%s&release=%d&query=%s",session[1],release,query),async=TRUE),
       error=function(e) {
         bail = url(bail)
         readLines(bail)
@@ -202,6 +224,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
     }
   }
   if(DEBUG) print(proc.time()-t1)
+  if(resp) return(list(session=session, response=rawToChar(ans)))
   session
 }
 
@@ -223,10 +246,6 @@ scidbremove = function(x, error=stop)
 }
 scidbrm = function(x,error=stop) scidbremove(x,error)
 
-# wrapper to df2scidb C function, creates a scidb ASCII input format string
-# from
-# a data frame.
-# to an open SciDB http session.
 # Note: data frames are sent as single dimension objects along rows. The
 # columns of the data frame are sent as attributes.
 # This is not directly exposed to the user, but can be used by the
@@ -237,7 +256,7 @@ scidbrm = function(x,error=stop) scidbremove(x,error)
 # offset (real): offset for start chunk
 # Output:
 # (character) formatted SciDB input string
-.df2scidb = function (A, r, offset=0.0, real_format="%.15f")
+.df2scidb = function (A, r, offset=1.0, real_format="%.15f")
 {
   if(!("data.frame" %in% class(A))) stop("Requires a data.frame")
   r = min(nrow(A),r)
@@ -248,6 +267,7 @@ scidbrm = function(x,error=stop) scidbremove(x,error)
 
 
 # df2scidb: User function to send a data frame to SciDB
+# Returns a scidbdf object
 df2scidb = function(X,
                     name=ifelse(exists(as.character(match.call()[2])),
                                  as.character(match.call()[2]),"X"),
@@ -256,9 +276,11 @@ df2scidb = function(X,
                     rowOverlap=0L,
                     types=NULL,
                     nullable=FALSE,
-                    real_format="%.15f")
+                    real_format="%.15f",
+                    gc)
 {
   if(!is.data.frame(X)) stop("X must be a data frame")
+  if(missing(gc)) gc=FALSE
   if(length(nullable)==1) nullable = rep(nullable, ncol(X))
   if(length(nullable)!=ncol(X)) stop ("nullable must be either of length 1 or ncol(X)")
   if(!is.null(types) && length(types)!=ncol(X)) stop("types must match the number of columns of X")
@@ -303,7 +325,7 @@ df2scidb = function(X,
   }
 
 # Create array part of query, cleaning up on error
-  query = paste(args,"[",dimlabel,"=0:",sprintf("%.0f",nrow(X)-1),",",sprintf("%.0f",chunkSize),",", rowOverlap,"]",sep="")
+  query = paste(args,"[",dimlabel,"=1:",sprintf("%.0f",nrow(X)),",",sprintf("%.0f",chunkSize),",", rowOverlap,"]",sep="")
   tryCatch( scidbquery(query),
     error = function(e) {stop(e)})
 
@@ -324,21 +346,21 @@ df2scidb = function(X,
              stop(e)
            })
 
-
 # Load query
   query = paste("load(",name,", '",tmp,"')",sep="")
   scidbquery(query, async=FALSE, release=1, session=session)
-  invisible()
+  scidb(name,`data.frame`=TRUE,gc=gc)
 }
 
-iquery = function(query, `return`=FALSE, afl=TRUE, iterative=FALSE, n=1000,...)
+iquery = function(query, `return`=FALSE, afl=TRUE, iterative=FALSE, n=1000, excludecol, ...)
 {
   if(!afl && `return`) stop("return=TRUE may only be used with AFL statements")
   if(iterative && !`return`) stop("Iterative result requires return=TRUE")
+  if(missing(excludecol)) excludecol=NA
   if(iterative)
   {
     sessionid = scidbquery(query,afl,async=FALSE,save="&save=lcsv+",release=0)
-    return(iqiter(con=sessionid,n=n,...))
+    return(iqiter(con=sessionid,n=n,excludecol=excludecol,...))
   }
   qsplit = strsplit(query,";")[[1]]
   m = 1
@@ -367,12 +389,17 @@ iquery = function(query, `return`=FALSE, afl=TRUE, iterative=FALSE, n=1000,...)
   ans
 }
 
-iqiter = function (con, n = 1, ...)
+iqiter = function (con, n = 1, excludecol, ...)
 {
-  dostop = function()
+  if(missing(excludecol)) excludecol=NA
+  dostop = function(s=TRUE)
   {
     GET(paste("/release_session?id=",con,sep=""),async=FALSE)
-    stop("StopIteration",call.=FALSE)
+    if(s) stop("StopIteration",call.=FALSE)
+  }
+  cls = function(u)
+  {
+    tryCatch(close(u), error=function(e) invisible())
   }
   if (!is.numeric(n) || length(n) != 1 || n < 1)
     stop("n must be a numeric value >= 1")
@@ -383,12 +410,12 @@ iqiter = function (con, n = 1, ...)
     host = get("host",envir=.scidbenv)
     port = get("port",envir=.scidbenv)
     u = sprintf("http://%s:%d/read_lines?id=%s&n=%.0f",host,port,con,n)
-    u=url(u)
+    u = url(u)
     if(init) {
       ans = tryCatch(
        {
         read.table(u, sep=",",stringsAsFactors=FALSE,header=TRUE,nrows=n,...)
-       }, error = function(e) {dostop()},
+       }, error = function(e) {cls(u);dostop()},
           warning = function(w) {dostop()}
       )
       init <<- FALSE
@@ -396,14 +423,19 @@ iqiter = function (con, n = 1, ...)
       ans = tryCatch(
        {
         read.table(u, sep=",",stringsAsFactors=FALSE,header=FALSE,nrows=n,...)
-       }, error = function(e) {dostop()},
+       }, error = function(e) {cls(u);dostop()},
           warning = function(w) {dostop()}
       )
     }
-    tryCatch(close(u), error=function(e) invisible())
+    cls(u)
+    if(!is.na(excludecol) && excludecol<=ncol(ans)) ans=ans[,-excludecol]
     ans
   }
-  it = list(nextElem = nextEl)
+  it = list(nextElem = nextEl, gc=new.env())
   class(it) = c("abstractiter", "iter")
+  it$gc$remove = TRUE
+  reg.finalizer(it$gc, function(e) if(e$remove) 
+                  tryCatch(dostop(FALSE),error=function(e) stop(e)),
+                  onexit=TRUE)
   it
 }
