@@ -5,6 +5,14 @@
 \alias{\%*\%,matrix,scidb-method}
 \alias{\%*\%,scidb,matrix-method}
 \alias{\%*\%,scidb,scidb-method}
+
+\alias{crossprod,matrix,scidb-method}
+\alias{crossprod,scidb,matrix-method}
+\alias{crossprod,scidb,scidb-method}
+\alias{tcrossprod,matrix,scidb-method}
+\alias{tcrossprod,scidb,matrix-method}
+\alias{tcrossprod,scidb,scidb-method}
+
 \alias{is.scidb,scidb-method}
 \alias{is.scidb,ANY-method}
 \alias{print,scidb-method}
@@ -45,6 +53,12 @@ Objects can be created by calls of the form \code{new("scidb", ...)},
     \item{\%*\%}{\code{signature(x = "matrix", y = "scidb")}: ... }
     \item{\%*\%}{\code{signature(x = "scidb", y = "matrix")}: ... }
     \item{\%*\%}{\code{signature(x = "scidb", y = "scidb")}: ... }
+    \item{crossprod}{\code{signature(x = "matrix", y = "scidb")}: ... }
+    \item{crossprod}{\code{signature(x = "scidb", y = "matrix")}: ... }
+    \item{crossprod}{\code{signature(x = "scidb", y = "scidb")}: ... }
+    \item{tcrossprod}{\code{signature(x = "matrix", y = "scidb")}: ... }
+    \item{tcrossprod}{\code{signature(x = "scidb", y = "matrix")}: ... }
+    \item{tcrossprod}{\code{signature(x = "scidb", y = "scidb")}: ... }
     \item{is.scidb}{\code{signature(x = "scidb")}: ... }
     \item{is.scidb}{\code{signature(x = "ANY")}: ... }
     \item{print}{\code{signature(x = "scidb")}: ... }

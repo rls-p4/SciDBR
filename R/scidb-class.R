@@ -101,13 +101,13 @@ setMethod("tcrossprod",signature(x="scidb", y="scidb"),
 )
 
 setGeneric("tcrossprod")
-setMethod("tcrossprod",signature(x="scidb", y="scidb"),
+setMethod("tcrossprod",signature(x="matrix", y="scidb"),
   function(x,y) x %*% t(y),
   valueClass="scidb"
 )
 
 setGeneric("tcrossprod")
-setMethod("tcrossprod",signature(x="matrix", y="matrix"),
+setMethod("tcrossprod",signature(x="scidb", y="matrix"),
   function(x,y) x %*% t(y),
   valueClass="scidb"
 )
