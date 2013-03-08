@@ -58,7 +58,7 @@ setMethod('print', signature(x='scidbdf'),
 
 setMethod('show', 'scidbdf',
   function(object) {
-    cat(sprintf("SciDB array %s: %.0f obs. of %d variables.\n",x@name, x@D$length, length(x@attributes)))
+    cat(sprintf("SciDB array %s: %.0f obs. of %d variables.\n",object@name, object@D$length, length(object@attributes)))
   })
 
 setOldClass("aggregate")

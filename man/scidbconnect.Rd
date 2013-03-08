@@ -5,7 +5,7 @@
 Connect to a SciDB database.
 }
 \usage{
-scidbconnect(host = "localhost", port = 1239L)
+scidbconnect(host = "localhost", port = 8080L)
 }
 \arguments{
   \item{host}{
@@ -13,8 +13,8 @@ The host name or I.P. address of the SciDB database
 instance to connect to (character).
 }
   \item{port}{
-The port number of the SciDB database
-instance to connect to (integer).
+The port number of the SciDB database simple HTTP service
+to connect to (integer).
 }
 }
 \details{
@@ -32,9 +32,6 @@ valid across different SciDB databases.
 }
 \note{
 Disconnection is automatically handled by the package.
-An explicit \code{scidbdisconnect} function is also
-available to force disconnection from the database at
-any time.
 }
 \value{
 NULL is invisibly returned. SciDB connection errors

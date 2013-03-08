@@ -2,7 +2,7 @@
 \Rdversion{1.1}
 \docType{class}
 \alias{scidbdf-class}
-\alias{is.scidbdf,scidb-method}
+\alias{is.scidbdf,scidbdf-method}
 \alias{is.scidbdf,ANY-method}
 \alias{print,scidbdf-method}
 \alias{head,scidbdf-method}
@@ -36,12 +36,14 @@ Objects can be created by calls of the form \code{new("scidbdf", ...)},
     \item{print}{\code{signature(x = "scidbdf")}: ... }
     \item{head}{\code{signature(x = "scidbdf")}: ... }
     \item{tail}{\code{signature(x = "scidbdf")}: ... }
-    \item{aggregate}{\code{signature(x = "scidb")}: \code{aggregate(x, formula, FUN)}
+    \item{aggregate}{\code{signature(x = "scidbdf")}: \code{aggregate(x, formula, FUN)}
 
 Group the 1D SciDB array x by the indicated formula, applying the SciDB aggregate
 expression FUN, specified as a character string, to the groups. For example:
 \code{A = as.scidb("iris"); g = aggregate(A, Petal_Length ~ Species, "avg(Petal_Length)")}
-    \item{show}{\code{signature(object = "scidb")}: ... }
+
+}
+    \item{show}{\code{signature(object = "scidbdf")}: ... }
 	 }
 }
 \section{Notes}{
