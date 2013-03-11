@@ -50,6 +50,15 @@ scidb = function(name, attribute, `data.frame`, gc)
 
   if(`data.frame`)
   {
+# Set default column types
+    ctypes = c("int64",TYPES)
+    cc = rep(NA,length(ctypes))
+    cc[ctypes=="datetime"] = "Date"
+    cc[ctypes=="float"] = "double"
+    cc[ctypes=="double"] = "double"
+    cc[ctypes=="bool"] = "logical"
+    st = grep("string",ctypes)
+    if(length(st>0)) cc[st] = "character"
     obj = new("scidbdf",
             call=match.call(),
             name=name,
@@ -58,6 +67,7 @@ scidb = function(name, attribute, `data.frame`, gc)
             nullable=NULLABLE,
             D=D,
             dim=c(DIM,length(A)),
+            colClasses=cc,
             gc=new.env(),
             length=length(A)
         )

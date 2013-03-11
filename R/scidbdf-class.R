@@ -28,6 +28,7 @@ setClass("scidbdf",
                         attributes="character",
                         nullable="logical",
                         types="character",
+                        colClasses="character",
                         gc="environment"),
          S3methods=TRUE)
 

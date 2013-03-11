@@ -121,21 +121,22 @@ blewis@paradigm4.com}
 \section{Introduction}
 
 SciDB is an open-source database that organizes data in $n$-dimensional arrays.
-Many interesting SciDB features include ACID transactions, parallel
-processing, distributed storage, efficient sparse array storage, and native linear
-algebra operations.  The \verb+scidb+ package for R
-provides two general ways to interact with SciDB from R:
+Many interesting SciDB features include ACID transactions, parallel processing,
+distributed storage, efficient sparse array storage, and native linear algebra
+operations.  The \verb+scidb+ package for R provides two ways to
+interact with SciDB from R:
 \begin{enumerate}
-\item By running SciDB queries from R, optionally moving data between R data frames
-and one-dimensional SciDB arrays.
-\item Through a sparse $n$-dimensional array \verb+scidb+ array object class for R.
+\item By running SciDB queries from R, optionally transferring data through
+data.frames or data.frame iterators.
+\item Through several SciDB array object classes for R.
 The arrays mimic standard R arrays, but operations on them
-are performed by the SciDB engine.  Data are materialized to R only when requested.
+are performed by the SciDB engine.  Data are materialized to R only
+when requested.
 \end{enumerate}
 In some cases, R scripts and packages may be used with little or no
 modification with \verb+scidb+ arrays, allowing SciDB to power large-scale
-parallel R computation.
-This vignette illustrates the two interface methods by example.
+parallel R computation.  This vignette illustrates using SciDB from R by
+example.
 
 \section{Connecting to SciDB and Running Queries}
 
@@ -143,40 +144,52 @@ This section outlines the most basic interaction between R and SciDB: running
 queries and transferring one-dimensional SciDB arrays between R and SciDB
 through R data frames.
 
+
+\subsection{Listing and removing SciDB arrays}
+
+The \verb+scidblist+ function lists SciDB objects (arrays, instances, etc.),
+optionally showing detailed schema information for arrays.
+
+The \verb+scidbremove+ function removes a SciDB array, or optionally a
+set of SciDB arrays defined by regular expression.
+
+See their respective R help pages for detailed information on available
+function arguments.
+
 \subsection{Connecting to SciDB}
-The \verb+scidbconnect+ function establishes a connection to a
-SciDB coordinator instance. The function may be safely
-called multiple times and, although a \verb+scidbdisconnect+ function exists, it is
-not required to be used. Once a connection is established, it is maintained
-until a different connection is established, \verb+scidbdisconnect+ is called,
-or the R session ends.
+
+The \verb+scidbconnect+ function establishes a connection to a SciDB
+coordinator instance. The function may be safely called multiple times and.
+Once a connection is established, connection information is maintained until a
+different connection is established or the R session ends.
 
 \subsection{Running SciDB queries}
 
-The \verb+iquery+ function executes SciDB queries using either AFL or AQL
-syntax. The \verb+iquery+ function optionally returns query results in an R
-data frame when the argument \verb+return=TRUE+ is specified.  Returned output
-is similar to output obtained by the SciDB \verb+iquery+ command line program
-with the \verb$-olcsv+$ option.  The \verb+iquery+ function does not return
-anything by default.
+The \verb+iquery+ function executes SciDB queries using either the SciDB array
+functional language (AFL) or declarative array query language (AQL) syntax.
+When AFL is used, the \verb+iquery+ function optionally returns query results
+in an R data frame if the argument \verb+return=TRUE+ is specified.  Returned
+output is similar to output obtained by the SciDB \verb+iquery+ command line
+program with the \verb$-olcsv+$ option.  The \verb+iquery+ function does not
+return anything by default.
 
 Query results returned by the \verb+iquery+ function are internally presented
-to R using a CSV format, providing very flexible support for many data types.
-(The array class described in the next section uses a binary data exchange
-method between R and SciDB.) Note that, although R and SciDB share a number of
-common data types, each system contains types not supported by the other.
-Thus, conversion errors may arise. The \verb+iquery+ function is designed to
-reasonably minimize such issues and simplify basic data transfer between the
-systems.  Data types common to R and SciDB include double-precision numeric,
-character string, logical, and 32-bit integers.
-
-
+to R using a generic CSV format, providing very flexible support for many data
+types.  (The $n$-dimensional array class described in the next section uses a
+binary data exchange method between R and SciDB.) Note that, although R and
+SciDB share a number of common data types, each system contains types not
+supported by the other.  Thus, conversion errors may arise. The \verb+iquery+
+function is designed to reasonably minimize such issues and simplify basic data
+transfer between the systems.  Data types common to R and SciDB include
+double-precision numeric, character string, logical, and 32-bit
+integers.$n$-dimensional. They \verb+iquery+ function can optionally use
+R \verb+read.table+ options for parsing value types.
 
 Listing \ref{iquery} illustrates basic use of \verb+iquery+.
 \begin{Code}
 \begin{lstlisting}[caption=Data frame example, label=iquery]
 library("scidb")
-scidbonnect()               # Connect to SciDB
+scidbonnect()               # Connect to SciDB on localhost
 scidblist()                 # List SciDB arrays (nothing there yet)
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
 
@@ -273,7 +286,7 @@ attribute.  SciDB attributes and dimensions are discussed in greater detail
 below in Section \ref{arrays}, and in the SciDB reference documentation.  The
 \verb+df2scidb+ function only supports R numeric, integer, character, and
 logical data types in the data frame. The function accepts many arguments
-outlined in detail in the R help page, \verb+?def2scidb+.
+outlined in detail in the R help page, \verb+?df2scidb+.
 
 Listing \ref{iris} illustrates copying data from R to SciDB  and back
 to R using the \verb+df2scidb+ and \verb+iquery+ functions.
@@ -303,154 +316,120 @@ head(iquery("scan(iris)",return=TRUE))
 \end{lstlisting}
 \end{Code}
 
-\subsection{Listing and removing SciDB arrays}
-The \verb+scidblist+ function lists SciDB objects (arrays, instances, etc.),
-optionally showing detailed schema information for arrays.
-
-The \verb+scidbremove+ function removes a SciDB array, or optionally a
-set of SciDB arrays defined by regular expression.
-
-See their respective R help pages for detailed information on available
-function arguments.
-
-
-\section{Sparsity, missing values and NULL concepts in R}
-
-We review a few R concepts that are related to, but sometimes 
-different from, similar SciDB concepts.
-
-\subsection{Sparsity}
-
-R supports sparse matrices using the {\tt Matrix} package included with
-R as a recommended package.  Sparse matrices in R may only consist of
-numeric or logical elements.  Numeric sparse R matrices explicitly define
-non-zero matrix elements.  Unspecified matrix elements are implicitly zero. The
-example shown in Listing \ref{rsparse} illustrates this.
-\begin{Code}
-\begin{lstlisting}[caption=R sparse matrix example, label=rsparse]
-library("Matrix")
-S = sparseMatrix(i=1:5,j=1:5,x=seq(10,50,10))
-S[5,] = 50
-S
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-5 x 5 sparse Matrix of class "dgCMatrix"
-
-[1,] 10  .  .  .  .
-[2,]  . 20  .  .  .
-[3,]  .  . 30  .  .
-[4,]  .  .  . 40  .
-[5,] 50 50 50 50 50
-\end{lstlisting}\begin{lstlisting}
-
-colSums(S)
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-[1] 60 70 80 90 50
-\end{lstlisting}
-\end{Code}
-Note that sparse matrices in R are in fact matrices. R does not support
-sparse arrays of higher dimension. And, sparse matrix support in R is
-limited to double-precision numeric, integer numeric, and logical data types.
-
-\subsection{NULL}
-
-{\tt NULL} is an R object. It is returned by expressions and functions whose
-value is undefined; it is also used as the empty pairlist. Other R objects are
-always distinct from {\tt NULL}--in particular, primitive types like
-numeric, integer, and character are never equal to the {\tt NULL} object.
-
-\subsection{Missingness}
-
-The primitive R data types all define a special value designated {\tt NA} that
-explicitly represents a missing value (fairly unique to R and very useful in
-data sciences). {\tt NA} values convey information that those values are
-unknown. Analysts may choose to omit missing values from computations, or,
-for example, impute them from other data.
 
 
 \section{SciDB Arrays for R Users}\label{arrays}
 
-Data are organized by SciDB into $n$-dimensional sparse arrays.  ``Sparse'' in
-SciDB means that array elements may be left undefined, and such array elements
-are omitted from computations. This interpretation of sparse differs from R.
-Listing \ref{scidbsparse} illustrates the differences, and one way to
-emulate the R idea of sparse in SciDB.
+Data are organized by SciDB into $n$-dimensional sparse arrays.  ``Sparse''  in
+SciDB arrays means that array elements may be left undefined, and such array
+elements are omitted from computations. Note that this interpretation of sparse
+differs from that used by sparse matrices defined by R's Matrix package (whose
+sparse elements are implicitly zero).
+
+%Listing \ref{scidbsparse} illustrates
+%the differences, and one way to emulate the R idea of sparse in SciDB.
 
 The elements of a SciDB array, called {\it cells}, contain one or more {\it
-attributes}, or variables. The number and data types of attributes must be
+attributes}, or variables. The number and data types of attributes are 
 uniform across all cells in an array.  Thus, a one-dimensional SciDB array is
 conceptually similar to a data frame in R: SciDB dimension index corresponds to
 data frame row index, and SciDB attributes to data frame columns.
-Higher-dimensional arrays in SciDB don't correspond directly to objects
-in R; the {\tt scidb} array class described in this section is limited to
+Higher-dimensional arrays in SciDB don't correspond directly to objects in R;
+the {\tt scidb} $n$-dimensional array class described below is limited to
 working with one attribute at a time.
 
-The example shown in Listing
-\ref{scidbsparse} illustrates a 2-d SciDB sparse array computation identical
-to that in the R sparse matrix example shown in listing \ref{rsparse}.
-\begin{Code}
-\begin{lstlisting}[caption=SciDB sparse matrix example, label=scidbsparse]
-library("scidb")
-library("Matrix")
-scidbonnect()
+%The example shown in Listing
+%\ref{scidbsparse} illustrates a 2-d SciDB sparse array computation identical
+%to that in the R sparse matrix example shown in listing \ref{rsparse}.
+%\begin{Code}
+%\begin{lstlisting}[caption=SciDB sparse matrix example, label=scidbsparse]
+%library("scidb")
+%library("Matrix")
+%scidbonnect()
+%
+%# Create a sparse matrix in SciDB:
+%iquery(
+%  "store(build_sparse(<x:double>[i=1:5,5,0,j=1:5,5,0],10*i,i=j or i=5),SP)")
+%
+%# Compare with a similar sparse matrix in R:
+%SP = sparseMatrix(i=1:5,j=1:5,x=10*(1:5))
+%SP[5,] = 50
+%
+%# Sum by column in SciDB:
+%iquery("aggregate(SP,sum(x),j)",return=TRUE)[,2]
+%\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+%[1] 60 70 80 90 50
+%
+%\end{lstlisting}\begin{lstlisting}
+%# Matches sum by column in R:
+%apply(SP,2,sum)
+%\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+%[1] 60 70 80 90 50
+%
+%\end{lstlisting}\begin{lstlisting}
+%# We see the different interpretation of sparsity with computation like sd:
+%iquery("aggregate(SP,stdev(x),j)",return=TRUE)[,2]
+%\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+%[1] 28.2843 21.2132 14.1421 7.07107 NA
+%\end{lstlisting}\begin{lstlisting}
+%
+%apply(SP,2,sd)
+%\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+%[1] 21.67948 21.90890 23.02173 24.89980 22.36068
+%\end{lstlisting}\begin{lstlisting}
+%
+%# We can emulate R behavior of an implicit value of zero easily in SciDB
+%# using merge:
+%iquery(
+%  "aggregate(merge(SP,build(<x:double>[i=1:5,5,0,j=1:5,5,0],0)),stdev(x),j)",
+%  return=TRUE)[,2]
+%\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+%[1] 21.6795 21.9089 23.0217 24.8998 22.3607
+%\end{lstlisting}
+%\end{Code}
 
-# Create a sparse matrix in SciDB:
-iquery(
-  "store(build_sparse(<x:double>[i=1:5,5,0,j=1:5,5,0],10*i,i=j or i=5),SP)")
+The integer co\"ordinate systems used to index SciDB arrays are similar to R,
+except that SciDB integer indices may be zero or negative, and are represented
+by 62-bit signed integers.
 
-# Compare with a similar sparse matrix in R:
-SP = sparseMatrix(i=1:5,j=1:5,x=10*(1:5))
-SP[5,] = 50
+SciDB attribute values within a cell may be explicitly marked missing,
+indicated by a special SciDB missing code.  SciDB internally supports a large
+number of possible missing codes. Presently, all SciDB missing code
+values are mapped to NA values in R.
 
-# Sum by column in SciDB:
-iquery("aggregate(SP,sum(x),j)",return=TRUE)[,2]
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-[1] 60 70 80 90 50
+Double-precision floating point values in SciDB also provide a value indicating
+missing values identically to R, and use the identical {\tt NA} representation
+that R uses. Other SciDB data types do not define {\tt NA}. Use of {\tt NA}
+with other than double-precision floating point values is undefined.
 
-\end{lstlisting}\begin{lstlisting}
-# Matches sum by column in R:
-apply(SP,2,sum)
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-[1] 60 70 80 90 50
 
-\end{lstlisting}\begin{lstlisting}
-# We see the different interpretation of sparsity with computation like sd:
-iquery("aggregate(SP,stdev(x),j)",return=TRUE)[,2]
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-[1] 28.2843 21.2132 14.1421 7.07107 NA
-\end{lstlisting}\begin{lstlisting}
+\section{The {\tt scidbdf} data.frame-like class}
 
-apply(SP,2,sd)
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-[1] 21.67948 21.90890 23.02173 24.89980 22.36068
-\end{lstlisting}\begin{lstlisting}
+The \verb+scidbdf+ class defines a data frame-like class with data backed
+by 1D SciDB arrays. Like data frames, the columns may be of distinct types
+and the rows represent observations. Each attribute in  the backing SciDB
+array represents a column in the \verb+scidbdf+ object. Objects are
+read-only, although new \verb+scidbdf+ objects can be created.
 
-# We can emulate R behavior of an implicit value of zero easily in SciDB
-# using merge:
-iquery(
-  "aggregate(merge(SP,build(<x:double>[i=1:5,5,0,j=1:5,5,0],0)),stdev(x),j)",
-  return=TRUE)[,2]
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-[1] 21.6795 21.9089 23.0217 24.8998 22.3607
-\end{lstlisting}
-\end{Code}
+XXX
 
-The co\"ordinate systems used to index SciDB arrays are mostly similar to those
-used by R. Like R, array dimension indices may be integer or non-integer.
-Unlike R, SciDB integer indices may be zero or negative, and SciDB non-integer
-dimensions are not restricted to character string values.
+ $ int8     : int  1 2
+ $ bool     : chr  "true" "false"
+ $ char     : chr  "x" "x"
+ $ datetime : chr  "1970-01-01 00:00:01" "1970-01-01 00:00:02"
+ $ double   : num  1 1.41
+ $ float    : num  1 1.41
+ $ int16    : int  1 2
+ $ int32    : int  1 2
+ $ int64    : num  1e+11 1e+11
+ $ string   : int  1 2
+ $ string_10: int  1 2
+ $ uint16   : int  1 2
+ $ uint32   : int  1 2
+ $ uint64   : int  1 2
 
-SciDB attribute values within a cell may be NULL, indicated by a special SciDB
-NULL code.  The {\tt NULL} object is distinct from other data types in R.
-Thus, unlike SciDB, it is not possible for an R integer value, for example, to
-be set to NULL. The {\tt scidb} package authors have not yet thought of a very
-good way to handle the concept of SciDB NULL in R. Thus, for now, SciDB NULL
-values are mapped to NA values in R {\tt scidb} array objects.
 
-Double-precision floating point values in SciDB define the concept of missing
-values identically to R, and use the identical {\tt NA} representation that R
-uses. Other SciDB data types do not define {\tt NA}. Use of {\tt NA} with other
-than double-precision floating point values is undefined and could lead to
-consternation.
+
 
 
 \section{The {\tt scidb} array class}

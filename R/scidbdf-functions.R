@@ -60,9 +60,9 @@ dimnames.scidbdf = function(x)
 # User wants this materialized to R...
   if(all(sapply(i,is.null)))
     if(iterative)
-      return(iquery(sprintf("scan(%s)",x@name),`return`=TRUE,iterative=TRUE,n=x@D$length+1,excludecol=1))
+      return(iquery(sprintf("scan(%s)",x@name),`return`=TRUE,iterative=TRUE,n=x@D$length+1,excludecol=1,colClasses=x@colClasses))
     else
-      return(iquery(sprintf("scan(%s)",x@name),`return`=TRUE,n=x@D$length+1)[,2:(x@length+1)])
+      return(iquery(sprintf("scan(%s)",x@name),`return`=TRUE,n=x@D$length+1, colClasses=x@colClasses)[,2:(x@length+1)])
 # Not materializing, return a SciDB array
   if(length(i)!=length(dim(x))) stop("Dimension mismatch")
   scidbdf_subset(x,i)
