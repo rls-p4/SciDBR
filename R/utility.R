@@ -418,6 +418,7 @@ iqiter = function (con, n = 1, excludecol, ...)
        }, error = function(e) {cls(u);dostop()},
           warning = function(w) {dostop()}
       )
+      header <<- colnames(ans)
       init <<- FALSE
     } else {
       ans = tryCatch(
@@ -426,9 +427,14 @@ iqiter = function (con, n = 1, excludecol, ...)
        }, error = function(e) {cls(u);dostop()},
           warning = function(w) {dostop()}
       )
+      colnames(ans) = header
     }
     cls(u)
-    if(!is.na(excludecol) && excludecol<=ncol(ans)) ans=ans[,-excludecol]
+    if(!is.na(excludecol) && excludecol<=ncol(ans))
+    {
+      rownames(ans) = ans[,excludeCol]
+      ans=ans[,-excludecol, drop=FALSE]
+    }
     ans
   }
   it = list(nextElem = nextEl, gc=new.env())

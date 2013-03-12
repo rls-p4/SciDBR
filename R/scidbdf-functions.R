@@ -28,7 +28,7 @@ rownames.scidbdf = function(x)
 {
   if(x@D$type[1] != "string") return(c(x@D$start[1],x@D$start[1]+x@D$length[1]-1))
   if(x@D$length[1] > options("scidb.max.array.elements"))
-    stop("Result will be too big. Perhaps try a manual query with an iterative result.")
+    stop("Result might be too big. Perhaps try a manual query with an iterative result.")
   Q = sprintf("scan(%s:%s)",x@name,x@D$name[1])
   iquery(Q,return=TRUE,n=x@D$length[1]+1)[,2]
 }
@@ -60,9 +60,17 @@ dimnames.scidbdf = function(x)
 # User wants this materialized to R...
   if(all(sapply(i,is.null)))
     if(iterative)
-      return(iquery(sprintf("scan(%s)",x@name),`return`=TRUE,iterative=TRUE,n=x@D$length+1,excludecol=1,colClasses=x@colClasses))
+    {
+      ans = iquery(sprintf("scan(%s)",x@name),`return`=TRUE,iterative=TRUE,n=x@D$length+1,excludecol=1,colClasses=x@colClasses)
+      return(ans)
+    }
     else
-      return(iquery(sprintf("scan(%s)",x@name),`return`=TRUE,n=x@D$length+1, colClasses=x@colClasses)[,2:(x@length+1)])
+    {
+      ans = iquery(sprintf("scan(%s)",x@name),`return`=TRUE,n=x@D$length+1, colClasses=x@colClasses)
+      rownames(ans)= ans[,1]
+      ans = ans[,-1,drop=FALSE]
+      return(ans)
+    }
 # Not materializing, return a SciDB array
   if(length(i)!=length(dim(x))) stop("Dimension mismatch")
   scidbdf_subset(x,i)
@@ -128,7 +136,10 @@ scidbdf_subset = function(x, i)
   {
 # Bounding box
     r = i()
-    query = sprintf("subarray(%s, %.0f, %.0f)", x@name, r[1], r[2])
+    if(is.numeric(r))
+      query = sprintf("subarray(%s, %.0f, %.0f)", x@name, r[1], r[2])
+    else
+      query = sprintf("subarray(%s, '%s', '%s')", x@name, r[1], r[2])
   }
   else
   {

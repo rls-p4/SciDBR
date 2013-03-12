@@ -112,7 +112,9 @@ scidb = function(name, attribute, `data.frame`, gc)
 # Retrieve list of attributes for a named SciDB array (internal function).
 .scidbattributes = function(name)
 {
-  x = iquery(paste("attributes(",name,")",sep=""),return=TRUE)
+  x = iquery(paste("attributes(",name,")",sep=""),return=TRUE,colClasses=c(NA,"character",NA,NA))
+# R is unfortunately interpreting 'i' as an imaginary unit I think.
+  if(any(is.na(x))) x[is.na(x)] = "i"
   list(attributes=x[,2],types=x[,3],nullable=(x[,4]=="true"))
 }
 
