@@ -8,6 +8,7 @@
 \alias{head,scidbdf-method}
 \alias{tail,scidbdf-method}
 \alias{show,scidbdf-method}
+\alias{aggregate,scidbdf-method}
 
 \title{Class \code{"scidbdf"}}
 \description{A class that represents 1D SciDB arrays similarly to R data.frames.}
@@ -25,6 +26,7 @@ Objects can be created by calls of the form \code{new("scidbdf", ...)},
     \item{\code{attributes}:}{Object of class \code{"character"} Vector of all available attributes for the SciDB array. }
     \item{\code{nullable}:}{Object of class \code{"logical"} Is the attribute nullable (TRUE/FALSE)? }
     \item{\code{types}:}{Object of class \code{"character"} Vector of SciDB types for all the array attributes. }
+    \item{\code{colClasses}:}{Object of class \code{"character"} Optional vector of read.table-style column classes used to parse messages from SciDB. }
     \item{\code{gc}:}{Object of class \code{"environment"} An environment used to link the SciDB array to the R garbage collector. }
     \item{\code{.S3Class}:}{Object of class \code{"character"} ~~ }
   }

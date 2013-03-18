@@ -432,7 +432,7 @@ iqiter = function (con, n = 1, excludecol, ...)
     cls(u)
     if(!is.na(excludecol) && excludecol<=ncol(ans))
     {
-      rownames(ans) = ans[,excludeCol]
+      rownames(ans) = ans[,excludecol]
       ans=ans[,-excludecol, drop=FALSE]
     }
     ans

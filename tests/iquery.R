@@ -1,7 +1,0 @@
-require("scidb")
-scidbconnect()
-tmp = basename(tempfile(pattern="tmp"))
-df2scidb(iris, name=tmp)
-query = sprintf("scan(%s)",tmp)
-iquery(query,return=TRUE)
-scidbremove(tmp)

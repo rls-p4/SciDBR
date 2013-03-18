@@ -324,7 +324,7 @@ Data are organized by SciDB into $n$-dimensional sparse arrays.  ``Sparse''  in
 SciDB arrays means that array elements may be left undefined, and such array
 elements are omitted from computations. Note that this interpretation of sparse
 differs from that used by sparse matrices defined by R's Matrix package (whose
-sparse elements are implicitly zero).
+sparse matrix elements are implicitly zero).
 
 %Listing \ref{scidbsparse} illustrates
 %the differences, and one way to emulate the R idea of sparse in SciDB.
@@ -390,7 +390,8 @@ working with one attribute at a time.
 
 The integer co\"ordinate systems used to index SciDB arrays are similar to R,
 except that SciDB integer indices may be zero or negative, and are represented
-by 62-bit signed integers.
+by 62-bit signed integers (R indices are unsigned positive 31-bit integer
+or 52-bit integer-valued double values).
 
 SciDB attribute values within a cell may be explicitly marked missing,
 indicated by a special SciDB missing code.  SciDB internally supports a large
@@ -402,8 +403,11 @@ missing values identically to R, and use the identical {\tt NA} representation
 that R uses. Other SciDB data types do not define {\tt NA}. Use of {\tt NA}
 with other than double-precision floating point values is undefined.
 
+The \verb+scidb+ package defines two array classes for R with data backed
+by SciDB arrays.
 
-\section{The {\tt scidbdf} data.frame-like class}
+
+\section{The {\tt scidbdf} data frame-like class}
 
 The \verb+scidbdf+ class defines a data frame-like class with data backed
 by 1D SciDB arrays. Like data frames, the columns may be of distinct types
@@ -411,23 +415,9 @@ and the rows represent observations. Each attribute in  the backing SciDB
 array represents a column in the \verb+scidbdf+ object. Objects are
 read-only, although new \verb+scidbdf+ objects can be created.
 
-XXX
+Non-integer row indices are not yet supported.
 
- $ int8     : int  1 2
- $ bool     : chr  "true" "false"
- $ char     : chr  "x" "x"
- $ datetime : chr  "1970-01-01 00:00:01" "1970-01-01 00:00:02"
- $ double   : num  1 1.41
- $ float    : num  1 1.41
- $ int16    : int  1 2
- $ int32    : int  1 2
- $ int64    : num  1e+11 1e+11
- $ string   : int  1 2
- $ string_10: int  1 2
- $ uint16   : int  1 2
- $ uint32   : int  1 2
- $ uint64   : int  1 2
-
+XXX EXAMPLES
 
 
 
