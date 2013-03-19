@@ -7,6 +7,6 @@ Author: B. W. Lewis <blewis@paradigm4.com>
 Maintainer: B. W. Lewis <blewis@paradigm4.com>
 Description: An R interface to SciDB
 Depends: stats, methods, iterators
-License: GPL-3
+License: AGPL-3
 LazyLoad: yes
 Packaged: 2012-05-01 11:23:49 UTC; blewis

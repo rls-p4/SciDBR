@@ -284,9 +284,8 @@ SciDB array. The data frame rows are used as the array dimension. The data
 frame columns are mapped to SciDB array attributes, each column becoming one
 attribute.  SciDB attributes and dimensions are discussed in greater detail
 below in Section \ref{arrays}, and in the SciDB reference documentation.  The
-\verb+df2scidb+ function only supports R numeric, integer, character, and
-logical data types in the data frame. The function accepts many arguments
-outlined in detail in the R help page, \verb+?df2scidb+.
+function accepts many arguments outlined in detail in the R help page,
+\verb+?df2scidb+.
 
 Listing \ref{iris} illustrates copying data from R to SciDB  and back
 to R using the \verb+df2scidb+ and \verb+iquery+ functions.
@@ -320,7 +319,7 @@ head(iquery("scan(iris)",return=TRUE))
 
 \section{SciDB Arrays for R Users}\label{arrays}
 
-Data are organized by SciDB into $n$-dimensional sparse arrays.  ``Sparse''  in
+Data are organized by SciDB in $n$-dimensional sparse arrays.  ``Sparse''  in
 SciDB arrays means that array elements may be left undefined, and such array
 elements are omitted from computations. Note that this interpretation of sparse
 differs from that used by sparse matrices defined by R's Matrix package (whose
@@ -330,13 +329,13 @@ sparse matrix elements are implicitly zero).
 %the differences, and one way to emulate the R idea of sparse in SciDB.
 
 The elements of a SciDB array, called {\it cells}, contain one or more {\it
-attributes}, or variables. The number and data types of attributes are 
-uniform across all cells in an array.  Thus, a one-dimensional SciDB array is
-conceptually similar to a data frame in R: SciDB dimension index corresponds to
-data frame row index, and SciDB attributes to data frame columns.
-Higher-dimensional arrays in SciDB don't correspond directly to objects in R;
-the {\tt scidb} $n$-dimensional array class described below is limited to
-working with one attribute at a time.
+attributes}, or variables. The number and data types of attributes are uniform
+across all cells in an array.  Thus, a one-dimensional SciDB array is
+conceptually similar to a data frame in R: the SciDB dimension index
+corresponds to data frame row index, and SciDB attributes to data frame
+columns.  Higher-dimensional arrays in SciDB don't correspond directly to
+objects in R; the {\tt scidb} $n$-dimensional array class described below is
+limited to working with one attribute at a time.
 
 %The example shown in Listing
 %\ref{scidbsparse} illustrates a 2-d SciDB sparse array computation identical
@@ -398,50 +397,120 @@ indicated by a special SciDB missing code.  SciDB internally supports a large
 number of possible missing codes. Presently, all SciDB missing code
 values are mapped to NA values in R.
 
-Double-precision floating point values in SciDB also provide a value indicating
-missing values identically to R, and use the identical {\tt NA} representation
-that R uses. Other SciDB data types do not define {\tt NA}. Use of {\tt NA}
-with other than double-precision floating point values is undefined.
-
+In addition toavailable missing (NULL) codes, SciDB double-precision floating
+point values also provide a value indicating missing values identically to R,
+and use the identical {\tt NA} representation that R uses. Other SciDB data
+types do not define {\tt NA}.
+ 
 The \verb+scidb+ package defines two array classes for R with data backed
 by SciDB arrays.
 
 
 \section{The {\tt scidbdf} data frame-like class}
 
-The \verb+scidbdf+ class defines a data frame-like class with data backed
-by 1D SciDB arrays. Like data frames, the columns may be of distinct types
-and the rows represent observations. Each attribute in  the backing SciDB
-array represents a column in the \verb+scidbdf+ object. Objects are
-read-only, although new \verb+scidbdf+ objects can be created.
+The \verb+scidbdf+ class defines a data frame-like class with data backed by
+one-dimensional SciDB arrays. Like data frames, the columns may be of distinct
+types and the rows represent observations. Each attribute in  the backing SciDB
+array represents a column in the \verb+scidbdf+ object. The \verb+scidbdf+
+object elements are read-only (the backing SciDB array may be manually updated,
+for example using the iquery function).  Non-integer row indices are not yet
+supported.
 
-Non-integer row indices are not yet supported.
+Use either the \verb+df2scidb+ or \verb+as.scidb+ functions to create new SciDB
+arrays and corresponding \verb+scidbdf+ R objects by copying R data frames into
+SciDB. The \verb+types+ and \verb+nullable+ options may be used to explicitly
+specify the SciDB type and nullability values of each data frame column, or
+leave these options undefined for the package to select SciDB types. See the
+R help page for \verb+df2scidb+ for more information.
 
-XXX EXAMPLES
+The \verb+scidb+ function returns an R \verb+scidbdf+ or \verb+scidb+
+object representation of an existing SciDB array.
+
+Objects of class \verb+scidbdf+ obey a subset of R indexing operations.
+Columns may be selected by numeric index or attribute name, but the short-hand
+R \$-style variable selection notation is not supported. Rows may only be
+selected using the underlying SciDB dimension type, integer by default. And,
+only contiguous subsets of rows may be selected in the present version of the
+package.
+
+Subsets of \verb+scidbdf+ objects are returned as new \verb+scidbdf+ objects of
+the appropriate size (dimension, number of attributes/columns). The package
+uses the special empty-bracket notation, \verb+[]+, to indicate that data
+should be materialized to R as an R data frame. Illustrations are provided
+in the examples.
 
 
+\subsection{Examples of {\tt scidbdf} objects}
+
+\begin{Code}
+\begin{lstlisting}[caption=SciDB data frame-like objects, label=scidbdf]
+library("scidb")
+scidbconnect()
+
+# Copy the Michelson-Morley experiment data to SciDB, returning a scidbdf object
+X = as.scidb(morley)
+str(X)
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+SciDB array name:  morley
+Attributes:
+  attribute  type nullable
+1      Expt int32    FALSE
+2       Run int32    FALSE
+3     Speed int32    FALSE
+Row dimension:
+  No name start length chunk_interval chunk_overlap low high  type
+1  0  row     1    100            100             0   1  100 int64
+\end{lstlisting}\begin{lstlisting}
+
+
+# Materialize the first five rows of X to R:
+X[1:5,][]
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+  Expt Run Speed
+0    1   1   850
+1    1   2   740
+2    1   3   900
+3    1   4  1070
+4    1   5   930
+\end{lstlisting}\begin{lstlisting}
+
+# Aggregate average speed by experiment using SciDB
+aggregate(X, Speed ~ Expt, FUN="avg(Speed) as mean")
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+  Expt  mean
+1    1 909.0
+2    2 856.0
+3    3 845.0
+4    4 820.5
+5    5 831.5
+\end{lstlisting}
+\end{Code}
+Note that the aggregation function for SciDB arrays has a slightly different syntax
+than aggregation of data frames. And note that the aggregation function is a SciDB
+expression, presented as a character string.
 
 
 \section{The {\tt scidb} array class}
 
-The \verb+scidb+ package defines a \verb+scidb+ array class for R. Array
-objects defined by {\tt scidb} behave in some ways like standard R arrays.
-But, their data reside in SciDB and most operations on them are computed
-by SciDB.
+Similarly to the data frame-like class, the \verb+scidb+ package defines a
+\verb+scidb+ n-dimensional array class for R. Array objects defined by the {\tt
+scidb} class behave in some ways like standard R arrays.  But, their data
+reside in SciDB and most operations on them are computed by SciDB.
 
-The \verb+scidb+ array class supports working with a single array attribute
-at a time in order to conform to general R arrays (which have difficulty
-supporting general multi-valued elements). Consider the iris data presented in
-Listing \ref{iris}, represented within SciDB as a 1-D array with five
-attributes. Listing \ref{oned} illustrates creating 
-a \verb+scidb+ array object in R that refers to the iris data in SciDB,
-using the \verb+Sepal_Width+ attribute. Unlike R, SciDB numeric array
-indices may be zero or negative (indices begin at zero in the example
-in Listing \ref{oned}). Data from {\tt scidb} array objects are
-not materialized to R until subset with the empty indexing function, {\tt []}.
+The \verb+scidb+ array class supports working with a single array attribute at
+a time to conform to R arrays (which generally support a single value per
+cell).  Consider the iris data presented in Listing \ref{iris}, represented
+within SciDB as a 1-D array with five attributes. The following listing
+\ref{oned} illustrates creating a 1-D \verb+scidb+ array object in R that
+refers to the iris data in SciDB, using the \verb+Sepal_Width+ attribute.
+Unlike R, SciDB numeric array indices may be zero or negative (indices begin at
+zero in the example in Listing \ref{oned}). Data from {\tt scidb} array objects
+are not materialized to R until subset with the empty indexing function,
+\verb+[]+.
+
 \begin{Code}
 \begin{lstlisting}[caption=A 1-d SciDB array object using one of several available attributes, label=oned]
-x = scidb("iris", attribute="Sepal_Width")
+x = scidb("iris", attribute="Sepal_Width", data.frame=FALSE)
 dim(x)
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
 [1] 150 1
@@ -462,31 +531,33 @@ attributes(x)       # List all available attributes in the SciDB array
 
 \subsection{Subsetting and indexing {\tt scidb} array objects}
 
-SciDB arrays act in many ways similarly to regular arrays in R.
-Rectilinear subarrays may be defined by ranges of integer indices
-or by lists of specific integer and string values, if the SciDB
-backing array supports that.
+SciDB arrays act in many ways like regular arrays in R.  Rectilinear subarrays
+may be defined by ranges of integer indices or by lists of specific integer and
+string values, if the SciDB backing array supports that. Subarrays of
+\verb+scidb+ array objects are returned as new \verb+scidb+ array objects
+of the appropriate size.
 
-Despite the similarities, there are differences between regular
-R and {\tt scidb} array object indexing. In particular:
+Despite the similarities, there are differences between regular R and {\tt
+scidb} array object indexing. In particular:
 \begin{itemize}
-\item Proper subarrays of {\tt scidb} arrays are new {\tt scidb} arrays.
 \item The empty indexing function, \verb+[]+ applied to a {\tt scidb}
 object materializes its array data as an R array. If the data exceed
 a return size threshold, an iterator over the array indices and data
 will be returned instead.
 \item Index ranges follow SciDB convention. Arrays may have non-positive
-integer indices.
-In particular, note that the
+integer indices.  In particular, note that the
 starting SciDB integer index is arbitrary, but often zero. (The upper-left
 corner of R arrays is always indexed by [1,1,...].)
 \item Array length may exceed $2^{31}$ elements.
-\item Empty sparse array dimensions among materialized subarray
-indices are omitted from the resulting array in R. That means
-materialized subarray dimensions may be smaller than the requested range.
+\item When SciDB arrays are materialized to R with the \verb+[]+ function,
+empty cells in the SciDB array are mapped to a default value in R. The
+choice of value may be made globally by setting the
+\verb+options("scidb.default.value")+ option, or at call time with
+the \verb+default+ option to the \verb+[]+ function (examples shown
+below).
 \item {\tt scidb} array objects are limited to double-precision and
 32-bit signed integer numeric, logical, and single-byte character
-string data.
+(char) element data types.
 \end{itemize}
 
 Listing \ref{3dsimple} illustrates basic integer indexing operations
@@ -502,24 +573,27 @@ A = scidb("A")
 # Indexing operations return new SciDB arrays:
 A[0:3,2:3,5:8]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-Reference to the 4x1x4 dimensional SciDB array.attribute array64624eb3f52d.val
+A reference to a  4x2x4 dimensional SciDB array
 \end{lstlisting}\begin{lstlisting}
      
 # But, their data can be materialized into an R array with []:
-A[0:3,2:3,5:8] []
+A[0:3,2:3,5] [,drop=FALSE]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-   k
-i   5 6 7 8
-  0 5 6 7 8
-  1 5 6 7 8
-  2 5 6 7 8
-  3 5 6 7 8
+, , 1
+
+     [,1] [,2]
+[1,]   NA    5
+[2,]   NA    5
+[3,]   NA    5
+[4,]   NA    5
+
 \end{lstlisting}
 \end{Code}
 
-String-valued SciDB non-integer dimensions are supported by {\tt scidb}
-arrays. The example in Listing \ref{nid} illustrates indexing by
-string values as well as mixed indexing by string and integer.
+String-valued SciDB non-integer dimensions are supported by {\tt scidb} arrays,
+with some limitations illustrated in the examples below. The example in Listing
+\ref{nid} illustrates indexing by string values as well as mixed indexing by
+string and integer.
 \begin{Code}
 \begin{lstlisting}[caption=Integer and string subarray indexing, label=nid]
 scidbremove(c("A","N"), error=warning)
@@ -530,7 +604,7 @@ N = scidb("N")
 
 str(N)
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-SciDB array name:  N	attribute in use:  val
+SciDB array name:  N    attribute in use:  val
 All attributes:  val
 Array dimensions:
   No name start length chunk_interval chunk_overlap low high   type
@@ -564,16 +638,18 @@ x    y0 y1 y2 y3 y4 y5 y6 y7 y8 y9
   x9 NA NA NA NA NA NA NA NA NA  9
 \end{lstlisting}\begin{lstlisting}
 
-# It's OK to mix/match NID and integer indexing. Note also that
-# totally empty dimensions are omitted from the result.
-P = N[c("x1","x2","x5"),1:8]
-P[]
+# Note that the package presently drops dimension labels in some cases,
+# for example when arbitrary indices are selected (a warning is thrown
+# to alert the user):
+N[c("x2","x3","x1","x5"),][]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-    y
-x     1  2  5
-  x1  1 NA NA
-  x2 NA  2 NA
-  x5 NA NA  5
+   y
+x   y1 y2 y3 y5
+  0 NA  2 NA NA
+  1 NA NA  3 NA
+  2  1 NA NA NA
+  3 NA NA NA  5
+Warning message: Dimension labels were dropped.
 \end{lstlisting}
 \end{Code}
 
@@ -613,28 +689,28 @@ Array dimensions:
 2  1    j     1      5              5             0   1    5 int64
 \end{lstlisting}\begin{lstlisting}
 
-V[] %*%  V[]                   # Compute V %*% V by R
+t(V[]) %*%  V[]                   # Compute V %*% V using R
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-   j
-i    1    2        3    4 5
-  1  5  2.5 1.666667 1.25 1
-  2 10  5.0 3.333333 2.50 2
-  3 15  7.5 5.000000 3.75 3
-  4 20 10.0 6.666667 5.00 4
-  5 25 12.5 8.333333 6.25 5
+         [,1]      [,2]      [,3]      [,4]      [,5]
+[1,] 55.00000 27.500000 18.333333 13.750000 11.000000
+[2,] 27.50000 13.750000  9.166667  6.875000  5.500000
+[3,] 18.33333  9.166667  6.111111  4.583333  3.666667
+[4,] 13.75000  6.875000  4.583333  3.437500  2.750000
+[5,] 11.00000  5.500000  3.666667  2.750000  2.200000
+
 \end{lstlisting}\begin{lstlisting}
 
-# Now compute by SciDB; a dynamically-generated SciDB array holds the result:
-VV = V %*% V
-VV[]
+# Now compute using SciDB, and materialize the result to R:
+(t(V) %*% V)[]
+
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-   j
-i    1    2        3    4 5
-  1  5  2.5 1.666667 1.25 1
-  2 10  5.0 3.333333 2.50 2
-  3 15  7.5 5.000000 3.75 3
-  4 20 10.0 6.666667 5.00 4
-  5 25 12.5 8.333333 6.25 5
+         [,1]      [,2]      [,3]      [,4]      [,5]
+[1,] 55.00000 27.500000 18.333333 13.750000 11.000000
+[2,] 27.50000 13.750000  9.166667  6.875000  5.500000
+[3,] 18.33333  9.166667  6.111111  4.583333  3.666667
+[4,] 13.75000  6.875000  4.583333  3.437500  2.750000
+[5,] 11.00000  5.500000  3.666667  2.750000  2.200000
+
 \end{lstlisting}
 \end{Code}
 Linear algebra operations like the cross product in Listing \ref{arithmetic}
@@ -643,12 +719,12 @@ may always find the SciDB name for a \verb+scidb+ array object from the
 array object's \verb+@name+ slot.
 
 Basic matrix/vector arithmetic operations (addition, subtraction, matrix and
-matrix vector products, scalar products) are directly with R syntax
-for \verb+scidb+ array objects. You can mix R and SciDB
-matrices and vectors and the {\tt scidb} package will try to do the right thing
-by assigning R data to temporary SciDB arrays conforming to required chunk
-partition schemes.  Listing \ref{mixed} shows an example of computations that
-mix {\tt scidb} array objects with R vectors.
+matrix vector products, scalar products, \verb+crossprod+ and
+\verb+tcrossprod+) are directly with R syntax for \verb+scidb+ array objects.
+You can mix R and SciDB matrices and vectors and the {\tt scidb} package will
+try to do the right thing by assigning R data to temporary SciDB arrays
+conforming to required database schema.  Listing \ref{mixed} shows an
+example of computations that mix {\tt scidb} array objects with R vectors.
 \begin{Code}
 \begin{lstlisting}[caption=Mixed R and SciDB array arithmetic, label=mixed]
 iquery("store(build(<x:double>[i=0:4,5,0,j=0:4,5,0],double(i+1)/double(j+1)),U)")
@@ -660,30 +736,45 @@ y = U %*% x            # Computed by SciDB, returning a SciDB array object
 
 y[,drop=FALSE]         # Return the computed result to R
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-             j
-i            0
-  0 -0.3484533
-  1 -0.6969065
-  2 -1.0453598
-  3 -1.3938131
-  4 -1.7422663
-\end{lstlisting}\begin{lstlisting}
-
-# Compare with same computation computed by R:
-U[] %*% x
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-i         [,1]
-  0 -0.3484533
-  1 -0.6969065
-  2 -1.0453598
-  3 -1.3938131
-  4 -1.7422663
+           [,1]
+[1,] -0.3484533
+[2,] -0.6969065
+[3,] -1.0453598
+[4,] -1.3938131
+[5,] -1.7422663
 \end{lstlisting}
 \end{Code}
 Although the examples may seem trivial, the simple linear algebra capability
-shown in Listings \ref{arithmetic} and \ref{mixed} allow us to achieve
-quite a lot. Later sections illustrate using this idea to overload
+shown in Listings \ref{arithmetic} and \ref{mixed} enable quite a lot of
+interesting computation. Later sections illustrate using this idea to overload
 more substantial functions in existing R packages.
+
+
+\subsubsection{Arithmetic operations and their rules}
+
+The \verb+scidb+ class supports the following operations:
+
+\begin{tabularx}{0.9\textwidth}{llXl}
+Expression & Operation & Operands & Output \\
+\hline
+$A$ {\tt \%*\%} $B$ & Matrix multiplication & $A,B$ Conformable SciDB arrays or R matrices/vectors & SciDB array\\
+$A \pm B$ & Matrix summation/difference & $A,B$ SciDB arrays or R matrices/vectors & SciDB array\\
+{\tt crossprod(}$A$,$B${\tt)} & Cross product {\tt t(A) \%*\% B} & $A,B$ SciDB arrays or R matrices/vectors & SciDB array\\
+{\tt tcrossprod(}$A$,$B${\tt)} & Cross product {\tt A \%*\% t(B)} & $A,B$ SciDB arrays or R matrices/vectors & SciDB array\\
+$A$ {\tt *} $B$ & Elementwise multiplication & $A,B$ Conformable SciDB arrays or R matrices/vectors & SciDB array\\
+$A[\hbox{range},\hbox{range},\ldots]$ & Subarray &  SciDB array $A$ & SciDB Array\\
+$\alpha$ {\tt *} $A$ & Scalar multiplication & SciDB array $A$, scalar $\alpha$ & SciDB array\\
+$A[]$ & Materialize & SciDB array & R array \\
+\hline
+\end{tabularx}
+
+The subarray operator \verb+[ ]+ supports the standard \verb+drop+ argument and
+the argument \verb+default=x+, where \verb+x+ is the default scalar value to
+use to fill-in sparse array values when materialized to R. The use of
+\verb+default+ overrides the related global
+\verb+options("scidb.default.value")+ package option.
+
+
 
 \subsection{Persistence of dynamically-allocated {\tt scidb} arrays}
 
@@ -712,121 +803,14 @@ SciDB array associated with a {\tt scidb} array object as persistent,
 set the array \verb+@gc$remove+ setting to {\tt FALSE}--for example,
 \verb+V@gc$remove=FALSE+ in the above example.
 
-\subsection{Sparse array implicit values and indexing notes}
-
-This section outlines additional differences between sparse {\tt scidb} array
-objects and sparse R matrices introduced by the {\tt scidb} package for
-practical reasons.
-
-Subarrays of {\tt scidb} array objects materialized to R by subsetting
-operations are returned as dense R arrays. We made this choice because sparse
-SciDB arrays don't correspond directly to sparse R matrices (SciDB arrays can
-be higher dimensional and contain different data types, for example).
-
-Indexing operations on {\tt scidb} array objects differ from those for sparse
-R matrices in a few ways for practical reasons. In particular:
-\begin{itemize}
-\item Returned sparse subarrays are bounded by their data extent--the
-returned subarray can be smaller than the requested index range.
-In practice, this allows SciDB to quickly return data from huge sparse arrays.
-\item Dense arrays are returned to R with implicit values filled in. Users have
-control over the choice of implied value.
-\item Subarrays are always returned in sorted index order.
-\item Repeated indices are not returned in subarrays.
-\end{itemize}
-The last two items are a result of technical issues and will go away in the
-next major version of the package.
-
-The {\tt scidb} package defines a default implicit value of zero for SciDB
-arrays in the package option {\tt scidb.default.value}. Users may set this to
-any value. When there is a type mismatch between the default value and the
-array data type, {\tt NA} is returned. Alternatively, indexing options include
-a default value parameter that can be used in place of setting a global
-default.  Listing \ref{spdef} illustrates its use. It is important to note that
-the default value setting only affects data returned to R and not back-end
-SciDB computations.  Treatment of sparsity in SciDB varies considerably by
-SciDB operator--consult the SciDB documentation for details.
-
-Each of the sparse indexing issues discussed above are illustrated in
-Listings \ref{spdef} and \ref{moreidx}.
-
-\begin{Code}
-\begin{lstlisting}[caption=Sparse array indexing and default values, label=spdef]
-iquery("store(build_sparse(<v:double>[i=1:5,5,0,j=1:5,5,0],i,i=j or i=5), A)")
-
-# The returned subarray shows i, j dimension labels corresponding to SciDB.
-# The default numeric sparse array value 0 is used by default:
-A[1:5, 1:5, default=0][]
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-   j
-i   1 2 3 4 5
-  1 1 0 0 0 0
-  2 0 2 0 0 0
-  3 0 0 3 0 0
-  4 0 0 0 4 0
-  5 5 5 5 5 5
-\end{lstlisting}\begin{lstlisting}
-
-# A different default value is easy to specify:
-A[1:5, 1:5, default=NA][]
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-   j
-i    1  2  3  4  5
-  1  1 NA NA NA NA
-  2 NA  2 NA NA NA
-  3 NA NA  3 NA NA
-  4 NA NA NA  4 NA
-  5  5  5  5  5  5
-\end{lstlisting}\begin{lstlisting}
-
-# Subarray selections are bounded by their data extent (the 1st row is
-# omitted from the result because it contains no data in the SciDB array):
-A[1:3, 2:3, default=NA][]
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-   j
-i    2  3
-  2  2 NA
-  3 NA  3
-\end{lstlisting}\begin{lstlisting}
-
-# See how this differs from default R indexing:
-A[1:5, 1:5, default=NA][]  [1:3, 2:3]
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-   j
-i    2  3
-  1 NA NA
-  2  2 NA
-  3 NA  3
-\end{lstlisting}
-\end{Code}
-
-\begin{Code}
-\begin{lstlisting}[caption=More SciDB sparse array indexing notes, label=moreidx]
-# Returned subarrays from SciDB always have sorted indices (for now):
-A[c(3,1,5),][]
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-   j
-i   1 3 2 4 5
-  1 1 0 0 0 0
-  3 0 0 3 0 0
-  5 5 5 5 5 5
-\end{lstlisting}\begin{lstlisting}
-
-# And, repeated indices in returned subarrays are omitted (for now):
-A[c(3,1,1,5,][]
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-   j
-i   1 3 2 4 5
-  1 1 0 0 0 0
-  3 0 0 3 0 0
-  5 5 5 5 5 5
-\end{lstlisting}
-\end{Code}
 
 \subsection{Miscellaneous array functions}
 
 The \verb+count+ function applied to a {\tt scidb} array object returns the
 count of non-empty cells in in the backing SciDB array.
+
+\verb+crossprod+ and \verb+tcrossprod+ are defined for \verb+scidb+
+array objects and mixtures of \verb+scidb+ and matrices.
 
 The \verb+image+ function displays a heatmap of a regrid of a 2-D {\tt scidb}
 array object, and returns the regridded array to R.  The \verb+grid=c(m,n)+
@@ -845,13 +829,13 @@ is a new {\tt scidb} object containing the filtered values.
 \section{Using SciDB arrays with existing R code}
 
 This section illustrates using SciDB together with R and standard R packages
-from CRAN to compute solutions to large-scale problems.
+from CRAN to compute solutions to large-scale problems.  R functions that rely
+on linear algebra and aggregation operations may be adapted to use SciDB arrays
+in place of native R vectors and matrices in order to benefit from the
+large-scale parallel computing capabilities of SciDB.
 
-R functions that rely on linear algebra and aggregation operations can often be
-easily adapted to use SciDB arrays in place of native R vectors and matrices to
-benefit from the large-scale parallel computing capabilities of SciDB.  An
-important method used in many analyses is the truncated singular value
-distribution (SVD). Truncated SVD lies at the heart of principle components and
+The truncagted singular value distribution (TSVD) is an important, widely used
+analysis method.  Truncated SVD lies at the heart of principle components and
 other analysis methods.
 
 We use the {\tt irlba} package from CRAN,
@@ -881,26 +865,11 @@ illustrates this.
 # Return an R numeric vector.
 matmul = function(A, x, transpose=FALSE)
 {
-  rowChunkSize = A@D$chunk_interval[1]    # SciDB array row chunk size
-  colChunkSize = A@D$chunk_interval[2]    # SciDB array column chunk size
-  f1 = tempfile()                         # Temporary files (small)
-  f2 = tempfile()
-  writeBin(as.vector(x),f1)
-  if(transpose) {
-    iquery( sprintf("create array _xxx<val:double>[i=0:0,1,0,j=0:%s,%s,0]",length(x)-1,rowChunkSize) )
-    iquery( sprintf("load(_xxx,'%s',0,'(double )')",f1) )
-    iquery( sprintf("save(multiply(_xxx, %s), '%s', 0,'(double)')", A@name, f2) )
-    ans = cbind(readBin(f2,n=ncol(A),what="double"))
-  } else {
-    iquery( sprintf("create array _xxx<val:double>[i=0:%s,%s,0,j=0:0,1,0]",length(x)-1,colChunkSize) )
-    iquery( sprintf("load(_xxx,'%s',0,'(double )')",f1) )
-    iquery( sprintf("save(multiply(%s, _xxx), '%s', 0,'(double)')", A@name, f2) )
-    ans = cbind(readBin(f2,n=nrow(A),what="double"))
+  if(transpose)
+  {
+    return(t((t(x) %*% A)[,drop=FALSE]))
   }
-  iquery( "remove(_xxx)" )
-  unlink(f1)
-  unlink(f2)
-  ans
+  (A %*% x)[,drop=FALSE]
 }
 \end{lstlisting}
 \end{Code}
@@ -909,11 +878,11 @@ After defining the custom matrix or transpose matrix product in Listing
 \ref{matvec}, we can load and use the {\tt irlba} package with SciDB arrays.
 Listing \ref{irlb} illustrates computation of a few largest singular values and
 associated singular vectors of a $50,000\times 50,000$ matrix with random
-entries (consuming about $18\,$GB).
-That problem is large enough that it can't be computed in R--the matrix
-is too large to represent in R.
-(Note that if a SciDB array named {\tt A} already exists, either delete it
-before running the following example, or change the name used in the example.)
+entries (consuming about $18\,$GB).  That problem is large enough that it can't
+be computed in R--the matrix is too large to represent in R.  (Note that if a
+SciDB array named {\tt A} already exists, either delete it before running the
+following example, or change the name used in the example.)
+
 \begin{Code}
 \begin{lstlisting}[caption=Example large truncated SVD computation, label=irlb]
 library("irlba")
@@ -933,40 +902,91 @@ S = irlba(A, nu=3, nv=3, matmul=matmul)
 
 \end{lstlisting}
 \end{Code}
-After a few minutes or so, depending on the system SciDB is running on, SciDB
+After a while, depending on the system SciDB is running on, SciDB
 returns the truncated SVD to R in the variable S. The result obtained is
 comparable to what the {\tt svd(A, nu=3, nv=3)} command would have produced, if
-it could handle the large matrix.
+it could handle the large matrix. Further optimizations are possible, but
+this simple example shows that it can be easy to get large-scale computation
+working without rewriting R code.
 
 
 
 \section{Package Installation}
 
-The version of the SciDB R package discussed in this vignette must be installed
-on a computer with SciDB installed. If SciDB is installed in a networked
-cluster configuration, the R package should be installed on the same computer
-as the SciDB co\"ordinator instance. This limitation is related to use of the
-co\"ordinator node file system to upload data into SciDB and will be removed in
-the next major version release of the package. The R package is presently
-limited to 64-bit Linux operating systems that SciDB supports as a consequence
-of this requirement.
+Installation proceeds in two steps: installing the R package on any computer
+that has a network connection to a SciDB database, and installing a simple
+network service on the SciDB database coo\"rdinator computer.
 
-The package is presently distributed as a standard R source package. The
-installation process is outlined below.
-\begin{enumerate}
-\item Install SciDB
-\item Install the SciDB client packages, including for example
-at least the \verb+libscidbclient_12.10.0-1_amd64.deb+ and
-\verb+scidb-dev_12.10.0-1_all.deb+ packages (or analogous RPM packages
-for RedHat systems).
-\item Install R on your SciDB co\"ordinator computer.
-\item Obtain the \verb+scidb_0.1-0.tar.gz+ source package from Paradigm4.
-\item Run \verb+R CMD INSTALL scidb_0.1-0.tar.gz+ from the command line,
-or \verb+install.packages("scidb_0.1-0.tar.gz",repos=NULL)+ from within
-R.
-\item Enjoy SciDB!
-\end{enumerate}
+\subsection{Installing the R package from CRAN}
+The \verb+scidb+ package is available on CRAN. Start an R session and run:
+\begin{Code}
+\begin{lstlisting}[caption=Installing the R package from CRAN, label=cran]
+install.packages("scidb")
+\end{lstlisting}
+\end{Code}
 
+
+\subsection{Installing the simple network service for SciDB}
+
+The SciDB R package requires installation of a simple open-source HTTP network
+service called \verb+shim+ on the computer that SciDB is installed on. This
+service only needs to be installed on the SciDB machine, not on client
+computers that connect to SciDB from R.  It's available in packaged binary form
+for supported SciDB operating systems, and as source code which can be compiled
+and deployed on any SciDB installation.
+
+Both installation approaches install the \verb+shim+ network service on the
+SciDB co\"ordinator computer. Installing as a service requires root permission.
+The compiled source code version requires no special permissions to run.
+
+Installation from binary software packages for SciDB-supported operating
+systems is easiest. Detailed up-to-date information can be found on
+Paradigm4's laboratory on github at 
+\newline
+\href{https://github.com/Paradigm4/shim/wiki/Installing-shim}
+{https://github.com/Paradigm4/shim/wiki/Installing-shim}.
+We outline installation for each supported operating system below. See our github page
+for source code. The open source package author, Bryan Lewis, presently maintains
+binary packages for SciDB-supported operating systems. They are tied to specific
+versions of SciDB. The present version is 13.2 (February, 2013).
+
+\subsubsection{Installation on RHEL/CentOS 6}
+\begin{Code}
+\begin{lstlisting}[caption=Installing the simple HTTP service on RHEL, label=shimrhel]
+# Install with:
+wget http://illposed.net/shim-13.2-1.x86_64.rpm
+rpm -i shim-13.2-1.x86_64.rpm
+
+# (Uninstall, if desired, with:)
+yum remove shim
+\end{lstlisting}
+\end{Code}
+
+
+\subsubsection{Installation on Ubuntu 12.04}
+\begin{Code}
+\begin{lstlisting}[caption=Installing the simple HTTP service on Ubuntu, label=shimubuntu]
+# Install with:
+wget http://illposed.net/shim_13.2_amd64.deb
+sudo gdebi shim_13.2_amd64.deb
+
+# (Uninstall, if desired, with:)
+apt-get remove shim
+\end{lstlisting}
+\end{Code}
+See the Wiki and web pages at 
+\href{https://github.com/Paradigm4/shim/}
+{https://github.com/Paradigm4/shim/} for more information and source code.
+
+The installed \verb+shim+ network service exposes SciDB as a very simple HTTP
+API.  It includes a simple browser-based status and query tool. After
+installing shim, point your browser to the I.P. address of the SciDB
+co\"ordinator machine and port 8080, for example:
+\href{http://localhost:8080}{http://localhost:8080} on the co\"ordinator
+machine itself. Note that this API is not official and may change in the
+future. Help drive those changes by contributing ideas, code and
+bugfixes to the project on github, or feel free to discuss the service on the
+SciDB.org/forum.
 
 
 

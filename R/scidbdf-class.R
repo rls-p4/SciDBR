@@ -36,14 +36,14 @@ setGeneric("head")
 setMethod("head", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
-  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start,n),ret=TRUE)[,-1]
+  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start,n),`return`=TRUE,colClasses=x@colClasses)[,-1]
 })
 
 setGeneric("tail")
 setMethod("tail", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
-  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start + x@D$length - n - 1,x@D$start + x@D$length-1),ret=TRUE)[,-1]
+  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start + x@D$length - n - 1,x@D$start + x@D$length-1),`return`=TRUE, colClasses=x@colClasses)[,-1]
 })
 
 setGeneric('is.scidbdf', function(x) standardGeneric('is.scidbdf'))

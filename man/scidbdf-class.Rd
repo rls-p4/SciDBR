@@ -41,8 +41,10 @@ Objects can be created by calls of the form \code{new("scidbdf", ...)},
     \item{aggregate}{\code{signature(x = "scidbdf")}: \code{aggregate(x, formula, FUN)}
 
 Group the 1D SciDB array x by the indicated formula, applying the SciDB aggregate
-expression FUN, specified as a character string, to the groups. For example:
-\code{A = as.scidb("iris"); g = aggregate(A, Petal_Length ~ Species, "avg(Petal_Length)")}
+expression FUN, specified as a character string, to the groups. The SciDB aggregate
+expression must be named using the SciDB "as" keyword. This function will redimension
+the SciDB array and apply the aggregate.  For example:
+\code{A = as.scidb("iris"); g = aggregate(A, Petal_Length ~ Species, "avg(Petal_Length) as mean")}
 
 }
     \item{show}{\code{signature(object = "scidbdf")}: ... }

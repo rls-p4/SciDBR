@@ -248,10 +248,10 @@ as.scidb = function(X,
                     rowChunkSize=1000L,
                     colChunkSize=1000L,
                     start=c(0L,0L),
-                    gc=FALSE)
+                    gc=FALSE, ...)
 {
   if(inherits(X,"data.frame"))
-    return(df2scidb(X,name=name,chunkSize=rowChunkSize,gc=gc))
+    return(df2scidb(X,name=name,chunkSize=rowChunkSize,gc=gc,...))
   X0 = X
   D = dim(X)
   rowOverlap=0L
