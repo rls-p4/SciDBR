@@ -127,7 +127,7 @@ operations.  The \verb+scidb+ package for R provides two ways to
 interact with SciDB from R:
 \begin{enumerate}
 \item By running SciDB queries from R, optionally transferring data through
-data.frames or data.frame iterators.
+data frames or data frame iterators.
 \item Through several SciDB array object classes for R.
 The arrays mimic standard R arrays, but operations on them
 are performed by the SciDB engine.  Data are materialized to R only
@@ -136,7 +136,8 @@ when requested.
 In some cases, R scripts and packages may be used with little or no
 modification with \verb+scidb+ arrays, allowing SciDB to power large-scale
 parallel R computation.  This vignette illustrates using SciDB from R by
-example.
+example. For more detailed information on the functions described in this
+vignette, see the manual pages in the package.
 
 \section{Connecting to SciDB and Running Queries}
 
@@ -144,24 +145,28 @@ This section outlines the most basic interaction between R and SciDB: running
 queries and transferring one-dimensional SciDB arrays between R and SciDB
 through R data frames.
 
+\subsection{Connecting to SciDB}
+
+The \verb+scidbconnect+ function establishes a connection to a SciDB
+coordinator instance. The function may be safely called multiple times.
+Once a connection is established, connection information is maintained until a
+different connection is established or the R session ends.
+
 
 \subsection{Listing and removing SciDB arrays}
 
 The \verb+scidblist+ function lists SciDB objects (arrays, instances, etc.),
-optionally showing detailed schema information for arrays.
+optionally showing detailed schema information for arrays. The
+\verb+scidblist+ function accepts regular expression-style filtering
+options to limit the returned results.
 
 The \verb+scidbremove+ function removes a SciDB array, or optionally a
-set of SciDB arrays defined by regular expression.
+set of SciDB arrays defined by regular expression. The function
+accepts a vector of array names, resulting in the removal of all the
+specified arrays. Combine this feature with the regular expression filtering
+output of \verb+scidblist+ to remove sets of arrays matching the filter.
 
-See their respective R help pages for detailed information on available
-function arguments.
 
-\subsection{Connecting to SciDB}
-
-The \verb+scidbconnect+ function establishes a connection to a SciDB
-coordinator instance. The function may be safely called multiple times and.
-Once a connection is established, connection information is maintained until a
-different connection is established or the R session ends.
 
 \subsection{Running SciDB queries}
 
@@ -752,9 +757,11 @@ more substantial functions in existing R packages.
 
 \subsubsection{Arithmetic operations and their rules}
 
-The \verb+scidb+ class supports the following operations:
-
-\begin{tabularx}{0.9\textwidth}{llXl}
+The \verb+scidb+ class supports the operations shown in Table 1.
+\begin{table}[!h]\label{ops}
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tabularx}{1.15\textwidth}{llXl}
 Expression & Operation & Operands & Output \\
 \hline
 $A$ {\tt \%*\%} $B$ & Matrix multiplication & $A,B$ Conformable SciDB arrays or R matrices/vectors & SciDB array\\
@@ -762,13 +769,19 @@ $A \pm B$ & Matrix summation/difference & $A,B$ SciDB arrays or R matrices/vecto
 {\tt crossprod(}$A$,$B${\tt)} & Cross product {\tt t(A) \%*\% B} & $A,B$ SciDB arrays or R matrices/vectors & SciDB array\\
 {\tt tcrossprod(}$A$,$B${\tt)} & Cross product {\tt A \%*\% t(B)} & $A,B$ SciDB arrays or R matrices/vectors & SciDB array\\
 $A$ {\tt *} $B$ & Elementwise multiplication & $A,B$ Conformable SciDB arrays or R matrices/vectors & SciDB array\\
-$A[\hbox{range},\hbox{range},\ldots]$ & Subarray &  SciDB array $A$ & SciDB Array\\
 $\alpha$ {\tt *} $A$ & Scalar multiplication & SciDB array $A$, scalar $\alpha$ & SciDB array\\
+{\tt t(}$A${\tt )}& Transpose & SciDB array $A$& SciDB array\\
+$A[\hbox{range},\hbox{range},\ldots]$ & Subarray &  SciDB array $A$ & SciDB Array\\
 $A[]$ & Materialize & SciDB array & R array \\
 \hline
-\end{tabularx}
+\end{tabularx}}
+\vspace{28px}
+\caption{SciDB Array Class Operations}
+\end{table}
 
-The subarray operator \verb+[ ]+ supports the standard \verb+drop+ argument and
+\vspace{18px}
+The subarray/materialize operations \verb+[ ]+ support
+the standard \verb+drop+ argument and
 the argument \verb+default=x+, where \verb+x+ is the default scalar value to
 use to fill-in sparse array values when materialized to R. The use of
 \verb+default+ overrides the related global
@@ -867,7 +880,7 @@ matmul = function(A, x, transpose=FALSE)
 {
   if(transpose)
   {
-    return(t((t(x) %*% A)[,drop=FALSE]))
+    return(t(crossprod(x,A))[,drop=FALSE]))
   }
   (A %*% x)[,drop=FALSE]
 }
@@ -878,10 +891,12 @@ After defining the custom matrix or transpose matrix product in Listing
 \ref{matvec}, we can load and use the {\tt irlba} package with SciDB arrays.
 Listing \ref{irlb} illustrates computation of a few largest singular values and
 associated singular vectors of a $50,000\times 50,000$ matrix with random
-entries (consuming about $18\,$GB).  That problem is large enough that it can't
-be computed in R--the matrix is too large to represent in R.  (Note that if a
-SciDB array named {\tt A} already exists, either delete it before running the
-following example, or change the name used in the example.)
+entries (consuming about $18\,$GB).  That problem large enough that it can't
+be computed easily in R--the matrix is too large to even represent in R version
+2 (although that changes soon in R version 3).
+
+(Note that if a SciDB array named {\tt A} already exists, either delete it
+before running the following example, or change the name used in the example.)
 
 \begin{Code}
 \begin{lstlisting}[caption=Example large truncated SVD computation, label=irlb]
@@ -902,8 +917,8 @@ S = irlba(A, nu=3, nv=3, matmul=matmul)
 
 \end{lstlisting}
 \end{Code}
-After a while, depending on the system SciDB is running on, SciDB
-returns the truncated SVD to R in the variable S. The result obtained is
+After a while, the algorithm
+returns the truncated SVD in the variable S. The result obtained is
 comparable to what the {\tt svd(A, nu=3, nv=3)} command would have produced, if
 it could handle the large matrix. Further optimizations are possible, but
 this simple example shows that it can be easy to get large-scale computation
@@ -911,7 +926,7 @@ working without rewriting R code.
 
 
 
-\section{Package Installation}
+\section{Package installation}
 
 Installation proceeds in two steps: installing the R package on any computer
 that has a network connection to a SciDB database, and installing a simple
@@ -998,11 +1013,11 @@ exceeding R's indexing limitations, system memory, or both. The package tries
 to avoid this kind of error using package options that limit returned data size
 shown in the next section.
 
-\subsection{Package options}
+\subsection{Package options and miscellaneous notes}
 
 The \verb+scidb+ package defines several global package options.
 Package options may be set and retrieved with the R
-\verb+options+ function, and are listed in Table \ref{options}.
+\verb+options+ function, and are listed in Table 2.
 \begin{table}[ht!]
 \label{options}
 \begin{tabularx}{0.9\textwidth}{llX}
@@ -1022,11 +1037,7 @@ scidb.max.array.elements & 100 000 000 & Maximum allowed non-empty elements to r
 
 
 
-\subsection{Miscellaneous notes}
 \begin{itemize}
-\item[-] The \verb+scidb+ package must run on the same computer that the SciDB
-co\"ordinator is installed on--remote connection is not presently supported (but
-will be in the next major version).
 \item[-] R does not support 64-bit integer types. Integers smaller than
 $2^{53}$  in magnitude will be represented as double-precision floating
 point numbers.  Integers outside that range appear as $+/-$\verb+Inf+.
