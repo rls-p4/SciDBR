@@ -140,11 +140,11 @@ materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
                     error = function(e) {stop(e)})
   host = get("host",envir=.scidbenv)
   port = get("port",envir=.scidbenv)
-  n = 524288
+  n = 1048576
   buf = 1
 
 
-# XXX We re-use an older function called .scidb2m that parses data from a
+# XXX We re-use an older function called .scidb2m here that parses data from a
 # file. Update this to read directly from SciDB web service instead.
   f = file(fn,open="ab")
   tryCatch(

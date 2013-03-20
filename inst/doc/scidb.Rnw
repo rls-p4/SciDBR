@@ -244,7 +244,7 @@ documentation of their use.
 # Build a small 1-D SciDB test array:
 iquery("store(build(<x:double>[i=1:10,10,0],i/10.0),A)")
 
-# Reurn the result of a SciDB apply operator in an R iterator with a
+# Return the result of a SciDB apply operator in an R iterator with a
 # chunk size of at most 7 rows at a time:
 it = iquery("apply(A,y,sqrt(x))", return=TRUE, iterative=TRUE, n=7)
 
@@ -397,7 +397,7 @@ indicated by a special SciDB missing code.  SciDB internally supports a large
 number of possible missing codes. Presently, all SciDB missing code
 values are mapped to NA values in R.
 
-In addition toavailable missing (NULL) codes, SciDB double-precision floating
+In addition to available missing (NULL) codes, SciDB double-precision floating
 point values also provide a value indicating missing values identically to R,
 and use the identical {\tt NA} representation that R uses. Other SciDB data
 types do not define {\tt NA}.
@@ -834,7 +834,7 @@ on linear algebra and aggregation operations may be adapted to use SciDB arrays
 in place of native R vectors and matrices in order to benefit from the
 large-scale parallel computing capabilities of SciDB.
 
-The truncagted singular value distribution (TSVD) is an important, widely used
+The truncated singular value distribution (TSVD) is an important, widely used
 analysis method.  Truncated SVD lies at the heart of principle components and
 other analysis methods.
 
@@ -1012,7 +1012,7 @@ scidb.debug & NULL & Set to TRUE to display all queries issued to the SciDB engi
 other debugging information.\\
 scidb.index.sequence.limit & 100 000 000 &  Maximum allowed scidb array object sequential indexing limit (for larger ranges, use between)\\
 scidb.default.value & 0 & Default value for returned subarrays of sparse numeric matrices.\\
-scidb.max.array.elements & 100 000 000 & Maximum allowd non-empty elements to return in a subsetting operation of a scidb array object.\\
+scidb.max.array.elements & 100 000 000 & Maximum allowed non-empty elements to return in a subsetting operation of a scidb array object.\\
 \hline
 \end{tabularx}
 \\[24pt]
