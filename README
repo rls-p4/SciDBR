@@ -1,5 +1,0 @@
-SciDB R interface package installation notes.
----------------------------------------------
-
-The package depends on the 'iterators' package, so you'll also need
-to install that.
