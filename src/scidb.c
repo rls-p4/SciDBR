@@ -47,12 +47,12 @@
 SEXP
 df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
 {
-  int j, k, l, m, n, m1, m2, n1, n2, J, K, M, N, h, logi;
+  int j, k, m, n, m1, m2, J, M, logi;
   char temp[4096];
   double x;
   int fd;
   FILE *fp;
-  SEXP lvls, ans;
+  SEXP ans;
   struct stat sb;
   off_t length;
   const char *rfmt = CHAR(STRING_ELT(REALFORMAT,0));
@@ -108,6 +108,7 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
                   switch (TYPEOF (VECTOR_ELT (A, k)))
                     {
                     case LGLSXP:
+                      logi = 0;
                       if ((LOGICAL (VECTOR_ELT (A, k))[j]) != NA_LOGICAL)
                         logi = (int) LOGICAL (VECTOR_ELT (A, k))[j];
                       if (logi)
@@ -175,9 +176,8 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
 SEXP
 m2scidb (SEXP A, SEXP F)
 {
-  long long j, k, m, n, l;
+  long long j, k, m, n;
   int fp;
-  char *c;
   char a;
   ssize_t w;
   SEXP dims = getAttrib (A, R_DimSymbol);
@@ -206,7 +206,7 @@ m2scidb (SEXP A, SEXP F)
           w = write (fp, &j, sizeof(long long));
           w = write (fp, &k, sizeof(long long));
           w = write (fp, CHAR (STRING_ELT (A, j + k * m)), sizeof (char));
-          }
+        }
       break;
     case LGLSXP:
       for (j = 0; j < m; j++)
@@ -231,6 +231,7 @@ m2scidb (SEXP A, SEXP F)
           w = write (fp,&j,sizeof(long long));
           w = write (fp,&k,sizeof(long long));
           w = write (fp,&REAL (A)[j + k * m], sizeof (double));
+          if(w<sizeof(double)) warning("Data corrupted");
          }
       break;
     default:
@@ -374,4 +375,99 @@ scidb2m (SEXP file, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
   fclose (fp);
   UNPROTECT (3);
   return ans;
+}
+
+
+
+
+
+/*
+ * FP: INTEGER file pointer
+ */
+SEXP
+blob2R (SEXP FP, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
+{
+  int j, l;
+  size_t m;
+  FILE *fp;
+  SEXP A;
+  double x;
+  char xc[2];
+  int xi;
+  char a;
+  char nx;
+  int fno = INTEGER(FP)[0];
+  int nullable = INTEGER(NULLABLE)[0];
+  fp = fdopen(fno, "r");
+  if (!fp)
+    error ("Invalid file pointer");
+
+  l = 1;
+  for(j=0;j<length(DIM);++j) l = l*INTEGER(DIM)[j];
+
+  PROTECT (A = allocVector (TYPEOF (TYPE), l));
+  nx = 1;
+
+  switch (TYPEOF (TYPE))
+    {
+    case REALSXP:
+      for (j = 0; j < l; ++j)
+        {
+          REAL(A)[j] = NA_REAL;
+          if(nullable) {
+            m = fread(&nx, sizeof(char), 1, fp);
+            if (m < 1) break;
+          }
+          m = fread (&x, sizeof (double), 1, fp);
+          if (m < 1) break;
+          if((int)nx != 0) REAL (A)[j] = x;
+        }
+      break;
+    case STRSXP:
+      for (j = 0; j < l; ++j)
+        {
+          SET_STRING_ELT (A, j, NA_STRING);
+          if(nullable) {
+            m = fread(&nx, sizeof(char), 1, fp);
+            if (m < 1) break;
+          }
+          bzero(xc,2);
+          m = fread (xc, sizeof (char), 1, fp);
+          if (m < 1) break;
+          if((int)nx != 0) SET_STRING_ELT (A, j, mkChar (xc));
+        }
+      break;
+    case LGLSXP:
+      for (j = 0; j < l; ++j)
+        {
+          LOGICAL (A)[j] = NA_LOGICAL;
+          if(nullable) {
+            m = fread(&nx, sizeof(char), 1, fp);
+            if (m < 1) break;
+          }
+          m = fread (&a, sizeof (char), 1, fp);
+          if (m < 1) break;
+          if((int)nx != 0) LOGICAL (A)[j] = (int)a;
+        }
+      break;
+    case INTSXP:
+      for (j = 0; j < l; ++j)
+        {
+          INTEGER (A)[j] = R_NaInt;
+          if(nullable) {
+            m = fread(&nx, sizeof(char), 1, fp);
+            if (m < 1) break;
+          }
+          m = fread (&xi, sizeof (int), 1, fp);
+          if (m < 1) break;
+          if((int) nx != 0) INTEGER (A)[j] = xi;
+        }
+      break;
+    default:
+      break;
+    };
+
+  fclose (fp);
+  UNPROTECT (1);
+  return A;
 }

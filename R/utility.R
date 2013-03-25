@@ -353,6 +353,42 @@ df2scidb = function(X,
   scidb(name,`data.frame`=TRUE,gc=gc)
 }
 
+
+# Calling wrapper for matrix 2 scidb array function
+# A: an R matrix object
+# session: An active SciDB http session
+.m2scidb = function (A,session)
+{
+# Compute the size of the upload data:
+  n = length(A)
+  u = switch(typeof(A),
+        double = 8,
+        integer = 4,
+        character = 1,
+        logical = 1)  
+  l = n*u + 2*8*n;
+  
+# Define a transmit function for the POST routine
+  f = function(fd)
+   {
+    .Call('m2scidb', A, as.integer(fd), PACKAGE='scidb')
+   }
+
+# DEBUG
+#  session=0
+#
+  if(length(session)<1) stop("SciDB http session error")
+  tmp = tryCatch(POST(paste("/upload_file?id=",session,sep=""),l,f),
+          error=function(e) 
+           {
+             GET(paste("/release_session?id=",session,sep=""),async=FALSE) 
+             stop(e)
+           })
+# Note! session is not released here...
+  tmp
+}
+
+
 iquery = function(query, `return`=FALSE, afl=TRUE, iterative=FALSE, n=1000, excludecol, ...)
 {
   if(!afl && `return`) stop("return=TRUE may only be used with AFL statements")
