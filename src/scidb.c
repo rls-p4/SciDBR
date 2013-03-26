@@ -36,8 +36,6 @@
 #define USE_RINTERNALS
 #include <Rinternals.h>
 
-#define TMPFILE "/dev/shm/scidbXXXXXX"
-
 /* df2scidb converts a data.frame object to SciDB ASCII input format, returning
  * the result in a character value.  Only handles double, int, logical and
  * string.  chunk is the SciDB 1-D array chunk size.  
@@ -60,18 +58,10 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
   int R = *(INTEGER (chunk));
   char *buf;
 
-  sprintf(temp,TMPFILE);
-#ifdef WIN32
   fp = tmpfile();
   fd = fileno(fp);
   if(fd<0)
     error ("df2scidb can't create temporary file");
-#else
-  fd = mkstemp(temp);
-  if(fd<0)
-    error ("df2scidb can't create temporary file");
-  fp = fdopen(fd, "w+");
-#endif
   n = length (A);
   m = nrows (VECTOR_ELT (A, 0));
   M = ceil (((double) m) / R);
@@ -382,10 +372,14 @@ scidb2m (SEXP file, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
 
 
 /*
- * FP: INTEGER file pointer
+ * BUF: RAW input data buffer
+ * DIM: vector of array dimensions
+ * TYPE: SciDB attribute type (limited to supported TYPEOF enumeration)
+ *
+ * returns vector of TYPE
  */
 SEXP
-blob2R (SEXP FP, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
+blob2R (SEXP BUF, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
 {
   int j, l;
   size_t m;
@@ -396,11 +390,10 @@ blob2R (SEXP FP, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
   int xi;
   char a;
   char nx;
-  int fno = INTEGER(FP)[0];
   int nullable = INTEGER(NULLABLE)[0];
-  fp = fdopen(fno, "r");
+  fp = fmemopen(RAW(BUF), length(BUF), "r");
   if (!fp)
-    error ("Invalid file pointer");
+    error ("Invalid buffer");
 
   l = 1;
   for(j=0;j<length(DIM);++j) l = l*INTEGER(DIM)[j];

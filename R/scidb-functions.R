@@ -192,7 +192,7 @@ summary.scidb = function(x)
   i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],parent.frame()),error=function(e)c()))
 # User wants this materialized to R...
   if(all(sapply(i,is.null)))
-    return(materialize(x,default=default,drop=drop))
+    return(materialize_new(x,default=default,drop=drop))
 # Not materializing, return a SciDB array
   if(length(i)!=length(dim(x))) stop("Dimension mismatch")
   dimfilter(x,i)

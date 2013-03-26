@@ -482,3 +482,4 @@ iqiter = function (con, n = 1, excludecol, ...)
                   onexit=TRUE)
   it
 }
+
