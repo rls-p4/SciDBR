@@ -114,7 +114,7 @@ materialize_new =
 function(x, default=options("scidb.default.value"), drop=FALSE)
 {
 # Try out new, more efficient transfer
-  if( all(x@D$type=="int64") && (length(dim(A))==2) )
+  if( all(x@D$type=="int64") && (length(dim(x))==2) )
   {
     type = names(.scidbtypes[.scidbtypes==x@type])
     if(length(type)<1) stop("Unsupported data type.")

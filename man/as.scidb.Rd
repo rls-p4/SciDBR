@@ -17,6 +17,7 @@ as.scidb(X, name = ifelse(exists(as.character(match.call()[2])), as.character(ma
   \item{colChunkSize}{Maximum SciDB chunk size for the 2nd array dimension (ignored for vectors and data.frames). }
   \item{start}{Starting dimension numeric index value or values.}
   \item{gc}{Set to TRUE to remove SciDB array when R object is garbage collected or R exists. FALSE means SciDB array persists.}
+  \item{\dots}{ additional arguments to pass to \code{df2scidb} (see \code{\link{df2scidb}}).}
 }
 \details{
 Used with a matrix  or vector argument,
