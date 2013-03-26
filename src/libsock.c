@@ -146,7 +146,6 @@ SEXP SOCK_CONNECT(SEXP HOST, SEXP PORT)
 
 SEXP SOCK_SEND(SEXP S, SEXP DATA)
 { 
-  int h;
   size_t len = (size_t)length(DATA);
   int s = INTEGER(S)[0];
   int ts = 0,  // total sent
@@ -169,7 +168,7 @@ SEXP SOCK_RECV(SEXP S, SEXP EXT, SEXP BS, SEXP MAXBUFSIZE)
   void *buf;
   char *msg, *p;
 //  struct pollfd pfds;
-  int h, j, s = INTEGER(S)[0];
+  int  j, s = INTEGER(S)[0];
   size_t k = 0;
   double maxbufsize = REAL(MAXBUFSIZE)[0];
   int bufsize = MBUF;

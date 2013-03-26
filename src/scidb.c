@@ -31,6 +31,7 @@
 #ifndef WIN32
 #include <sys/mman.h>
 #endif
+#include <string.h>
 
 #include <R.h>
 #define USE_RINTERNALS
@@ -38,15 +39,13 @@
 
 /* df2scidb converts a data.frame object to SciDB ASCII input format, returning
  * the result in a character value.  Only handles double, int, logical and
- * string.  chunk is the SciDB 1-D array chunk size.  
- * start is the SciDB 1-D array starting index. The array will have an
- * integer dimension.
+ * string.  chunk is the SciDB 1-D array chunk size.  start is the SciDB 1-D
+ * array starting index. The array will have an integer dimension.
  */
 SEXP
 df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
 {
   int j, k, m, n, m1, m2, J, M, logi;
-  char temp[4096];
   double x;
   int fd;
   FILE *fp;
@@ -139,21 +138,13 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
   fflush(fp);
   fstat (fd, &sb);
   length = sb.st_size;
-#ifdef WIN32
+  rewind(fp);
   buf = (char *)malloc(length);
-  buf = read(fd, buf, length);
-#else
-  buf = (char *)mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-#endif
+  length = fread(buf,sizeof(char),length,fp);
   fclose(fp);
   close(fd);
   ans = mkString(buf);
-#ifdef WIN32
   free(buf);
-#else
-  munmap(buf, length);
-#endif
-  unlink(temp);
   return ans;
 }
 
@@ -308,7 +299,7 @@ scidb2m (SEXP file, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
             m = fread(&nx, sizeof(char), 1, fp);
             if (m < 1) break;
           }
-          bzero(xc,2);
+          memset(xc,0,2);
           m = fread (xc, sizeof (char), 1, fp);
           if (m < 1) break;
           for(k=0;k<length(DIM);++k) {
@@ -421,7 +412,7 @@ blob2R (SEXP BUF, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
             nx = (int) ((char)*((char *)p));
             p+=1;
           }
-          bzero(xc,2);
+          memset(xc,0,2);
           memcpy(xc, p, sizeof(char));
           p+=1;
           if((int)nx != 0) SET_STRING_ELT (A, j, mkChar (xc));
