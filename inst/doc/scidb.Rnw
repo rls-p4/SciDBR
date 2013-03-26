@@ -957,7 +957,6 @@ The compiled source code version requires no special permissions to run.
 Installation from binary software packages for SciDB-supported operating
 systems is easiest. Detailed up-to-date information can be found on
 Paradigm4's laboratory on Paradigm4's Github repository at 
-\newline
 \href{https://github.com/Paradigm4/shim/wiki/Installing-shim}
 {https://github.com/Paradigm4/shim/wiki/Installing-shim}.
 We outline installation for each supported operating system below. See our github page
@@ -992,7 +991,7 @@ apt-get remove shim
 \end{Code}
 See the Wiki and web pages at 
 \href{https://github.com/Paradigm4/shim/}
-{https://github.com/Paradigm4/shim/} for more information and source code.
+{https://github.com/Paradigm4/shim/} for up to date package information and source code.
 
 The installed \verb+shim+ network service exposes SciDB as a very simple HTTP
 API.  It includes a simple browser-based status and query tool. After
@@ -1021,8 +1020,9 @@ Package options may be set and retrieved with the R
 \verb+options+ function, and are listed in Table 2.
 \begin{table}[ht!]
 \label{options}
-\resizebox{0.75\textwidth}{!}{
-\begin{tabularx}{0.9\textwidth}{llX}
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tabularx}{1.2\textwidth}{llX}
 Option & Default value & Description \\
 \hline
 scidb.debug & NULL & Set to TRUE to display all queries issued to the SciDB engine and
@@ -1034,9 +1034,7 @@ scidb.max.array.elements & 100 000 000 & Maximum allowed non-empty elements to r
 \end{tabularx}}
 \\[24pt]
 \caption{Package options}
-\vspace{24pt}
 \end{table}
-
 
 
 \begin{itemize}
