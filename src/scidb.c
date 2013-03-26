@@ -382,8 +382,7 @@ SEXP
 blob2R (SEXP BUF, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
 {
   int j, l;
-  size_t m;
-  FILE *fp;
+  char *p;
   SEXP A;
   double x;
   char xc[2];
@@ -391,9 +390,7 @@ blob2R (SEXP BUF, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
   char a;
   char nx;
   int nullable = INTEGER(NULLABLE)[0];
-  fp = fmemopen(RAW(BUF), length(BUF), "r");
-  if (!fp)
-    error ("Invalid buffer");
+  p = (char *)RAW(BUF);
 
   l = 1;
   for(j=0;j<length(DIM);++j) l = l*INTEGER(DIM)[j];
@@ -408,11 +405,11 @@ blob2R (SEXP BUF, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
         {
           REAL(A)[j] = NA_REAL;
           if(nullable) {
-            m = fread(&nx, sizeof(char), 1, fp);
-            if (m < 1) break;
+            nx = (int) (char)(*((char *)p));
+            p+=1;
           }
-          m = fread (&x, sizeof (double), 1, fp);
-          if (m < 1) break;
+          x = *((double *)p);
+          p+=sizeof(double);
           if((int)nx != 0) REAL (A)[j] = x;
         }
       break;
@@ -421,12 +418,12 @@ blob2R (SEXP BUF, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
         {
           SET_STRING_ELT (A, j, NA_STRING);
           if(nullable) {
-            m = fread(&nx, sizeof(char), 1, fp);
-            if (m < 1) break;
+            nx = (int) ((char)*((char *)p));
+            p+=1;
           }
           bzero(xc,2);
-          m = fread (xc, sizeof (char), 1, fp);
-          if (m < 1) break;
+          memcpy(xc, p, sizeof(char));
+          p+=1;
           if((int)nx != 0) SET_STRING_ELT (A, j, mkChar (xc));
         }
       break;
@@ -435,11 +432,11 @@ blob2R (SEXP BUF, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
         {
           LOGICAL (A)[j] = NA_LOGICAL;
           if(nullable) {
-            m = fread(&nx, sizeof(char), 1, fp);
-            if (m < 1) break;
+            nx = (int) ((char)*((char *)p));
+            p+=1;
           }
-          m = fread (&a, sizeof (char), 1, fp);
-          if (m < 1) break;
+          a = (int) ((char)(*(char *)p));
+          p+=1;
           if((int)nx != 0) LOGICAL (A)[j] = (int)a;
         }
       break;
@@ -448,11 +445,11 @@ blob2R (SEXP BUF, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
         {
           INTEGER (A)[j] = R_NaInt;
           if(nullable) {
-            m = fread(&nx, sizeof(char), 1, fp);
-            if (m < 1) break;
+            nx = (int) ((char)*((char *)p));
+            p+=1;
           }
-          m = fread (&xi, sizeof (int), 1, fp);
-          if (m < 1) break;
+          xi = (int) *( (int *)p);
+          p+=sizeof(int);
           if((int) nx != 0) INTEGER (A)[j] = xi;
         }
       break;
@@ -460,7 +457,6 @@ blob2R (SEXP BUF, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
       break;
     };
 
-  fclose (fp);
   UNPROTECT (1);
   return A;
 }
