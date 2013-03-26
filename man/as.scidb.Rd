@@ -7,7 +7,7 @@ Upload an R matrix or data.frame to a SciDB array.
 Cast an R matrix or data.frame to a SciDB array, returning a reference scidb object.
 }
 \usage{
-as.scidb(X, name = ifelse(exists(as.character(match.call()[2])), as.character(match.call()[2]), tmpnam("array")), rowChunkSize = 1000L, colChunkSize = 1000L, start = c(0L,0L), gc=FALSE)
+as.scidb(X, name = ifelse(exists(as.character(match.call()[2])), as.character(match.call()[2]), tmpnam("array")), rowChunkSize = 1000L, colChunkSize = 1000L, start = c(0L,0L), gc=FALSE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
