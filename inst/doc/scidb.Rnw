@@ -1021,7 +1021,7 @@ Package options may be set and retrieved with the R
 \verb+options+ function, and are listed in Table 2.
 \begin{table}[ht!]
 \label{options}
-\resizebox{0.95\textwidth}{!}{
+\resizebox{0.75\textwidth}{!}{
 \begin{tabularx}{0.9\textwidth}{llX}
 Option & Default value & Description \\
 \hline
