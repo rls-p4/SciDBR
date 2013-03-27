@@ -1013,7 +1013,7 @@ exceeding R's indexing limitations, system memory, or both. The package tries
 to avoid this kind of error using package options that limit returned data size
 shown in the next section.
 
-\subsection{Package options and miscellaneous notes}
+\subsection{Package options, miscellaneous notes, and software license}
 
 The \verb+scidb+ package defines several global package options.
 Package options may be set and retrieved with the R
@@ -1036,29 +1036,40 @@ scidb.max.array.elements & 100 000 000 & Maximum allowed non-empty elements to r
 \caption{Package options}
 \end{table}
 
-
-\begin{itemize}
-\item[-] R does not support 64-bit integer types. Integers smaller than
+Miscellaneous notes follow:
+\begin{table}[ht!]
+\label{options}
+\centering
+\resizebox{0.99\textwidth}{!}{
+\begin{tabularx}{1.2\textwidth}{lX}
+- & R does not support 64-bit integer types. 64-bit signed and
+unsigned integers smaller than
 $2^{53}$  in magnitude will be represented as double-precision floating
-point numbers.  Integers outside that range appear as $+/-$\verb+Inf+.
-\item[-] R only supports 32-bit integers. Lower resolution SciDB integers
-(for example, 8-bit integers) will be represented by 32-bit integers in R.
-\item[-] R doesn't support single-precision floating point numbers.
+point numbers.  64-bit integers outside that range appear as $+/-$\verb+Inf+.
+All other integers (int8, uint8, int16, uint16, etc.) are represented
+in R by 32-bit signed integers. The uint32 type is not directly supported.\\
+- & R doesn't support single-precision floating point numbers.
 {\tt iquery} results convert single-precision numbers within SciDB
 to double-precision floating-point numbers in R.
 Single-precision SciDB numbers are not supported by the {\tt scidb}
-array class.
-\item[-] SciDB does not natively support complex numbers. Loading complex
-numbers directly into SciDB from R is not defined.
-\item[-] Allowed array naming conventions vary between R and SciDB. For
+array class. \\ 
+- & SciDB does not natively support complex numbers. Loading complex
+numbers directly into SciDB from R is not defined. \\
+- & The {\tt iquery} function provides the most flexible mechanism
+for type conversion between the systems, fully under user control
+using {\tt read.table} options. \\
+- & Allowed array naming conventions vary between R and SciDB. For
 example, SciDB does not allow decimal points in attribute names. The
 package may alter names with character substitution to reconcile names
 when it is reasonable to do so.
 A warning is emitted whenever an object is automatically renamed in this
 way.
-\end{itemize}
+\end{tabularx}}
+\end{table}
+\\[-18pt]
 
-\subsubsection{Software license}
+
+\newpage
 \begin{verbatim}
 Copyright (C) 2008-2013 SciDB, Inc.
 
@@ -1074,6 +1085,4 @@ the complete license terms.
 You should have received a copy of the AFFERO GNU General Public License along
 with the package.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
 \end{verbatim}
-
-
 \end{document}
