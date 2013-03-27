@@ -137,6 +137,7 @@ function(x, default=options("scidb.default.value"), drop=FALSE)
     r = sprintf("http://%s:%d/read_bytes?id=%s&n=%.0f",host,port,sessionid,n)
     u = url(r, open="rb")
     buf = readBin(u, what="raw", n=n)
+    if(length(buf)<n) stop("Incomplete read. Requested object may be too large.")
     close(u)
 # Frikin row-major conversion.
     rdim = dim(x)[length(dim(x)):1]
