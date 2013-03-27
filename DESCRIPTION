@@ -2,11 +2,12 @@ Package: scidb
 Type: Package
 Title: An R interface to SciDB
 Version: 1.0-0
-Date: 2012-10-31
-Author: B. W. Lewis <blewis@paradigm4.com>
-Maintainer: B. W. Lewis <blewis@paradigm4.com>
+Date: 2013-03-27
+Author: Paradigm4, B. W. Lewis 
+Maintainer: B. W. Lewis <blewis@illposed.net>
+Copyright: Paradigm4, Inc.
 Description: An R interface to SciDB
+BugReports: https://github.com/Paradigm4/SciDBR/issues
 Depends: stats, methods, iterators
 License: AGPL-3
 LazyLoad: yes
-Packaged: 2012-05-01 11:23:49 UTC; blewis
