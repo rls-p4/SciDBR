@@ -86,7 +86,7 @@ setMethod("aggregate", signature(x="scidbdf"),
 
     atnames = strsplit(FUN,split="\\(")[[1]]
     wx = grep("\\)",atnames)
-    if(length(wx)>1) atnames = gsub("\\).*","",atnames[wx])
+    if(length(wx)>0) atnames = gsub("\\).*","",atnames[wx])
     agtp = unlist(lapply(atnames,function(z)data@types[data@attributes %in% z]))
     agtp = paste(agtp, "NULL")
 
