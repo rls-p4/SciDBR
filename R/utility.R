@@ -339,7 +339,7 @@ df2scidb = function(X,
   scidbInput = .df2scidb(X,chunkSize,real_format=real_format)
 
 # Post the input string to the SciDB http service
-  tmp = tryCatch(POST(paste("/upload_file?id=",session,sep=""),nchar(scidbInput),
+  tmp = tryCatch(POST(paste("/upload_file?id=",session,sep=""),nchar(scidbInput,type="bytes"),
                        function(fd) scidb:::.SOCK_SEND(fd, scidbInput)),
           error=function(e)
            {

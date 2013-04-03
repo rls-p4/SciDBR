@@ -139,10 +139,12 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
   fstat (fd, &sb);
   length = sb.st_size;
   rewind(fp);
-  buf = (char *)malloc(length);
+  buf = (char *)calloc(sizeof(char),length);
   length = fread(buf,sizeof(char),length,fp);
   fclose(fp);
   close(fd);
+// XXX possible R bug here in mkString? Sometimes extra chars appended
+// (beyond length defined above...)
   ans = mkString(buf);
   free(buf);
   return ans;
