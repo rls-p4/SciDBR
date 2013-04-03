@@ -82,7 +82,12 @@ setMethod("aggregate", signature(x="scidbdf"),
     A = tmpnam("array")
 
     agat = strsplit(FUN,",")[[1]]
-    agnames = gsub(".* ","", gsub(" *$","",gsub("^ *","",gsub(".*)","",agat))))
+# XXX BUG:
+     agnames = gsub(".* ","", gsub(" *$","",gsub("^ *","",gsub(".*)","",agat))))
+#    agnames = strsplit(FUN,split="\\(")[[1]]
+#    wx = grep("\\)",agnames)
+#    agtp = rep("",length(agnames)
+#    if(length(wx)>1) agnames = gsub("\\).*","",agnames[wx])
     if(any(nchar(agnames))<1) stop("We require that aggregate expressions name outputs, for example count(x) AS cx")
     agfun = tolower(gsub(" *","",gsub("\\(.*","",agat)))
     agtp = data@types[data@attributes %in% agnames]
