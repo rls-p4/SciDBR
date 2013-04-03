@@ -82,16 +82,16 @@ setMethod("aggregate", signature(x="scidbdf"),
     A = tmpnam("array")
 
     agat = strsplit(FUN,",")[[1]]
-# XXX BUG:
-     agnames = gsub(".* ","", gsub(" *$","",gsub("^ *","",gsub(".*)","",agat))))
-#    agnames = strsplit(FUN,split="\\(")[[1]]
-#    wx = grep("\\)",agnames)
-#    agtp = rep("",length(agnames)
-#    if(length(wx)>1) agnames = gsub("\\).*","",agnames[wx])
+    agnames = gsub(".* ","", gsub(" *$","",gsub("^ *","",gsub(".*)","",agat))))
+
+    atnames = strsplit(FUN,split="\\(")[[1]]
+    wx = grep("\\)",atnames)
+    if(length(wx)>1) atnames = gsub("\\).*","",atnames[wx])
+    agtp = unlist(lapply(atnames,function(z)data@types[data@attributes %in% z]))
+    agtp = paste(agtp, "NULL")
+
     if(any(nchar(agnames))<1) stop("We require that aggregate expressions name outputs, for example count(x) AS cx")
     agfun = tolower(gsub(" *","",gsub("\\(.*","",agat)))
-    agtp = data@types[data@attributes %in% agnames]
-    agtp = paste(agtp, "NULL")
     J = agfun %in% names(agtypes)
     if(any(J)) agtp[J] = agtypes[agfun[J]]
     attributes = paste(paste(agnames,agtp,sep=":"),collapse=",")
