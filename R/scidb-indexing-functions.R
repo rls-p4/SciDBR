@@ -330,7 +330,7 @@ lookup_subarray = function(x, q, i, ci, mask)
 warning("Dimension labels were dropped.")
       } else
       {
-        df2scidb(X,types="int64",nullable=FALSE,name=xdim[j],real_format="%.0f",dimlabel=x@D$name[[j]])
+        df2scidb(X,types="int64",nullable=FALSE,name=xdim[j],dimlabel=x@D$name[[j]])
       }
     } else # Not lookup-style index
     {
