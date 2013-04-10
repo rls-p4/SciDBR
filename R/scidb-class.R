@@ -169,7 +169,7 @@ function(x, grid=c(x@D$chunk_interval[1], x@D$chunk_interval[2]), op=sprintf("su
   blocks = c(x@D$high[1] - x@D$low[1] + 1, x@D$high[2] - x@D$low[2] + 1)
   blocks = blocks/grid
   query = sprintf("regrid(project(%s,%s),%.0f,%.0f,%s)",x@name,x@attribute,blocks[1],blocks[2],op)
-  A = iquery(query,return=TRUE)
+  A = iquery(query,return=TRUE,n=2*grid[1]*grid[2])
   A[is.na(A[,3]),3] = na
   m = max(A[,1]) + 1
   n = max(A[,2]) + 1
