@@ -283,7 +283,7 @@ df2scidb = function(X,
 
 # Default type is string
   typ = rep(paste("string",nullable),ncol(X))
-  args = sprintf("create array %s <",name)
+  args = "<"
   if(!is.null(types)) {
     for(j in 1:ncol(X)) typ[j]=paste(types[j],nullable[j])
   } else {
@@ -304,10 +304,7 @@ df2scidb = function(X,
     else args=paste(args,">")
   }
 
-# Create array part of query, cleaning up on error
-  query = paste(args,"[",dimlabel,"=1:",sprintf("%.0f",nrow(X)),",",sprintf("%.0f",chunkSize),",", rowOverlap,"]",sep="")
-  tryCatch( scidbquery(query),
-    error = function(e) {stop(e)})
+  SCHEMA = paste(args,"[",dimlabel,"=1:",sprintf("%.0f",nrow(X)),",",sprintf("%.0f",chunkSize),",", rowOverlap,"]",sep="")
 
 # Obtain a session from the SciDB http service for the upload process
   u = url(paste(URI(),"/new_session",sep=""))
@@ -329,8 +326,7 @@ df2scidb = function(X,
            })
 
 # Load query
-  query = paste("load(",name,", '",tmp,"')",sep="")
-browser()
+  query = sprintf("store(input(%s, '%s'),%s)",SCHEMA, tmp, name)
   scidbquery(query, async=FALSE, release=1, session=session)
   scidb(name,`data.frame`=TRUE,gc=gc)
 }
