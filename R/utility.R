@@ -247,26 +247,6 @@ scidbremove = function(x, error=stop)
 }
 scidbrm = function(x,error=stop) scidbremove(x,error)
 
-# Note: data frames are sent as single dimension objects along rows. The
-# columns of the data frame are sent as attributes.
-# This is not directly exposed to the user, but can be used by the
-# user independently to create scidb ASCII input files.
-# Input:
-# A (data.frame): data frame
-# r (integer): chunk size
-# offset (real): offset for start chunk
-# Output:
-# (character) formatted SciDB input string
-.df2scidb = function (A, r, offset=1.0, real_format="%.15f")
-{
-  if(!("data.frame" %in% class(A))) stop("Requires a data.frame")
-  r = min(nrow(A),r)
-
-  .Call('df2scidb', A, as.integer(r),as.double(offset),as.character(real_format),PACKAGE="scidb")
-
-}
-
-
 # df2scidb: User function to send a data frame to SciDB
 # Returns a scidbdf object
 df2scidb = function(X,
@@ -277,7 +257,6 @@ df2scidb = function(X,
                     rowOverlap=0L,
                     types=NULL,
                     nullable=FALSE,
-                    real_format="%.15f",
                     gc)
 {
   if(!is.data.frame(X)) stop("X must be a data frame")
@@ -298,7 +277,7 @@ df2scidb = function(X,
   dimlabel = gsub("\\.","_",dimlabel)
   if(dimlabel!=old_dimlabel) warning("Dimension name has been changed")
   if(missing(chunkSize)) {
-    chunkSize = min(nrow(X),100000L)
+    chunkSize = min(nrow(X),10000)
   }
   m = ceiling(nrow(X) / chunkSize)
 
@@ -336,11 +315,13 @@ df2scidb = function(X,
   close(u)
 
 # Create SciDB input string from the data frame
-  scidbInput = .df2scidb(X,chunkSize,real_format=real_format)
+  scidbInput = .df2scidb(X,chunkSize)
 
 # Post the input string to the SciDB http service
-  tmp = tryCatch(POST(paste("/upload_file?id=",session,sep=""),nchar(scidbInput,type="bytes"),
-                       function(fd) scidb:::.SOCK_SEND(fd, scidbInput)),
+  tmp = tryCatch(
+          POST(paste("/upload_file?id=",session,sep=""),
+               nchar(scidbInput,type="bytes"),
+               function(fd) scidb:::.SOCK_SEND(fd, scidbInput)),
           error=function(e)
            {
              GET(paste("/release_session?id=",session,sep=""),async=FALSE)
@@ -349,6 +330,7 @@ df2scidb = function(X,
 
 # Load query
   query = paste("load(",name,", '",tmp,"')",sep="")
+browser()
   scidbquery(query, async=FALSE, release=1, session=session)
   scidb(name,`data.frame`=TRUE,gc=gc)
 }
@@ -483,3 +465,39 @@ iqiter = function (con, n = 1, excludecol, ...)
   it
 }
 
+
+# Utility csv2scidb function
+.df2scidb = function(X, chunksize, start=1)
+{
+  if(missing(chunksize)) chunksize = min(nrow(X),10000)
+  scipen = options("scipen")
+  options(scipen=20)
+  buf = capture.output(
+         write.table(X, file=stdout(), sep=",",
+                     row.names=FALSE,col.names=FALSE,quote=FALSE)
+        )
+  options(scipen=scipen)
+  x = sapply(1:length(buf), function(j)
+    {
+      chunk = floor(j/chunksize)
+      if(j==length(buf))
+      {
+        if((j-1) %% chunksize == 0)
+          tmp = sprintf("{%.0f}[\n(%s)];",start + chunk*chunksize, buf[j])
+        else
+          tmp = sprintf("(%s)];",buf[j])
+      } else if((j-1) %% chunksize==0)
+      {
+        tmp = sprintf("{%.0f}[\n(%s),",start + chunk*chunksize, buf[j])
+      } else if((j) %% chunksize == 0)
+      {
+        tmp = sprintf("(%s)];",buf[j])
+      } else
+      {
+        tmp = sprintf("(%s),",buf[j])
+      }
+      tmp
+    }
+  )
+  paste(x,collapse="")
+}
