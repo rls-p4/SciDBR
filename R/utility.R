@@ -137,14 +137,15 @@ POST = function(uri, size, transmit)
 # Input:
 # type (character), one of the indicated list types
 # verbose (boolean), include attribute and dimension data when type="arrays"
+# n: maximum lines of output to return
 # Output:
 # A list.
 scidblist = function(pattern,
 type= c("arrays","operators","functions","types","aggregates","instances","queries"),
-              verbose=FALSE)
+              verbose=FALSE, n=Inf)
 {
   type = match.arg(type)
-  Q = iquery(paste("list('",type,"')",sep=""), return=TRUE)
+  Q = iquery(paste("list('",type,"')",sep=""), return=TRUE, n=n)
 
   if(dim(Q)[1]==0) return(NULL)
   z=Q[,-1,drop=FALSE]
@@ -159,7 +160,6 @@ type= c("arrays","operators","functions","types","aggregates","instances","queri
 scidbls = function(...) scidblist(...)
 
 # Basic low-level query. Returns query id.
-# Only supports a single query at a time.
 # query: a character query string
 # afl: TRUE indicates use AFL, FALSE AQL
 # async: TRUE=Ignore return value and return immediately, FALSE=wait for return
@@ -367,7 +367,9 @@ df2scidb = function(X,
 }
 
 
-iquery = function(query, `return`=FALSE, afl=TRUE, iterative=FALSE, n=1000, excludecol, ...)
+iquery = function(query, `return`=FALSE,
+                  afl=TRUE, iterative=FALSE,
+                  n=1000, excludecol, ...)
 {
   if(!afl && `return`) stop("return=TRUE may only be used with AFL statements")
   if(iterative && !`return`) stop("Iterative result requires return=TRUE")
@@ -379,6 +381,7 @@ iquery = function(query, `return`=FALSE, afl=TRUE, iterative=FALSE, n=1000, excl
   }
   qsplit = strsplit(query,";")[[1]]
   m = 1
+  if(n==Inf) n = -1    # Indicate to shim that we want all the lines of output
   for(query in qsplit)
   {
     if(`return` && m==length(qsplit))

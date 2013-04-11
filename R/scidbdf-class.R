@@ -37,7 +37,7 @@ setGeneric("head")
 setMethod("head", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
-  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start,n),`return`=TRUE,colClasses=x@colClasses)[,-1]
+  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start,x@D$start + n - 1),`return`=TRUE,colClasses=x@colClasses)[,-1]
 })
 
 setGeneric("tail")
@@ -110,6 +110,6 @@ setMethod("aggregate", signature(x="scidbdf"),
     query = sprintf("redimension_store(%s,%s,%s)",data@name, A, paste(FUN,collapse=","))
     iquery(query)
     query = sprintf("scan(%s)",A)
-    iquery(query, `return`=TRUE)
+    iquery(query, `return`=TRUE, n=Inf)
   }
 )

@@ -152,7 +152,7 @@ dimnames.scidb = function(x)
     if(x@D$length[j] > options("scidb.max.array.elements"))
       stop("Result will be too big. Perhaps try a manual query with an iterative result.")
     Q = sprintf("scan(%s:%s)",x@name,x@D$name[j])
-    iquery(Q,return=TRUE)[,2]
+    iquery(Q,return=TRUE,n=Inf)[,2]
   })
 }
 
