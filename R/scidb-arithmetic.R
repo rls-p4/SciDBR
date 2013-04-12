@@ -22,6 +22,7 @@
 # Element-wise operations
 Ops.scidb = function(e1,e2) {
   switch(.Generic,
+    '^' = .binop(e1,e2,"^"),
     '+' = .binop(e1,e2,"+"),
     '-' = .binop(e1,e2,"-"),
     '*' = .binop(e1,e2,"*"),
@@ -112,15 +113,23 @@ scidbmultiply = function(e1,e2)
        e2@D$name[[2]], 0, e2@D$length[[2]],
                           e1@D$chunk_interval[[2]], e1@D$chunk_overlap[[2]])
   }
+  p1 = p2 = ""
+# Syntax sugar for exponetiation (map the ^ infix operator to pow):
+  if(op=="^")
+  {
+    p1 = "pow("
+    op = ","
+    p2 = ")"
+  }
 # Handle special scalar multiplication case:
   if(length(e1s)==1)
-    Q = sprintf("apply(%s,%s,%.15f %s %s)",q2,v,e1s,op,e2a)
+    Q = sprintf("apply(%s,%s, %s %.15f %s %s %s)",q2,v,p1,e1s,op,e2a,p2)
   else if(length(e2s)==1)
-    Q = sprintf("apply(%s,%s,%.15f %s %s)",q1,v,e2s,op,e1a)
+    Q = sprintf("apply(%s,%s,%s %s %s %.15f %s)",q1,v,p1,e1a,op,e2s,p2)
   else
   {
     Q = sprintf("join(%s as e1, %s as e2)", q1, q2)
-    Q = sprintf("apply(%s, %s, e1.%s %s e2.%s)", Q, v, e1a, op, e2a)
+    Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
   }
   Q = sprintf("project(%s, %s)",Q,v)
   Q = sprintf("store(%s, %s)",Q,x)
