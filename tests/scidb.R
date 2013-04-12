@@ -10,7 +10,7 @@ OK = tryCatch(is.null(scidbconnect()), error=function(e) FALSE)
 test = function(expr)
 {
   if(!OK) return(TRUE)  # SciDB is not available, pass.
-  tryCatch(eval(parse(text=expr)), error=function(e) FALSE)
+  tryCatch(eval(parse(text=expr)), error=function(e) stop(e))
 }
 
 
