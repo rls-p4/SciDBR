@@ -109,44 +109,6 @@ selectively_drop_nid = function(A, idx, schema_only=FALSE, query, nullable)
 }
 
 
-# New faster materialize, only for matrices for now.
-materialize_new =
-function(x, default=options("scidb.default.value"), drop=FALSE)
-{
-# Try out new, more efficient transfer
-  if( all(x@D$type=="int64") && (length(dim(x))==2) )
-  {
-    type = names(.scidbtypes[.scidbtypes==x@type])
-    if(length(type)<1) stop("Unsupported data type.")
-    tval = vector(mode=type,length=1)
-#   query = x@name
-    query = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL")
-    s = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL",schema_only=TRUE)
-    query = sprintf("merge(%s, build(%s, %s))",query,s,as.character(default))
-#    nl = x@nullable[x@attribute==x@attributes][[1]]
-#    N = ifelse(nl,"NULL","")
-    N = "NULL"  # merge always returns NULLABLE. sucky for data transfer...
-    savestring = sprintf("&save=(%s %s)",x@type, N)
-    sessionid = tryCatch( scidbquery(query, save=savestring, async=FALSE, release=0),
-                    error = function(e) {stop(e)})
-# Release the session on exit
-    on.exit( GET(paste("/release_session?id=",sessionid,sep=""),async=FALSE) ,add=TRUE)
-    host = get("host",envir=.scidbenv)
-    port = get("port",envir=.scidbenv)
-    n = prod(dim(x))*(8 + (nchar(N)>0))
-    r = sprintf("http://%s:%d/read_bytes?id=%s&n=%.0f",host,port,sessionid,n)
-    u = url(r, open="rb")
-    buf = readBin(u, what="raw", n=n)
-    if(length(buf)<n) stop("Incomplete read. Requested object may be too large.")
-    close(u)
-# Frikin row-major conversion.
-    rdim = dim(x)[length(dim(x)):1]
-    ans = array(.Call("blob2R",buf,rdim,tval,TRUE,PACKAGE="scidb"),dim=rdim)
-    return(t(ans))
-  }
-  materialize(x,default,drop)
-}
-
 # Materialize the single-attribute scidb array x to R.
 materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
 {
