@@ -335,7 +335,7 @@ df2scidb = function(X,
 # Calling wrapper for matrix 2 scidb array function
 # A: an R matrix object
 # session: An active SciDB http session
-.m2scidb = function (A,session)
+.m2scidb = function (A,session,start=c(0L,0L))
 {
 # Compute the size of the upload data:
   n = length(A)
@@ -349,7 +349,7 @@ df2scidb = function(X,
 # Define a transmit function for the POST routine
   f = function(fd)
    {
-    .Call('m2scidb', A, as.integer(fd), PACKAGE='scidb')
+    .Call('m2scidb', A, as.integer(fd),as.integer(start), PACKAGE='scidb')
    }
 
 # DEBUG

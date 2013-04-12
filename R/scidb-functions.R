@@ -257,6 +257,10 @@ as.scidb = function(X,
   D = dim(X)
   rowOverlap=0L
   colOverlap=0L
+  if(length(start)<1) stop ("Invalid starting coordinates")
+  if(length(start)>2) start = start[1:2]
+  if(length(start)<2) start = c(start, 0)
+  start = as.integer(start)
   type = .scidbtypes[[typeof(X)]]
   if(is.null(type)) {
     stop(paste("Unupported data type. The package presently supports: ",
@@ -288,7 +292,7 @@ as.scidb = function(X,
   close(u)
 
 # Upload the data
-  f = .m2scidb(X, session)
+  f = .m2scidb(X, session,start)
 
 # Load query
 #  query = sprintf("input(%s,'%s', 0, '(int64,int64,%s)')",tmparray,f,type)

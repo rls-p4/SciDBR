@@ -50,9 +50,8 @@ scidbmultiply = function(e1,e2)
   if(length(e2@attributes)>1)
     op2 = sprintf("project(%s,%s)",e2@name,a2)
 
-# We use subarray to handle starting index mismatches, for
-# subarray always returns an array with dimension indices starting
-# at zero.
+# We use subarray to handle starting index mismatches (subarray always
+# returns an array with dimension indices starting at zero).
   l1 = length(dim(e1))
   lb = paste(rep(.scidb_DIM_MIN,l1),collapse=",")
   ub = paste(rep(.scidb_DIM_MAX,l1),collapse=",")
@@ -64,11 +63,11 @@ scidbmultiply = function(e1,e2)
 
   j = which(e2@attribute == e2@attributes)[[1]]
 # Adjust the 2nd array to be schema-compatible with the 1st:
-  op2 = sprintf("repart(%s, <%s:%s>[%s=0:%.0f,%.0f,%.0f,%s=0:%.0f,%.0f,%.0f])",
+  op2 = sprintf("repart(%s, <%s:%s>[%s=%.0f:%.0f,%.0f,%.0f,%s=%.0f:%.0f,%.0f,%.0f])",
           op2, a2, e2@type[[j]],
-          e2@D$name[[1]], e2@D$length[[1]] - 1,
+          e2@D$name[[1]], 0, e2@D$length[[1]] - 1,
                           e1@D$chunk_interval[[2]], e1@D$chunk_overlap[[2]],
-          e2@D$name[[2]], e2@D$length[[2]] - 1,
+          e2@D$name[[2]], 0, e2@D$length[[2]] - 1,
                           e2@D$chunk_interval[[2]], e2@D$chunk_overlap[[2]])
   scidbquery(paste("store(multiply(",op1,",",op2,"),",x,")",sep=""))
   return(scidb(x,gc=TRUE))
@@ -103,14 +102,16 @@ scidbmultiply = function(e1,e2)
   ub = paste(rep(.scidb_DIM_MAX,l),collapse=",")
   q2 = sprintf("subarray(%s,%s,%s)",e2@name,lb,ub)
 # Adjust the 2nd array to be schema-compatible with the 1st:
+# XXX PGB Makes the good point here that we should repart the smaller of the
+# two arrays...
   if(l==2 && l1==l)
   {
     q2 = sprintf(
        "repart(%s, <%s:%s>[%s=%.0f:%.0f,%.0f,%.0f,%s=%.0f:%.0f,%.0f,%.0f])",
        q2, e2a, e2@type[[1]],
-       e2@D$name[[1]], 0, e2@D$length[[1]],
+       e2@D$name[[1]], 0, e2@D$length[[1]] - 1,
                           e1@D$chunk_interval[[1]], e1@D$chunk_overlap[[1]],
-       e2@D$name[[2]], 0, e2@D$length[[2]],
+       e2@D$name[[2]], 0, e2@D$length[[2]] - 1,
                           e1@D$chunk_interval[[2]], e1@D$chunk_overlap[[2]])
   }
   p1 = p2 = ""

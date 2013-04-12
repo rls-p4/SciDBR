@@ -155,11 +155,14 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
  * format, writing to the specified open file descriptor. Return R NULL.
  * Presently supported types: double, int32, char, bool This function writes:
  * int64 rowindex, int64 colindex, <type> data, ...
+ * A: data matrix to convert...must be a matrix or a vector
+ * B: File descriptor to write to (usually a socket)
+ * S: starting coordinates.
  */
 SEXP
-m2scidb (SEXP A, SEXP F)
+m2scidb (SEXP A, SEXP F, SEXP S)
 {
-  long long j, k, m, n;
+  long long j, k, m, n, s1, s2, h, i;
   int fp;
   char a;
   ssize_t w;
@@ -180,22 +183,30 @@ m2scidb (SEXP A, SEXP F)
       n = ncols (A);
     }
   fp = INTEGER(F)[0];
+  s1 = INTEGER(S)[0];
+  if(LENGTH(S)>1) s2 = (long long)INTEGER(S)[1];
+  else            s2 = 0;
 
+// XXX make the loops a common function here...
   switch (TYPEOF (A))
     {
     case STRSXP:
       for (j = 0; j < m; j++)
         for (k = 0; k < n; k++) {
-          w = write (fp, &j, sizeof(long long));
-          w = write (fp, &k, sizeof(long long));
+          h = j + s1;
+          i = k + s2;
+          w = write (fp, &h, sizeof(long long));
+          w = write (fp, &i, sizeof(long long));
           w = write (fp, CHAR (STRING_ELT (A, j + k * m)), sizeof (char));
         }
       break;
     case LGLSXP:
       for (j = 0; j < m; j++)
         for (k = 0; k < n; k++) {
-          w = write (fp, &j,sizeof(long long));
-          w = write (fp, &k,sizeof(long long));
+          h = j + s1;
+          i = k + s2;
+          w = write (fp, &h,sizeof(long long));
+          w = write (fp, &i,sizeof(long long));
           a = (char) LOGICAL(A)[j + k *m];
           w = write (fp, &a, sizeof (char));
         }
@@ -203,16 +214,20 @@ m2scidb (SEXP A, SEXP F)
     case INTSXP:
       for (j = 0; j < m; j++)
         for (k = 0; k < n; k++) {
-          w = write (fp,&j,sizeof(long long));
-          w = write (fp,&k,sizeof(long long));
+          h = j + s1;
+          i = k + s2;
+          w = write (fp,&h,sizeof(long long));
+          w = write (fp,&i,sizeof(long long));
           w = write (fp,&INTEGER (A)[j + k * m], sizeof (int));
          }
       break;
     case REALSXP:
       for (j = 0; j < m; j++)
         for (k = 0; k < n; k++) {
-          w = write (fp,&j,sizeof(long long));
-          w = write (fp,&k,sizeof(long long));
+          h = j + s1;
+          i = k + s2;
+          w = write (fp,&h,sizeof(long long));
+          w = write (fp,&i,sizeof(long long));
           w = write (fp,&REAL (A)[j + k * m], sizeof (double));
           if(w<sizeof(double)) warning("Data corrupted");
          }
