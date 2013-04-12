@@ -175,7 +175,7 @@ setGeneric('print', function(x) standardGeneric('print'))
 setMethod('print', signature(x='scidb'),
   function(x) {
     cat("A reference to a ",paste(nrow(x),ncol(x),sep="x"),
-        "dimensional SciDB array\n")
+        "SciDB array\n")
   })
 
 setMethod('show', 'scidb',
@@ -187,7 +187,7 @@ setMethod('show', 'scidb',
     else
       cat("A reference to a ",
           paste(object@dim,collapse="x"),
-          "dimensional SciDB array\n")
+          "SciDB array\n")
   })
 
 setGeneric("image", function(x,...) x)
