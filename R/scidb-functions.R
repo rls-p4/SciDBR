@@ -276,15 +276,10 @@ as.scidb = function(X,
       min(ncol(X),colChunkSize), colOverlap)
   }
   if(!is.matrix(X)) stop ("X must be a matrix or a vector")
-  schema1d = sprintf("<i:int64, j:int64, val : %s>[idx=0:*,100000,0]",type)
+  schema1d = sprintf("<i:int64, j:int64, val : %s>[idx=0:*,10000,0]",type)
 
 # Create the array, might error out here if array already exists
   query = sprintf("create_array(%s,%s)",name,schema)
-  scidbquery(query,async=FALSE)
-
-# Unfortunately SciDB input function requires a named array, not just schema :(
-  tmparray = tmpnam()
-  query = paste("create array",tmparray,schema1d)
   scidbquery(query,async=FALSE)
 
 # Obtain a session from shim for the upload process
@@ -296,18 +291,14 @@ as.scidb = function(X,
   f = .m2scidb(X, session)
 
 # Load query
-  query = sprintf("input(%s,'%s', 0, '(int64,int64,%s)')",tmparray,f,type)
+#  query = sprintf("input(%s,'%s', 0, '(int64,int64,%s)')",tmparray,f,type)
+  query = sprintf("input(%s,'%s', 0, '(int64,int64,%s)')",schema1d,f,type)
   query = sprintf("redimension_store(%s, %s)",query, name)
   tryCatch( scidbquery(query, async=FALSE, release=1, session=session),
     error = function(e) {
-      unlink(f)
-      scidbquery(sprintf("remove(%s)",tmparray))
       stop(e)
     })
   unlink(f)
-# Remove the temp array used during load
-  query = sprintf("remove(%s)",tmparray)
-  scidbquery(query, async=FALSE)
 
   ans = scidb(name,gc=gc)
 
