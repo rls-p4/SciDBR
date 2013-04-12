@@ -52,72 +52,76 @@ setClass("scidb",
          S3methods=TRUE)
 
 setMethod("%*%",signature(x="scidb", y="scidb"),
-  function(x,y) scidbmultiply(x,y),
-  valueClass="scidb"
-)
-
-# XXX add check for type...
-setMethod("%*%",signature(x="matrix", y="scidb"),
-  function(x,y) {
-    on.exit(tryCatch(scidbremove(x@name),error=function(e)invisible()))
-    x = as.scidb(x,name=basename(tempfile(pattern="array")),colChunkSize=y@D$chunk_interval[1],start=c(0L,y@D$start[[2]]))
-    ans = scidbmultiply(x,y)
-    return(ans)
+  function(x,y)
+  {
+    scidbmultiply(x,y)
   },
   valueClass="scidb"
 )
 
-setMethod("%*%",signature(x="scidb", y="matrix"),
-  function(x,y) {
-    on.exit(tryCatch(scidbremove(y@name),error=function(e)invisible()))
-    y = as.scidb(y,name=basename(tempfile(pattern="array")), rowChunkSize=x@D$chunk_interval[2],start=c(x@D$start[[1]],0L))
-    ans = scidbmultiply(x,y)
-    ans
+setMethod("%*%",signature(x="scidb", y="ANY"),
+  function(x,y)
+  {
+    if(!inherits(y,"scidb"))
+    {
+      on.exit(tryCatch(scidbremove(y@name),error=function(e)invisible()))
+      y = as.scidb(cbind(y),name=basename(tempfile(pattern="array")), rowChunkSize=x@D$chunk_interval[2],start=c(x@D$start[[1]],0L))
+    }
+    scidbmultiply(x,y)
   },
   valueClass="scidb"
 )
 
-setGeneric("crossprod")
-setMethod("crossprod",signature(x="scidb"),
-  function(x) t(x) %*% x,
+setMethod("%*%",signature(x="ANY", y="scidb"),
+  function(x,y)
+  {
+    if(!inherits(x,"scidb"))
+    { # Lazy evaluation saves the day...
+      on.exit(tryCatch(scidbremove(x@name),error=function(e)invisible()))
+      x = as.scidb(cbind(x),name=basename(tempfile(pattern="array")),colChunkSize=y@D$chunk_interval[1],start=c(0L,y@D$start[[2]]))
+    }
+    scidbmultiply(x,y)
+  },
   valueClass="scidb"
 )
 
-setMethod("crossprod",signature(x="scidb", y="scidb"),
-  function(x,y) t(x) %*% y,
+
+setMethod("crossprod",signature(x="scidb", y="ANY"),
+  function(x,y)
+  {
+    if(is.null(y)) y = x
+    t(x) %*% y
+  },
   valueClass="scidb"
 )
 
-setMethod("crossprod",signature(x="matrix", y="scidb"),
-  function(x,y) t(x) %*% y,
+setMethod("crossprod",signature(x="ANY", y="scidb"),
+  function(x,y)
+  {
+    if(is.null(x)) x = y
+    t(x) %*% y
+  },
   valueClass="scidb"
 )
 
-setMethod("crossprod",signature(x="scidb", y="matrix"),
-  function(x,y) t(x) %*% y,
+setMethod("tcrossprod",signature(x="scidb", y="ANY"),
+  function(x,y)
+  {
+    if(is.null(y)) y = x
+    x %*% t(y)
+  },
   valueClass="scidb"
 )
 
-setGeneric("tcrossprod")
-setMethod("tcrossprod",signature(x="scidb"),
-  function(x) x %*% t(x),
+setMethod("tcrossprod",signature(x="ANY", y="scidb"),
+  function(x,y)
+  {
+    if(is.null(x)) x = y
+    x %*% t(y)
+  },
   valueClass="scidb"
 )
 
-setMethod("tcrossprod",signature(x="scidb", y="scidb"),
-  function(x,y) x %*% t(y),
-  valueClass="scidb"
-)
-
-setMethod("tcrossprod",signature(x="matrix", y="scidb"),
-  function(x,y) x %*% t(y),
-  valueClass="scidb"
-)
-
-setMethod("tcrossprod",signature(x="scidb", y="matrix"),
-  function(x,y) x %*% t(y),
-  valueClass="scidb"
-)
 
 # The remaining functions return data to R:
 setGeneric("sum")
@@ -167,9 +171,14 @@ function(x, n=6L, ...)
 
 
 setGeneric('is.scidb', function(x) standardGeneric('is.scidb'))
-setMethod('is.scidb', signature(x='scidb'),
-  function(x) return(TRUE))
-setMethod('is.scidb', definition=function(x) return(FALSE))
+setMethod('is.scidb', signature(x='ANY'),
+  function(x) 
+  {
+    if(inherits(x, "scidb")) return(TRUE)
+    FALSE
+  }
+)
+#setMethod('is.scidb', definition=function(x) return(FALSE))
 
 setGeneric('print', function(x) standardGeneric('print'))
 setMethod('print', signature(x='scidb'),
@@ -182,8 +191,7 @@ setMethod('show', 'scidb',
   function(object) {
     atr=object@attribute
     if(is.null(dim(object)) || length(dim(object))==1)
-      cat("Reference to the SciDB vector.attribute",
-          paste(object@name,atr,sep=".")," of length",object@length,"\n")
+      cat("Reference to a SciDB vector of length",object@length,"\n")
     else
       cat("A reference to a ",
           paste(object@dim,collapse="x"),
