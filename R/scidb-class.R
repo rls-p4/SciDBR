@@ -77,47 +77,43 @@ setMethod("%*%",signature(x="scidb", y="matrix"),
   valueClass="scidb"
 )
 
-setGeneric("crossprod")
-setMethod("crossprod",signature(x="scidb"),
-  function(x) t(x) %*% x,
+
+setMethod("crossprod",signature(x="scidb", y="ANY"),
+  function(x,y)
+  {
+    if(is.null(y)) y = x
+    t(x) %*% y
+  },
   valueClass="scidb"
 )
 
-setMethod("crossprod",signature(x="scidb", y="scidb"),
-  function(x,y) t(x) %*% y,
+setMethod("crossprod",signature(x="ANY", y="scidb"),
+  function(x,y)
+  {
+    if(is.null(x)) x = y
+    t(x) %*% y
+  },
   valueClass="scidb"
 )
 
-setMethod("crossprod",signature(x="matrix", y="scidb"),
-  function(x,y) t(x) %*% y,
+setMethod("tcrossprod",signature(x="scidb", y="ANY"),
+  function(x,y)
+  {
+    if(is.null(y)) y = x
+    x %*% t(y)
+  },
   valueClass="scidb"
 )
 
-setMethod("crossprod",signature(x="scidb", y="matrix"),
-  function(x,y) t(x) %*% y,
+setMethod("tcrossprod",signature(x="ANY", y="scidb"),
+  function(x,y)
+  {
+    if(is.null(x)) x = y
+    x %*% t(y)
+  },
   valueClass="scidb"
 )
 
-setGeneric("tcrossprod")
-setMethod("tcrossprod",signature(x="scidb"),
-  function(x) x %*% t(x),
-  valueClass="scidb"
-)
-
-setMethod("tcrossprod",signature(x="scidb", y="scidb"),
-  function(x,y) x %*% t(y),
-  valueClass="scidb"
-)
-
-setMethod("tcrossprod",signature(x="matrix", y="scidb"),
-  function(x,y) x %*% t(y),
-  valueClass="scidb"
-)
-
-setMethod("tcrossprod",signature(x="scidb", y="matrix"),
-  function(x,y) x %*% t(y),
-  valueClass="scidb"
-)
 
 # The remaining functions return data to R:
 setGeneric("sum")
@@ -167,9 +163,14 @@ function(x, n=6L, ...)
 
 
 setGeneric('is.scidb', function(x) standardGeneric('is.scidb'))
-setMethod('is.scidb', signature(x='scidb'),
-  function(x) return(TRUE))
-setMethod('is.scidb', definition=function(x) return(FALSE))
+setMethod('is.scidb', signature(x='ANY'),
+  function(x) 
+  {
+    if(inherits(x, "scidb")) return(TRUE)
+    FALSE
+  }
+)
+#setMethod('is.scidb', definition=function(x) return(FALSE))
 
 setGeneric('print', function(x) standardGeneric('print'))
 setMethod('print', signature(x='scidb'),
