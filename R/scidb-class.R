@@ -52,27 +52,35 @@ setClass("scidb",
          S3methods=TRUE)
 
 setMethod("%*%",signature(x="scidb", y="scidb"),
-  function(x,y) scidbmultiply(x,y),
-  valueClass="scidb"
-)
-
-# XXX add check for type...
-setMethod("%*%",signature(x="matrix", y="scidb"),
-  function(x,y) {
-    on.exit(tryCatch(scidbremove(x@name),error=function(e)invisible()))
-    x = as.scidb(x,name=basename(tempfile(pattern="array")),colChunkSize=y@D$chunk_interval[1],start=c(0L,y@D$start[[2]]))
-    ans = scidbmultiply(x,y)
-    return(ans)
+  function(x,y)
+  {
+    scidbmultiply(x,y)
   },
   valueClass="scidb"
 )
 
-setMethod("%*%",signature(x="scidb", y="matrix"),
-  function(x,y) {
-    on.exit(tryCatch(scidbremove(y@name),error=function(e)invisible()))
-    y = as.scidb(y,name=basename(tempfile(pattern="array")), rowChunkSize=x@D$chunk_interval[2],start=c(x@D$start[[1]],0L))
-    ans = scidbmultiply(x,y)
-    ans
+setMethod("%*%",signature(x="scidb", y="ANY"),
+  function(x,y)
+  {
+    if(!inherits(y,"scidb"))
+    {
+      on.exit(tryCatch(scidbremove(y@name),error=function(e)invisible()))
+      y = as.scidb(cbind(y),name=basename(tempfile(pattern="array")), rowChunkSize=x@D$chunk_interval[2],start=c(x@D$start[[1]],0L))
+    }
+    scidbmultiply(x,y)
+  },
+  valueClass="scidb"
+)
+
+setMethod("%*%",signature(x="ANY", y="scidb"),
+  function(x,y)
+  {
+    if(!inherits(x,"scidb"))
+    { # Lazy evaluation saves the day...
+      on.exit(tryCatch(scidbremove(x@name),error=function(e)invisible()))
+      x = as.scidb(cbind(x),name=basename(tempfile(pattern="array")),colChunkSize=y@D$chunk_interval[1],start=c(0L,y@D$start[[2]]))
+    }
+    scidbmultiply(x,y)
   },
   valueClass="scidb"
 )
@@ -176,19 +184,18 @@ setGeneric('print', function(x) standardGeneric('print'))
 setMethod('print', signature(x='scidb'),
   function(x) {
     cat("A reference to a ",paste(nrow(x),ncol(x),sep="x"),
-        "dimensional SciDB array\n")
+        "SciDB array\n")
   })
 
 setMethod('show', 'scidb',
   function(object) {
     atr=object@attribute
     if(is.null(dim(object)) || length(dim(object))==1)
-      cat("Reference to the SciDB vector.attribute",
-          paste(object@name,atr,sep=".")," of length",object@length,"\n")
+      cat("Reference to a SciDB vector of length",object@length,"\n")
     else
       cat("A reference to a ",
           paste(object@dim,collapse="x"),
-          "dimensional SciDB array\n")
+          "SciDB array\n")
   })
 
 setGeneric("image", function(x,...) x)

@@ -2,9 +2,9 @@
 \Rdversion{1.1}
 \docType{class}
 \alias{scidb-class}
-\alias{\%*\%,matrix,scidb-method}
-\alias{\%*\%,scidb,matrix-method}
 \alias{\%*\%,scidb,scidb-method}
+\alias{\%*\%,ANY,scidb-method}
+\alias{\%*\%,scidb,ANY-method}
 
 \alias{crossprod,scidb,ANY-method}
 \alias{tcrossprod,scidb,ANY-method}
@@ -50,8 +50,8 @@ Objects can be created by calls of the form \code{new("scidb", ...)},
 }
 \section{Methods}{
   \describe{
-    \item{\%*\%}{\code{signature(x = "matrix", y = "scidb")}: ... }
-    \item{\%*\%}{\code{signature(x = "scidb", y = "matrix")}: ... }
+    \item{\%*\%}{\code{signature(x = "ANY", y = "scidb")}: ... }
+    \item{\%*\%}{\code{signature(x = "scidb", y = "ANY")}: ... }
     \item{\%*\%}{\code{signature(x = "scidb", y = "scidb")}: ... }
     \item{crossprod}{\code{signature(x = "scidb", y = "ANY")}: ... }
     \item{tcrossprod}{\code{signature(x = "scidb", y = "ANY")}: ... }
