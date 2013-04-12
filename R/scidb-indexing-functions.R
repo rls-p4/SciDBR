@@ -115,8 +115,6 @@ materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
   type = names(.scidbtypes[.scidbtypes==x@type])
   if(length(type)<1) stop("Unsupported data type.")
   tval = vector(mode=type,length=1)
-# Temporary output file
-  fn = tempfile(pattern="scidb")
 # Run quey
   query = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL")
 # Fill out sparsity with default value for return to R. XXX THIS DOES NOT
@@ -145,11 +143,8 @@ materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
   port = get("port",envir=.scidbenv)
   n = 1048576
   buf = 1
+  BUF = c()
 
-
-# XXX We re-use an older function called .scidb2m here that parses data from a
-# file. Update this to read directly from SciDB web service instead.
-  f = file(fn,open="ab")
   tryCatch(
     while(length(buf)>0)
     {
@@ -157,26 +152,18 @@ materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
       u = url(r, open="rb")
       buf = readBin(u, what="raw", n=n)
       close(u)
-      writeBin(buf,f)
+      BUF = c(BUF,buf)
     }, error = function(e) warning(e))
-  close(f)
 
-# Read the data from the output file.  In some cases, we don't know how
-# big the output will be.  so, we need to inspect the output file size and use
-# the type info to figure this out.
-  fsz = file.info(fn)$size
-  maxlen = ceiling(fsz/length(dim(x)))
-  fdim =  rep(1,length(dim(x)))
-  fdim[1] = maxlen
+  if(prod(dim(x))>options("scidb.max.array.elements")) stop("Size exceeds options('scidb.max.array.elements')")
+  fdim = dim(x)
 
   A = tryCatch(
     {
-      if(dolabel) .scidb2m(fn,fdim,tval,dim(x),drop,x@D$name,nl,S=x,default=default)
-      else .scidb2m(fn,fdim,tval,dim(x),drop,x@D$name,nl,default=default)
+      if(dolabel) .scidb2m(BUF,fdim,tval,dim(x),drop,x@D$name,nl,S=x,default=default)
+      else .scidb2m(BUF,fdim,tval,dim(x),drop,x@D$name,nl,default=default)
     },
-    error = function(e){unlink(fn); stop(e)})
-# Remove temporary output file
-  unlink(fn)
+    error = function(e){stop(e)})
   A
 }
 
@@ -392,7 +379,7 @@ rangetype = function(x, i, si, bi, ci)
 
 
 # Import data from a binary save into an R matrix.
-# file: binary SciDB output file
+# x: binary SciDB output file or raw vector
 # dim: A vector of the same length as the number of dimensions of the output
 #      and such that the product of the entries is the maximum number of
 #      possible output elements in the array.
@@ -403,11 +390,16 @@ rangetype = function(x, i, si, bi, ci)
 # nullable: (logical) Are the binary output data (SciBD)nullable?
 # S: Optional scidb array reference. If present, will label
 #    output dimensions,
-.scidb2m = function (file, dim, type, req,drop, dimlabels,nullable, S,default=options("scidb.default.value"))
+.scidb2m = function (x, dim, type, req,drop, dimlabels,nullable, S,default=options("scidb.default.value"))
 {
   N = ifelse(nullable,1L,0L)
   ans = tryCatch(
-    .Call('scidb2m',as.character(file), as.integer(dim), type, N, PACKAGE='scidb'),
+   {
+    if(is.raw(x))
+      .Call('scidb2mnew',x, as.integer(dim), type, N, PACKAGE='scidb')
+    else
+      .Call('scidb2mnew',as.character(x), as.integer(dim), type, N, PACKAGE='scidb')
+   },
   error=function(e) {
     unlink(file)
     stop(e)
