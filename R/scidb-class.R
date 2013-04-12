@@ -78,47 +78,77 @@ setMethod("%*%",signature(x="scidb", y="matrix"),
 )
 
 setGeneric("crossprod")
+setMethod("crossprod",signature(x="scidb"),
+  function(x) t(x) %*% x,
+  valueClass="scidb"
+)
+
 setMethod("crossprod",signature(x="scidb", y="scidb"),
   function(x,y) t(x) %*% y,
   valueClass="scidb"
 )
 
-setGeneric("crossprod")
 setMethod("crossprod",signature(x="matrix", y="scidb"),
   function(x,y) t(x) %*% y,
   valueClass="scidb"
 )
 
-setGeneric("crossprod")
 setMethod("crossprod",signature(x="scidb", y="matrix"),
   function(x,y) t(x) %*% y,
   valueClass="scidb"
 )
 
 setGeneric("tcrossprod")
+setMethod("tcrossprod",signature(x="scidb"),
+  function(x) x %*% t(x),
+  valueClass="scidb"
+)
+
 setMethod("tcrossprod",signature(x="scidb", y="scidb"),
   function(x,y) x %*% t(y),
   valueClass="scidb"
 )
 
-setGeneric("tcrossprod")
 setMethod("tcrossprod",signature(x="matrix", y="scidb"),
   function(x,y) x %*% t(y),
   valueClass="scidb"
 )
 
-setGeneric("tcrossprod")
 setMethod("tcrossprod",signature(x="scidb", y="matrix"),
   function(x,y) x %*% t(y),
   valueClass="scidb"
 )
 
+# The remaining functions return data to R:
+setGeneric("sum")
+setMethod("sum", signature(x="scidb"),
+function(x)
+{
+  iquery(sprintf("sum(%s)",x@name),return=TRUE)[,2]
+})
 
 setGeneric("count",function(x) sum(!is.na(x)))
 setMethod("count", signature(x="scidb"),
 function(x)
 {
   iquery(sprintf("count(%s)",x@name),return=TRUE)$count
+})
+
+setGeneric("diag")
+setMethod("diag", signature(x="scidb"),
+function(x)
+{
+  if(length(dim(x))!=2) stop("diag requires a matrix argument")
+  ans = tmpnam("array")
+  name = make.names_(c(x@attribute,"diag"))[2]
+  schema = extract_schema(x,x@attribute,x@type,x@nullable[x@attributes %in% x@attribute])
+  query  = sprintf("build_sparse(%s,1,%s=%s)",schema,x@D$name[1],x@D$name[2])
+  query  = sprintf("join(%s as _A1,%s as _A2)",x@name,query)
+  query  = sprintf("project(unpack(%s,%s),_A1.%s)",query,name,x@attribute)
+  query  = sprintf("subarray(%s,0,%.0f)",query, min(x@D$length)-1)
+  query  = sprintf("store(%s,%s)",query,ans)
+  iquery(query)
+  scidb(ans)
 })
 
 setGeneric("head")
