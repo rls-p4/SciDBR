@@ -96,6 +96,10 @@ setMethod("aggregate", signature(x="scidbdf"),
     if(any(J)) agtp[J] = agtypes[agfun[J]]
     attributes = paste(paste(agnames,agtp,sep=":"),collapse=",")
 
+  scipen = options("scipen")
+  options(scipen=20)
+  on.exit(options(scipen))
+
     chunks = rep(1,length(v))
     chunks[length(chunks)] = data@D$length
     dims = paste(v,data@types[data@attributes %in% v],sep="(")
