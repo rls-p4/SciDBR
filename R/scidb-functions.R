@@ -189,7 +189,8 @@ summary.scidb = function(x)
 # Check for user-specified default fill-in value
   if(missing(default)) default = options("scidb.default.value")
 # i shall contain a list of requested index values
-  i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],parent.frame()),error=function(e)c()))
+  E = parent.frame()
+  i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],E),error=function(e)c()))
 # User wants this materialized to R...
   if(all(sapply(i,is.null)))
     return(materialize(x,default=default,drop=drop))

@@ -58,7 +58,8 @@ dimnames.scidbdf = function(x)
   M = M[3:length(M)]
   if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","iterative","n"))]
 # i shall contain a list of requested index values
-  i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],parent.frame()),error=function(e)c()))
+  E = parent.frame()
+  i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],E),error=function(e)c()))
 # User wants this materialized to R...
   if(all(sapply(i,is.null)))
     if(iterative)
