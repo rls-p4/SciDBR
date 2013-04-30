@@ -7,11 +7,11 @@
 \usepackage{color}
 \usepackage{xspace}
 \usepackage[T1]{fontenc}
-\usepackage{xcolor,beramono}
-\usepackage{tikz}
-\usetikzlibrary{calc,positioning}
-\usetikzlibrary{shapes.multipart,shapes.geometric,shapes.symbols,shapes.arrows}
-\usetikzlibrary{decorations.shapes,decorations.text,decorations.pathreplacing}
+%%\usepackage{xcolor,beramono}
+%%\usepackage{tikz}
+%%\usetikzlibrary{calc,positioning}
+%%\usetikzlibrary{shapes.multipart,shapes.geometric,shapes.symbols,shapes.arrows}
+%%\usetikzlibrary{decorations.shapes,decorations.text,decorations.pathreplacing}
 \usepackage{fancyvrb}
 \usepackage{fancyhdr}
 \usepackage[
@@ -89,24 +89,23 @@ blewis@paradigm4.com}
 \thispagestyle{empty}
 
 \vbox{}
-\vspace{0.25\textheight}
-\begin{tikzpicture}[remember picture,overlay]
-
-\node[anchor=west,scale=2, inner sep=0pt, outer sep=0pt] (title) at (-1cm,0) 
-{\LARGE\bfseries {\color{red}SciDB}\thinspace\Huge and R};
-
-\draw[line width=5pt] ([yshift=-5pt]title.base west) -- ([yshift=-5pt]title.base east);	
-
-
-\coordinate (titleOut) at ($(title.north east) + (24pt,0pt)$);
-\coordinate (titleIn) at ($(title.base west) - (6pt,24pt)$);
-
-\node[color=black!80,below=24pt of title.base east,anchor=east] (sub)
-{\bfseries\itshape\Large Using the scidb package for R.};
-
-\end{tikzpicture}
-\vfill	
-\vbox{}
+%%\vspace{0.25\textheight}
+%%\begin{tikzpicture}[remember picture,overlay]
+%%\node[anchor=west,scale=2, inner sep=0pt, outer sep=0pt] (title) at (-1cm,0) 
+%%{\LARGE\bfseries {\color{red}SciDB}\thinspace\Huge and R};
+%%\draw[line width=5pt] ([yshift=-5pt]title.base west) -- ([yshift=-5pt]title.base east);	
+%%\coordinate (titleOut) at ($(title.north east) + (24pt,0pt)$);
+%%\coordinate (titleIn) at ($(title.base west) - (6pt,24pt)$);
+%%\node[color=black!80,below=24pt of title.base east,anchor=east] (sub)
+%%{\bfseries\itshape\Large Using the scidb package for R.};
+%%\end{tikzpicture}
+%%\vfill	
+\begin{center}
+\scalebox{2.5}{
+{\Huge{SciDB and R}}
+}
+\end{center}
+\vspace{4in}
 
 \begin{minipage}[b]{\textwidth}
 \raggedleft
@@ -213,22 +212,8 @@ head(S)
 3 2 0.1256640 0.1253330
 4 3 0.1884960 0.1873810
 5 4 0.2513270 0.2486900
-\end{lstlisting}\begin{lstlisting}
-
-plot(S$x,S$y,xlab="x",ylab="y",col=4)
 \end{lstlisting}
 \end{Code}
-
-\addtolength{\abovecaptionskip}{-28pt}
-\addtolength{\belowcaptionskip}{-18pt}
-\vspace{-28pt}
-\begin{figure}[!ht]
-   \begin{center}
-%   \resizebox{0.6\textwidth}{!}{\rotatebox{0}{\includegraphics{sine}}}
-    \resizebox{0.6\textwidth}{!}{\input{sine.tex}}
-   \end{center}
-   \caption{Plot output from Listing \ref{iquery}.}
-\end{figure}
 
 
 \subsection{Iterating over query results}
