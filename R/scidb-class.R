@@ -159,7 +159,9 @@ setGeneric("head")
 setMethod("head", signature(x="scidb"),
 function(x, n=6L, ...)
 {
-  do.call(scidb:::dimfilter,args=list(x=x,i=rep(list(as.integer(1:n)),length(x@dim))))[]
+  m1 = A@D$start[1]
+  n1 = m + n
+  do.call(scidb:::dimfilter,args=list(x=x,i=rep(list(as.integer(m:n)),length(x@dim))))[]
 })
 
 setGeneric("tail")
