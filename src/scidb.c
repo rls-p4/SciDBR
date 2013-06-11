@@ -37,30 +37,71 @@
 #define USE_RINTERNALS
 #include <Rinternals.h>
 
+#define LINESIZE 4096
+
+typedef struct
+{
+  char *s;
+  size_t len;
+  size_t pos;
+} abuf;
+
+abuf
+newbuf(size_t size)
+{
+  abuf a;
+  if(size < 1) error("Invalid buffer size");
+  a.s   = (char *)malloc(size);
+  if(!a.s) error("Not enough memory");
+  a.len = size;
+  a.pos = 0;
+  return a;
+}
+
+void
+append(abuf *buf, char *string)
+{
+  char *new;
+  int l = strlen(string) + 1;
+  if(buf->len - buf->pos < l)
+  {
+    if(buf->len + l > buf->len*2)
+      buf->len = buf->len + l;
+    else
+      buf->len = buf->len*2;
+    new     = realloc(buf->s, buf->len);
+    if(new) buf->s = new;
+    else
+    {
+      if(buf->s) free(buf->s);
+      error ("Not enough memory.");
+    }
+  }
+  strncpy(&buf->s[buf->pos], string, l); // Includes terminating \0
+  buf->pos+= l-1; // Does not include terminating \0
+}
+
 /* df2scidb converts a data.frame object to SciDB ASCII input format, returning
- * the result in a character value.  Only handles double, int, logical and
- * string.  chunk is the SciDB 1-D array chunk size.  start is the SciDB 1-D
- * array starting index. The array will have an integer dimension.
+ * the result in a character string.  It only handles double, int, logical and
+ * string data types in the data.frame.  chunk is the integer SciDB 1-D array
+ * chunk size.  start is the integer SciDB 1-D array starting index.
  */
 SEXP
 df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
 {
   int j, k, m, n, m1, m2, J, M, logi;
+  char line[LINESIZE];
+  abuf buf;
   double x;
-  int fd;
-  FILE *fp;
   SEXP ans;
   struct stat sb;
   off_t length;
   const char *rfmt = CHAR(STRING_ELT(REALFORMAT,0));
   double S = *(REAL (start));
   int R = *(INTEGER (chunk));
-  char *buf;
 
-  fp = tmpfile();
-  fd = fileno(fp);
-  if(fd<0)
-    error ("df2scidb can't create temporary file");
+  buf = newbuf(1048576); // 1MB initial buffer
+
   n = length (A);
   m = nrows (VECTOR_ELT (A, 0));
   M = ceil (((double) m) / R);
@@ -71,10 +112,11 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
       m2 = (J + 1) * R;
       if (m2 > m)
         m2 = m;
-      fprintf (fp, "{%ld} [\n", (long) (m1 + S));
+      snprintf(line, LINESIZE, "{%ld}[\n", (long) (m1 + S));
+      append(&buf,line);
       for (j = m1; j < m2; ++j)
         {
-          fprintf (fp, "(");
+          append(&buf, "(");
           for (k = 0; k < n; ++k)
             {
 // Check for factor and print factor level instead of integer
@@ -89,7 +131,8 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
                                    (getAttrib
                                     (VECTOR_ELT (A, k), R_LevelsSymbol),
                                     INTEGER (VECTOR_ELT (A, k))[j] - 1));
-                    fprintf (fp, "\"%s\"", vi);
+                    snprintf(line, LINESIZE, "\"%s\"", vi);
+                    append(&buf,line);
                   }
                 }
               else
@@ -101,52 +144,48 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
                       if ((LOGICAL (VECTOR_ELT (A, k))[j]) != NA_LOGICAL)
                         logi = (int) LOGICAL (VECTOR_ELT (A, k))[j];
                       if (logi)
-                        fprintf (fp, "%s", "true");
+                        snprintf(line, LINESIZE, "%s", "true");
                       else
-                        fprintf (fp, "%s", "false");
+                        snprintf(line, LINESIZE, "%s", "false");
+                      append(&buf,line);
                       break;
                     case INTSXP:
                       if ((INTEGER (VECTOR_ELT (A, k))[j]) != R_NaInt)
-                        fprintf (fp, "%d", INTEGER (VECTOR_ELT (A, k))[j]);
+                        snprintf(line, LINESIZE, "%d", INTEGER (VECTOR_ELT (A, k))[j]);
+                      append(&buf,line);
                       break;
                     case REALSXP:
                       x = REAL (VECTOR_ELT (A, k))[j];
                       if (!ISNA (x))
-                        fprintf (fp, rfmt, x);
+                        snprintf(line, LINESIZE, rfmt, x);
+                      append(&buf,line);
                       break;
                     case STRSXP:
                       if (STRING_ELT (VECTOR_ELT (A, k), j) != NA_STRING)
-                        fprintf (fp, "\"%s\"",
+                        snprintf(line, LINESIZE, "\"%s\"",
                                  CHAR (STRING_ELT (VECTOR_ELT (A, k), j)));
+                      append(&buf,line);
                       break;
                     default:
                       break;
                     }
                 }
               if (k == n - 1)
-                fprintf (fp, ")");
+                append(&buf, ")");
               else
-                fprintf (fp, ",");
+                append(&buf, ",");
             }
           if (j < m2 - 1)
-            fprintf (fp, ",\n");
+            append(&buf, ",");
           else
-            fprintf (fp, "];\n");
+            append(&buf, "];");
         }
     }
 
-  fflush(fp);
-  fstat (fd, &sb);
-  length = sb.st_size;
-  rewind(fp);
-  buf = (char *)calloc(sizeof(char),length);
-  length = fread(buf,sizeof(char),length,fp);
-  fclose(fp);
-  close(fd);
 // XXX possible R bug here in mkString? Sometimes extra chars appended
 // (beyond length defined above...)
-  ans = mkString(buf);
-  free(buf);
+  ans = mkString(buf.s);
+  if(buf.s) free(buf.s);
   return ans;
 }
 

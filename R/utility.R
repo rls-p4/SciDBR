@@ -468,37 +468,41 @@ iqiter = function (con, n = 1, excludecol, ...)
 # Utility csv2scidb function
 .df2scidb = function(X, chunksize, start=1)
 {
-  if(missing(chunksize)) chunksize = min(nrow(X),10000)
-  scipen = options("scipen")
-  options(scipen=20)
-  buf = capture.output(
-         write.table(X, file=stdout(), sep=",",
-                     row.names=FALSE,col.names=FALSE,quote=FALSE)
-        )
-  options(scipen=scipen)
-  x = sapply(1:length(buf), function(j)
-    {
-      chunk = floor(j/chunksize)
-      if(j==length(buf))
-      {
-        if((j-1) %% chunksize == 0)
-          tmp = sprintf("{%.0f}[\n(%s)];",start + chunk*chunksize, buf[j])
-        else
-          tmp = sprintf("(%s)];",buf[j])
-      } else if((j-1) %% chunksize==0)
-      {
-        tmp = sprintf("{%.0f}[\n(%s),",start + chunk*chunksize, buf[j])
-      } else if((j) %% chunksize == 0)
-      {
-        tmp = sprintf("(%s)];",buf[j])
-      } else
-      {
-        tmp = sprintf("(%s),",buf[j])
-      }
-      tmp
-    }
-  )
-  paste(x,collapse="")
+  if(missing(chunksize)) chunksize = min(nrow(X),10000L)
+#  scipen = options("scipen")
+#  options(scipen=20)
+#  buf = capture.output(
+#         write.table(X, file=stdout(), sep=",",
+#                     row.names=FALSE,col.names=FALSE,quote=FALSE)
+#        )
+#  options(scipen=scipen)
+#  x = sapply(1:length(buf), function(j)
+#    {
+#      chunk = floor(j/chunksize)
+#      if(j==length(buf))
+#      {
+#        if((j-1) %% chunksize == 0)
+#          tmp = sprintf("{%.0f}[\n(%s)];",start + chunk*chunksize, buf[j])
+#        else
+#          tmp = sprintf("(%s)];",buf[j])
+#      } else if((j-1) %% chunksize==0)
+#      {
+#        tmp = sprintf("{%.0f}[\n(%s),",start + chunk*chunksize, buf[j])
+#      } else if((j) %% chunksize == 0)
+#      {
+#        tmp = sprintf("(%s)];",buf[j])
+#      } else
+#      {
+#        tmp = sprintf("(%s),",buf[j])
+#      }
+#      tmp
+#    }
+#  )
+#  x = paste(x,collapse="")
+#  ans = paste(x,collapse="")
+
+  ans = .Call("df2scidb",X,as.integer(chunksize), as.double(round(start)), "%.15f")
+  ans
 }
 
 # Return a SciDB schema of a scidb object x.
