@@ -465,12 +465,18 @@ scidb2mnew (SEXP BUFFER, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
     case REALSXP:
       for (j = 0; j < l; ++j)
         {
+          x = NA_REAL;
           REAL(A)[j] = NA_REAL;
           if(nullable) {
             nx = (int) (char)(*((char *)p));
             p+=1;
           }
-          x = *((double *)p);
+/* Note! We shouldn't do this:
+ *        x = *((double *)p);
+ * because some platforms like ARM (that Bryan develops on) require
+ * doubles to be aligned to 8-byte boundaries. Instead, we do this:
+ */
+          memcpy(&x, p, sizeof(double));
           p+=sizeof(double);
           if((int)nx != 0) REAL (A)[j] = x;
           for(k=0;k<length(DIM);++k) {
@@ -483,6 +489,7 @@ scidb2mnew (SEXP BUFFER, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
     case STRSXP:
       for (j = 0; j < l; ++j)
         {
+          xc[0] = 0;
           SET_STRING_ELT (A, j, NA_STRING);
           if(nullable) {
             nx = (int) (char)(*((char *)p));
@@ -502,6 +509,7 @@ scidb2mnew (SEXP BUFFER, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
     case LGLSXP:
       for (j = 0; j < l; ++j)
         {
+          a = 0;
           LOGICAL (A)[j] = NA_LOGICAL;
           if(nullable) {
             nx = (int) (char)(*((char *)p));
@@ -520,6 +528,7 @@ scidb2mnew (SEXP BUFFER, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
     case INTSXP:
       for (j = 0; j < l; ++j)
         {
+          xi = R_NaInt;
           INTEGER (A)[j] = R_NaInt;
           if(nullable) {
             nx = (int) (char)(*((char *)p));
