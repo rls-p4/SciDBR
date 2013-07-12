@@ -257,6 +257,7 @@ df2scidb = function(X,
                     rowOverlap=0L,
                     types=NULL,
                     nullable=FALSE,
+                    schema_only=FALSE,
                     gc)
 {
   if(!is.data.frame(X)) stop("X must be a data frame")
@@ -305,6 +306,8 @@ df2scidb = function(X,
   }
 
   SCHEMA = paste(args,"[",dimlabel,"=1:",sprintf("%.0f",nrow(X)),",",sprintf("%.0f",chunkSize),",", rowOverlap,"]",sep="")
+
+  if(schema_only) return(SCHEMA)
 
 # Obtain a session from the SciDB http service for the upload process
   u = url(paste(URI(),"/new_session",sep=""))
