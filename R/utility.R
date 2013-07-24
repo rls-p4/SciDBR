@@ -54,7 +54,7 @@ make.names_ = function(x)
 }
 
 # Make a name from a prefix and a unique SciDB identifier.
-tmpnam = function(prefix="_")
+tmpnam = function(prefix="R_array")
 {
   salt = basename(tempfile(pattern=prefix))
   if(!exists("uid",envir=.scidbenv)) stop("Not connected...try scidbconnect")

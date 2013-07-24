@@ -79,7 +79,7 @@ setMethod("aggregate", signature(x="scidbdf"),
     r = setdiff(all.vars(formula),v)
     if(r==".") r = setdiff(data@attributes,v)
 # Redimension
-    A = tmpnam("array")
+    A = tmpnam()
 
     agat = strsplit(FUN,",")[[1]]
     agnames = gsub(".* ","", gsub(" *$","",gsub("^ *","",gsub(".*)","",agat))))

@@ -246,7 +246,7 @@ summary.scidb = function(x)
 as.scidb = function(X,
                     name=ifelse(exists(as.character(match.call()[2])),
                                 as.character(match.call()[2]),
-                                tmpnam("array")),
+                                tmpnam()),
                     rowChunkSize=1000L,
                     colChunkSize=1000L,
                     start=c(0L,0L),
@@ -320,7 +320,7 @@ as.scidb = function(X,
 # Transpose array
 t.scidb = function(x)
 {
-  tmp = tmpnam("array")
+  tmp = tmpnam()
   query = paste("store(transpose(",x@name,"),",tmp,")",sep="")
   scidbquery(query)
   scidb(tmp,gc=TRUE)

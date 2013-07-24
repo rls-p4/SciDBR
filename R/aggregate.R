@@ -40,7 +40,7 @@ aggregate.scidb = function(x,formula,FUN,by,cross_join)
     r = setdiff(all.vars(formula),v)
     if(r==".") r = setdiff(data@attributes,v)
 # Redimension
-    A = tmpnam("array")
+    A = tmpnam()
 
     agat = strsplit(FUN,",")[[1]]
 browser()

@@ -242,7 +242,7 @@ dimfilter = function(x, i)
   }
   else
   {
-    ans = tmpnam("array")
+    ans = tmpnam()
 #    q = sprintf("store(%s,%s)",q,ans)
 # We use subarray here to conform with R subsetting
     q = sprintf("store(subarray(%s,%s),%s)",q,r,ans)
@@ -301,7 +301,7 @@ warning("Dimension labels were dropped.")
     }
   }
 
-  ans = tmpnam("array")
+  ans = tmpnam()
   if(n==1) q = sprintf("lookup(%s, %s)",xdim[1],q)
   else     q = sprintf("lookup(cross(%s,%s),%s)",xdim[1],xdim[2],q)
   lb = x@D$type

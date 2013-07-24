@@ -153,7 +153,7 @@ scidbdf_subset = function(x, i)
     if(!is.numeric(i)) stop("This kind of indexing is not yet supported for NID arrays :<")
   }
   query = sprintf("project(%s, %s)",query, paste(attribute_range,collapse=","))
-  N = tmpnam("array")
+  N = tmpnam()
   query = sprintf("store(%s,%s)",query,N)
   iquery(query)
   scidb(N, `data.frame`=TRUE, gc=TRUE)

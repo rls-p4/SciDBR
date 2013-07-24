@@ -40,7 +40,7 @@ Ops.scidb = function(e1,e2) {
 # e1 and e2 must each already be SciDB arrays.
 scidbmultiply = function(e1,e2)
 {
-  x = tmpnam("array")
+  x = tmpnam()
   a1 = e1@attribute
   a2 = e2@attribute
   op1 = e1@name
@@ -87,7 +87,7 @@ scidbmultiply = function(e1,e2)
     e2 = as.scidb(e2,name=x,gc=TRUE)
   }
 # OK, we've got two scidb arrays, op them:
-  x = tmpnam("array")
+  x = tmpnam()
   e1a = e1@attribute
   e2a = e2@attribute
   v = paste(e1a,e2a,sep="_")

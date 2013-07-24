@@ -143,7 +143,7 @@ setMethod("diag", signature(x="scidb"),
 function(x)
 {
   if(length(dim(x))!=2) stop("diag requires a matrix argument")
-  ans = tmpnam("array")
+  ans = tmpnam()
   name = make.names_(c(x@attribute,"diag"))[2]
   schema = extract_schema(x,x@attribute,x@type,x@nullable[x@attributes %in% x@attribute])
   query  = sprintf("build_sparse(%s,1,%s=%s)",schema,x@D$name[1],x@D$name[2])
