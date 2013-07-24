@@ -43,6 +43,7 @@ aggregate.scidb = function(x,formula,FUN,by,cross_join)
     A = tmpnam("array")
 
     agat = strsplit(FUN,",")[[1]]
+browser()
     agnames = gsub(".* ","", gsub(" *$","",gsub("^ *","",gsub(".*)","",agat))))
 
     atnames = strsplit(FUN,split="\\(")[[1]]

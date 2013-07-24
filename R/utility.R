@@ -34,8 +34,9 @@ scidbconnect = function(host='localhost', port=8080L)
   assign("port",port, envir=.scidbenv)
 # Use the query ID from a bogus query as a unique ID for automated
 # array name generation.
-  x = scidbquery(query="list()",release=1,resp=TRUE)
-  id = gsub(".*\\r\\n","",x$response)
+  x = scidbquery(query="load_library('dense_linear_algebra')",release=1,resp=TRUE)
+  id = strsplit(x$response, split="\\r\\n")[[1]]
+  id = id[[length(id)]]
   assign("uid",id,envir=.scidbenv)
   invisible()
 }
@@ -120,10 +121,8 @@ POST = function(uri, size, transmit)
       ans = paste(strsplit(ans,"\r\n\r\n")[[1]][-1],collapse="\n")
       stop(ans)
     }
-  ans = gsub(".*text/html\r\n\r\n","",ans)
-  ans = gsub(".*text/plain\r\n\r\n","",ans)
-  ans = gsub("\r\n","",ans)
-  ans
+  ans = strsplit(ans, "\r\n")[[1]]
+  ans[[length(ans)]]
 }
 
 # Check if array exists
