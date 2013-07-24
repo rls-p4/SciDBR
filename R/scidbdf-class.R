@@ -82,7 +82,7 @@ setMethod("aggregate", signature(x="scidbdf"),
     A = tmpnam()
 
     agat = strsplit(FUN,",")[[1]]
-    agnames = gsub(".* ","", gsub(" *$","",gsub("^ *","",gsub(".*)","",agat,perl=TRUE),perl=TRUE),perl=TRUE),perl=TRUE)
+    agnames = gsub(".* ","", gsub(" *$","",gsub("^ *","",gsub(".*\\)","",agat,perl=TRUE),perl=TRUE),perl=TRUE),perl=TRUE)
 
     atnames = strsplit(FUN,split="\\(")[[1]]
     wx = grep("\\)",atnames)
