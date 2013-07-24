@@ -50,7 +50,7 @@ scidbdisconnect = function()
 
 make.names_ = function(x)
 {
-  gsub("\\.","_",make.names(x, unique=TRUE))
+  gsub("\\.","_",make.names(x, unique=TRUE),perl=TRUE)
 }
 
 # Make a name from a prefix and a unique SciDB identifier.
@@ -78,7 +78,7 @@ GET = function(uri, async=TRUE)
   host = get("host",envir=.scidbenv)
   port = get("port",envir=.scidbenv)
   uri = URLencode(uri)
-  uri = gsub("\\+","%2B",uri)
+  uri = gsub("\\+","%2B",uri,perl=TRUE)
   msg = sprintf("GET %s HTTP/1.0\r\nHost: %s\r\nPragma: no-cache\r\nUser-Agent: R\r\n\r\n", uri, host)
   s = .SOCK_CONNECT(host,port)
   .SOCK_SEND(s, msg)
@@ -268,13 +268,13 @@ df2scidb = function(X,
   nullable = rep("",ncol(X))
   if(any(n1)) nullable[n1] = "NULL"
   anames = make.names(names(X),unique=TRUE)
-  anames = gsub("\\.","_",anames)
+  anames = gsub("\\.","_",anames,perl=TRUE)
   if(length(anames)!=ncol(X)) anames=make.names(1:ncol(X))
   if(!all(anames==names(X))) warning("Attribute names have been changed")
 # Check for attribute/dimension name conflict
   old_dimlabel = dimlabel
   dimlabel = tail(make.names(c(anames,dimlabel),unique=TRUE),n=1)
-  dimlabel = gsub("\\.","_",dimlabel)
+  dimlabel = gsub("\\.","_",dimlabel,perl=TRUE)
   if(dimlabel!=old_dimlabel) warning("Dimension name has been changed")
   if(missing(chunkSize)) {
     chunkSize = min(nrow(X),10000)

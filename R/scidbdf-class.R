@@ -82,16 +82,16 @@ setMethod("aggregate", signature(x="scidbdf"),
     A = tmpnam()
 
     agat = strsplit(FUN,",")[[1]]
-    agnames = gsub(".* ","", gsub(" *$","",gsub("^ *","",gsub(".*)","",agat))))
+    agnames = gsub(".* ","", gsub(" *$","",gsub("^ *","",gsub(".*)","",agat,perl=TRUE),perl=TRUE),perl=TRUE),perl=TRUE)
 
     atnames = strsplit(FUN,split="\\(")[[1]]
     wx = grep("\\)",atnames)
-    if(length(wx)>0) atnames = gsub("\\).*","",atnames[wx])
+    if(length(wx)>0) atnames = gsub("\\).*","",atnames[wx],perl=TRUE)
     agtp = unlist(lapply(atnames,function(z)data@types[data@attributes %in% z]))
     agtp = paste(agtp, "NULL")
 
     if(any(nchar(agnames))<1) stop("We require that aggregate expressions name outputs, for example count(x) AS cx")
-    agfun = tolower(gsub(" *","",gsub("\\(.*","",agat)))
+    agfun = tolower(gsub(" *","",gsub("\\(.*","",agat,perl=TRUE),perl=TRUE))
     J = agfun %in% names(agtypes)
     if(any(J)) agtp[J] = agtypes[agfun[J]]
     attributes = paste(paste(agnames,agtp,sep=":"),collapse=",")

@@ -459,7 +459,7 @@ rangetype = function(x, i, si, bi, ci)
     if(length(na2[,j])<1) break
 # Create a unique attribute name to apply dimensions into
     a = make.names(c(S@attributes,"dimname"),unique=TRUE,allow_=TRUE)
-    a = gsub("\\.","_",a[[length(a)]])
+    a = gsub("\\.","_",a[[length(a)]],perl=TRUE)
     query = sprintf("aggregate(project(apply(%s,%s,1),%s),count(%s),%s)",
                 S@name, a, a, a, S@D$name[j])
 # Retrieve the dimension labels
