@@ -244,13 +244,11 @@ summary.scidb = function(x)
 
 # Vector, matrix, or data.frame only.
 as.scidb = function(X,
-                    name=ifelse(exists(as.character(match.call()[2])),
-                                as.character(match.call()[2]),
-                                tmpnam()),
+                    name=tmpnam(),
                     rowChunkSize=1000L,
                     colChunkSize=1000L,
                     start=c(0L,0L),
-                    gc=FALSE, ...)
+                    gc=TRUE, ...)
 {
   if(inherits(X,"data.frame"))
     return(df2scidb(X,name=name,chunkSize=rowChunkSize,gc=gc,...))

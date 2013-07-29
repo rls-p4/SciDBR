@@ -1,3 +1,15 @@
+# Right now aggregate looks like:
+
+# aggregate(x, . ~ Species, "min(PetalWidth) as p, min(PetalLength) as z")
+
+# instead it shold look like:
+
+#aggregate(x, PetalWidth + PetalLength ~ Species, "min")
+
+
+
+
+
 # Reasonably general SciDB aggregation interface The input must either use a
 # formula interface or the by interface.  R's built in aggregate function
 # dispatches using S3, which means it can only dispatch on its first argument.
@@ -17,7 +29,8 @@
 # X is any SciDB array,
 # by is a list of any of the following:
 # character string named dimensions of X to aggregate along, and/or,
-# a single scidb array that contains one or more dimensions that can be joined with X
+# a single scidb array that contains one or more dimensions that can be
+# joined with X
 # and one or more int64 attributes to aggregate on, and/or,
 # a character string naming attributes of X to aggregate along.
 # cross_join is an optional list of  dimension namess to join on. If
@@ -26,6 +39,8 @@
 #
 # Example 1:
 # aggregate(iris, by="Species", FUN="avg(Petal_length) as mean")
+
+# Experimental
 
 aggregate.scidb = function(x,formula,FUN,by,cross_join)
   {

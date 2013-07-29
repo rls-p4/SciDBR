@@ -5,12 +5,12 @@
 Copy a data frame into a new 1-D SciDB array.
 }
 \usage{
-df2scidb(X, name = ifelse(exists(as.character(match.call()[2])), as.character(match.call()[2]), "X"), dimlabel = "row", chunkSize, rowOverlap = 0L, types = NULL, nullable = FALSE, schema_only = FALSE, gc)
+df2scidb(X, name = tmpnam(), dimlabel = "row", chunkSize, rowOverlap = 0L, types = NULL, nullable = FALSE, schema_only = FALSE, gc)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{X}{A data frame. }
-  \item{name}{The SciDB array name, defaults to the R variable name if available.}
+  \item{name}{The SciDB array name, defaults to an automatically-generated name.}
   \item{dimlabel}{Name the SciDB dimension.}
   \item{chunkSize}{The SciDB chunk size.}
   \item{rowOverlap}{The SciDB chunk overlap.}

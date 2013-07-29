@@ -249,8 +249,7 @@ scidbrm = function(x,error=stop) scidbremove(x,error)
 # df2scidb: User function to send a data frame to SciDB
 # Returns a scidbdf object
 df2scidb = function(X,
-                    name=ifelse(exists(as.character(match.call()[2])),
-                                 as.character(match.call()[2]),"X"),
+                    name=tmpnam(),
                     dimlabel="row",
                     chunkSize,
                     rowOverlap=0L,
