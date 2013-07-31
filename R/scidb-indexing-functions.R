@@ -229,7 +229,7 @@ dimfilter = function(x, i)
          }
        }
     })
-  r  = unlist(lapply(r,as.character))
+  r = unlist(lapply(r,function(x)sprintf("%.0f",x)))
   ro = r[seq(from=1,to=length(r),by=2)]
   re = r[seq(from=2,to=length(r),by=2)]
   r = paste(c(ro,re),collapse=",")
