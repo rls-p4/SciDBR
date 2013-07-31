@@ -38,6 +38,8 @@ scidbconnect = function(host='localhost', port=8080L)
   id = strsplit(x$response, split="\\r\\n")[[1]]
   id = id[[length(id)]]
   assign("uid",id,envir=.scidbenv)
+# Set the ASCII interface precision
+  x = scidbquery(query="setopt('precision','16')",release=1,resp=FALSE)
   invisible()
 }
 
