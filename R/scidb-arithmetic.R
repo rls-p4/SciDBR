@@ -61,15 +61,29 @@ scidbmultiply = function(e1,e2)
   ub = paste(rep(.scidb_DIM_MAX,l2),collapse=",")
   op2 = sprintf("subarray(%s,%s,%s)",op2,lb,ub)
 
-  j = which(e2@attribute == e2@attributes)[[1]]
-# Adjust the 2nd array to be schema-compatible with the 1st:
-  op2 = sprintf("repart(%s, <%s:%s>[%s=%.0f:%.0f,%.0f,%.0f,%s=%.0f:%.0f,%.0f,%.0f])",
-          op2, a2, e2@type[[j]],
-          e2@D$name[[1]], 0, e2@D$length[[1]] - 1,
-                          e1@D$chunk_interval[[2]], e1@D$chunk_overlap[[2]],
-          e2@D$name[[2]], 0, e2@D$length[[2]] - 1,
-                          e2@D$chunk_interval[[2]], e2@D$chunk_overlap[[2]])
-  scidbquery(paste("store(multiply(",op1,",",op2,"),",x,")",sep=""))
+#  e1@D$chunk_interval[[2]], e1@D$chunk_overlap[[2]],
+
+# Adjust the arrays to conform to GEMM requirements.
+  op1 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,32,0,%s=0:%.0f,32,0])",op1,a1,e1@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,e1@D$name[[2]],e1@D$length[[2]]-1)
+  op2 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,32,0,%s=0:%.0f,32,0])",op2,a2,e2@type[1],e2@D$name[[1]],e2@D$length[[1]]-1,e2@D$name[[2]],e2@D$length[[2]]-1)
+
+  op3 = sprintf("build(<%s:%s>[%s=0:%.0f,32,0,%s=0:%.0f,32,0],0)",a1,e1@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,e2@D$name[[2]],e2@D$length[[2]]-1)
+
+  query = sprintf("gemm(%s, %s, %s)",op1,op2,op3)
+# Repartition the output back to conform with inputs
+  query = sprintf(
+           "repart(%s,<gemm:double>[%s=0:%.0f,%.0f,%.0f, %s=0:%.0f,%.0f,%.0f])",
+            query, e1@D$name[[1]],
+                   e1@D$length[[1]]-1,
+                   e1@D$chunk_interval[[1]],
+                   e1@D$chunk_overlap[[1]],
+                   e2@D$name[[2]],
+                   e2@D$length[[2]]-1,
+                   e2@D$chunk_interval[[2]],
+                   e2@D$chunk_overlap[[2]])
+
+  query = sprintf("store(%s,%s)",query,x)
+  scidbquery(query)
   return(scidb(x,gc=TRUE))
 }
 
