@@ -110,8 +110,6 @@ dimnames.scidbdf = function(x)
 
 
 
-
-
 # 'si' sequential numeric index range, for example c(1,2,3,4,5)
 # 'bi' special between index range, that is a function that returns upper/lower limits
 # 'ui' not specified range (everything, by R convention)
@@ -137,16 +135,16 @@ scidbdf_subset = function(x, i)
   else if(scidb:::checkseq(i))
   {
 # Sequential numeric index
-    query = sprintf("subarray(%s, %.0f, %.0f)", x@name, min(i), max(i))
+    query = sprintf("between(%s, %.0f, %.0f)", x@name, min(i), max(i))
   }
   else if(inherits(i,"function"))
   {
 # Bounding box
     r = i()
     if(is.numeric(r))
-      query = sprintf("subarray(%s, %.0f, %.0f)", x@name, r[1], r[2])
+      query = sprintf("between(%s, %.0f, %.0f)", x@name, r[1], r[2])
     else
-      query = sprintf("subarray(%s, '%s', '%s')", x@name, r[1], r[2])
+      query = sprintf("between(%s, '%s', '%s')", x@name, r[1], r[2])
   }
   else
   {
