@@ -4,7 +4,10 @@
 `cross_join` = function(X,Y,...)
 {
   M = match.call()
+  doeval = ifelse(is.null(M$eval),TRUE,M$eval)
   M = M[-c(1,2,3)]
+  if(!is.null(names(M))) M = M[!(names(M) %in% c("eval"))]
+
   query = sprintf("cross_join(%s as __X, %s as __Y", X@name, Y@name)
   if(length(M)>0)
   {
