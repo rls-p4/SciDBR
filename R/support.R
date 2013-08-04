@@ -21,9 +21,13 @@
     query  = sprintf("%s)",query)
   }
   newarray = tmpnam()
-  query = sprintf("store(%s,%s)",query,newarray)
-  scidbquery(query)
-  return(scidb(newarray,gc=TRUE))
+  if(eval)
+  {
+    query = sprintf("store(%s,%s)",query,newarray)
+    scidbquery(query)
+    return(scidb(newarray,gc=TRUE))
+  }
+  query
 }
 
 # x:   A SciDB array
