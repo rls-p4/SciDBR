@@ -3,7 +3,6 @@
 
 `merge.scidb` = function(X,Y,by,eval=TRUE)
 {
-  doeval =  `eval`
   if(missing(`by`)) `by`=list()
 
   query = sprintf("cross_join(%s as __X, %s as __Y", X@name, Y@name)
@@ -17,14 +16,26 @@
   {
     query  = sprintf("%s)",query)
   }
-  newarray = tmpnam()
-  if(eval)
+  if(`eval`)
   {
+    newarray = tmpnam()
     query = sprintf("store(%s,%s)",query,newarray)
     scidbquery(query)
     return(scidb(newarray,gc=TRUE))
   }
   query
+}
+
+`bind.scidb` = function(X, expression, eval=TRUE)
+{
+  query = sprintf("apply(%s, %s)",X@name, `expression`)
+  if(`eval`)
+  {
+    newarray = tmpnam()
+    query = sprintf("store(%s,%s)",query,newarray)
+    scidbquery(query)
+    return(scidb(newarray,gc=TRUE))
+  }
 }
 
 # This will replace the function interface...
