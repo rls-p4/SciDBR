@@ -1,19 +1,16 @@
 # Experimental routines August 2013
 # DOCUMENT ME
 
-`cross_join` = function(X,Y,...)
+`merge.scidb` = function(X,Y,by,eval=TRUE)
 {
-  M = match.call()
-  doeval = ifelse(is.null(M$eval),TRUE,M$eval)
-  M = M[-c(1,2,3)]
-  if(!is.null(names(M))) M = M[!(names(M) %in% c("eval"))]
+  doeval =  `eval`
+  if(missing(`by`)) `by`=list()
 
   query = sprintf("cross_join(%s as __X, %s as __Y", X@name, Y@name)
-  if(length(M)>0)
+  if(length(`by`)>0)
   {
     E = parent.frame()
-    i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],E),error=function(e)as.character(M[j][[1]])))
-    cterms = paste(c("__X","__Y"), i, sep=".")
+    cterms = paste(c("__X","__Y"), `by`, sep=".")
     cterms = paste(cterms,collapse=",")
     query  = paste(query,",",cterms,")",sep="")
   } else
@@ -30,6 +27,7 @@
   query
 }
 
+# This will replace the function interface...
 # x:   A SciDB array
 # by:  A list of dimension and/or attribute names in x to aggregate along
 # FUN: A valid SciDB aggregation expression (string)
