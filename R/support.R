@@ -6,10 +6,10 @@
   if(length(M)>0)
   {
     E = parent.frame()
-    i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],E),error=function(e)c()))
+    i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],E),error=function(e)as.character(M[j][[1]])))
     cterms = paste(c("__X","__Y"), i, sep=".")
     cterms = paste(cterms,collapse=",")
-    query  = paste(query,cterms,")",sep="")
+    query  = paste(query,",",cterms,")",sep="")
   } else
   {
     query  = sprintf("%s)",query)

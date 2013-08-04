@@ -9,6 +9,7 @@ export('scidbremove')
 export('scidbrm')
 export('iquery')
 export('scidb')
+export('cross_join')
 importFrom("utils", "head", "tail")
 importFrom("stats", "aggregate")
 
