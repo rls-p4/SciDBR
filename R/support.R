@@ -26,9 +26,11 @@
   query
 }
 
-`bind.scidb` = function(X, expression, eval=TRUE)
+`bind.scidb` = function(X, name, FUN, eval=TRUE)
 {
-  query = sprintf("apply(%s, %s)",X@name, `expression`)
+  if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
+  expr = paste(paste(name,FUN,sep=","),collapse=",")
+  query = sprintf("apply(%s, %s)",X@name, expr)
   if(`eval`)
   {
     newarray = tmpnam()
@@ -36,6 +38,7 @@
     scidbquery(query)
     return(scidb(newarray,gc=TRUE))
   }
+  query
 }
 
 # This will replace the function interface...
