@@ -63,57 +63,20 @@ setMethod('show', 'scidbdf',
     cat(sprintf("SciDB array %s: %.0f obs. of %d variables.\n",object@name, object@D$length, length(object@attributes)))
   })
 
-setOldClass("aggregate")
-setGeneric("aggregate", function(x,...) standardGeneric("aggregate"))
-setMethod("aggregate", signature(x="scidbdf"),
-  function(x,formula,FUN)
+setMethod("aggregate", signature(x="scidbdf"), aggregate.scidb)
+
+setMethod("bind", signature(X="scidbdf"), 
+function(X, name, FUN, eval=TRUE)
+{
+  if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
+  expr = paste(paste(name,FUN,sep=","),collapse=",")
+  query = sprintf("apply(%s, %s)",X@name, expr)
+  if(`eval`)
   {
-    data=x
-    if(missing(formula)) stop("Usage: aggregate(1D_scidb_array, formula, scidb_aggregate_expression)")
-    if(missing(FUN)) stop("Usage: aggregate(1D_scidb_array, formula, scidb_aggregate_expression)")
-# This is a hack until list('aggregates') returns type information, right now
-# we have to guess!!!
-    agtypes = list(approxdc="uint64 NULL",avg="double NULL",count="uint64 NULL",stdev="double NULL",var="double NULL")
-    if(missing(FUN)) stop("You must supply a SciDB aggregate expression")
-    v = attr(terms(formula),"term.labels")
-    r = setdiff(all.vars(formula),v)
-    if(r==".") r = setdiff(data@attributes,v)
-# Redimension
-    A = tmpnam()
-
-    agat = strsplit(FUN,",")[[1]]
-    agnames = gsub(".* ","", gsub(" *$","",gsub("^ *","",gsub(".*\\)","",agat,perl=TRUE),perl=TRUE),perl=TRUE),perl=TRUE)
-
-    atnames = strsplit(FUN,split="\\(")[[1]]
-    wx = grep("\\)",atnames)
-    if(length(wx)>0) atnames = gsub("\\).*","",atnames[wx],perl=TRUE)
-    agtp = unlist(lapply(atnames,function(z)data@types[data@attributes %in% z]))
-    agtp = paste(agtp, "NULL")
-
-    if(any(nchar(agnames))<1) stop("We require that aggregate expressions name outputs, for example count(x) AS cx")
-    agfun = tolower(gsub(" *","",gsub("\\(.*","",agat,perl=TRUE),perl=TRUE))
-    J = agfun %in% names(agtypes)
-    if(any(J)) agtp[J] = agtypes[agfun[J]]
-    attributes = paste(paste(agnames,agtp,sep=":"),collapse=",")
-
-  scipen = options("scipen")
-  options(scipen=20)
-  on.exit(options(scipen))
-
-    chunks = rep(1,length(v))
-    chunks[length(chunks)] = data@D$length
-    dims = paste(v,data@types[data@attributes %in% v],sep="(")
-    dims = paste(dims,"*",sep=")=")
-    dims = paste(dims,chunks,sep=",")
-    dims = paste(dims,",0",sep="")
-    dims = paste(dims,collapse=",")
-    schema = sprintf("<%s>[%s]",attributes,dims)
-    query = sprintf("create_array(%s,%s)",A, schema)
-    iquery(query)
-    on.exit(tryCatch(scidbremove(A),error=function(e)invisible()))
-    query = sprintf("redimension_store(%s,%s,%s)",data@name, A, paste(FUN,collapse=","))
-    iquery(query)
-    query = sprintf("scan(%s)",A)
-    iquery(query, `return`=TRUE, n=Inf)
+    newarray = tmpnam()
+    query = sprintf("store(%s,%s)",query,newarray)
+    scidbquery(query)
+    return(scidb(newarray,gc=TRUE))
   }
-)
+  query
+})

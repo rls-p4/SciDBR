@@ -56,7 +56,8 @@ apply_indices = function(A,q=A@name)
   sprintf("apply(%s,%s)",q, a)
 }
 
-# Return a query that converts selected NIDs to integer
+# Return a query that converts selected NIDs to integer for a single-attrbute
+# SciDB array.
 # A a scidb object
 # idx a list of dimensions numbers to drop NID, or a boolean vector of length
 #     equal to the number of dimensions with TRUE indicating drop NID.
@@ -78,9 +79,8 @@ selectively_drop_nid = function(A, idx, schema_only=FALSE, query, nullable)
   if(is.numeric(idx)) idx = is.na(match(1:length(D$name),idx))
 # XXX This is a problem...SciDB can index up to 2^62 - 1, but we can only
 # really resolve smaller numbers here since we don't have 64-bit integers in R.
-  ulim = "4611686018427387902"
   j=which(D$length>=2^62)
-  if(length(j)>0) D$length[j] = ulim
+  if(length(j)>0) D$length[j] = .scidb_DIM_MAX
   query = sprintf("project(%s, %s)",query, A@attribute)
 #  if(!any(idx)) return(query) # XXX screws up schema_only requests...
 # Pass-through non-nid indices
@@ -113,7 +113,7 @@ selectively_drop_nid = function(A, idx, schema_only=FALSE, query, nullable)
 materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
 {
   type = names(.scidbtypes[.scidbtypes==x@type])
-  if(length(type)<1) stop("Unsupported data type.")
+  if(length(type)<1) stop("Unsupported data type. Try using the iquery function instead.")
   tval = vector(mode=type,length=1)
 # Run quey
   query = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL")
@@ -176,7 +176,8 @@ materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
 #
 # dimfilter distinguishes between four kinds of indexing operations:
 # 'si' sequential numeric index range, for example c(1,2,3,4,5)
-# 'bi' special between index range, that is a function that returns upper/lower limits
+# 'bi' special between index range, that is a function or a list
+#      that returns upper/lower limits
 # 'ui' not specified range (everything, by R convention)
 # 'ci' lookup-style range, a non-sequential numeric or labeled set, for example
 #      c(3,3,1,5,3)   or  c('a1','a3')
@@ -186,7 +187,7 @@ dimfilter = function(x, i)
 # Partition the indices into class:
 # Identify sequential, numeric indices
   si = sapply(i, scidb:::checkseq)
-# Identify explicit between-type indices (functions)
+# Identify explicit between-type indices (functions, lists)
   bi = sapply(i, function(x) inherits(x,"function"))
 # Unspecified range
   ui = sapply(i,is.null)
@@ -244,7 +245,7 @@ dimfilter = function(x, i)
   {
     ans = tmpnam()
 #    q = sprintf("store(%s,%s)",q,ans)
-# We use subarray here to conform with R subsetting
+# We use subarray here to set the origin of the new array
     q = sprintf("store(subarray(%s,%s),%s)",q,r,ans)
     iquery(q)
   }

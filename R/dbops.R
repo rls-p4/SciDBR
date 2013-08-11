@@ -1,15 +1,27 @@
 # Experimental routines August 2013
-# DOCUMENT ME
 
+`merge.scidbdf` = function(X,Y,by,eval=TRUE) merge.scidb(X,Y,by,eval)
+
+# SciDB cross_join wrapper
+# X and Y are SciDB array references of any kind
+# by is either a single character indicating a dimension name common to both
+# arrays to join on, or a two-element list of character vectors of array
+# dimensions to join on. Examples:
+# merge(X,Y,by='i')
+# merge(X,Y,by=list('i','i'))  # equivalent to last expression
+# merge(X,Y,by=list(X=c('i','j'), Y=c('k','l')))
 `merge.scidb` = function(X,Y,by,eval=TRUE)
 {
   if(missing(`by`)) `by`=list()
 
   query = sprintf("cross_join(%s as __X, %s as __Y", X@name, Y@name)
+  if(length(`by`)>1 && !is.list(`by`))
+    stop("by must be either a single string describing a dimension to join on or a list in the form list(c('arrayX_dim1','arrayX_dim2'),c('arrayY_dim1','arrayY_dim2'))")
   if(length(`by`)>0)
   {
-    E = parent.frame()
-    cterms = paste(c("__X","__Y"), `by`, sep=".")
+# Re-order list terms
+    b = as.list(unlist(lapply(1:length(`by`[[1]]), function(j) unlist(lapply(`by`, function(x) x[[j]])))))
+    cterms = paste(c("__X","__Y"), b, sep=".")
     cterms = paste(cterms,collapse=",")
     query  = paste(query,",",cterms,")",sep="")
   } else
@@ -26,26 +38,7 @@
   query
 }
 
-`bind.scidb` = function(X, name, FUN, eval=TRUE)
-{
-  if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
-  expr = paste(paste(name,FUN,sep=","),collapse=",")
-  query = sprintf("apply(%s, %s)",X@name, expr)
-  if(`eval`)
-  {
-    newarray = tmpnam()
-    query = sprintf("store(%s,%s)",query,newarray)
-    scidbquery(query)
-    return(scidb(newarray,gc=TRUE))
-  }
-  query
-}
-
-# This will replace the function interface...
-# x:   A SciDB array
-# by:  A list of dimension and/or attribute names in x to aggregate along
-# FUN: A valid SciDB aggregation expression (string)
-`aggregate.by` = function(x, by, FUN)
+aggregate.scidb = function(x,by,FUN,eval=TRUE)
 {
   b = by
   if(!all(b %in% c(x@attributes, x@D$name))) stop("Invalid attribute or dimension name in by")
@@ -53,7 +46,7 @@
   query = x@name
   if(any(a))
   {
-# We assume attributes are int64 here. Add support later for sort/unique/index_lookup.
+# We assume attributes are int64 here. Add support for sort/unique/index_lookup.
     n = x@attributes[a]
 # XXX What if an attribute has negative values? What about chunk sizes? NULLs? Ugh.
 # XXX Take care of all these issues...
@@ -69,6 +62,13 @@
   }
   along = paste(b,collapse=",")
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
+  if(`eval`)
+  {
+    newarray = tmpnam()
+    query = sprintf("store(%s,%s)",query,newarray)
+    scidbquery(query)
+    return(scidb(newarray,gc=TRUE))
+  }
   query
 }
 
