@@ -110,8 +110,10 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   scidbexpr(query)
 }
 
+# Lots of documentation needed here!
 aggregate.scidb = function(x,by,FUN,eval=TRUE)
 {
+  if("scidbexpr" %in% class(x)) x = scidb_from_scidbexpr(x)
   b = `by`
   if(is.list(b)) b = b[[1]]
   if(class(b) %in% c("scidb","scidbdf"))
