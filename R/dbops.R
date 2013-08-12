@@ -38,9 +38,43 @@
   query
 }
 
+
+aggregate_by_array = function(x,by,FUN,eval=TRUE)
+{
+  j = intersect(x@D$name, by@D$name)
+  X = merge(x,by,list(j,j),eval=FALSE)
+  n = by@attributes
+  x@attributes = union(x@attributes,by@attributes)
+  a = x@attributes %in% n
+# XXX What if an attribute has negative values? What about chunk sizes? NULLs? Ugh. Also insert reasonable upper bound instead of *?
+# XXX Take care of all these issues...
+  redim = paste(paste(n,"=0:*,1000,0",sep=""), collapse=",")
+  D = paste(build_dim_schema(x,FALSE),redim,sep=",")
+  A = x
+  A@attributes = x@attributes[!a]
+  A@nullable   = x@nullable[!a]
+  A@types      = x@types[!a]
+  S = build_attr_schema(A)
+  D = sprintf("[%s]",D)
+  query = sprintf("redimension(%s,%s%s)",X,S,D)
+  along = paste(n,collapse=",")
+  query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
+  if(`eval`)
+  {
+    newarray = tmpnam()
+    query = sprintf("store(%s,%s)",query,newarray)
+    scidbquery(query)
+    return(scidb(newarray,gc=TRUE))
+  }
+  query
+}
+
 aggregate.scidb = function(x,by,FUN,eval=TRUE)
 {
-  b = by
+  b = `by`
+  if(class(b) %in% c("scidb","scidbdf"))
+    return(aggregate_by_array(x,b,FUN,eval))
+
   if(!all(b %in% c(x@attributes, x@D$name))) stop("Invalid attribute or dimension name in by")
   a = x@attributes %in% b
   query = x@name
@@ -48,7 +82,7 @@ aggregate.scidb = function(x,by,FUN,eval=TRUE)
   {
 # We assume attributes are int64 here. Add support for sort/unique/index_lookup.
     n = x@attributes[a]
-# XXX What if an attribute has negative values? What about chunk sizes? NULLs? Ugh.
+# XXX What if an attribute has negative values? What about chunk sizes? NULLs? Ugh. Also insert reasonable upper bound instead of *?
 # XXX Take care of all these issues...
     redim = paste(paste(n,"=0:*,1000,0",sep=""), collapse=",")
     D = paste(build_dim_schema(x,FALSE),redim,sep=",")
