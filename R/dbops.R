@@ -39,8 +39,16 @@
 }
 
 
+# by may be a SciDB array or a list whose first element is a SciDB array
+# and remaining elements are dimension names (character).
 aggregate_by_array = function(x,by,FUN,eval=TRUE)
 {
+  dims = c()
+  if(is.list(by) && length(by)>1)
+  {
+    dims=unlist(by[-1])
+    by=by[[1]]
+  }
   j = intersect(x@D$name, by@D$name)
   X = merge(x,by,list(j,j),eval=FALSE)
   n = by@attributes
@@ -57,7 +65,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   S = build_attr_schema(A)
   D = sprintf("[%s]",D)
   query = sprintf("redimension(%s,%s%s)",X,S,D)
-  along = paste(n,collapse=",")
+  along = paste(c(dims,n),collapse=",")
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
   if(`eval`)
   {
@@ -72,9 +80,11 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
 aggregate.scidb = function(x,by,FUN,eval=TRUE)
 {
   b = `by`
+  if(is.list(b)) b = b[[1]]
   if(class(b) %in% c("scidb","scidbdf"))
-    return(aggregate_by_array(x,b,FUN,eval))
+    return(aggregate_by_array(x,`by`,FUN,eval))
 
+  b = `by`
   if(!all(b %in% c(x@attributes, x@D$name))) stop("Invalid attribute or dimension name in by")
   a = x@attributes %in% b
   query = x@name
