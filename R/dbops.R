@@ -3,6 +3,37 @@
 `merge.scidbdf` = function(X,Y,by,eval=TRUE) merge.scidb(X,Y,by,eval)
 `merge.scidbexpr` = function(X,Y,by,eval=TRUE) merge.scidb(X,Y,by,eval)
 
+`project.scidb` = function(X,expr,eval=TRUE)
+{
+  xname = X
+  if(class(X) %in% c("scidbdf","scidb")) xname = X@name
+  query = sprintf("project(%s,%s)", xname,expr)
+  if(`eval`)
+  {
+    newarray = tmpnam()
+    query = sprintf("store(%s,%s)",query,newarray)
+    scidbquery(query)
+    return(scidb(newarray,gc=TRUE))
+  }
+  scidbexpr(query)
+}
+
+# This is the SciDB filter operation, not the R timeseries one.
+`filter.scidb` = function(X,expr,eval=TRUE)
+{
+  xname = X
+  if(class(X) %in% c("scidbdf","scidb")) xname = X@name
+  query = sprintf("filter(%s,%s)", xname,expr)
+  if(`eval`)
+  {
+    newarray = tmpnam()
+    query = sprintf("store(%s,%s)",query,newarray)
+    scidbquery(query)
+    return(scidb(newarray,gc=TRUE))
+  }
+  scidbexpr(query)
+}
+
 # SciDB cross_join wrapper
 # X and Y are SciDB array references of any kind
 # by is either a single character indicating a dimension name common to both
