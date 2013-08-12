@@ -1,9 +1,6 @@
 # Experimental routines August 2013
 
-`merge.scidbdf` = function(X,Y,by,eval=TRUE) merge.scidb(X,Y,by,eval)
-`merge.scidbexpr` = function(X,Y,by,eval=TRUE) merge.scidb(X,Y,by,eval)
-
-`project.scidb` = function(X,expr,eval=TRUE)
+`project` = function(X,expr,eval=TRUE)
 {
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
@@ -197,3 +194,9 @@ bind = function(X, name, FUN, eval=TRUE)
   }
   scidbexpr(query)
 }
+
+
+`merge.scidbdf` = function(X,Y,by,eval=TRUE) merge.scidb(X,Y,by,eval)
+`merge.scidbexpr` = function(X,Y,by,eval=TRUE) merge.scidb(X,Y,by,eval)
+`filter.scidbdf` = function(X,expr,eval=TRUE) filter.scidb(X,expr,eval)
+`filter.scidbexpr` = function(X,expr,eval=TRUE) filter.scidb(X,expr,eval)
