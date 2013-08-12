@@ -1,6 +1,7 @@
 # Experimental routines August 2013
 
 `merge.scidbdf` = function(X,Y,by,eval=TRUE) merge.scidb(X,Y,by,eval)
+`merge.scidbexpr` = function(X,Y,by,eval=TRUE) merge.scidb(X,Y,by,eval)
 
 # SciDB cross_join wrapper
 # X and Y are SciDB array references of any kind
@@ -13,8 +14,12 @@
 `merge.scidb` = function(X,Y,by,eval=TRUE)
 {
   if(missing(`by`)) `by`=list()
+  xname = X
+  yname = Y
+  if(class(X) %in% c("scidbdf","scidb")) xname = X@name
+  if(class(Y) %in% c("scidbdf","scidb")) yname = Y@name
 
-  query = sprintf("cross_join(%s as __X, %s as __Y", X@name, Y@name)
+  query = sprintf("cross_join(%s as __X, %s as __Y", xname, yname)
   if(length(`by`)>1 && !is.list(`by`))
     stop("by must be either a single string describing a dimension to join on or a list in the form list(c('arrayX_dim1','arrayX_dim2'),c('arrayY_dim1','arrayY_dim2'))")
   if(length(`by`)>0)
@@ -35,7 +40,7 @@
     scidbquery(query)
     return(scidb(newarray,gc=TRUE))
   }
-  query
+  scidbexpr(query)
 }
 
 
@@ -74,7 +79,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
     scidbquery(query)
     return(scidb(newarray,gc=TRUE))
   }
-  query
+  scidbexpr(query)
 }
 
 aggregate.scidb = function(x,by,FUN,eval=TRUE)
@@ -113,7 +118,7 @@ aggregate.scidb = function(x,by,FUN,eval=TRUE)
     scidbquery(query)
     return(scidb(newarray,gc=TRUE))
   }
-  query
+  scidbexpr(query)
 }
 
 `build_attr_schema` = function(A)
@@ -143,4 +148,21 @@ aggregate.scidb = function(x,by,FUN,eval=TRUE)
   S = paste(S,collapse=",")
   if(bracket) S = sprintf("[%s]",S)
   S
+}
+
+bind = function(X, name, FUN, eval=TRUE)
+{
+  aname = X
+  if(class(X) %in% c("scidb","scidbdf")) aname=X@name
+  if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
+  expr = paste(paste(name,FUN,sep=","),collapse=",")
+  query = sprintf("apply(%s, %s)",aname, expr)
+  if(`eval`)
+  {
+    newarray = tmpnam()
+    query = sprintf("store(%s,%s)",query,newarray)
+    scidbquery(query)
+    return(scidb(newarray,gc=TRUE))
+  }
+  scidbexpr(query)
 }

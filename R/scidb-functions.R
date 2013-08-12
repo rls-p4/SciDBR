@@ -25,12 +25,14 @@
 
 # Create a new scidb reference to an existing SciDB array.
 # name (character): Name of the backing SciDB array
+#    alternatively, a scidb expression object
 # attribute (character): Attribute in the backing SciDB array (applies to n-d arrays)
 # gc (logical): Remove backing SciDB array when R object is garbage collected?
 # data.frame (logical): Return a SciDB data frame object (class scidbdf)
 scidb = function(name, attribute, `data.frame`, gc)
 {
   if(missing(name)) stop("array name must be specified")
+  if("scidbexpr" %in% class(name)) {return(scidb_from_scidbexpr(name))}
   if(missing(attribute)) attribute=""
   if(missing(gc)) gc=FALSE
   D = .scidbdim(name)

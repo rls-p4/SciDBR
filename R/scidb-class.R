@@ -236,20 +236,3 @@ function(x, grid=c(x@D$chunk_interval[1], x@D$chunk_interval[2]), op=sprintf("su
 setOldClass("aggregate")
 setGeneric("aggregate")
 setMethod("aggregate", signature(x="scidb"), aggregate.scidb)
-
-setGeneric("bind", function(X,...) X)
-setMethod("bind", signature(X="scidb"), 
-function(X, name, FUN, eval=TRUE)
-{
-  if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
-  expr = paste(paste(name,FUN,sep=","),collapse=",")
-  query = sprintf("apply(%s, %s)",X@name, expr)
-  if(`eval`)
-  {
-    newarray = tmpnam()
-    query = sprintf("store(%s,%s)",query,newarray)
-    scidbquery(query)
-    return(scidb(newarray,gc=TRUE))
-  }
-  query
-})
