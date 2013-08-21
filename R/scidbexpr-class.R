@@ -32,7 +32,7 @@ setMethod("aggregate", signature(x="scidbexpr"), aggregate.scidb)
 # The underlying SciDB object in this case does not exist.
 scidb_from_scidbexpr = function(x)
 {
-  s = iquery(sprintf("show('%s','afl')",x),re=TRUE)[[2]]
+  s = iquery(sprintf("show('%s','afl')",x),`return`=TRUE)[[2]]
   scidb_from_schemastring(s,x)
 }
 

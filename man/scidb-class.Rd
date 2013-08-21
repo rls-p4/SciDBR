@@ -53,6 +53,7 @@ Objects can be created by calls of the form \code{new("scidb", ...)},
     \item{\%*\%}{\code{signature(x = "ANY", y = "scidb")}: ... }
     \item{\%*\%}{\code{signature(x = "scidb", y = "ANY")}: ... }
     \item{\%*\%}{\code{signature(x = "scidb", y = "scidb")}: ... }
+    \item{aggregate}{\code{signature(x = "scidb", by = "ANY", FUN = "ANY", eval = "ANY")}: ...}
     \item{crossprod}{\code{signature(x = "scidb", y = "ANY")}: ... }
     \item{tcrossprod}{\code{signature(x = "scidb", y = "ANY")}: ... }
     \item{crossprod}{\code{signature(x = "ANY", y = "scidb")}: ... }

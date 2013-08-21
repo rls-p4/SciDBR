@@ -1,11 +1,12 @@
-# Experimental routines August 2013
+# The functions and methods defined below are based closely on native SciDB
+# functions, some of which have weak or limited analogs in R.
 
 
-`project` = function(X,expr,eval=TRUE)
+# An internal convenience function that conditionally evaluates a scidb
+# query string `expr` (eval=TRUE), returning a scidb object,
+# or returns a scidbexpr object (eval=FALSE).
+`scidbeval` = function(expr,eval)
 {
-  xname = X
-  if(class(X) %in% c("scidbdf","scidb")) xname = X@name
-  query = sprintf("project(%s,%s)", xname,expr)
   if(`eval`)
   {
     newarray = tmpnam()
@@ -14,6 +15,20 @@
     return(scidb(newarray,gc=TRUE))
   }
   scidbexpr(query)
+}
+
+# Filter the attributes of the scidb, scidbdf, or scidbexpr object to contain
+# only those specified in expr.
+# X:    a scidb, scidbdf, or scidbexpr object
+# expr: a character vector describing the list of attributes to project onto
+# eval: a boolean value. If TRUE, the query is executed returning a scidb array.
+#       If FALSE, a scidbexpr object describing the query is returned.
+`project` = function(X,expr,eval=TRUE)
+{
+  xname = X
+  if(class(X) %in% c("scidbdf","scidb")) xname = X@name
+  query = sprintf("project(%s,%s)", xname,expr)
+  scidbeval(query,eval)
 }
 
 # This is the SciDB filter operation, not the R timeseries one.
@@ -26,14 +41,7 @@
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   query = sprintf("filter(%s,%s)", xname,expr)
-  if(`eval`)
-  {
-    newarray = tmpnam()
-    query = sprintf("store(%s,%s)",query,newarray)
-    scidbquery(query)
-    return(scidb(newarray,gc=TRUE))
-  }
-  scidbexpr(query)
+  scidbeval(query,eval)
 }
 
 # SciDB cross_join wrapper internal function to support merge on various
@@ -77,14 +85,7 @@
   {
     query  = sprintf("%s)",query)
   }
-  if(`eval`)
-  {
-    newarray = tmpnam()
-    query = sprintf("store(%s,%s)",query,newarray)
-    scidbquery(query)
-    return(scidb(newarray,gc=TRUE))
-  }
-  scidbexpr(query)
+  scidbeval(query,eval)
 }
 
 
@@ -120,14 +121,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   query = sprintf("redimension(%s,%s%s)",X,S,D)
   along = paste(c(dims,n),collapse=",")
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
-  if(`eval`)
-  {
-    newarray = tmpnam()
-    query = sprintf("store(%s,%s)",query,newarray)
-    scidbquery(query)
-    return(scidb(newarray,gc=TRUE))
-  }
-  scidbexpr(query)
+  scidbeval(query,eval)
 }
 
 # Lots of documentation needed here!
@@ -161,18 +155,16 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   }
   along = paste(b,collapse=",")
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
-  if(`eval`)
-  {
-    newarray = tmpnam()
-    query = sprintf("store(%s,%s)",query,newarray)
-    scidbquery(query)
-    return(scidb(newarray,gc=TRUE))
-  }
-  scidbexpr(query)
+  scidbeval(query,eval)
 }
 
+
+# Build the attibute part of a SciDB array schema from a scidb,
+# scidbdf, or scidbexpr object.
 `build_attr_schema` = function(A)
 {
+  if("scidbexpr" %in% class(A)) A = scidb_from_scidbexpr(A)
+  if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   N = rep("",length(A@nullable))
   N[A@nullable] = " NULL"
   N = paste(A@types,N,sep="")
@@ -182,8 +174,12 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
 
 `noE` = function(w) sapply(w, function(x) sprintf("%.0f",x))
 
+# Build the dimension part of a SciDB array schema from a scidb,
+# scidbdf, or scidbexpr object.
 `build_dim_schema` = function(A,bracket=TRUE)
 {
+  if("scidbexpr" %in% class(A)) A = scidb_from_scidbexpr(A)
+  if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   notint = A@D$type != "int64"
   N = rep("",length(A@D$name))
   N[notint] = paste("(",A@D$type,")",sep="")
@@ -207,14 +203,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
   expr = paste(paste(name,FUN,sep=","),collapse=",")
   query = sprintf("apply(%s, %s)",aname, expr)
-  if(`eval`)
-  {
-    newarray = tmpnam()
-    query = sprintf("store(%s,%s)",query,newarray)
-    scidbquery(query)
-    return(scidb(newarray,gc=TRUE))
-  }
-  scidbexpr(query)
+  scidbeval(query,eval)
 }
 
 
