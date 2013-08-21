@@ -13,7 +13,7 @@ export('scidbexpr')
 export('project')
 export('bind')
 importFrom("utils", "head", "tail")
-importFrom("stats", "aggregate")
+importFrom("stats", "aggregate", "filter")
 
 # S4 methods
 exportClasses("scidb","scidbdf","scidbexpr")

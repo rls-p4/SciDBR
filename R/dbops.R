@@ -1,5 +1,6 @@
 # Experimental routines August 2013
 
+
 `project` = function(X,expr,eval=TRUE)
 {
   xname = X
@@ -16,6 +17,10 @@
 }
 
 # This is the SciDB filter operation, not the R timeseries one.
+# X is either a scidb, scidbdf, or scidbexpr object.
+# expr is a valid SciDB expression (character)
+# eval=TRUE means run the query and return a scidb object.
+# eval=FALSE means return a scidbexpr object representing the query.
 `filter.scidb` = function(X,expr,eval=TRUE)
 {
   xname = X
@@ -31,17 +36,28 @@
   scidbexpr(query)
 }
 
-# SciDB cross_join wrapper
-# X and Y are SciDB array references of any kind
+# SciDB cross_join wrapper internal function to support merge on various
+# classes (scidb, scidbdf, scidbexpr). This is an internal function to support
+# merge on various SciDB objects.
+# X and Y are SciDB array references of any kind (scidb, scidbdf, scidbexpr)
 # by is either a single character indicating a dimension name common to both
 # arrays to join on, or a two-element list of character vectors of array
-# dimensions to join on. Examples:
+# dimensions to join on.
+# eval=TRUE means run the query and return a scidb object.
+# eval=FALSE means return a scidbexpr object representing the query.
+# Examples:
 # merge(X,Y,by='i')
 # merge(X,Y,by=list('i','i'))  # equivalent to last expression
 # merge(X,Y,by=list(X=c('i','j'), Y=c('k','l')))
-`merge.scidb` = function(X,Y,by,eval=TRUE)
+`merge_scidb` = function(X,Y,...)
 {
-  if(missing(`by`)) `by`=list()
+  mc = match.call()
+  if(is.null(mc$by)) `by`=list()
+  else `by`=mc$by
+  if(is.null(mc$eval))
+  {
+    `eval`=TRUE
+  } else `eval`=mc$by
   xname = X
   yname = Y
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
@@ -72,8 +88,12 @@
 }
 
 
+# aggregate_by_array is internal to the package.
+# x is a scidb object.
 # by may be a SciDB array or a list whose first element is a SciDB array
 # and remaining elements are dimension names (character).
+# eval=TRUE means run the query and return a scidb object.
+# eval=FALSE means return a scidbexpr object representing the query.
 aggregate_by_array = function(x,by,FUN,eval=TRUE)
 {
   dims = c()
@@ -111,7 +131,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
 }
 
 # Lots of documentation needed here!
-aggregate.scidb = function(x,by,FUN,eval=TRUE)
+`aggregate.scidb` = function(x,by,FUN,eval=TRUE)
 {
   if("scidbexpr" %in% class(x)) x = scidb_from_scidbexpr(x)
   b = `by`
@@ -180,7 +200,7 @@ aggregate.scidb = function(x,by,FUN,eval=TRUE)
   S
 }
 
-bind = function(X, name, FUN, eval=TRUE)
+`bind` = function(X, name, FUN, eval=TRUE)
 {
   aname = X
   if(class(X) %in% c("scidb","scidbdf")) aname=X@name
@@ -198,7 +218,8 @@ bind = function(X, name, FUN, eval=TRUE)
 }
 
 
-`merge.scidbdf` = function(X,Y,by,eval=TRUE) merge.scidb(X,Y,by,eval)
-`merge.scidbexpr` = function(X,Y,by,eval=TRUE) merge.scidb(X,Y,by,eval)
+`merge.scidb` = function(x,y,...) merge_scidb(x,y,...)
+`merge.scidbdf` = function(x,y,...) merge_scidb(x,y,...)
+`merge.scidbexpr` = function(x,y,...) merge_scidb(x,y,...)
 `filter.scidbdf` = function(X,expr,eval=TRUE) filter.scidb(X,expr,eval)
 `filter.scidbexpr` = function(X,expr,eval=TRUE) filter.scidb(X,expr,eval)
