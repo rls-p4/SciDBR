@@ -17,7 +17,7 @@ test = function(expr)
 test("scidblist(); TRUE")
 test("scidbremove('_RTEST',error=invisible);TRUE")
 # Dense matrix tests
-test("as.scidb(matrix(rnorm(50*40),50),rowChunkSize=3,colChunkSize=19,name='_RTEST');TRUE")
+test("as.scidb(matrix(rnorm(50*40),50),rowChunkSize=3,colChunkSize=19,name='_RTEST',gc=FALSE);TRUE")
 test("X=scidb('_RTEST');isTRUE(all.equal(0,sqrt(sum((crossprod(X)[] - crossprod(X[]))^2))))")
 test("X=scidb('_RTEST');x=rnorm(50);isTRUE(all.equal(0,sqrt(sum((crossprod(x,X)[] - crossprod(x,X[]))^2))))")
 test("scidbremove('_RTEST',error=invisible);TRUE")

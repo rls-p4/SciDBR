@@ -315,10 +315,10 @@ warning("Dimension labels were dropped.")
   }
   li = lb == "int64"
   lb[li] = .scidb_DIM_MIN
-  lb[!li] = "''"
+  lb[!li] = "null"
   ui = ub == "int64"
   ub[ui] = .scidb_DIM_MAX
-  ub[!ui] = "'~~~~~~~~~~~~~~~~~~'"   # XXX only approx upper bound
+  ub[!ui] = "null"   # XXX only approx upper bound
   lb = paste(lb, collapse=",")
   ub = paste(ub, collapse=",")
   q = sprintf("store(subarray(%s,%s,%s),%s)",q,lb,ub,ans)

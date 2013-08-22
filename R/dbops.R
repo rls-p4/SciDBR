@@ -209,7 +209,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
 
 `sort_scidb` = function(X, decreasing = FALSE, ...)
 {
-  mc = match.call()
+  mc = list(...)
   if(!is.null(mc$na.last))
     warning("na.last option not supported by SciDB sort. Missing values are treated as less than other values by SciDB sort.")
   dflag = ifelse(decreasing, 'desc', 'asc')
@@ -229,7 +229,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   a = paste(paste(mc$attributes, dflag, sep=" "),collapse=",")
   if(!is.null(mc$chunk_size)) a = paste(a, mc$chunk_size, sep=",")
 
-  query = sprintf("sort(%s,%s)", xname,a)
+  query = sprintf("subarray(sort(%s,%s),null,%s)", xname,a,.scidb_DIM_MAX)
   scidbeval(query,eval)
 }
 
