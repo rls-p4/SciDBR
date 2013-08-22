@@ -109,6 +109,13 @@ scidb = function(name, attribute, `data.frame`, gc)
   d = iquery(paste("dimensions(",name,")"),return=TRUE)
 # R is unfortunately interpreting 'i' as an imaginary unit I think.
   if(any(is.na(d))) d[is.na(d)] = "i"
+# Adjust lengths of int64 dimensions as best we can (R lacks 64-bit integers).
+  idx = which(d$type=="int64")
+  for(j in idx)
+  {
+    l = d[j,"high"] - d[j,"low"] + 1
+    if(!is.na(l)) d[j,"length"] = abs(l)
+  } 
   d
 }
 
