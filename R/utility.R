@@ -582,3 +582,30 @@ extract_schema = function(x, at=x@attributes, ty=x@types, nu=x@nullable)
   if(bracket) S = sprintf("[%s]",S)
   S
 }
+
+# .scidbdim is an internal function that retirieves dimension metadata from a
+# scidb array called "name."
+.scidbdim = function(name)
+{
+#  if(!.scidbexists(name)) stop ("not found") 
+  d = iquery(paste("dimensions(",name,")"),return=TRUE)
+# R is unfortunately interpreting 'i' as an imaginary unit I think.
+  if(any(is.na(d))) d[is.na(d)] = "i"
+# Adjust lengths of int64 dimensions as best we can (R lacks 64-bit integers).
+#  idx = which(d$type=="int64")
+#  for(j in idx)
+#  {
+#    l = d[j,"high"] - d[j,"low"] + 1
+#    if(!is.na(l)) d[j,"length"] = abs(l)
+#  } 
+  d
+}
+
+# Retrieve list of attributes for a named SciDB array (internal function).
+.scidbattributes = function(name)
+{
+  x = iquery(paste("attributes(",name,")",sep=""),return=TRUE,colClasses=c(NA,"character",NA,NA))
+# R is unfortunately interpreting 'i' as an imaginary unit I think.
+  if(any(is.na(x))) x[is.na(x)] = "i"
+  list(attributes=x[,2],types=x[,3],nullable=(x[,4]=="true"))
+}
