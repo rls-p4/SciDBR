@@ -205,7 +205,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   if(class(X) %in% c("scidb","scidbdf")) xname=X@name
   iname = I
   if(class(I) %in% c("scidb","scidbdf")) iname=I@name
-  query = sprintf("index_lookup(%s as __cazart__, %s, __cazart__.%s), %s",xname, iname, attr, new_attr)
+  query = sprintf("index_lookup(%s as __cazart__, %s, __cazart__.%s, %s)",xname, iname, attr, new_attr)
   scidbeval(query,eval)
 }
 
