@@ -27,7 +27,7 @@
 {
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
-  query = sprintf("project(%s,%s)", xname,expr)
+  query = sprintf("project(%s,%s)", xname,paste(expr,collapse=","))
   scidbeval(query,eval)
 }
 
