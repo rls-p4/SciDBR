@@ -67,17 +67,18 @@ scidbmultiply = function(e1,e2)
   op1 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,32,0,%s=0:%.0f,32,0])",op1,a1,e1@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,e1@D$name[[2]],e1@D$length[[2]]-1)
   op2 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,32,0,%s=0:%.0f,32,0])",op2,a2,e2@type[1],e2@D$name[[1]],e2@D$length[[1]]-1,e2@D$name[[2]],e2@D$length[[2]]-1)
 
-  op3 = sprintf("build(<%s:%s>[%s=0:%.0f,32,0,%s=0:%.0f,32,0],0)",a1,e1@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,e2@D$name[[2]],e2@D$length[[2]]-1)
+  dnames = make.names_(c(e1@D$name[[1]],e2@D$name[[2]]))
+  op3 = sprintf("build(<%s:%s>[%s=0:%.0f,32,0,%s=0:%.0f,32,0],0)",a1,e1@type[1],dnames[[1]],e1@D$length[[1]]-1,dnames[[2]],e2@D$length[[2]]-1)
 
   query = sprintf("gemm(%s, %s, %s)",op1,op2,op3)
 # Repartition the output back to conform with inputs
   query = sprintf(
            "repart(%s,<gemm:double>[%s=0:%.0f,%.0f,%.0f, %s=0:%.0f,%.0f,%.0f])",
-            query, e1@D$name[[1]],
+            query, dnames[[1]],
                    e1@D$length[[1]]-1,
                    e1@D$chunk_interval[[1]],
                    e1@D$chunk_overlap[[1]],
-                   e2@D$name[[2]],
+                   dnames[[2]],
                    e2@D$length[[2]]-1,
                    e2@D$chunk_interval[[2]],
                    e2@D$chunk_overlap[[2]])

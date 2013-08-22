@@ -109,7 +109,7 @@ selectively_drop_nid = function(A, idx, schema_only=FALSE, query, nullable)
 }
 
 
-# Materialize the single-attribute scidb array x to R.
+# Materialize the single-attribute scidb array x as a dense R array.
 materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
 {
   type = names(.scidbtypes[.scidbtypes==x@type])

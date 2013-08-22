@@ -1,6 +1,9 @@
 # The functions and methods defined below are based closely on native SciDB
-# functions, some of which have weak or limited analogs in R.
-
+# functions, some of which have weak or limited analogs in R. The functions
+# defined below work with objects of class scidb (arrays), scidbdf (data
+# frames), or scidbexpr (generic scidb query strings). They can be efficiently
+# nested by explicitly setting eval=FALSE on inner functions, deferring
+# computation until eval=TRUE.
 
 # An internal convenience function that conditionally evaluates a scidb
 # query string `expr` (eval=TRUE), returning a scidb object,
@@ -110,7 +113,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   a = x@attributes %in% n
 # XXX What if an attribute has negative values? What about chunk sizes? NULLs? Ugh. Also insert reasonable upper bound instead of *?
 # XXX Take care of all these issues...
-  redim = paste(paste(n,"=0:*,1000,0",sep=""), collapse=",")
+  redim = paste(paste(n,"=0:*,10000,0",sep=""), collapse=",")
   D = paste(build_dim_schema(x,FALSE),redim,sep=",")
   A = x
   A@attributes = x@attributes[!a]
