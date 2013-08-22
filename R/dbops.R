@@ -10,11 +10,11 @@
   if(`eval`)
   {
     newarray = tmpnam()
-    query = sprintf("store(%s,%s)",query,newarray)
+    query = sprintf("store(%s,%s)",expr,newarray)
     scidbquery(query)
     return(scidb(newarray,gc=TRUE))
   }
-  scidbexpr(query)
+  scidbexpr(expr)
 }
 
 # Filter the attributes of the scidb, scidbdf, or scidbexpr object to contain
@@ -196,6 +196,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   S
 }
 
+# Sort of like cbind for data frames.
 `bind` = function(X, name, FUN, eval=TRUE)
 {
   aname = X
@@ -206,6 +207,31 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   scidbeval(query,eval)
 }
 
+`sort_scidb` = function(X, decreasing = FALSE, ...)
+{
+  mc = match.call()
+  if(!is.null(mc$na.last))
+    warning("na.last option not supported by SciDB sort. Missing values are treated as less than other values by SciDB sort.")
+  dflag = ifelse(decreasing, 'desc', 'asc')
+  xname = X
+  if(class(X) %in% c("scidbdf","scidb")) xname = X@name
+  EX = X
+  if("scidbexpr" %in% class(X))
+  {
+    EX = scidb_from_scidbexpr(X)
+  }
+  if(is.null(mc$attributes))
+  {
+    if(length(EX@attributes)>1) stop("Array contains more than one attribute. Specify one or more attributes to sort on with the attributes= function argument")
+    mc$attributes=EX@attributes
+  }
+  `eval` = ifelse(is.null(mc$eval), TRUE, mc$eval)
+  a = paste(paste(mc$attributes, dflag, sep=" "),collapse=",")
+  if(!is.null(mc$chunk_size)) a = paste(a, mc$chunk_size, sep=",")
+
+  query = sprintf("sort(%s,%s)", xname,a)
+  scidbeval(query,eval)
+}
 
 # S3 methods
 `merge.scidb` = function(x,y,...) merge_scidb(x,y,...)
@@ -214,3 +240,6 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
 `filter.scidb` = function(X,expr,eval=TRUE) filter_scidb(X,expr,eval)
 `filter.scidbdf` = function(X,expr,eval=TRUE) filter_scidb(X,expr,eval)
 `filter.scidbexpr` = function(X,expr,eval=TRUE) filter_scidb(X,expr,eval)
+`sort.scidb` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
+`sort.scidbdf` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
+`sort.scidbexpr` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)

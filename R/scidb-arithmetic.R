@@ -53,12 +53,12 @@ scidbmultiply = function(e1,e2)
 # We use subarray to handle starting index mismatches (subarray always
 # returns an array with dimension indices starting at zero).
   l1 = length(dim(e1))
-  lb = paste(rep(.scidb_DIM_MIN,l1),collapse=",")
-  ub = paste(rep(.scidb_DIM_MAX,l1),collapse=",")
+  lb = paste(rep("null",l1),collapse=",")
+  ub = paste(rep("null",l1),collapse=",")
   op1 = sprintf("subarray(%s,%s,%s)",op1,lb,ub)
   l2 = length(dim(e2))
-  lb = paste(rep(.scidb_DIM_MIN,l2),collapse=",")
-  ub = paste(rep(.scidb_DIM_MAX,l2),collapse=",")
+  lb = paste(rep("null",l2),collapse=",")
+  ub = paste(rep("null",l2),collapse=",")
   op2 = sprintf("subarray(%s,%s,%s)",op2,lb,ub)
 
 #  e1@D$chunk_interval[[2]], e1@D$chunk_overlap[[2]],
@@ -108,12 +108,12 @@ scidbmultiply = function(e1,e2)
 
 # We use subarray to handle starting index mismatches...
   l1 = length(dim(e1))
-  lb = paste(rep(.scidb_DIM_MIN,l1),collapse=",")
-  ub = paste(rep(.scidb_DIM_MAX,l1),collapse=",")
+  lb = paste(rep("null",l1),collapse=",")
+  ub = paste(rep("null",l1),collapse=",")
   q1 = sprintf("subarray(%s,%s,%s)",e1@name,lb,ub)
   l = length(dim(e2))
-  lb = paste(rep(.scidb_DIM_MIN,l),collapse=",")
-  ub = paste(rep(.scidb_DIM_MAX,l),collapse=",")
+  lb = paste(rep("null",l),collapse=",")
+  ub = paste(rep("null",l),collapse=",")
   q2 = sprintf("subarray(%s,%s,%s)",e2@name,lb,ub)
 # Adjust the 2nd array to be schema-compatible with the 1st:
 # XXX PGB Makes the good point here that we should repart the smaller of the
