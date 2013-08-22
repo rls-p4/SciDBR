@@ -23,16 +23,17 @@
 # Filter the attributes of the scidb, scidbdf, or scidbexpr object to contain
 # only those specified in expr.
 # X:    a scidb, scidbdf, or scidbexpr object
-# expr: a character vector describing the list of attributes to project onto
+# attributes: a character vector describing the list of attributes to project onto
 # eval: a boolean value. If TRUE, the query is executed returning a scidb array.
 #       If FALSE, a scidbexpr object describing the query is returned.
-`project` = function(X,expr,eval=TRUE)
+`project` = function(X,attributes,eval=TRUE)
 {
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
-  query = sprintf("project(%s,%s)", xname,paste(expr,collapse=","))
+  query = sprintf("project(%s,%s)", xname,paste(attributes,collapse=","))
   scidbeval(query,eval)
 }
+
 
 # This is the SciDB filter operation, not the R timeseries one.
 # X is either a scidb, scidbdf, or scidbexpr object.
@@ -127,7 +128,6 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   scidbeval(query,eval)
 }
 
-# Lots of documentation needed here!
 `aggregate_scidb` = function(x,by,FUN,eval=TRUE)
 {
   if("scidbexpr" %in% class(x)) x = scidb_from_scidbexpr(x)
@@ -199,6 +199,16 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   S
 }
 
+`index_lookup` = function(X, I, attr, new_attr=paste(attr,"index",sep="_"), eval=TRUE)
+{
+  xname = X
+  if(class(X) %in% c("scidb","scidbdf")) xname=X@name
+  iname = I
+  if(class(I) %in% c("scidb","scidbdf")) iname=I@name
+  query = sprintf("index_lookup(%s as __cazart__, %s, __cazart__.%s), %s",xname, iname, attr, new_attr)
+  scidbeval(query,eval)
+}
+
 # Sort of like cbind for data frames.
 `bind` = function(X, name, FUN, eval=TRUE)
 {
@@ -207,6 +217,17 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
   expr = paste(paste(name,FUN,sep=","),collapse=",")
   query = sprintf("apply(%s, %s)",aname, expr)
+  scidbeval(query,eval)
+}
+
+`unique_scidb` = function(x, incomparables=FALSE, ...)
+{
+  mc = list(...)
+  `eval` = ifelse(is.null(mc$eval), TRUE, mc$eval)
+  if(incomparables!=FALSE) warning("The incomparables option is not available yet.")
+  xname = x
+  if(class(x) %in% c("scidbdf","scidb")) xname = x@name
+  query = sprintf("uniq(%s)",xname)
   scidbeval(query,eval)
 }
 
@@ -246,3 +267,6 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
 `sort.scidb` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `sort.scidbdf` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `sort.scidbexpr` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
+`unique.scidb` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
+`unique.scidbdf` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
+`unique.scidbexpr` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)

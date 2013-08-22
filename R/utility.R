@@ -29,7 +29,6 @@
 # store the connection information and obtain a unique ID
 scidbconnect = function(host='localhost', port=8080L)
 {
-# check connectivity XXX
   assign("host",host, envir=.scidbenv)
   assign("port",port, envir=.scidbenv)
 # Use the query ID from a bogus query as a unique ID for automated
@@ -39,7 +38,9 @@ scidbconnect = function(host='localhost', port=8080L)
   id = id[[length(id)]]
   assign("uid",id,envir=.scidbenv)
 # Set the ASCII interface precision
-  x = scidbquery(query="setopt('precision','16')",release=1,resp=FALSE)
+  scidbquery(query="setopt('precision','16')",release=1,resp=FALSE)
+# Try to load the example_udos library (SciDB 13.6)
+  scidbquery(query="load_library('example_udos')",release=1,resp=FALSE)
   invisible()
 }
 
