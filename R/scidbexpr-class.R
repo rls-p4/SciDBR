@@ -37,7 +37,7 @@ scidb_from_scidbexpr = function(x)
 }
 
 # Construct a virtual scidb object reference from a SciDB schema string.
-# The underlying SciDB object in this case does not exist.
+# The underlying SciDB object in this case may not exist.
 scidb_from_schemastring = function(s,expr=character())
 {
   a=strsplit(strsplit(strsplit(strsplit(s,">")[[1]][1],"<")[[1]][2],",")[[1]],":")
@@ -62,16 +62,18 @@ scidb_from_schemastring = function(s,expr=character())
     dtype[nid] = gsub(".*\\((.*)\\)","\\1",dname[nid])
     dname[nid] = gsub("\\(.*","",dname[nid])
   }
-  chunk_interval = unlist(lapply(d[-1],function(x)x[[2]]))
-  chunk_overlap = unlist(lapply(d[-1],function(x)x[[3]]))
+  chunk_interval = as.numeric(unlist(lapply(d[-1],function(x)x[[2]])))
+  chunk_overlap = as.numeric(unlist(lapply(d[-1],function(x)x[[3]])))
   d = lapply(d[-1],function(x)x[[1]])
   nid = !grepl(":",d)
   if(any(nid))
     d[nid] = paste("1:",d[nid],sep="")
   dlength = unlist(lapply(d,function(x)diff(as.numeric(strsplit(x,":")[[1]]))+1))
+  dstart = unlist(lapply(d,function (x)as.numeric(strsplit(x,":")[[1]][[1]])))
 
   D = list(name=dname,
            type=dtype,
+           start=dstart,
            length=dlength,
            chunk_interval=chunk_interval,
            chunk_overlap=chunk_overlap,
