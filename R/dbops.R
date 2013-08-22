@@ -36,7 +36,7 @@
 # expr is a valid SciDB expression (character)
 # eval=TRUE means run the query and return a scidb object.
 # eval=FALSE means return a scidbexpr object representing the query.
-`filter.scidb` = function(X,expr,eval=TRUE)
+`filter_scidb` = function(X,expr,eval=TRUE)
 {
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
@@ -125,7 +125,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
 }
 
 # Lots of documentation needed here!
-`aggregate.scidb` = function(x,by,FUN,eval=TRUE)
+`aggregate_scidb` = function(x,by,FUN,eval=TRUE)
 {
   if("scidbexpr" %in% class(x)) x = scidb_from_scidbexpr(x)
   b = `by`
@@ -207,8 +207,10 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
 }
 
 
+# S3 methods
 `merge.scidb` = function(x,y,...) merge_scidb(x,y,...)
 `merge.scidbdf` = function(x,y,...) merge_scidb(x,y,...)
 `merge.scidbexpr` = function(x,y,...) merge_scidb(x,y,...)
-`filter.scidbdf` = function(X,expr,eval=TRUE) filter.scidb(X,expr,eval)
-`filter.scidbexpr` = function(X,expr,eval=TRUE) filter.scidb(X,expr,eval)
+`filter.scidb` = function(X,expr,eval=TRUE) filter_scidb(X,expr,eval)
+`filter.scidbdf` = function(X,expr,eval=TRUE) filter_scidb(X,expr,eval)
+`filter.scidbexpr` = function(X,expr,eval=TRUE) filter_scidb(X,expr,eval)

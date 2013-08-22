@@ -235,4 +235,4 @@ function(x, grid=c(x@D$chunk_interval[1], x@D$chunk_interval[2]), op=sprintf("su
 # FUN: A valid SciDB aggregation expression (string)
 setOldClass("aggregate")
 setGeneric("aggregate")
-setMethod("aggregate", signature(x="scidb"), aggregate.scidb)
+setMethod("aggregate", signature(x="scidb"), aggregate_scidb)

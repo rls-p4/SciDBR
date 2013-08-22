@@ -26,7 +26,7 @@
 # it for functions like 'merge.'
 
 scidbexpr = setClass("scidbexpr", contains = "character")
-setMethod("aggregate", signature(x="scidbexpr"), aggregate.scidb)
+setMethod("aggregate", signature(x="scidbexpr"), aggregate_scidb)
 
 # Construct a virtual scidb object reference from a SciDB expression.
 # The underlying SciDB object in this case does not exist.

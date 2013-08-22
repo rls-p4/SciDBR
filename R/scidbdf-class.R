@@ -63,4 +63,4 @@ setMethod('show', 'scidbdf',
     cat(sprintf("SciDB array %s: %.0f obs. of %d variables.\n",object@name, object@D$length, length(object@attributes)))
   })
 
-setMethod("aggregate", signature(x="scidbdf"), aggregate.scidb)
+setMethod("aggregate", signature(x="scidbdf"), aggregate_scidb)
