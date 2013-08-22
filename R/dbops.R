@@ -5,21 +5,6 @@
 # nested by explicitly setting eval=FALSE on inner functions, deferring
 # computation until eval=TRUE.
 
-# An internal convenience function that conditionally evaluates a scidb
-# query string `expr` (eval=TRUE), returning a scidb object,
-# or returns a scidbexpr object (eval=FALSE).
-`scidbeval` = function(expr,eval)
-{
-  if(`eval`)
-  {
-    newarray = tmpnam()
-    query = sprintf("store(%s,%s)",expr,newarray)
-    scidbquery(query)
-    return(scidb(newarray,gc=TRUE))
-  }
-  scidbexpr(expr)
-}
-
 # Filter the attributes of the scidb, scidbdf, or scidbexpr object to contain
 # only those specified in expr.
 # X:    a scidb, scidbdf, or scidbexpr object
@@ -140,6 +125,9 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   if(!all(b %in% c(x@attributes, x@D$name))) stop("Invalid attribute or dimension name in by")
   a = x@attributes %in% b
   query = x@name
+# Handle group by attributes with redimension. We don't use a redimension
+# aggregate, however, because some of the other group by variables may
+# already be dimensions.
   if(any(a))
   {
 # We assume attributes are int64 here. Add support for sort/unique/index_lookup.
@@ -154,49 +142,11 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
     A@types      = x@types[!a]
     S = build_attr_schema(A)
     D = sprintf("[%s]",D)
-    query = sprintf("redimension(%s,%s%s)",x@name,S,D)
+    query = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1)),%s%s)",x@name,S,D)
   }
   along = paste(b,collapse=",")
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
   scidbeval(query,eval)
-}
-
-
-# Build the attibute part of a SciDB array schema from a scidb,
-# scidbdf, or scidbexpr object.
-`build_attr_schema` = function(A)
-{
-  if("scidbexpr" %in% class(A)) A = scidb_from_scidbexpr(A)
-  if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-  N = rep("",length(A@nullable))
-  N[A@nullable] = " NULL"
-  N = paste(A@types,N,sep="")
-  S = paste(paste(A@attributes,N,sep=":"),collapse=",")
-  sprintf("<%s>",S)
-}
-
-`noE` = function(w) sapply(w, function(x) sprintf("%.0f",x))
-
-# Build the dimension part of a SciDB array schema from a scidb,
-# scidbdf, or scidbexpr object.
-`build_dim_schema` = function(A,bracket=TRUE)
-{
-  if("scidbexpr" %in% class(A)) A = scidb_from_scidbexpr(A)
-  if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-  notint = A@D$type != "int64"
-  N = rep("",length(A@D$name))
-  N[notint] = paste("(",A@D$type,")",sep="")
-  N = paste(A@D$name, N,sep="")
-  low = noE(A@D$low)
-  high = noE(A@D$high)
-  R = paste(low,high,sep=":")
-  R[notint] = noE(A@D$length)
-  S = paste(N,R,sep="=")
-  S = paste(S,noE(A@D$chunk_interval),sep=",")
-  S = paste(S,noE(A@D$chunk_overlap),sep=",")
-  S = paste(S,collapse=",")
-  if(bracket) S = sprintf("[%s]",S)
-  S
 }
 
 `index_lookup` = function(X, I, attr, new_attr=paste(attr,"index",sep="_"), eval=TRUE)

@@ -161,6 +161,21 @@ type= c("arrays","operators","functions","types","aggregates","instances","queri
 }
 scidbls = function(...) scidblist(...)
 
+# An internal convenience function that conditionally evaluates a scidb
+# query string `expr` (eval=TRUE), returning a scidb object,
+# or returns a scidbexpr object (eval=FALSE).
+`scidbeval` = function(expr,eval)
+{
+  if(`eval`)
+  {
+    newarray = tmpnam()
+    query = sprintf("store(%s,%s)",expr,newarray)
+    scidbquery(query)
+    return(scidb(newarray,gc=TRUE))
+  }
+  scidbexpr(expr)
+}
+
 # Basic low-level query. Returns query id.
 # query: a character query string
 # afl: TRUE indicates use AFL, FALSE AQL
@@ -523,4 +538,47 @@ extract_schema = function(x, at=x@attributes, ty=x@types, nu=x@nullable)
   dims = sprintf("[%s]",paste(paste(paste(paste(paste(paste(x@D$name,"=",sep=""),x@D$start,sep=""),x@D$start+x@D$length-1,sep=":"),x@D$chunk_interval,sep=","),x@D$chunk_overlap,sep=","),collapse=","))
   options(op)
   paste(attr,dims,sep="")
+}
+
+# Build the attibute part of a SciDB array schema from a scidb,
+# scidbdf, or scidbexpr object.
+`build_attr_schema` = function(A)
+{
+  if("scidbexpr" %in% class(A)) A = scidb_from_scidbexpr(A)
+  if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  N = rep("",length(A@nullable))
+  N[A@nullable] = " NULL"
+  N = paste(A@types,N,sep="")
+  S = paste(paste(A@attributes,N,sep=":"),collapse=",")
+  sprintf("<%s>",S)
+}
+
+`noE` = function(w) sapply(w, function(x) sprintf("%.0f",x))
+
+# Build the dimension part of a SciDB array schema from a scidb,
+# scidbdf, or scidbexpr object.
+`build_dim_schema` = function(A,bracket=TRUE)
+{
+  if("scidbexpr" %in% class(A)) A = scidb_from_scidbexpr(A)
+  if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  notint = A@D$type != "int64"
+  N = rep("",length(A@D$name))
+  N[notint] = paste("(",A@D$type,")",sep="")
+  N = paste(A@D$name, N,sep="")
+  low = noE(A@D$low)
+  high = noE(A@D$high)
+  if(is.na(A@D$low))
+    low = noE(A@D$start)
+  if(is.na(A@D$high))
+  {
+    high = noE(A@D$start + A@D$length - 1)
+  }
+  R = paste(low,high,sep=":")
+  R[notint] = noE(A@D$length)
+  S = paste(N,R,sep="=")
+  S = paste(S,noE(A@D$chunk_interval),sep=",")
+  S = paste(S,noE(A@D$chunk_overlap),sep=",")
+  S = paste(S,collapse=",")
+  if(bracket) S = sprintf("[%s]",S)
+  S
 }
