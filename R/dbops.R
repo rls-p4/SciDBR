@@ -19,7 +19,6 @@
   scidbeval(query,eval)
 }
 
-
 # This is the SciDB filter operation, not the R timeseries one.
 # X is either a scidb, scidbdf, or scidbexpr object.
 # expr is a valid SciDB expression (character)
@@ -115,13 +114,19 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
 
 `aggregate_scidb` = function(x,by,FUN,eval=TRUE)
 {
+# XXX
   if("scidbexpr" %in% class(x)) x = scidb_from_scidbexpr(x)
   b = `by`
   if(is.list(b)) b = b[[1]]
   if(class(b) %in% c("scidb","scidbdf"))
     return(aggregate_by_array(x,`by`,FUN,eval))
 
+# XXX A bug in SciDB 13.6 unpack prevents us from using eval=FALSE for now.
+  if(!eval) stop("eval=FALSE not yet supported by aggregate due to a bug in SciDB 13.6")
+
   b = `by`
+  new_dim_name = make.names_(c(unlist(b),"row"))
+  new_dim_name = new_dim_name[length(new_dim_name)]
   if(!all(b %in% c(x@attributes, x@D$name))) stop("Invalid attribute or dimension name in by")
   a = x@attributes %in% b
   query = x@name
@@ -131,6 +136,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   if(any(a))
   {
 # We assume attributes are int64 here. Add support for sort/unique/index_lookup.
+# XXX XXX
     n = x@attributes[a]
 # XXX What if an attribute has negative values? What about chunk sizes? NULLs? Ugh. Also insert reasonable upper bound instead of *?
 # XXX Take care of all these issues...
@@ -145,7 +151,15 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
     query = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1)),%s%s)",x@name,S,D)
   }
   along = paste(b,collapse=",")
+# XXX
+# We use unpack to always return a data frame (a 1D scidb array)
+# OK, as of SciDB 13.6 unpack has a bug that prevents it from working often. Saving
+# to a temporary array first seems to be a workaround for this problem. This sucks.
+#  query = sprintf("unpack(aggregate(%s, %s, %s),%s)",query, FUN, along, new_dim_name)
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
+  temp = scidbeval(query,TRUE)
+  query = sprintf("unpack(%s,%s)",temp@name,new_dim_name)
+# XXX
   scidbeval(query,eval,`data.frame`=TRUE)
 }
 

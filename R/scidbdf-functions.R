@@ -64,12 +64,12 @@ dimnames.scidbdf = function(x)
   if(all(sapply(i,is.null)))
     if(iterative)
     {
-      ans = iquery(sprintf("scan(%s)",x@name),`return`=TRUE,iterative=TRUE,n=x@D$length+1,excludecol=1,colClasses=x@colClasses)
+      ans = iquery(sprintf("%s",x@name),`return`=TRUE,iterative=TRUE,n=n,excludecol=1,colClasses=x@colClasses)
       return(ans)
     }
     else
     {
-      ans = iquery(sprintf("scan(%s)",x@name),`return`=TRUE,n=x@D$length+1, colClasses=x@colClasses)
+      ans = iquery(sprintf("%s",x@name),`return`=TRUE,n=Inf, colClasses=x@colClasses)
       rownames(ans)= ans[,1]
       ans = ans[,-1,drop=FALSE]
       return(ans)
@@ -82,7 +82,13 @@ dimnames.scidbdf = function(x)
 `dim.scidbdf` = function(x)
 {
   if(length(x@dim)==0) return(NULL)
-  x@dim
+  d = x@dim
+# Try to make arrays with '*' upper bounds seem more reasonable
+    if(d[1] - as.numeric(scidb:::.scidb_DIM_MAX) == 0)
+    {
+      d[1] = x@D$high - x@D$low + 1
+    }
+  d
 }
 
 `dim<-.scidbdf` = function(x, value)
@@ -102,8 +108,16 @@ dimnames.scidbdf = function(x)
 }
 
 `ncol.scidbdf` = function(x) x@dim[2]
-`nrow.scidbdf` = function(x) x@dim[1]
-`dim.scidbdf` = function(x) {if(length(x@dim)>0) return(x@dim); NULL}
+`nrow.scidbdf` = function(x) 
+  {
+    n = x@dim[1]
+# Try to make arrays with '*' upper bounds seem more reasonable
+    if(n - as.numeric(scidb:::.scidb_DIM_MAX) == 0)
+    {
+      n = x@D$high - x@D$low + 1
+    }
+    n
+  }
 `length.scidbdf` = function(x) x@length
 
 

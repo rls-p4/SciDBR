@@ -55,12 +55,16 @@ setMethod('is.scidbdf', definition=function(x) return(FALSE))
 setGeneric('print', function(x) standardGeneric('print'))
 setMethod('print', signature(x='scidbdf'),
   function(x) {
-    cat(sprintf("SciDB array %s: %.0f obs. of %d variables.\n",x@name, x@D$length, length(x@attributes)))
+    l = length(x@attributes)
+    v = ifelse(l<2, "variable", "variables")
+    cat(sprintf("SciDB array %s: %.0f obs. of %d %s.\n",x@name, (x@D$high - x@D$low + 1), length(x@attributes), v))
   })
 
 setMethod('show', 'scidbdf',
   function(object) {
-    cat(sprintf("SciDB array %s: %.0f obs. of %d variables.\n",object@name, object@D$length, length(object@attributes)))
+    l = length(object@attributes)
+    v = ifelse(l<2, "variable", "variables")
+    cat(sprintf("SciDB array %s: %.0f obs. of %d %s.\n",object@name, (object@D$high - object@D$low + 1), length(object@attributes),v))
   })
 
 setMethod("aggregate", signature(x="scidbdf"), aggregate_scidb)
