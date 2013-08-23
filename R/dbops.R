@@ -146,7 +146,7 @@ aggregate_by_array = function(x,by,FUN,eval=TRUE)
   }
   along = paste(b,collapse=",")
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
-  scidbeval(query,eval)
+  scidbeval(query,eval,`data.frame`=TRUE)
 }
 
 `index_lookup` = function(X, I, attr, new_attr=paste(attr,"index",sep="_"), eval=TRUE)

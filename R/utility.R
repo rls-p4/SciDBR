@@ -164,14 +164,14 @@ scidbls = function(...) scidblist(...)
 # An internal convenience function that conditionally evaluates a scidb
 # query string `expr` (eval=TRUE), returning a scidb object,
 # or returns a scidbexpr object (eval=FALSE).
-`scidbeval` = function(expr,eval)
+`scidbeval` = function(expr,eval,...)
 {
   if(`eval`)
   {
     newarray = tmpnam()
     query = sprintf("store(%s,%s)",expr,newarray)
     scidbquery(query)
-    return(scidb(newarray,gc=TRUE))
+    return(scidb(newarray,gc=TRUE,...))
   }
   scidbexpr(expr)
 }
@@ -591,13 +591,6 @@ extract_schema = function(x, at=x@attributes, ty=x@types, nu=x@nullable)
   d = iquery(paste("dimensions(",name,")"),return=TRUE)
 # R is unfortunately interpreting 'i' as an imaginary unit I think.
   if(any(is.na(d))) d[is.na(d)] = "i"
-# Adjust lengths of int64 dimensions as best we can (R lacks 64-bit integers).
-#  idx = which(d$type=="int64")
-#  for(j in idx)
-#  {
-#    l = d[j,"high"] - d[j,"low"] + 1
-#    if(!is.na(l)) d[j,"length"] = abs(l)
-#  } 
   d
 }
 
