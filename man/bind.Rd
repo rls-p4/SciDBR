@@ -12,13 +12,13 @@ Similarly to \code{cbind}, the \code{bind} function adds a new
 variable (a.k.a. SciDB `attribute`) to a SciDB array.
 }
 \usage{
-bind(X, name, FUN, eval = TRUE)
+bind(X, name, FUN, eval = !called_from_scidb())
 }
 \arguments{
   \item{X}{A scidb, scidbdf, or scidbexpr object}
   \item{name}{A character name for the new attribute}
   \item{FUN}{A SciDB function or expression that defines the values for the new attribute (character)}
-  \item{eval}{A logical value: if TRUE then evaluate the \code{bind} expression and return a \code{scidb} object, otherwise return a \code{scidbexpr} object that contains a character string representation of the un-evaluated SciDB query.}
+  \item{eval}{A logical value: if TRUE then evaluate the \code{bind} expression and return a \code{scidb} object, otherwise return a \code{scidbexpr} object that contains a character string representation of the un-evaluated SciDB query. By default, eval is set to FALSE if \code{bind} is called from another function in the scidb package.}
 }
 \value{
 Either a \code{scidb} object or a \code{scidbexpr} object depending on the value of \code{eval}.

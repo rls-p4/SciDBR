@@ -26,6 +26,40 @@
 # An environment to hold connection state
 .scidbenv = new.env()
 
+# An internal convenience function that conditionally evaluates a scidb
+# query string `expr` (eval=TRUE), returning a scidb object,
+# or returns a scidbexpr object (eval=FALSE).
+# Optionally set lastclass to retain class information for evaluated result.
+`scidbeval` = function(expr,eval,lastclass=c("scidb","scidbdf"))
+{
+  lastclass = match.arg(lastclass)
+  if(`eval`)
+  {
+    newarray = tmpnam()
+    query = sprintf("store(%s,%s)",expr,newarray)
+    scidbquery(query)
+    if(lastclass=="scidb") return(scidb(newarray,gc=TRUE))
+    return(scidb(newarray,gc=TRUE,`data.frame`=TRUE))
+  }
+  scidbexpr(expr, lastclass=lastclass)
+}
+
+checkclass = function(x)
+{
+  if("scidbexpr" %in% class(x)) return(x@lastclass)
+  class(x)[[1]]
+}
+
+# Return TRUE if our parent function lives in the scidb namespace, otherwise
+# FALSE. This function is used to automatically control deferred evaluation
+# of SciDB query expressions. If not nested, return FALSE.
+called_from_scidb = function()
+{
+  if(sys.nframe()<3) return(FALSE)
+  f = sys.function(1)
+  grepl("namespace:scidb",capture.output(environment(f))[[1]])
+}
+
 # store the connection information and obtain a unique ID
 scidbconnect = function(host='localhost', port=8080L)
 {
@@ -160,21 +194,6 @@ type= c("arrays","operators","functions","types","aggregates","instances","queri
   z
 }
 scidbls = function(...) scidblist(...)
-
-# An internal convenience function that conditionally evaluates a scidb
-# query string `expr` (eval=TRUE), returning a scidb object,
-# or returns a scidbexpr object (eval=FALSE).
-`scidbeval` = function(expr,eval,...)
-{
-  if(`eval`)
-  {
-    newarray = tmpnam()
-    query = sprintf("store(%s,%s)",expr,newarray)
-    scidbquery(query)
-    return(scidb(newarray,gc=TRUE,...))
-  }
-  scidbexpr(expr)
-}
 
 # Basic low-level query. Returns query id.
 # query: a character query string

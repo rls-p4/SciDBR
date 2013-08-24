@@ -9,12 +9,12 @@ It creates a new array that is a subset of the input array limited
 to a set of specified attributes.
 }
 \usage{
-project(X, attributes, eval = TRUE)
+project(X, attributes, eval = !called_from_scidb())
 }
 \arguments{
   \item{X}{A scidb, scidbdf, or scidbexpr object}
   \item{attributes}{A character vector of attributes to project on to}
-  \item{eval}{A logical value: if TRUE then evaluate the \code{project} expression and return a \code{scidb} object, otherwise return a \code{scidbexpr} object that contains a character string representation of the un-evaluated SciDB query.}
+  \item{eval}{A logical value: if TRUE then evaluate the \code{project} expression and return a \code{scidb} object, otherwise return a \code{scidbexpr} object that contains a character string representation of the un-evaluated SciDB query. By default, eval is set to FALSE if \code{project} is called from another function in the scidb package.}
 }
 \value{
 Either a \code{scidb} object or a \code{scidbexpr} object depending on the value of \code{eval}.
