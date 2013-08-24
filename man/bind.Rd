@@ -12,7 +12,7 @@ Similarly to \code{cbind}, the \code{bind} function adds a new
 variable (a.k.a. SciDB `attribute`) to a SciDB array.
 }
 \usage{
-bind(X, name, FUN, eval = !called_from_scidb())
+bind(X, name, FUN, eval)
 }
 \arguments{
   \item{X}{A scidb, scidbdf, or scidbexpr object}

@@ -12,9 +12,13 @@
 # attributes: a character vector describing the list of attributes to project onto
 # eval: a boolean value. If TRUE, the query is executed returning a scidb array.
 #       If FALSE, a scidbexpr object describing the query is returned.
-`project` = function(X,attributes,eval=!called_from_scidb())
+`project` = function(X,attributes,eval)
 {
-  eval = eval  # Force lazy evaluation's hand
+  if(missing(`eval`))
+  {
+    nf   = sys.nframe()
+    `eval` = !called_from_scidb(nf)
+  }
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   query = sprintf("project(%s,%s)", xname,paste(attributes,collapse=","))
@@ -26,9 +30,13 @@
 # expr is a valid SciDB expression (character)
 # eval=TRUE means run the query and return a scidb object.
 # eval=FALSE means return a scidbexpr object representing the query.
-`filter_scidb` = function(X,expr,eval=!called_from_scidb())
+`filter_scidb` = function(X,expr,eval)
 {
-  eval = eval  # Force lazy evaluation's hand
+  if(missing(`eval`))
+  {
+    nf   = sys.nframe() - 2
+    `eval` = !called_from_scidb(nf)
+  }
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   query = sprintf("filter(%s,%s)", xname,expr)
@@ -55,7 +63,8 @@
   else `by`=mc$by
   if(is.null(mc$eval))
   {
-    `eval`=TRUE
+    nf   = sys.nframe() - 2
+    `eval` = !called_from_scidb(nf)
   } else `eval`=mc$eval
   xname = X
   yname = Y
@@ -146,7 +155,7 @@ aggregate_by_array = function(x,by,FUN,eval=!called_from_scidb())
 # array x with additional attributes.
     types = x@attributes[a]
     nonint = types != "int64"
-    if(any(nonit))
+    if(any(nonint))
     {
     }
 
@@ -173,14 +182,18 @@ aggregate_by_array = function(x,by,FUN,eval=!called_from_scidb())
 #  query = sprintf("unpack(aggregate(%s, %s, %s),%s)",query, FUN, along, new_dim_name)
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
   temp = scidbeval(query,TRUE)
-  query = sprintf("unpack(%s,%s)",temp@name,new_dim_name)
+  query = scidbexpr(sprintf("unpack(%s,%s)",temp@name,new_dim_name), lastclass="scidbdf")
 # XXX
-  scidbeval(query,eval,`data.frame`=TRUE)
+  scidbeval(query,eval)
 }
 
-`index_lookup` = function(X, I, attr, new_attr=paste(attr,"index",sep="_"), eval=!called_from_scidb())
+`index_lookup` = function(X, I, attr, new_attr=paste(attr,"index",sep="_"), eval)
 {
-  eval = eval  # Force lazy evaluation's hand
+  if(missing(`eval`))
+  {
+    nf   = sys.nframe()
+    `eval` = !called_from_scidb(nf)
+  }
   xname = X
   if(class(X) %in% c("scidb","scidbdf")) xname=X@name
   iname = I
@@ -190,9 +203,13 @@ aggregate_by_array = function(x,by,FUN,eval=!called_from_scidb())
 }
 
 # Sort of like cbind for data frames.
-`bind` = function(X, name, FUN, eval=!called_from_scidb())
+`bind` = function(X, name, FUN, eval)
 {
-  eval = eval  # Force lazy evaluation's hand
+  if(missing(`eval`))
+  {
+    nf   = sys.nframe()
+    `eval` = !called_from_scidb(nf)
+  }
   aname = X
   if(class(X) %in% c("scidb","scidbdf")) aname=X@name
   if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
@@ -201,9 +218,10 @@ aggregate_by_array = function(x,by,FUN,eval=!called_from_scidb())
   scidbeval(query,eval,lastclass=checkclass(X))
 }
 
-`unique_scidb` = function(x, incomparables=FALSE)
+`unique_scidb` = function(x, incomparables=FALSE,...)
 {
-  `eval` = !called_from_scidb()
+  nf   = sys.nframe()  - 2
+  `eval` = !called_from_scidb(nf)
   mc = list(...)
   `eval` = ifelse(is.null(mc$eval), `eval`, mc$eval)
   if(incomparables!=FALSE) warning("The incomparables option is not available yet.")
@@ -215,7 +233,8 @@ aggregate_by_array = function(x,by,FUN,eval=!called_from_scidb())
 
 `sort_scidb` = function(X, decreasing = FALSE, ...)
 {
-  `eval` = !called_from_scidb()
+  nf   = sys.nframe() - 2  # XXX Note! sort is a method and is on a deeper stack.
+  `eval` = !called_from_scidb(nf)
   mc = list(...)
   if(!is.null(mc$na.last))
     warning("na.last option not supported by SciDB sort. Missing values are treated as less than other values by SciDB sort.")

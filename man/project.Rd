@@ -9,7 +9,7 @@ It creates a new array that is a subset of the input array limited
 to a set of specified attributes.
 }
 \usage{
-project(X, attributes, eval = !called_from_scidb())
+project(X, attributes, eval)
 }
 \arguments{
   \item{X}{A scidb, scidbdf, or scidbexpr object}
