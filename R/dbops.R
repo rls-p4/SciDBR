@@ -125,9 +125,8 @@ aggregate_by_array = function(x,by,FUN,eval=!called_from_scidb())
   scidbeval(query,eval)
 }
 
-`aggregate_scidb` = function(x,by,FUN,eval=!called_from_scidb())
+`aggregate_scidb` = function(x,by,FUN,eval=TRUE)
 {
-  eval = eval  # Force lazy evaluation's hand
 # XXX
   if("scidbexpr" %in% class(x)) x = scidb_from_scidbexpr(x)
   b = `by`
@@ -263,12 +262,12 @@ aggregate_by_array = function(x,by,FUN,eval=!called_from_scidb())
 `merge.scidb` = function(x,y,...) merge_scidb(x,y,...)
 `merge.scidbdf` = function(x,y,...) merge_scidb(x,y,...)
 `merge.scidbexpr` = function(x,y,...) merge_scidb(x,y,...)
-`filter.scidb` = function(X,expr,eval=!called_from_scidb()) filter_scidb(X,expr,eval)
-`filter.scidbdf` = function(X,expr,eval=!called_from_scidb()) filter_scidb(X,expr,eval)
-`filter.scidbexpr` = function(X,expr,eval=!called_from_scidb()) filter_scidb(X,expr,eval)
 `sort.scidb` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `sort.scidbdf` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `sort.scidbexpr` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `unique.scidb` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
 `unique.scidbdf` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
 `unique.scidbexpr` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
+`subset.scidb` = function(x,subset,...) filter_scidb(x,expr=subset,...)
+`subset.scidbdf` = function(x,subset,...) filter_scidb(x,expr=subset,...)
+`subset.scidbexpr` = function(x,subset,...) filter_scidb(x,expr=subset,...)

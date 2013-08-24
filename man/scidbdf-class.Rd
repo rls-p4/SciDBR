@@ -9,6 +9,9 @@
 \alias{tail,scidbdf-method}
 \alias{show,scidbdf-method}
 \alias{aggregate,scidbdf-method}
+\alias{subset,scidbdf,character-method}
+\alias{merge}
+\alias{merge,scidbdf-method}
 
 \title{Class \code{"scidbdf"}}
 \description{A class that represents 1D SciDB arrays similarly to R data.frames.}
@@ -38,7 +41,10 @@ Objects can be created by calls of the form \code{new("scidbdf", ...)},
     \item{print}{\code{signature(x = "scidbdf")}: ... }
     \item{head}{\code{signature(x = "scidbdf")}: ... }
     \item{tail}{\code{signature(x = "scidbdf")}: ... }
+    \item{subset}{\code{signature(x = "scidbdf", y = "character")}: ... }
+    \item{merge}{\code{signature(x = "scidbdf", y = "ANY")}: ...}
     \item{aggregate}{\code{signature(x = "scidbdf")}: \code{aggregate(x, by, FUN, eval=TRUE)}
+
 
 Group the scidbdf, scidb, or scidbexpr object `x` by dimensions or attributes in
 the array or by another SciDB array object, applying the valid SciDB

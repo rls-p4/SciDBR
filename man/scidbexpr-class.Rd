@@ -2,12 +2,14 @@
 \Rdversion{1.1}
 \docType{class}
 \alias{scidbexpr-class}
+\alias{subset,scidbexpr,character-method}
 \alias{aggregate,scidbexpr-method}
 
 \title{Class \code{"scidbexpr"}}
 \description{A class that represents a SciDB query expression. This class is intended to distinguish SciDB expressions from general character strings.}
 \section{Methods}{
   \describe{
+    \item{subset}{\code{signature(x = "scidbdf", y = "character")}: ... }
     \item{aggregate}{\code{signature(x = "scidbexpr")}: \code{aggregate(x, by, FUN, eval=TRUE)}
 
 Group the scidbexpr, scidb, or scidbexpr object `x` by dimensions or attributes in

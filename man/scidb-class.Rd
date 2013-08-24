@@ -19,12 +19,14 @@
 \alias{head,scidb-method}
 \alias{tail,scidb-method}
 \alias{show,scidb-method}
-\alias{filter}
-\alias{filter,scidb,character-method}
+\alias{subset}
+\alias{subset,scidb,character-method}
 \alias{image}
 \alias{image,scidb-method}
 \alias{count}
 \alias{count,scidb-method}
+\alias{merge}
+\alias{merge,scidb-method}
 
 \title{Class \code{"scidb"}}
 \description{A class that represents SciDB arrays as R arrays.}
@@ -54,6 +56,7 @@ Objects can be created by calls of the form \code{new("scidb", ...)},
     \item{\%*\%}{\code{signature(x = "scidb", y = "ANY")}: ... }
     \item{\%*\%}{\code{signature(x = "scidb", y = "scidb")}: ... }
     \item{aggregate}{\code{signature(x = "scidb", by = "ANY", FUN = "ANY", eval = "ANY")}: ...}
+    \item{merge}{\code{signature(x = "scidb", y = "ANY")}: ...}
     \item{crossprod}{\code{signature(x = "scidb", y = "ANY")}: ... }
     \item{tcrossprod}{\code{signature(x = "scidb", y = "ANY")}: ... }
     \item{crossprod}{\code{signature(x = "ANY", y = "scidb")}: ... }
@@ -61,7 +64,7 @@ Objects can be created by calls of the form \code{new("scidb", ...)},
     \item{is.scidb}{\code{signature(x = "ANY")}: ... }
     \item{print}{\code{signature(x = "scidb")}: ... }
     \item{head}{\code{signature(x = "scidb")}: ... }
-    \item{filter}{\code{signature(x = "scidb", y = "character")}: ... }
+    \item{subset}{\code{signature(x = "scidb", y = "character")}: ... }
     \item{count}{\code{signature(x = "scidb")}: ... }
     \item{tail}{\code{signature(x = "scidb")}: ... }
     \item{image}{\code{signature(x = "scidb")}: \code{image(x, grid=c(m,n), op="sum(attribute)")}
@@ -74,11 +77,12 @@ Display a heatmap-like image of the 2-d scidb array reference object \code{x}.
 }
 \section{Notes}{
 
-SciDB arrays are general n-dimensional sparse arrays with integer or
-non-integer dimensions. The \code{scidb} class represents SciDB arrays
-in a way that mimics standard R arrays in many ways.
+SciDB arrays are general n-dimensional sparse arrays with integer dimensions.
+The \code{scidb} class represents SciDB arrays in a way that mimics standard R
+arrays in many ways. The \code{scidbdf} class represents one-dimensional SciDB
+arrays with one or more attributes that mimic R data frames.
 
-Matrix arithmetic operations are overloaded for 2-D arrays.
+Matrix arithmetic operations are overloaded for 2-D numeric arrays.
 
 }
 \author{
