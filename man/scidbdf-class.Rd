@@ -9,7 +9,6 @@
 \alias{tail,scidbdf-method}
 \alias{show,scidbdf-method}
 \alias{subset,scidbdf,character-method}
-\alias{merge,scidbdf-method}
 
 \title{Class \code{"scidbdf"}}
 \description{A class that represents 1D SciDB arrays similarly to R data.frames.}
@@ -40,7 +39,6 @@ Objects can be created by calls of the form \code{new("scidbdf", ...)},
     \item{head}{\code{signature(x = "scidbdf")}: ... }
     \item{tail}{\code{signature(x = "scidbdf")}: ... }
     \item{subset}{\code{signature(x = "scidbdf", y = "character")}: ... }
-    \item{merge}{\code{signature(x = "scidbdf", y = "ANY")}: ...}
     \item{show}{\code{signature(object = "scidbdf")}: ... }
    }
 }

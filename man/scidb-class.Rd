@@ -25,8 +25,6 @@
 \alias{image,scidb-method}
 \alias{count}
 \alias{count,scidb-method}
-\alias{merge}
-\alias{merge,scidb-method}
 
 \title{Class \code{"scidb"}}
 \description{A class that represents SciDB arrays as R arrays.}
@@ -55,7 +53,6 @@ Objects can be created by calls of the form \code{new("scidb", ...)},
     \item{\%*\%}{\code{signature(x = "ANY", y = "scidb")}: ... }
     \item{\%*\%}{\code{signature(x = "scidb", y = "ANY")}: ... }
     \item{\%*\%}{\code{signature(x = "scidb", y = "scidb")}: ... }
-    \item{merge}{\code{signature(x = "scidb", y = "ANY")}: ...}
     \item{crossprod}{\code{signature(x = "scidb", y = "ANY")}: ... }
     \item{tcrossprod}{\code{signature(x = "scidb", y = "ANY")}: ... }
     \item{crossprod}{\code{signature(x = "ANY", y = "scidb")}: ... }
