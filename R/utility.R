@@ -101,6 +101,15 @@ make.names_ = function(x)
   gsub("\\.","_",make.names(x, unique=TRUE),perl=TRUE)
 }
 
+# x is vector of existing values
+# y is vector of new values
+# returns a set the same size as y with non-conflicting value names
+make.unique_ = function(x,y)
+{
+  z = scidb:::make.names_(c(x,y))
+  setdiff(union(x,z),x)
+}
+
 # Make a name from a prefix and a unique SciDB identifier.
 tmpnam = function(prefix="R_array")
 {

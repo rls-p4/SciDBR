@@ -94,6 +94,12 @@
 }
 
 
+# x:   A scidb, scidbdf, or scidbexpr object
+# by:  A character vector of dimension and or attribute names of x, or,
+#      a scidb or scidbdf object that will be cross_joined to x and then
+#      grouped by attribues of by.
+# FUN: A SciDB aggregation expresion
+# eval: not yet used.
 `aggregate_scidb` = function(x,by,FUN,eval=TRUE)
 {
   if("scidbexpr" %in% class(x)) x = scidb_from_scidbexpr(x)
@@ -129,16 +135,32 @@
 # by in place of the original specified attribute. This creates a new virtual
 # array x with additional attributes.
     types = x@attributes[a]
-    nonint = types != "int64"
+    nonint = x@types != "int64" & a
     if(any(nonint))
     {
-# We assume attributes are int64 here. Add support for
-# sort/unique/index_lookup here. XXX XXX TODO
+# Use index_lookup to factorize non-integer indices, creating new enumerated
+# attributes to sort by. It's probably not a great idea to have too many.
+      idx = which(nonint)
+      oldatr = x@attributes
+      for(j in idx)
+      {
+        atr     = oldatr[j]
+# Adjust the FUN expression to include the original attribute
+        FUN = sprintf("%s, min(%s) as %s", FUN, atr, atr)
+# Factorize atr
+        x       = index_lookup(x,unique(sort(project(x,atr))),atr)
+# Name the new attribute and sort by it instead of originally specified one.
+        newname = paste(atr,"index",sep="_")
+        newname = make.unique_(oldatr,newname)
+        b[which(b==atr)] = newname
+      }
+      x = scidb_from_scidbexpr(x)
     }
 
+# Reset in case things changed above
+    a = x@attributes %in% b
     n = x@attributes[a]
-# XXX What if an attribute has negative values? What about chunk sizes? NULLs? Ugh. Also insert reasonable upper bound instead of *?
-# XXX Take care of all these issues...
+# XXX What about chunk sizes? NULLs? Ugh. Also insert reasonable upper bound instead of *? XXX Take care of all these issues...
     redim = paste(paste(n,"=0:*,1000,0",sep=""), collapse=",")
     D = paste(build_dim_schema(x,FALSE),redim,sep=",")
     A = x
