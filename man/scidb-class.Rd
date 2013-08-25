@@ -19,8 +19,6 @@
 \alias{head,scidb-method}
 \alias{tail,scidb-method}
 \alias{show,scidb-method}
-\alias{subset}
-\alias{subset,scidb,character-method}
 \alias{image}
 \alias{image,scidb-method}
 \alias{count}
@@ -60,7 +58,6 @@ Objects can be created by calls of the form \code{new("scidb", ...)},
     \item{is.scidb}{\code{signature(x = "ANY")}: ... }
     \item{print}{\code{signature(x = "scidb")}: ... }
     \item{head}{\code{signature(x = "scidb")}: ... }
-    \item{subset}{\code{signature(x = "scidb", y = "character")}: ... }
     \item{count}{\code{signature(x = "scidb")}: ... }
     \item{tail}{\code{signature(x = "scidb")}: ... }
     \item{image}{\code{signature(x = "scidb")}: \code{image(x, grid=c(m,n), op="sum(attribute)")}
