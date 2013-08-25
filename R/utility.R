@@ -65,7 +65,8 @@ called_from_scidb = function(nf=1)
   ans = grepl("namespace:scidb",capture.output(environment(f))[[1]])
   ans = ans || grepl("^sort",sys.call(nf-1)[[1]])
   ans = ans || grepl("^unique",sys.call(nf-1)[[1]])
-  ans = ans || grepl("^filter",sys.call(nf-1)[[1]])
+  ans = ans || grepl("^subset",sys.call(nf-1)[[1]])
+  ans = ans || grepl("^aggregate",sys.call(nf-1)[[1]])
   ans = ans || grepl("^merge",sys.call(nf-1)[[1]])
   ans
 }

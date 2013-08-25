@@ -8,7 +8,9 @@
 \alias{head,scidbdf-method}
 \alias{tail,scidbdf-method}
 \alias{show,scidbdf-method}
+\alias{aggregate}
 \alias{aggregate,scidbdf-method}
+\alias{subset}
 \alias{subset,scidbdf,character-method}
 \alias{merge}
 \alias{merge,scidbdf-method}

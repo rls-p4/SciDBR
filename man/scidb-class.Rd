@@ -19,6 +19,8 @@
 \alias{head,scidb-method}
 \alias{tail,scidb-method}
 \alias{show,scidb-method}
+\alias{aggregate}
+\alias{aggregate,scidb-method}
 \alias{subset}
 \alias{subset,scidb,character-method}
 \alias{image}

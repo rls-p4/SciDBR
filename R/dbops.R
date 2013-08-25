@@ -16,6 +16,8 @@
 {
   if(missing(`eval`))
   {
+# Note: project is implemented as a function in the package. It occupies
+# a sole position on the stack reported by sys.nframe.
     nf   = sys.nframe()
     `eval` = !called_from_scidb(nf)
   }
@@ -34,6 +36,10 @@
 {
   if(missing(`eval`))
   {
+# Note the difference here with project above. filter_scidb is implemented
+# as a method ('subset') and its position on the stack is in this case three
+# levels deep. So we subtract 2 from sys.nframe to get to the first position
+# that represents this function.
     nf   = sys.nframe() - 2
     `eval` = !called_from_scidb(nf)
   }
