@@ -25,7 +25,7 @@
 # an afl expression. We use this class instead of character to differentiate
 # it for functions like 'merge.'
 
-scidbexpr = setClass("scidbexpr", slots=c(lastclass="character"), contains = "character")
+scidbexpr = setClass("scidbexpr", representation=list(lastclass="character"), contains = "character")
 setMethod("aggregate", signature(x="scidbexpr"), aggregate_scidb)
 
 # Construct a virtual scidb object reference from a SciDB expression.
