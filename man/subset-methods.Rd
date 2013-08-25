@@ -9,17 +9,17 @@
 SciDB \code{filter} operations.
 }
 \usage{
-\S4method{subset}{scidb}(X,expr,eval)
-\S4method{subset}{scidbdf}(X,expr,eval)
-\S4method{subset}{scidbexpr}(X,expr,eval)
+\S4method{subset}{scidb}(X,subset,eval)
+\S4method{subset}{scidbdf}(X,subset,eval)
+\S4method{subset}{scidbexpr}(X,subset,eval)
 }
 \arguments{
   \item{X}{A \code{scidb}, \code{scidbdf}, or \code{scidexpr} object.}
-  \item{expr}{A character string representing a SciDB filter expression.}
+  \item{subset}{A character string representing a SciDB filter expression.}
   \item{eval}{(Optional) If true, execute the query and return a \code{scidb} or \code{scidbdf} object. Otherwise defer evaluation and return a \code{scidbexpr} object. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
 }
 \details{
-XXX
+Perform a SciDB \code{filter} operation on a SciDB array. The \code{subset} filter expression argument can be any valid SciDB filter operation.
 }
 \note{
 We use the function name \code{subset} because the R function \code{subset} closely matches the native functionality of the SciDB operator named \code{filter}. The R \code{filter} function is an unrelated timeseries function.
@@ -30,6 +30,14 @@ B. W. Lewis <blewis@paradigm4.com>
 }
 \examples{
 \dontrun{
-# Example
+library("scidb")
+scidbconnect()
+
+# Create a copy of the iris data frame in a 1-d SciDB array named "iris."
+# Note that SciDB attribute names will be changed to conform to SciDB
+# naming convention.
+x <- as.scidb(iris,name="iris")
+
+y <- subset(x,"Species='setosa'")
 }
 }
