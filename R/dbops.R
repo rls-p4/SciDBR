@@ -132,8 +132,8 @@
     nonint = types != "int64"
     if(any(nonint))
     {
-# We assume attributes are int64 here. Add support for sort/unique/index_lookup.
-# XXX XXX
+# We assume attributes are int64 here. Add support for
+# sort/unique/index_lookup here. XXX XXX TODO
     }
 
     n = x@attributes[a]
