@@ -96,7 +96,6 @@
 
 `aggregate_scidb` = function(x,by,FUN,eval=TRUE)
 {
-browser()
   if("scidbexpr" %in% class(x)) x = scidb_from_scidbexpr(x)
   b = `by`
   if(is.list(b)) b = b[[1]]
