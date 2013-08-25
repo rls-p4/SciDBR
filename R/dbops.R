@@ -5,7 +5,6 @@
 # nested by explicitly setting eval=FALSE on inner functions, deferring
 # computation until eval=TRUE.
 
-
 # Filter the attributes of the scidb, scidbdf, or scidbexpr object to contain
 # only those specified in expr.
 # X:    a scidb, scidbdf, or scidbexpr object
@@ -64,7 +63,7 @@
 # merge(X,Y,by=list(X=c('i','j'), Y=c('k','l')))
 `merge_scidb` = function(X,Y,...)
 {
-  mc = match.call()
+  mc = list(...)
   if(is.null(mc$by)) `by`=list()
   else `by`=mc$by
   if(is.null(mc$eval))
@@ -95,50 +94,22 @@
 }
 
 
-# aggregate_by_array is internal to the package.
-# x is a scidb object.
-# by may be a SciDB array or a list whose first element is a SciDB array
-# and remaining elements are dimension names (character).
-# eval=TRUE means run the query and return a scidb object.
-# eval=FALSE means return a scidbexpr object representing the query.
-aggregate_by_array = function(x,by,FUN,eval=!called_from_scidb())
-{
-  eval = eval  # Force lazy evaluation's hand
-  dims = c()
-  if(is.list(by) && length(by)>1)
-  {
-    dims=unlist(by[-1])
-    by=by[[1]]
-  }
-  j = intersect(x@D$name, by@D$name)
-  X = merge(x,by,list(j,j),eval=FALSE)
-  n = by@attributes
-  x@attributes = union(x@attributes,by@attributes)
-  a = x@attributes %in% n
-# XXX What if an attribute has negative values? What about chunk sizes? NULLs? Ugh. Also insert reasonable upper bound instead of *?
-# XXX Take care of all these issues...
-  redim = paste(paste(n,"=0:*,10000,0",sep=""), collapse=",")
-  D = paste(build_dim_schema(x,FALSE),redim,sep=",")
-  A = x
-  A@attributes = x@attributes[!a]
-  A@nullable   = x@nullable[!a]
-  A@types      = x@types[!a]
-  S = build_attr_schema(A)
-  D = sprintf("[%s]",D)
-  query = sprintf("redimension(%s,%s%s)",X,S,D)
-  along = paste(c(dims,n),collapse=",")
-  query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
-  scidbeval(query,eval)
-}
-
 `aggregate_scidb` = function(x,by,FUN,eval=TRUE)
 {
-# XXX
+browser()
   if("scidbexpr" %in% class(x)) x = scidb_from_scidbexpr(x)
   b = `by`
   if(is.list(b)) b = b[[1]]
   if(class(b) %in% c("scidb","scidbdf"))
-    return(aggregate_by_array(x,`by`,FUN,eval))
+  {
+# We are grouping by attributes in another SciDB array `by`. We assume that
+# x and by have conformable dimensions to join along.
+    j = intersect(x@D$name, b@D$name)
+    X = merge(x,b,by=list(j,j),eval=FALSE)
+    x = scidb_from_scidbexpr(X)
+    n = by@attributes
+    by = list(n)
+  }
 
 # XXX A bug in SciDB 13.6 unpack prevents us from using eval=FALSE for now.
   if(!eval) stop("eval=FALSE not yet supported by aggregate due to a bug in SciDB 13.6")
@@ -162,10 +133,10 @@ aggregate_by_array = function(x,by,FUN,eval=!called_from_scidb())
     nonint = types != "int64"
     if(any(nonint))
     {
-    }
-
 # We assume attributes are int64 here. Add support for sort/unique/index_lookup.
 # XXX XXX
+    }
+
     n = x@attributes[a]
 # XXX What if an attribute has negative values? What about chunk sizes? NULLs? Ugh. Also insert reasonable upper bound instead of *?
 # XXX Take care of all these issues...
