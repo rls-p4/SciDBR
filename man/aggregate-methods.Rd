@@ -30,10 +30,16 @@ describing the query.
 The \code{by} argument must be a list of dimension names and/or attribute names
 in the array \code{x} to group by, or a SciDB array reference object.
 
-When \code{by} is a SciDB array it must contain one or more common dimensions with \code{x}.
-The two arrays will be joined (using SciDB \code{cross_join(x,by)} and the resulting array
-will be grouped by the attributes in the \code{by} array. This is similar to the usual
-R data.frame aggregate method.
+The argument \code{by} may be a list of dimension names and/or attributes of the
+array \code{x}. Attributes that are not of type int64 will be `factorized` first
+and replaced by enumerated int64 values that indicate each unique level (this
+requires SciDB 13.6 or higher).
+
+When \code{by} is a SciDB array it must contain one or more common dimensions
+with \code{x}.  The two arrays will be joined (using SciDB
+\code{cross_join(x,by)} and the resulting array will be grouped by the
+attributes in the \code{by} array. This is similar to the usual R data.frame
+aggregate method.
 }
 \value{A \code{scidbdf} reference object. }
 \note{
@@ -46,6 +52,21 @@ B. W. Lewis <blewis@paradigm4.com>
 }
 \examples{
 \dontrun{
-# Example
+library("scidb")
+scidbconnect()
+
+# Create a copy of the iris data frame in a 1-d SciDB array named "iris."
+# Note that SciDB attribute names will be changed to conform to SciDB
+# naming convention.
+x <- as.scidb(iris,name="iris")
+
+# Compute average Petal_Length by Species:
+a <- aggregate(x, by="Species", FUN="avg(Petal_Length)")
+
+# Aggregation by an auxillary vector (which in this example comes from
+# an R data frame)--also note any valid SciDB aggregation expression may
+# be used:
+y <- as.scidb(data.frame(sample(1:4,150,replace=TRUE)))
+a <- aggregate(x, by=y, FUN="avg(Petal_Width) as apw, min(Sepal_Length) as msl")
 }
 }
