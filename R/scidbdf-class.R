@@ -68,3 +68,55 @@ setMethod('show', 'scidbdf',
   })
 
 setMethod("aggregate", signature(x="scidbdf"), aggregate_scidb)
+
+
+# The following methods return data to R
+setGeneric("sum")
+setMethod("sum", signature(x="scidbdf"),
+function(x)
+{
+  iquery(sprintf("sum(%s)",x@name),return=TRUE)[,2]
+})
+
+setGeneric("mean")
+setMethod("mean", signature(x="scidbdf"),
+function(x)
+{
+  iquery(sprintf("avg(%s)",x@name),return=TRUE)[,2]
+})
+
+setGeneric("min")
+setMethod("min", signature(x="scidbdf"),
+function(x)
+{
+  iquery(sprintf("min(%s)",x@name),return=TRUE)[,2]
+})
+
+setGeneric("max")
+setMethod("max", signature(x="scidbdf"),
+function(x)
+{
+  iquery(sprintf("max(%s)",x@name),return=TRUE)[,2]
+})
+
+setGeneric("sd")
+setMethod("sd", signature(x="scidbdf"),
+function(x)
+{
+  iquery(sprintf("stdev(%s)",x@name),return=TRUE)[,2]
+})
+
+setGeneric("var")
+setMethod("var", signature(x="scidbdf"),
+function(x)
+{
+  iquery(sprintf("var(%s)",x@name),return=TRUE)[,2]
+})
+
+setGeneric("count",function(x) sum(!is.na(x)))
+setMethod("count", signature(x="scidbdf"),
+function(x)
+{
+  iquery(sprintf("count(%s)",x@name),return=TRUE)$count
+})
+

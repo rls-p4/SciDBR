@@ -13,25 +13,39 @@ test = function(expr)
   tryCatch(eval(parse(text=expr)), error=function(e) stop(e))
 }
 
-
+options(scidb.debug=TRUE)
 test("scidblist(); TRUE")
-test("scidbremove('_RTEST',error=invisible);TRUE")
+
 # Dense matrix tests
 set.seed(1)
-M = matrix(rnorm(50*40),50)
-test("as.scidb(M,rowChunkSize=3,colChunkSize=19,name='_RTEST',gc=FALSE);TRUE")
-test("X=scidb('_RTEST');isTRUE(all.equal(0,sqrt(sum((crossprod(X)[] - crossprod(X[]))^2))))")
-test("X=scidb('_RTEST');x=rnorm(50);isTRUE(all.equal(0,sqrt(sum((crossprod(x,X)[] - crossprod(x,X[]))^2))))")
-test("X=scidb('_RTEST');isTRUE(all.equal(as.vector(crossprod(M)),as.vector((t(X) %*% X)[])))")
-test("scidbremove('_RTEST',error=invisible);TRUE")
+A = matrix(rnorm(50*40),50)
+B = matrix(rnorm(40*40),40)
+X = as.scidb(A,rowChunkSize=3,colChunkSize=19)
+Y = as.scidb(B)
+# Matrix multiplication
+test("isTRUE(all.equal(A %*% B, (X %*% Y)[],check.attributes=FALSE))")
+# Transpose
+test("isTRUE(all.equal(crossprod(A),(t(X) %*% X)[], check.attributes=FALSE))")
+# Crossprod
+test("isTRUE(all.equal(crossprod(A),(crossprod(X))[], check.attributes=FALSE))")
+# Mixed arithmetic
+test("x=rnorm(40);isTRUE(all.equal((X %*% x)[,drop=FALSE], A %*% x, check.attributes=FALSE))")
+# Scalar multiplication
+test("isTRUE(all.equal(2*A, (2*X)[],check.attributes=FALSE))")
+# Please write more tests following this pattern...
+
+
 
 # dbops
 data("iris")
 x = as.scidb(iris)
+# Aggregation by a non-integer attribute
 test("isTRUE(all.equal(aggregate(iris$Petal.Length,by=list(iris$Species),FUN=mean)[,2],
                 aggregate(project(x,c('Petal_Length','Species')), by = 'Species', FUN='avg(Petal_Length)')[][,2]))")
+# Sort
 test("isTRUE(all.equal(project(sort(x,attributes='Petal_Length'),'Petal_Length')[][,1],sort(iris$Petal.Length)))")
-rm(x)
-gc()
-
 # Please write more tests following this pattern...
+
+# Cleanup
+rm(list=ls())
+gc()

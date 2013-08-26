@@ -12,7 +12,6 @@
 \alias{tcrossprod,ANY,scidb-method}
 
 \alias{diag,scidb-method}
-\alias{sum,scidb-method}
 
 \alias{is.scidb,ANY-method}
 \alias{print,scidb-method}
@@ -21,8 +20,6 @@
 \alias{show,scidb-method}
 \alias{image}
 \alias{image,scidb-method}
-\alias{count}
-\alias{count,scidb-method}
 
 \title{Class \code{"scidb"}}
 \description{A class that represents SciDB arrays as R arrays.}
@@ -58,14 +55,12 @@ Objects can be created by calls of the form \code{new("scidb", ...)},
     \item{is.scidb}{\code{signature(x = "ANY")}: ... }
     \item{print}{\code{signature(x = "scidb")}: ... }
     \item{head}{\code{signature(x = "scidb")}: ... }
-    \item{count}{\code{signature(x = "scidb")}: ... }
     \item{tail}{\code{signature(x = "scidb")}: ... }
     \item{image}{\code{signature(x = "scidb")}: \code{image(x, grid=c(m,n), op="sum(attribute)")}
 Display a heatmap-like image of the 2-d scidb array reference object \code{x}.
 \code{grid(m,n)} specifies the repartitioned array block sizes and \code{op} is a valid SciDB aggregation function applied to the repartitioned chunks. }
     \item{diag}{\code{signature(x = "scidb")}: Return the diagonal of a SciDB matrix as a new 1d SciDB array (a vector).}
     \item{show}{\code{signature(object = "scidb")}: ... }
-    \item{sum}{\code{signature(object = "scidb")}: Return the sum of the SciDB array elements. }
   }
 }
 \section{Notes}{
