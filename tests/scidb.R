@@ -17,10 +17,21 @@ test = function(expr)
 test("scidblist(); TRUE")
 test("scidbremove('_RTEST',error=invisible);TRUE")
 # Dense matrix tests
-test("as.scidb(matrix(rnorm(50*40),50),rowChunkSize=3,colChunkSize=19,name='_RTEST',gc=FALSE);TRUE")
+set.seed(1)
+M = matrix(rnorm(50*40),50)
+test("as.scidb(M,rowChunkSize=3,colChunkSize=19,name='_RTEST',gc=FALSE);TRUE")
 test("X=scidb('_RTEST');isTRUE(all.equal(0,sqrt(sum((crossprod(X)[] - crossprod(X[]))^2))))")
 test("X=scidb('_RTEST');x=rnorm(50);isTRUE(all.equal(0,sqrt(sum((crossprod(x,X)[] - crossprod(x,X[]))^2))))")
+test("X=scidb('_RTEST');isTRUE(all.equal(as.vector(crossprod(M)),as.vector((t(X) %*% X)[])))")
 test("scidbremove('_RTEST',error=invisible);TRUE")
 
+# dbops
+data("iris")
+x = as.scidb(iris)
+test("isTRUE(all.equal(aggregate(iris$Petal.Length,by=list(iris$Species),FUN=mean)[,2],
+                aggregate(project(x,c('Petal_Length','Species')), by = 'Species', FUN='avg(Petal_Length)')[][,2]))")
+test("isTRUE(all.equal(project(sort(x,attributes='Petal_Length'),'Petal_Length')[][,1],sort(iris$Petal.Length)))")
+rm(x)
+gc()
 
 # Please write more tests following this pattern...
