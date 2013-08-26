@@ -1,6 +1,7 @@
 \name{scidbexpr-class}
 \Rdversion{1.1}
 \docType{class}
+\alias{scidbexpr}
 \alias{scidbexpr-class}
 
 \title{Class \code{"scidbexpr"}}

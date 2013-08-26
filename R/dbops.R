@@ -99,9 +99,9 @@
 #      a scidb or scidbdf object that will be cross_joined to x and then
 #      grouped by attribues of by.
 # FUN: A SciDB aggregation expresion
-# eval: not yet used.
-`aggregate_scidb` = function(x,by,FUN,eval=TRUE)
+`aggregate_scidb` = function(x,by,FUN)
 {
+  eval = TRUE
   if("scidbexpr" %in% class(x)) x = scidb_from_scidbexpr(x)
   b = `by`
   if(is.list(b)) b = b[[1]]
