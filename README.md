@@ -80,7 +80,7 @@ The eval argument is automatically set to FALSE when any of the above functions
 are directly composed in R, unless manually overriden by explicitly setting
 `eval=TRUE`. Consider the following example:
 
-```{r}
+```
 x = as.scidb(iris)
 head(x)
   Sepal_Length Sepal_Width Petal_Length Petal_Width Species
@@ -90,4 +90,16 @@ head(x)
 4          4.6         3.1          1.5         0.2  setosa
 5          5.0         3.6          1.4         0.2  setosa
 6          5.4         3.9          1.7         0.4  setosa
+
+a = aggregate(
+      project(
+        bind(x,name="PxP", FUN="Petal_Length*Petal_Width"),
+        attributes=c("PxP","Species")),
+      by="Species", FUN="avg(PxP)")
+
+a[]
+pecies_index PxP_avg    Species
+0             0  0.3656     setosa
+1             1  5.7204 versicolor
+2             2 11.2962  virginica
 ```
