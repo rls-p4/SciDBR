@@ -39,7 +39,7 @@ iquery("store(build(<v:dobule>[i=0:999,100,0,j=0:999,250,0],random()%100),A)")
 
 X = image(A, grid=c(100,100), op="avg(v)", useRaster=TRUE)
 ```
-![Example output](https://github.com/Paradigm4/SciDBR/raw/inst/misc/image.jpg "Example output")
+![Example output](https://raw.github.com/Paradigm4/SciDBR/master/inst/misc/image.jpg "Example output")
 
 ```
 # Image accepts all the standard arguments to the R `image` function in
