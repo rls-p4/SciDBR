@@ -60,13 +60,15 @@ frame-like objects. A still growing list of the functions includes:
 
 * aggregate
 * bind  (SciDB `apply` operator--generalizes R's `cbind`)
-* filter
 * index_lookup
 * merge (SciDB `join` and `cross\_join` operators)
 * project
-* subset
+* subset (SciDB `filter` operator)
 * sort
 * unique
+
+See for example `help("subset", package="scidb") for help on the `subset`
+function, or any of the other functions.
 
 Perhaps the coolest new feature associated with the functions listed above
 is that they can be composed in a way that defers computation in SciDB to
