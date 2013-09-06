@@ -80,9 +80,9 @@ The eval argument is automatically set to FALSE when any of the above functions
 are directly composed in R, unless manually overriden by explicitly setting
 `eval=TRUE`. Consider the following example:
 
-```R
-> x = as.scidb(iris)
-> head(x)
+```{r}
+x = as.scidb(iris)
+head(x)
   Sepal_Length Sepal_Width Petal_Length Petal_Width Species
 1          5.1         3.5          1.4         0.2  setosa
 2          4.9         3.0          1.4         0.2  setosa
