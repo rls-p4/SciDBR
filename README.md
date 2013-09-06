@@ -19,7 +19,7 @@ See http://github.com/paradigm4/shim  for source code and installation
 instructions.
 
 
-Examples of new and still-developing features
+New and still-developing features
 ===
 
 ## Heatmaps
