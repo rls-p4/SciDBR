@@ -67,7 +67,7 @@ frame-like objects. A still growing list of the functions includes:
 * sort
 * unique
 
-See for example `help("subset", package="scidb") for help on the `subset`
+See for example `help("subset", package="scidb")` for help on the `subset`
 function, or any of the other functions.
 
 Perhaps the coolest new feature associated with the functions listed above
