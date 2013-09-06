@@ -103,3 +103,10 @@ pecies_index PxP_avg    Species
 1             1  5.7204 versicolor
 2             2 11.2962  virginica
 ```
+The composed `aggregate(project(bind(...` functions were carried out in
+the above example within a single SciDB transaction, storing only the result
+of the composed query.
+
+Efficient function compoistion is limited right now to the above functions.
+We'll be rolling out this idea to linear algebra operations in the near
+future.
