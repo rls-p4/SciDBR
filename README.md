@@ -19,7 +19,7 @@ See http://github.com/paradigm4/shim  for source code and installation
 instructions.
 
 
-Examples of new/developing features
+Examples and new/developing features
 ===
 
 ## Heatmaps
@@ -32,11 +32,21 @@ scidbconnect()      # Fill in your SciDB hostname as required
 # Create a SciDB array with some random entries
 iquery("store(build(<v:dobule>[i=0:999,100,0,j=0:999,250,0],random()%100),A)")
 
-# The SciDBR `image` function overloads the usual R image function to produce heatmaps using SciDB's `regrid` aggregation operator. The 'grid' argument specifies the output array size, and the 'op' argument specifies the aggregation operator to apply.
+# The SciDBR `image` function overloads the usual R image function to produce
+# heatmaps using SciDB's `regrid` aggregation operator. The 'grid' argument
+# specifies the output array size, and the 'op' argument specifies the
+# aggregation operator to apply.
 
 X = image(A, grid=c(100,100), op="avg(v)", useRaster=TRUE)
+```
+![Example output](https://github.com/Paradigm4/SciDBR/raw/inst/misc/image.jpg "Example output")
 
-# Image accepts all the standard arguments to the R `image` function in addition to the SciDB-specific `grid` and `op` arguments. The output axes are labeled in the original array units. The scidb::image function returns the heatmap array:
+```
+# Image accepts all the standard arguments to the R `image` function in
+# addition to the SciDB-specific `grid` and `op` arguments. The output axes are
+# labeled in the original array units. The scidb::image function returns the
+# heatmap array:
+
 dim(X)
 [1] 100 100
 ```
