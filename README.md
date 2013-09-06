@@ -19,10 +19,12 @@ See http://github.com/paradigm4/shim  for source code and installation
 instructions.
 
 
-Examples and new/developing features
+Examples of new and still-developing features
 ===
 
 ## Heatmaps
+The package overloads the standard R `image` function to plot heatmaps
+of SciDB array objects (only applies to objects of class `scidb`).
 ```
 library("devtools")
 install_github("SciDBR","Paradigm4")
@@ -45,8 +47,24 @@ X = image(A, grid=c(100,100), op="avg(v)", useRaster=TRUE)
 # Image accepts all the standard arguments to the R `image` function in
 # addition to the SciDB-specific `grid` and `op` arguments. The output axes are
 # labeled in the original array units. The scidb::image function returns the
-# heatmap array:
+# interpolated heatmap array:
 
 dim(X)
 [1] 100 100
 ```
+
+## Aggregation, merge, and related functions
+The package has a completely new implementation of aggregation, merge, and
+related database functions. The new functions apply to SciDB array and data
+frame-like objects. A still growing list of the functions includes:
+
+* aggregate
+* bind  (SciDB `apply` operator--generalizes R's `cbind`)
+* filter
+* index_lookup
+* merge (SciDB `join` and `cross_join` operators)
+* project
+* subset
+* sort
+* unique
+

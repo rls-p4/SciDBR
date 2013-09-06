@@ -172,11 +172,13 @@
     query = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1)),%s%s)",x@name,S,D)
   }
   along = paste(b,collapse=",")
-# XXX
-# We use unpack to always return a data frame (a 1D scidb array)
-# OK, as of SciDB 13.6 unpack has a bug that prevents it from working often. Saving
-# to a temporary array first seems to be a workaround for this problem. This sucks.
-#  query = sprintf("unpack(aggregate(%s, %s, %s),%s)",query, FUN, along, new_dim_name)
+
+# XXX We use unpack to always return a data frame (a 1D scidb array) OK, as of
+# SciDB 13.6 unpack has a bug that prevents it from working often. Saving to a
+# temporary array first seems to be a workaround for this problem. This sucks.
+# query = sprintf("unpack(aggregate(%s, %s, %s),%s)",query, FUN, along,
+# new_dim_name)
+
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
   temp = scidbeval(query,TRUE)
   query = scidbexpr(sprintf("unpack(%s,%s)",temp@name,new_dim_name), lastclass="scidbdf")
