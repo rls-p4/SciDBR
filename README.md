@@ -25,7 +25,7 @@ Examples of new and still-developing features
 ## Heatmaps
 The package overloads the standard R `image` function to plot heatmaps
 of SciDB array objects (only applies to objects of class `scidb`).
-```R
+```
 library("devtools")
 install_github("SciDBR","Paradigm4")
 library("scidb")
@@ -80,7 +80,7 @@ The eval argument is automatically set to FALSE when any of the above functions
 are directly composed in R, unless manually overriden by explicitly setting
 `eval=TRUE`. Consider the following example:
 
-```
+```R
 x = as.scidb(iris)
 head(x)
   Sepal_Length Sepal_Width Petal_Length Petal_Width Species
