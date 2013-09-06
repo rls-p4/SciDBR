@@ -25,7 +25,7 @@ Examples of new and still-developing features
 ## Heatmaps
 The package overloads the standard R `image` function to plot heatmaps
 of SciDB array objects (only applies to objects of class `scidb`).
-```
+```R
 library("devtools")
 install_github("SciDBR","Paradigm4")
 library("scidb")
@@ -71,7 +71,23 @@ frame-like objects. A still growing list of the functions includes:
 Perhaps the coolest new feature associated with the functions listed above
 is that they can be composed in a way that defers computation in SciDB to
 avoid unnecessary creation of intermediate arrays. The new functions all
-accept an argument named `eval` which, when set to `FALSE`, returns a new
+accept an argument named `eval` which, when set to FALSE, returns a new
 SciDB expression object in place of evaluating the query and returning an
 array or data frame object. SciDB expression objects have class `scidbexpr`
 and all of the new functions accept them as input.
+
+The eval argument is automatically set to FALSE when any of the above functions
+are directly composed in R, unless manually overriden by explicitly setting
+`eval=TRUE`. Consider the following example:
+
+```
+x = as.scidb(iris)
+head(x)
+  Sepal_Length Sepal_Width Petal_Length Petal_Width Species
+1          5.1         3.5          1.4         0.2  setosa
+2          4.9         3.0          1.4         0.2  setosa
+3          4.7         3.2          1.3         0.2  setosa
+4          4.6         3.1          1.5         0.2  setosa
+5          5.0         3.6          1.4         0.2  setosa
+6          5.4         3.9          1.7         0.4  setosa
+```
