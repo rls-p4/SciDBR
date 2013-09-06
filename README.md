@@ -32,7 +32,7 @@ library("scidb")
 scidbconnect()      # Fill in your SciDB hostname as required
 
 # Create a SciDB array with some random entries
-iquery("store(build(<v:dobule>[i=0:999,100,0,j=0:999,250,0],random()%100),A)")
+iquery("store(build(<v:double>[i=0:999,100,0,j=0:999,250,0],random()%100),A)")
 
 # The SciDBR `image` function overloads the usual R image function to produce
 # heatmaps using SciDB's `regrid` aggregation operator. The 'grid' argument
@@ -62,9 +62,16 @@ frame-like objects. A still growing list of the functions includes:
 * bind  (SciDB `apply` operator--generalizes R's `cbind`)
 * filter
 * index_lookup
-* merge (SciDB `join` and `cross_join` operators)
+* merge (SciDB `join` and `cross\_join` operators)
 * project
 * subset
 * sort
 * unique
 
+Perhaps the coolest new feature associated with the functions listed above
+is that they can be composed in a way that defers computation in SciDB to
+avoid unnecessary creation of intermediate arrays. The new functions all
+accept an argument named `eval` which, when set to `FALSE`, returns a new
+SciDB expression object in place of evaluating the query and returning an
+array or data frame object. SciDB expression objects have class `scidbexpr`
+and all of the new functions accept them as input.
