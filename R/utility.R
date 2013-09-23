@@ -565,7 +565,7 @@ iqiter = function (con, n = 1, excludecol, ...)
 
 # Return a SciDB schema of a scidb object x.
 # Explicitly indicate attribute part of schema with remaining arguments
-extract_schema = function(x, at=x@attributes, ty=x@types, nu=x@nullable)
+`extract_schema` = function(x, at=x@attributes, ty=x@types, nu=x@nullable)
 {
   if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) stop("Not a scidb object")
   op = options(scipen=20)

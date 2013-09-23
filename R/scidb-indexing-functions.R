@@ -47,15 +47,6 @@ between = function(a,b)
 }
 
 
-# A utility function that writes a query that adds indices as attributes.
-# A is a scidb object, q is a query in process or just the name of the array.
-apply_indices = function(A,q=A@name)
-{
-  i = A@D$name
-  a = paste(paste(paste("__",i,sep=""),i,sep=","),collapse=",")
-  sprintf("apply(%s,%s)",q, a)
-}
-
 # Return a query that converts selected NIDs to integer for a single-attrbute
 # SciDB array.
 # A a scidb object
@@ -109,63 +100,6 @@ selectively_drop_nid = function(A, idx, schema_only=FALSE, query, nullable)
 }
 
 
-# Materialize the single-attribute scidb array x as a dense R array.
-materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
-{
-  type = names(.scidbtypes[.scidbtypes==x@type])
-  if(length(type)<1) stop("Unsupported data type. Try using the iquery function instead.")
-  tval = vector(mode=type,length=1)
-# Run quey
-  query = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL")
-# Fill out sparsity with default value for return to R. XXX THIS DOES NOT
-# WORK FOR NIDs, since merge does not work for NIDs.
-  dolabel = TRUE
-  if(all(x@D$type=="int64"))
-  {
-    s = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL",schema_only=TRUE)
-    query = sprintf("merge(%s, build(%s, %s))",query,s,as.character(default))
-    dolabel = FALSE
-  }
-  query = apply_indices(x,query)
-
-  i = paste(rep("int64",length(x@dim)),collapse=",")
-#  nl = x@nullable[x@attribute==x@attributes][[1]]
-  nl = TRUE
-  N = ifelse(nl,"NULL","")
-
-  savestring = sprintf("&save=(%s %s,%s)",x@type,N,i)
-
-  sessionid = tryCatch( scidbquery(query, save=savestring, async=FALSE, release=0),
-                    error = function(e) {stop(e)})
-# Release the session on exit
-  on.exit( GET(paste("/release_session?id=",sessionid,sep=""),async=FALSE) ,add=TRUE)
-  host = get("host",envir=.scidbenv)
-  port = get("port",envir=.scidbenv)
-  n = 1048576
-  buf = 1
-  BUF = c()
-
-  tryCatch(
-    while(length(buf)>0)
-    {
-      r = sprintf("http://%s:%d/read_bytes?id=%s&n=%.0f",host,port,sessionid,n)
-      u = url(r, open="rb")
-      buf = readBin(u, what="raw", n=n)
-      close(u)
-      BUF = c(BUF,buf)
-    }, error = function(e) warning(e))
-
-  if(prod(dim(x))>options("scidb.max.array.elements")) stop("Size exceeds options('scidb.max.array.elements')")
-  fdim = dim(x)
-
-  A = tryCatch(
-    {
-      if(dolabel) .scidb2m(BUF,fdim,tval,dim(x),drop,x@D$name,nl,S=x,default=default)
-      else .scidb2m(BUF,fdim,tval,dim(x),drop,x@D$name,nl,default=default)
-    },
-    error = function(e){stop(e)})
-  A
-}
 
 # dimfilter: The workhorse array subsetting function
 # INPUT
@@ -252,7 +186,6 @@ dimfilter = function(x, i)
   scidb(ans,gc=TRUE,`data.frame`=FALSE)
 }
 
-# XXX NOT really working with NIDs. Warnings may occur.
 # x: SciDB array reference
 # q: A query string with a between statement that bounds the selection
 # i: list of requested indices from user
@@ -276,8 +209,7 @@ lookup_subarray = function(x, q, i, ci, mask)
       {
         df2scidb(X,types="string",nullable=FALSE,name=xdim[j],dimlabel=x@D$name[[j]])
         mask[j] = TRUE
-# XXX Don't support returning NIDS yet.
-warning("Dimension labels were dropped.")
+        warning("Dimension labels were dropped.")
       } else
       {
         df2scidb(X,types="int64",nullable=FALSE,name=xdim[j],dimlabel=x@D$name[[j]])
@@ -379,97 +311,66 @@ rangetype = function(x, i, si, bi, ci)
 }
 
 
-# Import data from a binary save into an R matrix.
-# x: binary SciDB output file or raw vector
-# dim: A vector of the same length as the number of dimensions of the output
-#      and such that the product of the entries is the maximum number of
-#      possible output elements in the array.
-# req: vector of requested dimension indices
-# type: R type of output matrix values
-# drop: Project away singleton dimensions if TRUE
-# dimlabels: Optional vector of output dimension lables
-# nullable: (logical) Are the binary output data (SciBD)nullable?
-# S: Optional scidb array reference. If present, will label
-#    output dimensions,
-.scidb2m = function (x, dim, type, req,drop, dimlabels,nullable, S,default=options("scidb.default.value"))
+# Materialize the single-attribute scidb array x as an R array.
+materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
 {
-  N = ifelse(nullable,1L,0L)
-  ans = tryCatch(
-   {
-    if(is.raw(x))
-      .Call('scidb2mnew',x, as.integer(dim), type, N, PACKAGE='scidb')
-    else
-      .Call('scidb2mnew',as.character(x), as.integer(dim), type, N, PACKAGE='scidb')
-   },
-  error=function(e) {
-    unlink(file)
-    stop(e)
-  })
+  type = names(.scidbtypes[.scidbtypes==x@type])
+  if(length(type)<1) stop("Unsupported data type. Try using the iquery function instead.")
+  tval = vector(mode=type,length=1)
+# Run quey
+  query = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL")
+#  if(all(x@D$type=="int64"))
+#  {
+#    s = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL",schema_only=TRUE)
+#    query = sprintf("merge(%s, build(%s, %s))",query,s,as.character(default))
+#    dolabel = FALSE
+#  }
+  query = sprintf("unpack(%s,%s)",query,"_row")
 
-# scidb2m returns a list with:
-# 1. a vector of values
-# 2. a matrix of dimension indices for each value.
+  i = paste(rep("int64",length(x@dim)),collapse=",")
+#  nl = x@nullable[x@attribute==x@attributes][[1]]
+  nl = TRUE
+  N = ifelse(nl,"NULL","")
 
-# The returned indices are relative to the original SciDB matrix.  Because
-# SciDB omits empty values, the returned indices may not exactly match the
-# requested indices. Undefined indices are marked NA (that's indices, not
-# data). We return the SciDB subarray, which may differ from the usual R array
-# subset result.
+  savestring = sprintf("&save=(%s,%s %s)",i,x@type,N)
 
-# XXX This needs to be fixed for sparse arrays, current approach is not good.
-# XXX
+  sessionid = tryCatch(
+                scidbquery(query, save=savestring, async=FALSE, release=0),
+                error = function(e) {stop(e)})
+# Release the session on exit
+  on.exit( GET(paste("/release_session?id=",sessionid,sep=""),async=FALSE) ,add=TRUE)
+  host = get("host",envir=.scidbenv)
+  port = get("port",envir=.scidbenv)
+  n = 0
 
-  f = function(x,i)
+  r = sprintf("http://%s:%d/read_bytes?id=%s&n=%.0f",host,port,sessionid,n)
+  BUF = getBinaryURL(r)
+
+  ndim = as.integer(length(A@D$name))
+  type = eval(parse(text=paste(names(.scidbtypes[.scidbtypes==x@type]),"()")))
+  len  = as.integer(.typelen[names(.scidbtypes[.scidbtypes==x@type])])
+  len  = len + nl # Type length
+
+  nelem = length(BUF) / (ndim*8 + len)
+  stopifnot(nelem==as.integer(nelem))
+  A = tryCatch(
+    {
+      .Call("scidbparse",BUF,ndim,as.integer(nelem),type,N)
+    },
+    error = function(e){stop(e)})
+
+  p = prod(x@D$length)
+
+# Check for sparse matrix case
+  if(ndim==2 && nelem<p)
   {
-    i = sort(i, method="quick")
-    match(x,i) - 1
+    require("Matrix")
+    return(sparseMatrix(i=A[[2]][,1]+1,j=A[[2]][,2]+1,x=A[[1]],dims=x@D$length))
+  } else if(nelem<p)
+  {
+# Don't know how to represent this in R!
+    names(A)=c("coordinates","values")
+    return(A)
   }
-  na2 = na.omit(ans[[2]])
-  idx = as.list(data.frame(na2))
-  if(!missing(dimlabels)) names(idx)[1:length(dimlabels)] = dimlabels
-  dn = lapply(idx,unique)
-  dim = unlist(lapply(dn,length))
-
-  # Check for too-big result and return data frame instead.
-  if(prod(dim) > options("scidb.max.array.elements")) {
-    warning("Number of returned results exceeds scidb.max.array.elements option; returning indexed result table instead.")
-    idx$value = ans[[1]]
-# XXX Apply NIDs here to indices (TODO)
-    return(data.frame(idx))
-  }
-
-  if(typeof(unlist(default))!=typeof(type)) default=NA
-# This is problematic on R-2.15.2 (dn type changes!!!)
-#  A = array(unlist(default), dim=dim,dimnames=dn)
-  A = array(unlist(default), dim=dim, dimnames=as.character(dn))
-#  dimnames(A) = udn
-  if(nrow(na2)>0) {
-    nidx = lapply(1:length(dn),function(i) f(idx[[i]],dn[[i]]))
-# The above achieves the following, but more quickly:
-#   nidx = lapply(idx, function(x) as.integer(factor(x)) - 1)
-    off = c(1,cumprod(dim)[-length(dim)])
-    aidx = rep(0,length(nidx[[1]]))
-    nidx = lapply(1:length(off),function(j) off[j]*nidx[j][[1]])
-    for(j in nidx) aidx = aidx + j
-    A[aidx + 1] = ans[[1]][1:length(aidx)]
-  }
-  if(missing(S)) {if(drop) A=drop(A);return(A)}
-
-  w = vector(mode='list',length=length(S@D$type))
-  for(j in 1:length(w)) {
-    if(length(na2[,j])<1) break
-# Create a unique attribute name to apply dimensions into
-    a = make.names(c(S@attributes,"dimname"),unique=TRUE,allow_=TRUE)
-    a = gsub("\\.","_",a[[length(a)]],perl=TRUE)
-    query = sprintf("aggregate(project(apply(%s,%s,1),%s),count(%s),%s)",
-                S@name, a, a, a, S@D$name[j])
-# Retrieve the dimension labels
-    d = iquery(query,return=TRUE,n=S@D$high[j]-S@D$low[j]+1)[,1]
-    w[[j]] = d
-  }
-  names(w) = S@D$name
-# Add a trycatch here?
-  dimnames(A) = w
-  if(drop) A = drop(A)
-  A
+  array(data=A[[1]], dim=x@D$length, dimnames=x@D$name)
 }

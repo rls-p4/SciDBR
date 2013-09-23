@@ -47,6 +47,13 @@
   character="char"
 )
 
+.typelen = list(
+  double=8,
+  integer=4,
+  logical=4,
+  character=1
+)
+
 # SciDB Integer dimension minimum, maximum
 .scidb_DIM_MIN = "-4611686018427387902"
 .scidb_DIM_MAX = "4611686018427387902"

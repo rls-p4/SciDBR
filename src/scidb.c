@@ -413,51 +413,39 @@ scidb2m (SEXP file, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
   return ans;
 }
 
-
-
-/* Read SciDB single-attribute binary output from the specified
- * buffer.
- * TYPE must be an SEXP of the correct output type.
- * DIM is a vector of maximum output dimension lengths (INTEGER)
- * NULLABLE is an integer, 1 indicates we need to parse for nullable
- * output from SciDB.
+/* Parse SciDB unpack results of a single-attribute array for a limited set
+ * of types.
  *
- * It expects the binary input file to include integer dimensions
- * like:
- * value, int64, int64, ..., value, int64, int64, ..., etc.
- * It returns a list of two elements, each of length NR*NC:
- * 1. A vector of values  of length L = prod(DIM)
- * 2. A double precision matrix of L rows and number of dimension columns
- *    The matrix contains the dimension indices of each value.
- * Only values with corresponding row/column indices that are not marked
- * NA are valid.
+ * DATA: An R RAW vector
+ * NDIM: The number of array dimensions (INTEGER)
+ * LEN: The number of cells (INTEGER)
+ * TYPE: The data type
+ * NULLABLE: Is the data SciDB-NULLABLE (INTEGER)?
+ *
+ * Returns a two-element list:
+ * 1. A length-LEN vector of cell values (TYPE)
+ * 2. A LEN x NDIM matrix of cell coordinate (DOUBLE)
+ *
  */
 SEXP
-scidb2mnew (SEXP BUFFER, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
+scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE)
 {
-  int j, k, l;
+  int j, k, l, ndim;
   long long i;
-  size_t m;
-  SEXP A, ans, I;
+  SEXP A, I, ans;
   double x;
-  void *p;
   char xc[2];
   int xi;
   char a;
   char nx;
   int nullable = INTEGER(NULLABLE)[0];
-  p = (char *)RAW(BUFFER);
+  char *raw = RAW(DATA);
 
-  l = 1;
-  for(j=0;j<length(DIM);++j) l = l*INTEGER(DIM)[j];
+  l = INTEGER(LEN)[0];
+  ndim = INTEGER(NDIM)[0];
 
-/* We reserve the maximum elements and fill the **indices** with NA. The
- * variable A contains the data and I the indices. Remember, R does not have
- * 64-bit integers, so we use doubles instead to store indices.
- */
   PROTECT (A = allocVector (TYPEOF (TYPE), l));
-  PROTECT (I = allocMatrix (REALSXP, l, length(DIM)));
-  for(j=0;j<l*length(DIM);++j) REAL(I)[j] = NA_REAL;
+  PROTECT (I = allocMatrix (REALSXP, l, ndim));
   nx = 1;
 
   switch (TYPEOF (TYPE))
@@ -465,83 +453,62 @@ scidb2mnew (SEXP BUFFER, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
     case REALSXP:
       for (j = 0; j < l; ++j)
         {
-          x = NA_REAL;
-          REAL(A)[j] = NA_REAL;
-          if(nullable) {
-            nx = (int) (char)(*((char *)p));
-            p+=1;
-          }
-/* Note! We shouldn't do this:
- *        x = *((double *)p);
- * because some platforms like ARM (that Bryan develops on) require
- * doubles to be aligned to 8-byte boundaries. Instead, we do this:
- */
-          memcpy(&x, p, sizeof(double));
-          p+=sizeof(double);
-          if((int)nx != 0) REAL (A)[j] = x;
-          for(k=0;k<length(DIM);++k) {
-            i = *((long long *)p);
-            p+=sizeof(long long);
+          for(k=0;k<ndim;++k) {
+            memcpy(&i, raw, sizeof(long long));  raw+=sizeof(long long);
             REAL(I)[j + k*l] = (double)i;
           }
+          REAL(A)[j] = NA_REAL;
+          if(nullable) {
+            memcpy(&nx, raw, sizeof(char));  raw++;
+          }
+          memcpy(&x, raw, sizeof(double)); raw+=sizeof(double);
+          if((int)nx != 0) REAL (A)[j] = x;
         }
       break;
     case STRSXP:
       for (j = 0; j < l; ++j)
         {
-          xc[0] = 0;
-          SET_STRING_ELT (A, j, NA_STRING);
-          if(nullable) {
-            nx = (int) (char)(*((char *)p));
-            p+=1;
-          }
-          memset(xc,0,2);
-          xc[0] = *((char *)p);
-          p+=sizeof(char);
-          if((int)nx != 0) SET_STRING_ELT (A, j, mkChar (xc));
-          for(k=0;k<length(DIM);++k) {
-            i = *((long long *)p);
-            p+=sizeof(long long);
+          for(k=0;k<ndim;++k) {
+            memcpy(&i, raw, sizeof(long long));  raw+=sizeof(long long);
             REAL(I)[j + k*l] = (double)i;
           }
+          SET_STRING_ELT (A, j, NA_STRING);
+          if(nullable) {
+            memcpy(&nx, raw, sizeof(char));  raw++;
+          }
+          memset(xc,0,2);
+          memcpy(&xc, raw, sizeof(char)); raw+=sizeof(char);
+          if((int)nx != 0) SET_STRING_ELT (A, j, mkChar (xc));
         }
       break;
     case LGLSXP:
       for (j = 0; j < l; ++j)
         {
-          a = 0;
-          LOGICAL (A)[j] = NA_LOGICAL;
-          if(nullable) {
-            nx = (int) (char)(*((char *)p));
-            p+=1;
-          }
-          a = *((char *)p);
-          p+=sizeof(char);
-          if((int)nx != 0) LOGICAL (A)[j] = (int)a;
-          for(k=0;k<length(DIM);++k) {
-            i = *((long long *)p);
-            p+=sizeof(long long);
+          for(k=0;k<ndim;++k) {
+            memcpy(&i, raw, sizeof(long long));  raw+=sizeof(long long);
             REAL(I)[j + k*l] = (double)i;
           }
+          LOGICAL (A)[j] = NA_LOGICAL;
+          if(nullable) {
+            memcpy(&nx, raw, sizeof(char));  raw++;
+          }
+          memcpy(&a, raw, sizeof(char)); raw+=sizeof(char);
+          if((int)nx != 0) LOGICAL (A)[j] = (int)a;
         }
       break;
     case INTSXP:
       for (j = 0; j < l; ++j)
         {
-          xi = R_NaInt;
-          INTEGER (A)[j] = R_NaInt;
-          if(nullable) {
-            nx = (int) (char)(*((char *)p));
-            p+=1;
-          }
-          xi = *((int *)p);
-          p+=sizeof(int);
-          if((int) nx != 0) INTEGER (A)[j] = xi;
-          for(k=0;k<length(DIM);++k) {
-            i = *((long long *)p);
-            p+=sizeof(long long);
+          for(k=0;k<ndim;++k) {
+            memcpy(&i, raw, sizeof(long long));  raw+=sizeof(long long);
             REAL(I)[j + k*l] = (double)i;
           }
+          INTEGER (A)[j] = R_NaInt;
+          if(nullable) {
+            memcpy(&nx, raw, sizeof(char));  raw++;
+          }
+          memcpy(&xi, raw, sizeof(int)); raw+=sizeof(int);
+          if((int) nx != 0) INTEGER (A)[j] = xi;
         }
       break;
     default:
@@ -550,7 +517,6 @@ scidb2mnew (SEXP BUFFER, SEXP DIM, SEXP TYPE, SEXP NULLABLE)
   ans = PROTECT(allocVector(VECSXP, 2));
   SET_VECTOR_ELT(ans, 0, A);
   SET_VECTOR_ELT(ans, 1, I);
-
   UNPROTECT (3);
   return ans;
 }
