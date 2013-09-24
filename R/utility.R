@@ -144,6 +144,7 @@ GET = function(uri, async=TRUE)
   ans
 }
 
+
 # HTTP POST synchronous upload data of size bytes
 # uri: SciDB web API uri
 # size: Number of bytes of data object
@@ -389,6 +390,56 @@ df2scidb = function(X,
   scidb(name,`data.frame`=TRUE,gc=gc)
 }
 
+# Sparse matrix to SciDB
+.Matrix2scidb = function(X,name,rowChunkSize=1000,colChunkSize=1000,start=c(0,0),gc=TRUE,...)
+{
+  D = dim(X)
+  N = nnzero(X)
+  rowOverlap=0L
+  colOverlap=0L
+  if(length(start)<1) stop ("Invalid starting coordinates")
+  if(length(start)>2) start = start[1:2]
+  if(length(start)<2) start = c(start, 0)
+  start = as.integer(start)
+  type = .scidbtypes[[typeof(X@x)]]
+  if(is.null(type)) {
+    stop(paste("Unupported data type. The package presently supports: ",
+       paste(.scidbtypes,collapse=" "),".",sep=""))
+  }
+  schema = sprintf(
+      "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
+      nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],
+      min(ncol(X),colChunkSize), colOverlap)
+  schema1d = sprintf("<i:int64, j:int64, val : %s>[idx=0:*,100000,0]",type)
+# Obtain a session from shim for the upload process
+  u = url(paste(scidb:::URI(),"/new_session",sep=""))
+  session = readLines(u, warn=FALSE)[1]
+  close(u)
+  if(length(session)<1) stop("SciDB http session error")
+  on.exit( GET(paste("/release_session?id=",session,sep=""),async=FALSE) ,add=TRUE)
+
+# Compute the indices and assemble message to SciDB in the form
+# double,double,double for indices i,j and data val.
+  dp = diff(X@p)
+  j  = rep(seq_along(dp),dp) - 1
+# Upload the data
+# XXX I couldn't get RCurl to work using the fileUpload(contents=x), with 'x'
+# a raw vector. But we need RCurl to support SSL. As a work-around, we save
+# the object. This copy sucks and must be fixed.
+  fn = tempfile()
+  bytes = writeBin(as.vector(t(matrix(c(X@i + start[[1]],j + start[[2]], X@x),length(X@x)))),con=fn)
+  url = paste(URI(),"/upload_file?id=",session,sep="")
+  ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
+                 .opts = curlOptions(httpheader = c(Expect = "")))
+  unlink(fn)
+  ans = ans[[1]]
+  ans = gsub("\r","",ans)
+  ans = gsub("\n","",ans)
+
+  query = sprintf("store(redimension(input(%s,'%s',0,'(double,double,double)'),%s),%s)",schema1d, ans, schema, name)
+  iquery(query)
+  scidb(name,gc=gc)
+}
 
 # Calling wrapper for matrix 2 scidb array function
 # A: an R matrix object
@@ -402,8 +453,8 @@ df2scidb = function(X,
         integer = 4,
         character = 1,
         logical = 1)  
-  l = n*u + 2*8*n;
-  
+  l = n*u + 2*8*n; # Total bytes to transmit
+
 # Define a transmit function for the POST routine
   f = function(fd)
    {

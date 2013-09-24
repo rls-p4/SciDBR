@@ -189,7 +189,6 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
   return ans;
 }
 
-
 /* Convert a fixed-length type R matrix  A to binary SciDB input
  * format, writing to the specified open file descriptor. Return R NULL.
  * Presently supported types: double, int32, char, bool This function writes:

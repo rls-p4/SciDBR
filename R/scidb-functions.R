@@ -234,6 +234,8 @@ as.scidb = function(X,
 {
   if(inherits(X,"data.frame"))
     return(df2scidb(X,name=name,chunkSize=rowChunkSize,gc=gc,...))
+  if(inherits(X,"dgCMatrix"))
+    return(.Matrix2scidb(X,name=name,rowChunkSize=rowChunkSize,colChunkSize=colChunkSize,start=start,gc=gc,...))
   X0 = X
   D = dim(X)
   rowOverlap=0L
@@ -286,13 +288,6 @@ as.scidb = function(X,
   unlink(f)
 
   ans = scidb(name,gc=gc)
-
-# Check for NIDs
-#  dn = dimnames(X0)
-#  if(is.null(dn)) dn = list(x=names(X0))
-#  if(any(!unlist(lapply(dn,is.null))))
-#    ans=addnids(ans, dn)
-
   ans
 }
 
