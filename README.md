@@ -22,6 +22,11 @@ instructions.
 New and still-developing features
 ===
 
+## R Sparse matrix support
+The package now supports double-precision valued R sparse matrices
+defined via the `Matrix` package. Sparse SciDB matrices that are
+materialized to R are returned as sparse R matrices and vice-versa.
+
 ## Heatmaps
 The package overloads the standard R `image` function to plot heatmaps
 of SciDB array objects (only applies to objects of class `scidb`).
