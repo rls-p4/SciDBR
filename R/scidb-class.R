@@ -166,13 +166,6 @@ function(x)
   iquery(sprintf("var(%s)",x@name),return=TRUE)[,2]
 })
 
-setGeneric("count",function(x) sum(!is.na(x)))
-setMethod("count", signature(x="scidb"),
-function(x)
-{
-  iquery(sprintf("count(%s)",x@name),return=TRUE)$count
-})
-
 setGeneric("diag")
 setMethod("diag", signature(x="scidb"),
 function(x)

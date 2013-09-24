@@ -24,8 +24,6 @@
 {
 # Maximum allowed sequential index limit (for larger, use between)
   options(scidb.index.sequence.limit=1000000)
-# Default empty fill-in value
-  options(scidb.default.value=0)
 # Maximum allowed elements in an array return result
   options(scidb.max.array.elements=100000000)
 }
@@ -33,7 +31,6 @@
 .onUnload = function(libpath)
 {
   options(scidb.index.sequence.limit=c())
-  options(scidb.default.value=c())
   options(scidb.max.array.elements=c())
 }
 

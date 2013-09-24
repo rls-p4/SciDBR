@@ -312,20 +312,14 @@ rangetype = function(x, i, si, bi, ci)
 
 
 # Materialize the single-attribute scidb array x as an R array.
-materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
+materialize = function(x, drop=FALSE)
 {
   type = names(.scidbtypes[.scidbtypes==x@type])
   if(length(type)<1) stop("Unsupported data type. Try using the iquery function instead.")
   tval = vector(mode=type,length=1)
 # Run quey
   query = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL")
-#  if(all(x@D$type=="int64"))
-#  {
-#    s = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL",schema_only=TRUE)
-#    query = sprintf("merge(%s, build(%s, %s))",query,s,as.character(default))
-#    dolabel = FALSE
-#  }
-  query = sprintf("unpack(%s,%s)",query,"_row")
+  query = sprintf("unpack(%s,%s)",query,"__row")
 
   i = paste(rep("int64",length(x@dim)),collapse=",")
 #  nl = x@nullable[x@attribute==x@attributes][[1]]

@@ -5,6 +5,13 @@
 # nested by explicitly setting eval=FALSE on inner functions, deferring
 # computation until eval=TRUE.
 
+# Count the number of non-empty cells
+`count` = function(x)
+{
+  if(!(class(x) %in% c("scidb","scidbdf","scidbexpr"))) stop("Invalid SciDB object")
+  iquery(sprintf("count(%s)",x@name),return=TRUE)$count
+}
+
 # Filter the attributes of the scidb, scidbdf, or scidbexpr object to contain
 # only those specified in expr.
 # X:    a scidb, scidbdf, or scidbexpr object

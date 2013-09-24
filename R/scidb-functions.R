@@ -150,7 +150,7 @@ summary.scidb = function(x)
 }
 
 # XXX this will use insert, write me.
-#`[<-.scidb` = function(x,j,k, ..., value,default)
+#`[<-.scidb` = function(x,j,k, ..., value)
 #{
 #  stop("Sorry, scidb array objects are read only for now.")
 #}
@@ -158,24 +158,21 @@ summary.scidb = function(x)
 # Flexible array subsetting wrapper.
 # x: A Scidb array object
 # ...: list of dimensions
-# defailt: default fill-in value
 # 
 # Returns a materialized R array if length(list(...))==0.
 # Or, a scidb array object that represents the subarray.
-`[.scidb` = function(x, ..., default)
+`[.scidb` = function(x, ...)
 {
   M = match.call()
   drop = ifelse(is.null(M$drop),TRUE,M$drop)
   M = M[3:length(M)]
-  if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","default"))]
-# Check for user-specified default fill-in value
-  if(missing(default)) default = options("scidb.default.value")
+  if(!is.null(names(M))) M = M[!(names(M) %in% c("drop"))]
 # i shall contain a list of requested index values
   E = parent.frame()
   i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],E),error=function(e)c()))
 # User wants this materialized to R...
   if(all(sapply(i,is.null)))
-    return(materialize(x,default=default,drop=drop))
+    return(materialize(x,drop=drop))
 # Not materializing, return a SciDB array
   if(length(i)!=length(dim(x))) stop("Dimension mismatch")
   dimfilter(x,i)
