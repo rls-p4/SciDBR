@@ -236,7 +236,6 @@ as.scidb = function(X,
     return(df2scidb(X,name=name,chunkSize=rowChunkSize,gc=gc,...))
   if(inherits(X,"dgCMatrix"))
     return(.Matrix2scidb(X,name=name,rowChunkSize=rowChunkSize,colChunkSize=colChunkSize,start=start,gc=gc,...))
-  X0 = X
   D = dim(X)
   rowOverlap=0L
   colOverlap=0L
@@ -263,30 +262,30 @@ as.scidb = function(X,
       min(ncol(X),colChunkSize), colOverlap)
   }
   if(!is.matrix(X)) stop ("X must be a matrix or a vector")
-  schema1d = sprintf("<i:int64, j:int64, val : %s>[idx=0:*,10000,0]",type)
-
-# Create the array, might error out here if array already exists
-  query = sprintf("create_array(%s,%s)",name,schema)
-  scidbquery(query,async=FALSE)
 
 # Obtain a session from shim for the upload process
   u = url(paste(URI(),"/new_session",sep=""))
   session = readLines(u, warn=FALSE)[1]
+  on.exit( GET(paste("/release_session?id=",session,sep=""),async=FALSE) ,add=TRUE)
   close(u)
 
 # Upload the data
-  f = .m2scidb(X, session,start)
+# XXX I couldn't get RCurl to work using the fileUpload(contents=x), with 'x'
+# a raw vector. But we need RCurl to support SSL. As a work-around, we save
+# the object. This copy sucks and must be fixed.
+  fn = tempfile()
+  bytes = writeBin(as.vector(X),con=fn)
+  url = paste(URI(),"/upload_file?id=",session,sep="")
+  ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
+                 .opts = curlOptions(httpheader = c(Expect = "")))
+  unlink(fn)
+  ans = ans[[1]]
+  ans = gsub("\r","",ans)
+  ans = gsub("\n","",ans)
 
 # Load query
-#  query = sprintf("input(%s,'%s', 0, '(int64,int64,%s)')",tmparray,f,type)
-  query = sprintf("input(%s,'%s', 0, '(int64,int64,%s)')",schema1d,f,type)
-  query = sprintf("redimension_store(%s, %s)",query, name)
-  tryCatch( scidbquery(query, async=FALSE, release=1, session=session),
-    error = function(e) {
-      stop(e)
-    })
-  unlink(f)
-
+  query = sprintf("store(input(%s,'%s', 0, '(%s)'),%s)",schema,ans,type,name)
+  iquery(query)
   ans = scidb(name,gc=gc)
   ans
 }

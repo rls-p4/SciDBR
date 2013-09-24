@@ -346,7 +346,7 @@ materialize = function(x, default=options("scidb.default.value"), drop=FALSE)
   r = sprintf("http://%s:%d/read_bytes?id=%s&n=%.0f",host,port,sessionid,n)
   BUF = getBinaryURL(r)
 
-  ndim = as.integer(length(A@D$name))
+  ndim = as.integer(length(x@D$name))
   type = eval(parse(text=paste(names(.scidbtypes[.scidbtypes==x@type]),"()")))
   len  = as.integer(.typelen[names(.scidbtypes[.scidbtypes==x@type])])
   len  = len + nl # Type length
