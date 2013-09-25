@@ -317,8 +317,16 @@ materialize = function(x, drop=FALSE)
   type = names(.scidbtypes[.scidbtypes==x@type])
   if(length(type)<1) stop("Unsupported data type. Try using the iquery function instead.")
   tval = vector(mode=type,length=1)
-# Run quey
+# Dispense with NID
   query = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL")
+
+# Set origin to zero
+  l1 = length(dim(x))
+  lb = paste(rep("null",l1),collapse=",")
+  ub = paste(rep("null",l1),collapse=",")
+  query = sprintf("subarray(%s,%s,%s)",query,lb,ub)
+
+# Unpack
   query = sprintf("unpack(%s,%s)",query,"__row")
 
   i = paste(rep("int64",length(x@dim)),collapse=",")

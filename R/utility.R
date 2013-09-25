@@ -84,8 +84,12 @@ scidbconnect = function(host='localhost', port=8080L)
   assign("uid",id,envir=.scidbenv)
 # Set the ASCII interface precision
   scidbquery(query="setopt('precision','16')",release=1,resp=FALSE)
-# Try to load the example_udos library (SciDB 13.6)
+# Try to load the example_udos library (>= SciDB 13.6)
   scidbquery(query="load_library('example_udos')",release=1,resp=FALSE)
+# Try to load the P4 library
+  scidbquery(query="load_library('linear_algebra')",release=1,resp=FALSE)
+# Save available operators
+  assign("ops",iquery("list('operators')",return=TRUE),envir=.scidbenv)
   invisible()
 }
 
