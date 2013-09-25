@@ -122,6 +122,17 @@ tmpnam = function(prefix="R_array")
   paste(salt,get("uid",envir=.scidbenv),sep="")
 }
 
+# Return a shim session ID or error
+getSession = function()
+{
+  u = url(paste(URI(),"/new_session",sep=""))
+  session = tryCatch(readLines(u, warn=FALSE)[1],
+              error=function(e) stop(e),
+              warning=function(e) NULL)
+  close(u)
+  if(length(session)<1) stop("SciDB http session error; are you connecting to a valid SciDB host?")
+  session
+}
 
 URI = function(q="")
 {
@@ -199,15 +210,9 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
   if(is.null(session))
   {
 # Obtain a session from shim
-    u = url(paste(URI(),"/new_session",sep=""))
-    session = tryCatch(readLines(u, warn=FALSE),
-                error=function(e) NULL,
-                warning=function(e) NULL)
-    close(u)
+    sessionid = getSession()
   }
-  sessionid = session[1]
   if(is.null(save)) save=""
-  if(length(session)<1) stop("SciDB http session error; are you connecting to a valid SciDB host?")
   if(DEBUG)
   {
     cat(query, "\n")
@@ -216,14 +221,14 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
   if(async)
   {
     ans =tryCatch(
-      GET(sprintf("/execute_query?id=%s&release=%d&query=%s",session[1],release,query)),
+      GET(sprintf("/execute_query?id=%s&release=%d&query=%s",sessionid,release,query)),
       error=function(e) {
         GET(paste("/release_session?id=",sessionid,sep=""))
         stop("HTTP/1.0 500 ERROR")
       })
   } else
   {
-    u = paste("/execute_query?id=",session[1],"&release=",release,save,"&query=",query,"&afl=",as.integer(afl),sep="")
+    u = paste("/execute_query?id=",sessionid,"&release=",release,save,"&query=",query,"&afl=",as.integer(afl),sep="")
     ans = tryCatch(
       GET(u),
       error=function(e) {
@@ -241,8 +246,8 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
     }
   }
   if(DEBUG) print(proc.time()-t1)
-  if(resp) return(list(session=session, response=ans))
-  session
+  if(resp) return(list(session=sessionid, response=ans))
+  sessionid
 }
 
 # scidbremove: Convenience function to remove one or more scidb arrays
@@ -325,10 +330,8 @@ df2scidb = function(X,
   if(schema_only) return(SCHEMA)
 
 # Obtain a session from the SciDB http service for the upload process
-  u = url(paste(URI(),"/new_session",sep=""))
-  session = readLines(u, warn=FALSE)[1]
+  session = getSession()
   on.exit(GET(paste("/release_session?id=",session,sep="")) ,add=TRUE)
-  close(u)
 
 # Create SciDB input string from the data frame
   scidbInput = .df2scidb(X,chunkSize)
@@ -369,9 +372,7 @@ df2scidb = function(X,
       min(ncol(X),colChunkSize), colOverlap)
   schema1d = sprintf("<i:int64, j:int64, val : %s>[idx=0:*,100000,0]",type)
 # Obtain a session from shim for the upload process
-  u = url(paste(scidb:::URI(),"/new_session",sep=""))
-  session = readLines(u, warn=FALSE)[1]
-  close(u)
+  session = getSession()
   if(length(session)<1) stop("SciDB http session error")
   on.exit( GET(paste("/release_session?id=",session,sep="")) ,add=TRUE)
 

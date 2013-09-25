@@ -261,10 +261,8 @@ as.scidb = function(X,
   if(!is.matrix(X)) stop ("X must be a matrix or a vector")
 
 # Obtain a session from shim for the upload process
-  u = url(paste(URI(),"/new_session",sep=""))
-  session = readLines(u, warn=FALSE)[1]
+  session = getSession()
   on.exit( GET(paste("/release_session?id=",session,sep="")) ,add=TRUE)
-  close(u)
 
 # Upload the data
 # XXX I couldn't get RCurl to work using the fileUpload(contents=x), with 'x'
