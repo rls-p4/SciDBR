@@ -132,7 +132,7 @@ URI = function(q="")
 }
 
 # Send an HTTP GET message
-GET = function(uri, async=TRUE)
+GET = function(uri)
 {
   ans = invisible()
   if(!exists("host",envir=.scidbenv)) stop("Not connected...try scidbconnect")
@@ -140,52 +140,11 @@ GET = function(uri, async=TRUE)
   port = get("port",envir=.scidbenv)
   uri = URLencode(uri)
   uri = gsub("\\+","%2B",uri,perl=TRUE)
-  msg = sprintf("GET %s HTTP/1.0\r\nHost: %s\r\nPragma: no-cache\r\nUser-Agent: R\r\n\r\n", uri, host)
-  s = .SOCK_CONNECT(host,port)
-  .SOCK_SEND(s, msg)
-  if(!async) ans = .SOCK_RECV(s)
-  .SOCK_CLOSE(s)
-  ans
+  u = paste(URI(),uri,sep="")
+  ans = getURI(url=u, .opts=list(header=TRUE))
+  return(ans)
 }
 
-
-# HTTP POST synchronous upload data of size bytes
-# uri: SciDB web API uri
-# size: Number of bytes of data object
-# transmit: A function f(fd) that writes the bytes to an open file
-#           descriptor fd supplied by this function.
-POST = function(uri, size, transmit)
-{
-  if(!exists("host",envir=.scidbenv)) stop("Not connected...try scidbconnect")
-  host = get("host",envir=.scidbenv)
-  port = get("port",envir=.scidbenv)
-  boundary = paste("----------------------------",basename(tempfile(pattern="")),sep="")
-
-  m2 = paste("\r\n",boundary,"\r\nContent-Disposition: form-data; name=\"file\"; filename=\"upload.rdata\"\r\nContent-Type: application/octet-stream\r\n\r\n",sep="")
-  m3 = paste("\r\n",boundary,"--",sep="")
-  l = size + nchar(m2) + nchar(m3)
-  msg = sprintf("POST %s HTTP/1.0\r\nHost: %s\r\nAccept: */*\r\nContent-Length: %.0f\r\nExpect: 100-continue\r\nContent-Type: multipart/form-data; boundary=%s\r\n\r\n", uri, host, l, boundary)
-  s = .SOCK_CONNECT(host,port)
-  .SOCK_SEND(s, msg)
-  .SOCK_SEND(s, m2)
-  transmit(s)
-  .SOCK_SEND(s, m3)
-  ans = .SOCK_RECV(s)
-
-  .SOCK_CLOSE(s)
-
-  ans = rawToChar(ans)
-  err = 200
-  if(nchar(ans)>9)
-    err = as.integer(strsplit(substr(ans,1,20)," ")[[1]][[2]])
-  if(err>399)
-    {
-      ans = paste(strsplit(ans,"\r\n\r\n")[[1]][-1],collapse="\n")
-      stop(ans)
-    }
-  ans = strsplit(ans, "\r\n")[[1]]
-  ans[[length(ans)]]
-}
 
 # Check if array exists
 .scidbexists = function(name)
@@ -246,9 +205,9 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
                 warning=function(e) NULL)
     close(u)
   }
+  sessionid = session[1]
   if(is.null(save)) save=""
   if(length(session)<1) stop("SciDB http session error; are you connecting to a valid SciDB host?")
-  bail = paste(URI(),"/release_session?id=",session,sep="")
   if(DEBUG)
   {
     cat(query, "\n")
@@ -257,25 +216,21 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
   if(async)
   {
     ans =tryCatch(
-      GET(sprintf("/execute_query?id=%s&release=%d&query=%s",session[1],release,query),async=TRUE),
+      GET(sprintf("/execute_query?id=%s&release=%d&query=%s",session[1],release,query)),
       error=function(e) {
-        bail = url(bail)
-        readLines(bail)
-        close(bail)
+        GET(paste("/release_session?id=",sessionid,sep=""))
         stop("HTTP/1.0 500 ERROR")
       })
   } else
   {
     u = paste("/execute_query?id=",session[1],"&release=",release,save,"&query=",query,"&afl=",as.integer(afl),sep="")
     ans = tryCatch(
-      GET(u,async=FALSE),
+      GET(u),
       error=function(e) {
-        bail = url(bail)
-        readLines(bail)
-        close(bail)
+        GET(paste("/release_session?id=",sessionid,sep=""))
         "HTTP/1.0 500 ERROR"
       })
-    w = rawToChar(ans)
+    w = ans
     err = 200
     if(nchar(w)>9)
       err = as.integer(strsplit(substr(w,1,20)," ")[[1]][[2]])
@@ -286,7 +241,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
     }
   }
   if(DEBUG) print(proc.time()-t1)
-  if(resp) return(list(session=session, response=rawToChar(ans)))
+  if(resp) return(list(session=session, response=ans))
   session
 }
 
@@ -372,21 +327,18 @@ df2scidb = function(X,
 # Obtain a session from the SciDB http service for the upload process
   u = url(paste(URI(),"/new_session",sep=""))
   session = readLines(u, warn=FALSE)[1]
+  on.exit(GET(paste("/release_session?id=",session,sep="")) ,add=TRUE)
   close(u)
 
 # Create SciDB input string from the data frame
   scidbInput = .df2scidb(X,chunkSize)
 
 # Post the input string to the SciDB http service
-  tmp = tryCatch(
-          POST(paste("/upload_file?id=",session,sep=""),
-               nchar(scidbInput,type="bytes"),
-               function(fd) scidb:::.SOCK_SEND(fd, scidbInput)),
-          error=function(e)
-           {
-             GET(paste("/release_session?id=",session,sep=""),async=FALSE)
-             stop(e)
-           })
+  uri = paste(URI(),"/upload_file?id=",session,sep="")
+  tmp = postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=c(Expect="")))
+  tmp = tmp[[1]]
+  tmp = gsub("\r","",tmp)
+  tmp = gsub("\n","",tmp)
 
 # Load query
   query = sprintf("store(input(%s, '%s'),%s)",SCHEMA, tmp, name)
@@ -421,7 +373,7 @@ df2scidb = function(X,
   session = readLines(u, warn=FALSE)[1]
   close(u)
   if(length(session)<1) stop("SciDB http session error")
-  on.exit( GET(paste("/release_session?id=",session,sep=""),async=FALSE) ,add=TRUE)
+  on.exit( GET(paste("/release_session?id=",session,sep="")) ,add=TRUE)
 
 # Compute the indices and assemble message to SciDB in the form
 # double,double,double for indices i,j and data val.
@@ -474,7 +426,7 @@ iquery = function(query, `return`=FALSE,
         u = sprintf("http://%s:%d/read_lines?id=%s&n=%.0f",host,port,sessionid,n+1)
         u=url(u)
         ret=read.table(u,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
-        GET(paste("/release_session?id=",sessionid,sep=""),async=FALSE)
+        GET(paste("/release_session?id=",sessionid,sep=""))
         ret
        }, error = function(e)
            {
@@ -492,7 +444,7 @@ iqiter = function (con, n = 1, excludecol, ...)
   if(missing(excludecol)) excludecol=NA
   dostop = function(s=TRUE)
   {
-    GET(paste("/release_session?id=",con,sep=""),async=FALSE)
+    GET(paste("/release_session?id=",con,sep=""))
     if(s) stop("StopIteration",call.=FALSE)
   }
   cls = function(u)

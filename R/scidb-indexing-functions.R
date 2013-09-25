@@ -340,7 +340,7 @@ materialize = function(x, drop=FALSE)
                 scidbquery(query, save=savestring, async=FALSE, release=0),
                 error = function(e) {stop(e)})
 # Release the session on exit
-  on.exit( GET(paste("/release_session?id=",sessionid,sep=""),async=FALSE) ,add=TRUE)
+  on.exit( GET(paste("/release_session?id=",sessionid,sep="")) ,add=TRUE)
   host = get("host",envir=.scidbenv)
   port = get("port",envir=.scidbenv)
   n = 0

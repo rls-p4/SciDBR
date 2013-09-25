@@ -263,7 +263,7 @@ as.scidb = function(X,
 # Obtain a session from shim for the upload process
   u = url(paste(URI(),"/new_session",sep=""))
   session = readLines(u, warn=FALSE)[1]
-  on.exit( GET(paste("/release_session?id=",session,sep=""),async=FALSE) ,add=TRUE)
+  on.exit( GET(paste("/release_session?id=",session,sep="")) ,add=TRUE)
   close(u)
 
 # Upload the data
