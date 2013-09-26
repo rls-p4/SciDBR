@@ -20,8 +20,8 @@
 #* END_COPYRIGHT
 #*/
 
-# This file contains general utility routines not related to the
-# scidb array class.
+# This file contains general utility routines including most of the shim
+# network interface.
 
 # An environment to hold connection state
 .scidbenv = new.env()
@@ -125,12 +125,11 @@ tmpnam = function(prefix="R_array")
 # Return a shim session ID or error
 getSession = function()
 {
-  u = url(paste(URI(),"/new_session",sep=""))
-  session = tryCatch(readLines(u, warn=FALSE)[1],
-              error=function(e) stop(e),
-              warning=function(e) NULL)
-  close(u)
+  u = paste(URI(),"/new_session",sep="")
+  session = getURI(url=u)
   if(length(session)<1) stop("SciDB http session error; are you connecting to a valid SciDB host?")
+  session = gsub("\r","",session)
+  session = gsub("\n","",session)
   session
 }
 
