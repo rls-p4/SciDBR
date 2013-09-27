@@ -422,11 +422,6 @@ iquery = function(query, `return`=FALSE,
       ans = tryCatch(
        {
         sessionid = scidbquery(query,afl,async=FALSE,save="&save=lcsv+",release=0)
-#        host = get("host",envir=.scidbenv)
-#        port = get("port",envir=.scidbenv)
-#        u = sprintf("http://%s:%d/read_lines?id=%s&n=%.0f",host,port,sessionid,n+1)
-#        u=url(u)
-#        ret=read.table(u,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
         u = sprintf("/read_lines?id=%s&n=%.0f",sessionid,n+1)
         val = textConnection(GET(u, header=FALSE))
         ret=read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
