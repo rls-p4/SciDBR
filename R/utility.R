@@ -142,7 +142,7 @@ URI = function(q="")
 }
 
 # Send an HTTP GET message
-GET = function(uri)
+GET = function(uri, header=TRUE)
 {
   ans = invisible()
   if(!exists("host",envir=.scidbenv)) stop("Not connected...try scidbconnect")
@@ -151,7 +151,7 @@ GET = function(uri)
   uri = URLencode(uri)
   uri = gsub("\\+","%2B",uri,perl=TRUE)
   u = paste(URI(),uri,sep="")
-  ans = getURI(url=u, .opts=list(header=TRUE))
+  ans = getURI(url=u, .opts=list(header=header))
   return(ans)
 }
 
@@ -206,6 +206,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
 {
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
+  sessionid=session
   if(is.null(session))
   {
 # Obtain a session from shim
@@ -421,11 +422,15 @@ iquery = function(query, `return`=FALSE,
       ans = tryCatch(
        {
         sessionid = scidbquery(query,afl,async=FALSE,save="&save=lcsv+",release=0)
-        host = get("host",envir=.scidbenv)
-        port = get("port",envir=.scidbenv)
-        u = sprintf("http://%s:%d/read_lines?id=%s&n=%.0f",host,port,sessionid,n+1)
-        u=url(u)
-        ret=read.table(u,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
+#        host = get("host",envir=.scidbenv)
+#        port = get("port",envir=.scidbenv)
+#        u = sprintf("http://%s:%d/read_lines?id=%s&n=%.0f",host,port,sessionid,n+1)
+#        u=url(u)
+#        ret=read.table(u,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
+        u = sprintf("/read_lines?id=%s&n=%.0f",sessionid,n+1)
+        val = textConnection(GET(u, header=FALSE))
+        ret=read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
+        close(val)
         GET(paste("/release_session?id=",sessionid,sep=""))
         ret
        }, error = function(e)
@@ -447,25 +452,20 @@ iqiter = function (con, n = 1, excludecol, ...)
     GET(paste("/release_session?id=",con,sep=""))
     if(s) stop("StopIteration",call.=FALSE)
   }
-  cls = function(u)
-  {
-    tryCatch(close(u), error=function(e) invisible())
-  }
   if (!is.numeric(n) || length(n) != 1 || n < 1)
     stop("n must be a numeric value >= 1")
   init = TRUE
   header = c()
   nextEl = function() {
     if (is.null(con)) dostop()
-    host = get("host",envir=.scidbenv)
-    port = get("port",envir=.scidbenv)
-    u = sprintf("http://%s:%d/read_lines?id=%s&n=%.0f",host,port,con,n)
-    u = url(u)
+    u = sprintf("/read_lines?id=%s&n=%.0f",con,n)
     if(init) {
       ans = tryCatch(
        {
-        read.table(u, sep=",",stringsAsFactors=FALSE,header=TRUE,nrows=n,...)
-       }, error = function(e) {cls(u);dostop()},
+        val = textConnection(GET(u, header=FALSE))
+        ret=read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,nrows=n,...)
+        close(val)
+       }, error = function(e) {dostop()},
           warning = function(w) {dostop()}
       )
       header <<- colnames(ans)
@@ -473,13 +473,14 @@ iqiter = function (con, n = 1, excludecol, ...)
     } else {
       ans = tryCatch(
        {
-        read.table(u, sep=",",stringsAsFactors=FALSE,header=FALSE,nrows=n,...)
-       }, error = function(e) {cls(u);dostop()},
+        val = textConnection(GET(u, header=FALSE))
+        ret = read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,nrows=n...)
+        close(val)
+       }, error = function(e) {dostop()},
           warning = function(w) {dostop()}
       )
       colnames(ans) = header
     }
-    cls(u)
     if(!is.na(excludecol) && excludecol<=ncol(ans))
     {
       rownames(ans) = ans[,excludecol]
