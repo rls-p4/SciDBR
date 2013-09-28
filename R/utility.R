@@ -225,7 +225,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
   if(async)
   {
     ans =tryCatch(
-      GET("/execute_query",list(id=sessionid,release=release,query=query))
+      GET("/execute_query",list(id=sessionid,release=release,query=query)),
       error=function(e) {
         GET("release_session", list(id=sessionid))
         stop("HTTP/1.0 500 ERROR")
@@ -233,10 +233,12 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
   } else
   {
     ans = tryCatch(
+      {
       if(is.null(save))
-        GET("/execute_query",list(id=sessionid,release=release,query=query,afl=as.integer(afl))),
+        GET("/execute_query",list(id=sessionid,release=release,query=query,afl=as.integer(afl)))
       else
-        GET("/execute_query",list(id=sessionid,release=release,save=save,query=query,afl=as.integer(afl))),
+        GET("/execute_query",list(id=sessionid,release=release,save=save,query=query,afl=as.integer(afl)))
+      },
       error=function(e) {
         GET("/release_session",list(id=sessionid))
         "HTTP/1.0 500 ERROR"
