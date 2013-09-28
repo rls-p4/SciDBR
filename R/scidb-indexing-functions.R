@@ -340,12 +340,10 @@ materialize = function(x, drop=FALSE)
                 scidbquery(query, save=savestring, async=FALSE, release=0),
                 error = function(e) {stop(e)})
 # Release the session on exit
-  on.exit( GET(paste("/release_session?id=",sessionid,sep="")) ,add=TRUE)
-  host = get("host",envir=.scidbenv)
-  port = get("port",envir=.scidbenv)
+  on.exit( GET("/release_session",list(id=sessionid)) ,add=TRUE)
   n = 0
 
-  r = sprintf("http://%s:%d/read_bytes?id=%s&n=%.0f",host,port,sessionid,n)
+  r = URI("/read_bytes",list(id=sessionid,n=n))
   BUF = getBinaryURL(r)
 
   ndim = as.integer(length(x@D$name))

@@ -262,7 +262,7 @@ as.scidb = function(X,
 
 # Obtain a session from shim for the upload process
   session = getSession()
-  on.exit( GET(paste("/release_session?id=",session,sep="")) ,add=TRUE)
+  on.exit( GET("/release_session",list(id=session)) ,add=TRUE)
 
 # Upload the data
 # XXX I couldn't get RCurl to work using the fileUpload(contents=x), with 'x'

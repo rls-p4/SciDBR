@@ -123,6 +123,7 @@ tmpnam = function(prefix="R_array")
 }
 
 # Return a shim session ID or error
+# This will also return an authenticaion token string if one is available.
 getSession = function()
 {
   u = paste(URI(),"/new_session",sep="")
@@ -133,26 +134,29 @@ getSession = function()
   session
 }
 
-URI = function(q="")
+# Supply the base SciDB URI from the global host, port and auth
+# parameters stored in the .scidbenv package environment.
+# Arguments:
+# resource (string): A URI identifying the requested service
+# args (list): A list of named query parameters
+URI = function(resource="", args=list())
 {
   if(!exists("host",envir=.scidbenv)) stop("Not connected...try scidbconnect")
   ans  = paste("http://",get("host",envir=.scidbenv),":",get("port",envir=.scidbenv),sep="")
-  if(nchar(q)>0) ans = paste(ans,q,sep="/")
+  ans = paste(ans, resource, sep="/")
+  if(length(args)>0)
+    ans = paste(ans,paste(paste(names(args),args,sep="="),collapse="&"),sep="?")
   ans
 }
 
 # Send an HTTP GET message
-GET = function(uri, header=TRUE)
+GET = function(resource, args=list(), header=TRUE)
 {
-  ans = invisible()
-  if(!exists("host",envir=.scidbenv)) stop("Not connected...try scidbconnect")
-  host = get("host",envir=.scidbenv)
-  port = get("port",envir=.scidbenv)
+  if(!(substr(resource,1,1)=="/")) resource = paste("/",resource,sep="")
+  uri = URI(resource, args)
   uri = URLencode(uri)
   uri = gsub("\\+","%2B",uri,perl=TRUE)
-  u = paste(URI(),uri,sep="")
-  ans = getURI(url=u, .opts=list(header=header))
-  return(ans)
+  getURI(url=uri, .opts=list(header=header))
 }
 
 
@@ -198,8 +202,8 @@ scidbls = function(...) scidblist(...)
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
 # resp(logical): return http response
 # Example values of save:
-# save="&save='dcsv'"
-# save="&save='lcsv+'"
+# save="dcsv"
+# save="lcsv+"
 #
 # Returns the HTTP session in each case
 scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, session=NULL, resp=FALSE)
@@ -221,18 +225,20 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
   if(async)
   {
     ans =tryCatch(
-      GET(sprintf("/execute_query?id=%s&release=%d&query=%s",sessionid,release,query)),
+      GET("/execute_query",list(id=sessionid,release=release,query=query))
       error=function(e) {
-        GET(paste("/release_session?id=",sessionid,sep=""))
+        GET("release_session", list(id=sessionid))
         stop("HTTP/1.0 500 ERROR")
       })
   } else
   {
-    u = paste("/execute_query?id=",sessionid,"&release=",release,save,"&query=",query,"&afl=",as.integer(afl),sep="")
     ans = tryCatch(
-      GET(u),
+      if(is.null(save))
+        GET("/execute_query",list(id=sessionid,release=release,query=query,afl=as.integer(afl))),
+      else
+        GET("/execute_query",list(id=sessionid,release=release,save=save,query=query,afl=as.integer(afl))),
       error=function(e) {
-        GET(paste("/release_session?id=",sessionid,sep=""))
+        GET("/release_session",list(id=sessionid))
         "HTTP/1.0 500 ERROR"
       })
     w = ans
@@ -331,7 +337,7 @@ df2scidb = function(X,
 
 # Obtain a session from the SciDB http service for the upload process
   session = getSession()
-  on.exit(GET(paste("/release_session?id=",session,sep="")) ,add=TRUE)
+  on.exit(GET("/release_session",list(id=session)) ,add=TRUE)
 
 # Create SciDB input string from the data frame
   scidbInput = .df2scidb(X,chunkSize)
@@ -374,7 +380,7 @@ df2scidb = function(X,
 # Obtain a session from shim for the upload process
   session = getSession()
   if(length(session)<1) stop("SciDB http session error")
-  on.exit( GET(paste("/release_session?id=",session,sep="")) ,add=TRUE)
+  on.exit(GET("/release_session",list(id=session)) ,add=TRUE)
 
 # Compute the indices and assemble message to SciDB in the form
 # double,double,double for indices i,j and data val.
@@ -409,7 +415,7 @@ iquery = function(query, `return`=FALSE,
   if(missing(excludecol)) excludecol=NA
   if(iterative)
   {
-    sessionid = scidbquery(query,afl,async=FALSE,save="&save=lcsv+",release=0)
+    sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
     return(iqiter(con=sessionid,n=n,excludecol=excludecol,...))
   }
   qsplit = strsplit(query,";")[[1]]
@@ -421,12 +427,11 @@ iquery = function(query, `return`=FALSE,
     {
       ans = tryCatch(
        {
-        sessionid = scidbquery(query,afl,async=FALSE,save="&save=lcsv+",release=0)
-        u = sprintf("/read_lines?id=%s&n=%.0f",sessionid,n+1)
-        val = textConnection(GET(u, header=FALSE))
+        sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
+        val = textConnection(GET("/read_lines",list(id=sessionid,n=as.integer(n+1))))
         ret=read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
         close(val)
-        GET(paste("/release_session?id=",sessionid,sep=""))
+        GET("/release_session",list(id=sessionid))
         ret
        }, error = function(e)
            {
@@ -444,7 +449,7 @@ iqiter = function (con, n = 1, excludecol, ...)
   if(missing(excludecol)) excludecol=NA
   dostop = function(s=TRUE)
   {
-    GET(paste("/release_session?id=",con,sep=""))
+    GET("/release_session",list(id=con))
     if(s) stop("StopIteration",call.=FALSE)
   }
   if (!is.numeric(n) || length(n) != 1 || n < 1)
@@ -453,11 +458,10 @@ iqiter = function (con, n = 1, excludecol, ...)
   header = c()
   nextEl = function() {
     if (is.null(con)) dostop()
-    u = sprintf("/read_lines?id=%s&n=%.0f",con,n)
     if(init) {
       ans = tryCatch(
        {
-        val = textConnection(GET(u, header=FALSE))
+        val = textConnection(GET("/read_lines",list(id=con,n=n), header=FALSE))
         ret=read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,nrows=n,...)
         close(val)
        }, error = function(e) {dostop()},
@@ -468,7 +472,7 @@ iqiter = function (con, n = 1, excludecol, ...)
     } else {
       ans = tryCatch(
        {
-        val = textConnection(GET(u, header=FALSE))
+        val = textConnection(GET("/read_lines",list(id=con,n=n), header=FALSE))
         ret = read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,nrows=n...)
         close(val)
        }, error = function(e) {dostop()},
