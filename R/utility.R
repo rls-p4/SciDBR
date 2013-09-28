@@ -126,8 +126,7 @@ tmpnam = function(prefix="R_array")
 # This will also return an authenticaion token string if one is available.
 getSession = function()
 {
-  u = paste(URI(),"/new_session",sep="")
-  session = getURI(url=u)
+  session = GET("/new_session",header=FALSE)
   if(length(session)<1) stop("SciDB http session error; are you connecting to a valid SciDB host?")
   session = gsub("\r","",session)
   session = gsub("\n","",session)
@@ -430,7 +429,7 @@ iquery = function(query, `return`=FALSE,
       ans = tryCatch(
        {
         sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
-        val = textConnection(GET("/read_lines",list(id=sessionid,n=as.integer(n+1))))
+        val = textConnection(GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE))
         ret=read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
         close(val)
         GET("/release_session",list(id=sessionid))
