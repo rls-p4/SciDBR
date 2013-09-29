@@ -334,7 +334,7 @@ materialize = function(x, drop=FALSE)
   nl = TRUE
   N = ifelse(nl,"NULL","")
 
-  savestring = sprintf("&save=(%s,%s %s)",i,x@type,N)
+  savestring = sprintf("(%s,%s %s)",i,x@type,N)
 
   sessionid = tryCatch(
                 scidbquery(query, save=savestring, async=FALSE, release=0),
@@ -344,7 +344,7 @@ materialize = function(x, drop=FALSE)
   n = 0
 
   r = URI("/read_bytes",list(id=sessionid,n=n))
-  BUF = getBinaryURL(r)
+  BUF = getBinaryURL(r, .opts=list('ssl.verifypeer'=0))
 
   ndim = as.integer(length(x@D$name))
   type = eval(parse(text=paste(names(.scidbtypes[.scidbtypes==x@type]),"()")))
