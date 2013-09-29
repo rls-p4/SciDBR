@@ -83,7 +83,7 @@ scidbconnect = function(host='localhost', port=8080L, username, password)
   if(!is.null(username))
   {
     auth = GET(resource="login",list(username=username, password=password),header=FALSE)
-    if(nchar(auth)<0) stop("Authentication error")
+    if(nchar(auth)<1) stop("Authentication error")
     assign("auth",auth,envir=.scidbenv)
     assign("authenv",new.env(),envir=.scidbenv)
     reg.finalizer(.scidbenv$authenv, function(e) scidblogout(), onexit=TRUE)
@@ -183,7 +183,6 @@ GET = function(resource, args=list(), header=TRUE)
   if(!(substr(resource,1,1)=="/")) resource = paste("/",resource,sep="")
   uri = URI(resource, args)
   uri = URLencode(uri)
-cat("GET ",uri,"\n")
   uri = gsub("\\+","%2B",uri,perl=TRUE)
   getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0))
 }
@@ -374,7 +373,7 @@ df2scidb = function(X,
   scidbInput = .df2scidb(X,chunkSize)
 
 # Post the input string to the SciDB http service
-  uri = paste(URI(),"/upload_file?id=",session,sep="")
+  uri = URI("upload_file",list(id=session))
   tmp = postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=c(Expect=""),'ssl.verifypeer'=0))
   tmp = tmp[[1]]
   tmp = gsub("\r","",tmp)
@@ -423,7 +422,7 @@ df2scidb = function(X,
 # the object. This copy sucks and must be fixed.
   fn = tempfile()
   bytes = writeBin(as.vector(t(matrix(c(X@i + start[[1]],j + start[[2]], X@x),length(X@x)))),con=fn)
-  url = paste(URI(),"/upload_file?id=",session,sep="")
+  url = URI("/upload_file",list(id=session))
   ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
                  .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0))
   unlink(fn)
