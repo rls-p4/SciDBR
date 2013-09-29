@@ -429,7 +429,8 @@ iquery = function(query, `return`=FALSE,
       ans = tryCatch(
        {
         sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
-        val = textConnection(GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE))
+        result = GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE)
+        val = textConnection(result)
         ret=read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
         close(val)
         GET("/release_session",list(id=sessionid))
@@ -462,9 +463,11 @@ iqiter = function (con, n = 1, excludecol, ...)
     if(init) {
       ans = tryCatch(
        {
-        val = textConnection(GET("/read_lines",list(id=con,n=n), header=FALSE))
+        result = GET("/read_lines",list(id=con,n=n),header=FALSE)
+        val = textConnection(result)
         ret=read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,nrows=n,...)
         close(val)
+        ret
        }, error = function(e) {dostop()},
           warning = function(w) {dostop()}
       )
@@ -473,9 +476,11 @@ iqiter = function (con, n = 1, excludecol, ...)
     } else {
       ans = tryCatch(
        {
-        val = textConnection(GET("/read_lines",list(id=con,n=n), header=FALSE))
-        ret = read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,nrows=n...)
+        result = GET("/read_lines",list(id=con,n=n),header=FALSE)
+        val = textConnection(result)
+        ret = read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,nrows=n,...)
         close(val)
+        ret
        }, error = function(e) {dostop()},
           warning = function(w) {dostop()}
       )
