@@ -38,7 +38,7 @@ test("isTRUE(all.equal(2*A, (2*X)[],check.attributes=FALSE))")
 
 # dbops
 data("iris")
-x = as.scidb(iris)
+test("assign('x',as.scidb(iris),envir=globalenv());TRUE")
 # Aggregation by a non-integer attribute
 test("isTRUE(all.equal(aggregate(iris$Petal.Length,by=list(iris$Species),FUN=mean)[,2],
                 aggregate(project(x,c('Petal_Length','Species')), by = 'Species', FUN='avg(Petal_Length)')[][,2]))")
