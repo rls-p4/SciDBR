@@ -74,9 +74,9 @@ called_from_scidb = function(nf=1)
 # store the connection information and obtain a unique ID
 scidbconnect = function(host='localhost', port=8080L, username, password)
 {
+  scidbdisconnect()
   assign("host",host, envir=.scidbenv)
   assign("port",port, envir=.scidbenv)
-  if(exists("auth",envir=.scidbenv)) rm("auth",envir=.scidbenv)
   if(missing(username)) username=c()
   if(missing(password)) password=c()
 # Check for login
@@ -85,6 +85,8 @@ scidbconnect = function(host='localhost', port=8080L, username, password)
     auth = GET(resource="login",list(username=username, password=password),header=FALSE)
     if(nchar(auth)<0) stop("Authentication error")
     assign("auth",auth,envir=.scidbenv)
+    assign("authenv",new.env(),envir=.scidbenv)
+    reg.finalizer(.scidbenv$authenv, function(e) scidblogout(), onexit=TRUE)
   }
 
 # Use the query ID from a bogus query as a unique ID for automated
@@ -104,11 +106,21 @@ scidbconnect = function(host='localhost', port=8080L, username, password)
   invisible()
 }
 
+scidblogout = function()
+{
+  if(exists("auth",envir=.scidbenv) && exists("host",envir=.scidbenv))
+  {
+    GET(resource="logout",header=FALSE)
+  }
+}
+
 scidbdisconnect = function()
 {
-  rm("host", envir=.scidbenv)
-  rm("port", envir=.scidbenv)
+  if(exists("authenv",envir=.scidbenv)) rm("authenv",envir=.scidbenv)
   gc()
+  if(exists("auth",envir=.scidbenv))  rm("auth",envir=.scidbenv)
+  if(exists("host",envir=.scidbenv)) rm("host", envir=.scidbenv)
+  if(exists("port",envir=.scidbenv)) rm("port", envir=.scidbenv)
 }
 
 make.names_ = function(x)
@@ -171,6 +183,7 @@ GET = function(resource, args=list(), header=TRUE)
   if(!(substr(resource,1,1)=="/")) resource = paste("/",resource,sep="")
   uri = URI(resource, args)
   uri = URLencode(uri)
+cat("GET ",uri,"\n")
   uri = gsub("\\+","%2B",uri,perl=TRUE)
   getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0))
 }
@@ -362,7 +375,7 @@ df2scidb = function(X,
 
 # Post the input string to the SciDB http service
   uri = paste(URI(),"/upload_file?id=",session,sep="")
-  tmp = postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=c(Expect="")))
+  tmp = postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=c(Expect=""),'ssl.verifypeer'=0))
   tmp = tmp[[1]]
   tmp = gsub("\r","",tmp)
   tmp = gsub("\n","",tmp)
@@ -412,7 +425,7 @@ df2scidb = function(X,
   bytes = writeBin(as.vector(t(matrix(c(X@i + start[[1]],j + start[[2]], X@x),length(X@x)))),con=fn)
   url = paste(URI(),"/upload_file?id=",session,sep="")
   ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
-                 .opts = curlOptions(httpheader = c(Expect = "")))
+                 .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0))
   unlink(fn)
   ans = ans[[1]]
   ans = gsub("\r","",ans)
