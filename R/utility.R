@@ -72,10 +72,21 @@ called_from_scidb = function(nf=1)
 }
 
 # store the connection information and obtain a unique ID
-scidbconnect = function(host='localhost', port=8080L)
+scidbconnect = function(host='localhost', port=8080L, username, password)
 {
   assign("host",host, envir=.scidbenv)
   assign("port",port, envir=.scidbenv)
+  if(exists("auth",envir=.scidbenv)) rm("auth",envir=.scidbenv)
+  if(missing(username)) username=c()
+  if(missing(password)) password=c()
+# Check for login
+  if(!is.null(username))
+  {
+    auth = GET(resource="login",list(username=username, password=password),header=FALSE)
+    if(nchar(auth)<0) stop("Authentication error")
+    assign("auth",auth,envir=.scidbenv)
+  }
+
 # Use the query ID from a bogus query as a unique ID for automated
 # array name generation.
   x = scidbquery(query="load_library('dense_linear_algebra')",release=1,resp=TRUE)
@@ -135,13 +146,19 @@ getSession = function()
 
 # Supply the base SciDB URI from the global host, port and auth
 # parameters stored in the .scidbenv package environment.
+# Every function that needs to talk to the shim interface should use
+# this function to supply the URI.
 # Arguments:
 # resource (string): A URI identifying the requested service
 # args (list): A list of named query parameters
 URI = function(resource="", args=list())
 {
   if(!exists("host",envir=.scidbenv)) stop("Not connected...try scidbconnect")
-  ans  = paste("http://",get("host",envir=.scidbenv),":",get("port",envir=.scidbenv),sep="")
+  if(exists("auth",envir=.scidbenv))
+    args = c(args,list(auth=get("auth",envir=.scidbenv)))
+  prot = "http://"
+  if("username" %in% names(args) || "auth" %in% names(args)) prot = "https://"
+  ans  = paste(prot, get("host",envir=.scidbenv),":",get("port",envir=.scidbenv),sep="")
   ans = paste(ans, resource, sep="/")
   if(length(args)>0)
     ans = paste(ans,paste(paste(names(args),args,sep="="),collapse="&"),sep="?")
@@ -155,7 +172,7 @@ GET = function(resource, args=list(), header=TRUE)
   uri = URI(resource, args)
   uri = URLencode(uri)
   uri = gsub("\\+","%2B",uri,perl=TRUE)
-  getURI(url=uri, .opts=list(header=header))
+  getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0))
 }
 
 
