@@ -270,7 +270,7 @@ as.scidb = function(X,
 # the object. This copy sucks and must be fixed.
   fn = tempfile()
   bytes = writeBin(as.vector(X),con=fn)
-  url = paste(URI(),"/upload_file?id=",session,sep="")
+  url = URI("upload_file",list(id=session))
   ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
                  .opts = curlOptions(httpheader = c(Expect = "")))
   unlink(fn)
