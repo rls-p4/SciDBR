@@ -128,7 +128,7 @@ interact with SciDB from R:
 \item By running SciDB queries from R, optionally transferring data through
 data frames or data frame iterators.
 \item Through several SciDB array object classes for R.
-The arrays mimic standard R arrays, but operations on them
+The arrays mimic standard R arrays and data frames, but operations on them
 are performed by the SciDB engine.  Data are materialized to R only
 when requested.
 \end{enumerate}
@@ -185,14 +185,16 @@ supported by the other.  Thus, conversion errors may arise. The \verb+iquery+
 function is designed to reasonably minimize such issues and simplify basic data
 transfer between the systems.  Data types common to R and SciDB include
 double-precision numeric, character string, logical, and 32-bit
-integers.$n$-dimensional. They \verb+iquery+ function can optionally use
-R \verb+read.table+ options for parsing value types.
+integers. They \verb+iquery+ function supports
+standard R \verb+read.table+ parameter options to facilitate type conversion.
 
-Listing \ref{iquery} illustrates basic use of \verb+iquery+.
+Listing \ref{iquery} illustrates basic use of \verb+iquery+. (Program
+code is shown in black text and example results are shown in blue
+in the example listings.)
 \begin{Code}
 \begin{lstlisting}[caption=Data frame example, label=iquery]
 library("scidb")
-scidbconnect()               # Connect to SciDB on localhost
+scidbconnect()              # Connect to SciDB on localhost
 scidblist()                 # List SciDB arrays (nothing there yet)
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
 
@@ -220,7 +222,7 @@ head(S)
 
 The \verb+iquery+ function returns query results into a single R data frame by
 default. Large results expected to contain lots of rows may be iterated over
-instead by setting the \verb+iterative=TRUE+ argument. When \verb+iquery+ is
+by setting the \verb+iterative=TRUE+ argument. When \verb+iquery+ is
 used with the \verb+iterative=TRUE+ setting, it returns an iterator that
 iterates over chunks of rows of the result data frame.  Iterators are defined
 by the \verb+iterators+ package. Their data may be directly accessed with the

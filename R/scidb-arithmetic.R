@@ -121,41 +121,49 @@ scidbmultiply = function(e1,e2)
 {
   e1s = e1
   e2s = e2
-  if(!inherits(e1,"scidb")) {
+  e1a = "scalar"
+  e2a = "scalar"
+  if(!inherits(e1,"scidb") && length(e1)>1) {
     x = tmpnam()
     e1 = as.scidb(e1,name=x,gc=TRUE)
   }
-  if(!inherits(e2,"scidb")) {
+  if(!inherits(e2,"scidb") && length(2)>1) {
     x = tmpnam()
     e2 = as.scidb(e2,name=x,gc=TRUE)
   }
+  if(inherits(e1,"scidb")) e1a = e1@attribute
+  if(inherits(e2,"scidb")) e2a = e2@attribute
 # OK, we've got two scidb arrays, op them:
   x = tmpnam()
-  e1a = e1@attribute
-  e2a = e2@attribute
   v = paste(e1a,e2a,sep="_")
 
 # We use subarray to handle starting index mismatches...
+  q1 = q2 = ""
   l1 = length(dim(e1))
   lb = paste(rep("null",l1),collapse=",")
   ub = paste(rep("null",l1),collapse=",")
-  q1 = sprintf("subarray(%s,%s,%s)",e1@name,lb,ub)
+  if(inherits(e1,"scidb")) q1 = sprintf("subarray(%s,%s,%s)",e1@name,lb,ub)
   l = length(dim(e2))
   lb = paste(rep("null",l),collapse=",")
   ub = paste(rep("null",l),collapse=",")
-  q2 = sprintf("subarray(%s,%s,%s)",e2@name,lb,ub)
+  if(inherits(e2,"scidb")) q2 = sprintf("subarray(%s,%s,%s)",e2@name,lb,ub)
 # Adjust the 2nd array to be schema-compatible with the 1st:
 # XXX PGB Makes the good point here that we should repart the smaller of the
 # two arrays...
-  if(l==2 && l1==l)
+  if(l==2 && l1==2)
   {
-    q2 = sprintf(
-       "repart(%s, <%s:%s>[%s=%.0f:%.0f,%.0f,%.0f,%s=%.0f:%.0f,%.0f,%.0f])",
-       q2, e2a, e2@type[[1]],
+    schema = sprintf(
+       "<%s:%s>[%s=%.0f:%.0f,%.0f,%.0f,%s=%.0f:%.0f,%.0f,%.0f]",
+       e2a, e2@type[[1]],
        e2@D$name[[1]], 0, e2@D$length[[1]] - 1,
                           e1@D$chunk_interval[[1]], e1@D$chunk_overlap[[1]],
        e2@D$name[[2]], 0, e2@D$length[[2]] - 1,
                           e1@D$chunk_interval[[2]], e1@D$chunk_overlap[[2]])
+    q2 = sprintf("repart(%s, %s)", q2, schema)
+
+# Handle sparsity
+    q1 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q1,q2,e1@type)
+    q2 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q2,q1,e2@type)
   }
   p1 = p2 = ""
 # Syntax sugar for exponetiation (map the ^ infix operator to pow):
