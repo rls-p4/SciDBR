@@ -47,7 +47,7 @@
 .typelen = list(
   double=8,
   integer=4,
-  logical=4,
+  logical=1,
   character=1
 )
 

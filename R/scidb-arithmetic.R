@@ -27,11 +27,12 @@ Ops.scidb = function(e1,e2) {
     '-' = .binop(e1,e2,"-"),
     '*' = .binop(e1,e2,"*"),
     '/' = .binop(e1,e2,"/"),
-    '<' = .compare(e1,e2,"<"),
-    '<=' = .compare(e1,e2,"<="),
-    '>' = .compare(e1,e2,">"),
-    '>=' = .compare(e1,e2,">="),
-    '==' = .compare(e1,e2,"=="),
+    '<' = .binop(e1,e2,"<"),
+    '<=' = .binop(e1,e2,"<="),
+    '>' = .binop(e1,e2,">"),
+    '>=' = .binop(e1,e2,">="),
+    '==' = .binop(e1,e2,"="),
+    '!=' = .binop(e1,e2,"<>"),
     default = stop("Unsupported binary operation.")
   )
 }
@@ -142,11 +143,13 @@ scidbmultiply = function(e1,e2)
   l1 = length(dim(e1))
   lb = paste(rep("null",l1),collapse=",")
   ub = paste(rep("null",l1),collapse=",")
-  if(inherits(e1,"scidb")) q1 = sprintf("subarray(%s,%s,%s)",e1@name,lb,ub)
+  if(inherits(e1,"scidb"))
+    q1 = sprintf("subarray(project(%s,%s),%s,%s)",e1@name,e1@attribute,lb,ub)
   l = length(dim(e2))
   lb = paste(rep("null",l),collapse=",")
   ub = paste(rep("null",l),collapse=",")
-  if(inherits(e2,"scidb")) q2 = sprintf("subarray(%s,%s,%s)",e2@name,lb,ub)
+  if(inherits(e2,"scidb"))
+    q2 = sprintf("subarray(project(%s,%s),%s,%s)",e2@name,e2@attribute,lb,ub)
 # Adjust the 2nd array to be schema-compatible with the 1st:
 # XXX PGB Makes the good point here that we should repart the smaller of the
 # two arrays...
