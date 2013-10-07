@@ -485,14 +485,13 @@ are not materialized to R until subset with the empty indexing function,
 x = scidb("iris", attribute="Sepal_Width", data.frame=FALSE)
 dim(x)
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-[1] 150 1
+[1] 150
 \end{lstlisting}\begin{lstlisting}
 
 x[99:103][]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-row
- 99 100 101 102 103 
-2.8 3.3 2.7 3.0 2.9 
+[1] 2.5 2.8 3.3 2.7 3.0
+
 \end{lstlisting}\begin{lstlisting}
 
 attributes(x)       # List all available attributes in the SciDB array
@@ -504,10 +503,8 @@ attributes(x)       # List all available attributes in the SciDB array
 \subsection{Subsetting and indexing {\tt scidb} array objects}
 
 SciDB arrays act in many ways like regular arrays in R.  Rectilinear subarrays
-may be defined by ranges of integer indices or by lists of specific integer and
-string values, if the SciDB backing array supports that. Subarrays of
-\verb+scidb+ array objects are returned as new \verb+scidb+ array objects
-of the appropriate size.
+may be defined by ranges of integer indices.  Subarrays of \verb+scidb+ array
+objects are returned as new \verb+scidb+ array objects of the appropriate size.
 
 Despite the similarities, there are differences between regular R and {\tt
 scidb} array object indexing. In particular:
@@ -524,12 +521,6 @@ starting SciDB integer index is arbitrary, but often zero. (By contrast,
 the upper left
 corner of R arrays is always indexed by [1,1,...].)
 \item Array length may exceed $2^{31}$ elements.
-\item When SciDB arrays are materialized to R with the \verb+[]+ function,
-empty cells in the SciDB array are mapped to a default value in R. The
-choice of value may be made globally by setting the
-\verb+options("scidb.default.value")+ option, or at call time with
-the \verb+default+ option to the \verb+[]+ function (examples shown
-below).
 \item {\tt scidb} array objects are limited to double-precision and
 32-bit signed integer numeric, logical, and single-byte character
 (char) element data types.
@@ -539,11 +530,16 @@ Listing \ref{3dsimple} illustrates basic integer indexing operations
 on a sparse 3-D SciDB array.
 \begin{Code}
 \begin{lstlisting}[caption=Basic scidb subarray indexing, label=3dsimple]
-scidbremove("A", error=warning)
+scidbremove("A", error=invisible)
 
 # Create a small, sparse 3-d array:
-iquery("store(build_sparse(<val:double>[i=0:9,10,0,j=0:9,5,0,k=0:9,2,0],k,k<99 and (j=1 or j=3 or j=5 or j=7)),A)")
+iquery("store(build_sparse(<val:double>[i=0:9,10,0,j=0:9,5,0,k=0:9,2,0],k,k<5 and (j=1 or j=3 or j=5 or j=7)),A)")
 A = scidb("A")
+
+dim(A)
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+[1] 10 10 10
+\end{lstlisting}\begin{lstlisting}
 
 # Indexing operations return new SciDB arrays:
 A[0:3,2:3,5:8]
@@ -755,7 +751,6 @@ the standard \verb+drop+ argument and
 the argument \verb+default=x+, where \verb+x+ is the default scalar value to
 use to fill-in sparse array values when materialized to R. The use of
 \verb+default+ overrides the related global
-\verb+options("scidb.default.value")+ package option.
 
 
 
@@ -996,7 +991,6 @@ Option & Default value & Description \\
 scidb.debug & NULL & Set to TRUE to display all queries issued to the SciDB engine and
 other debugging information.\\
 scidb.index.sequence.limit & 100 000 000 &  Maximum allowed scidb array object sequential indexing limit (for larger ranges, use between)\\
-scidb.default.value & 0 & Default value for returned subarrays of sparse numeric matrices.\\
 scidb.max.array.elements & 100 000 000 & Maximum allowed non-empty elements to return in a subsetting operation of a scidb array object.\\
 \hline
 \end{tabularx}}

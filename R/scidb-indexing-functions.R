@@ -369,7 +369,7 @@ materialize = function(x, drop=FALSE)
   } else if(nelem<p)
   {
 # Don't know how to represent this in R!
-    names(A)=c("coordinates","values")
+    names(A)=c("values","coordinates")
     return(A)
   }
   array(data=A[[1]], dim=x@D$length, dimnames=x@D$name)
