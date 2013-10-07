@@ -221,18 +221,25 @@ summary.scidb = function(x)
 `dim.scidb` = function(x) {if(length(x@dim)>0) return(x@dim); NULL}
 `length.scidb` = function(x) x@length
 
-# Vector, matrix, or data.frame only.
+# Vector, Matrix, matrix, or data.frame only.
 as.scidb = function(X,
                     name=tmpnam(),
-                    rowChunkSize=1000L,
-                    colChunkSize=1000L,
+                    rowChunkSize,
+                    colChunkSize,
                     start=c(0L,0L),
                     gc=TRUE, ...)
 {
   if(inherits(X,"data.frame"))
-    return(df2scidb(X,name=name,chunkSize=rowChunkSize,gc=gc,...))
+    if(missing(rowChunkSize))
+      return(df2scidb(X,name=name,gc=gc,...))
+    else
+      return(df2scidb(X,name=name,chunkSize=rowChunkSize,gc=gc,...))
   if(inherits(X,"dgCMatrix"))
+  {
+    rowChunkSize = min(1000L,nrow(X))
+    colChunkSize = min(1000L,ncol(X))
     return(.Matrix2scidb(X,name=name,rowChunkSize=rowChunkSize,colChunkSize=colChunkSize,start=start,gc=gc,...))
+  }
   D = dim(X)
   rowOverlap=0L
   colOverlap=0L
@@ -246,13 +253,17 @@ as.scidb = function(X,
        paste(.scidbtypes,collapse=" "),".",sep=""))
    }
   if(is.null(D)) {
-# X is a vector, make into a matrix
+# X is a vector
     if(!is.vector(X)) stop ("X must be a matrix or a vector")
+    if(missing(rowChunkSize)) rowChunkSize = min(1e6, length(X))
     X = as.matrix(X)
     schema = sprintf(
       "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
       nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap)
   } else {
+# X is a matrix
+    if(missing(rowChunkSize)) rowChunkSize = min(1000L, nrow(X))
+    if(missing(colChunkSize)) colChunkSize = min(1000L, ncol(X))
     schema = sprintf(
       "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
       nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],

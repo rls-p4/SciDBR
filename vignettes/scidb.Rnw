@@ -215,7 +215,7 @@ standard R \verb+read.table+ parameter options to facilitate type conversion.
 
 Listing \ref{iquery} illustrates basic use of \verb+iquery+. (Program
 code is shown in black text and example results are shown in blue
-in the example listings.)
+in all following example listings.)
 \begin{Code}
 \begin{lstlisting}[caption=Data frame example, label=iquery]
 library("scidb")
@@ -293,62 +293,19 @@ Error: StopIteration
 
 
 
-\subsection{Copying data frames from R into SciDB}
-
-The \verb+df2scidb+ function copies an R data frame into a one-dimensional
-SciDB array. The data frame rows are used as the array dimension. The data
-frame columns are mapped to SciDB array attributes, each column becoming one
-attribute.  SciDB attributes and dimensions are discussed in greater detail
-below in Section \ref{arrays}, and in the SciDB reference documentation.  The
-function accepts many arguments outlined in detail in the R help page,
-\verb+?df2scidb+.
-
-Listing \ref{iris} illustrates copying data from R to SciDB  and back
-to R using the \verb+df2scidb+ and \verb+iquery+ functions.
-
-\begin{Code}
-\begin{lstlisting}[caption=Data frame example, label=iris]
-library("scidb")
-scidbconnect()               # Connect to SciDB
-df2scidb(iris)              # Copy the R 'iris' data frame to SciDB.
-scidblist(verbose=TRUE)     # List SciDB arrays and schema.
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-[1] iris <Sepal_Length:double, Sepal_Width:double,
-          Petal_Length:double, Petal_Width:double,
-          Species:string>        [row=0:149,150,0]
-\end{lstlisting}\begin{lstlisting}
-
-# Ask for the data back from SciDB:
-head(iquery("scan(iris)",return=TRUE))
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-[1]  row Sepal_Length Sepal_Width Petal_Length Petal_Width Species
-  1   0          5.1         3.5          1.4         0.2  setosa
-  2   1          4.9         3.0          1.4         0.2  setosa
-  3   2          4.7         3.2          1.3         0.2  setosa
-  4   3          4.6         3.1          1.5         0.2  setosa
-  5   4          5.0         3.6          1.4         0.2  setosa
-  6   5          5.4         3.9          1.7         0.4  setosa
-\end{lstlisting}
-\end{Code}
-
-
-
 \section{SciDB Arrays for R Users}\label{arrays}
 
 Data are organized by SciDB in $n$-dimensional sparse arrays.  ``Sparse''  in
 SciDB arrays means that array elements may be left undefined, and such array
 elements are omitted from computations. Note that this interpretation of sparse
-may differ from that used by sparse matrices defined by R's Matrix package
-(whose sparse matrix elements are implicitly zero).
+differs in a subtle way from that used by sparse matrices defined by R's
+Matrix package (whose sparse matrix elements are implicitly zero).
 
-%Listing \ref{scidbsparse} illustrates
-%the differences, and one way to emulate the R idea of sparse in SciDB.
 
 The elements of a SciDB array, called {\it cells}, contain one or more {\it
-attributes} (similar to R variables).
-The number and data types of attributes are uniform
-across all cells in an array.  Thus, a one-dimensional SciDB array is
-conceptually similar to a data frame in R: the SciDB dimension index
+attributes} (similar to R variables).  The number and data types of attributes
+are uniform across all cells in an array.  Thus, a one-dimensional SciDB array
+is conceptually similar to a data frame in R: the SciDB dimension index
 corresponds to data frame row index, and SciDB attributes to data frame
 columns.  Higher-dimensional arrays in SciDB don't correspond directly to
 objects in R; the {\tt scidb} $n$-dimensional array class described below is
@@ -417,7 +374,7 @@ missing code values are mapped to NA values in R.
 In addition to available SciDB missing codes, SciDB double-precision floating
 point values also provide a value indicating missingness identically to R,
 and use the identical {\tt NA} representation that R uses. Unlike R however,
-other SciDB data types do not define {\tt NA}.
+other SciDB data types do not define {\tt NA} (use SciDB NULL instead).
  
 The \verb+scidb+ package defines two array classes for R with data backed
 by SciDB arrays.
@@ -426,12 +383,12 @@ by SciDB arrays.
 \section{The {\tt scidbdf} data frame-like class}
 
 The \verb+scidbdf+ class defines a data frame-like class with data backed by
-one-dimensional SciDB arrays. Like data frames, the columns may be of distinct
-types and the rows represent observations. Each attribute in  the backing SciDB
-array represents a column in the \verb+scidbdf+ object. The \verb+scidbdf+
-object elements are read-only (the backing SciDB array may be manually updated,
-for example using the iquery function).  Non-integer row indices are not yet
-supported.
+one-dimensional SciDB arrays. Like data frames, the columns represent variables
+of distinct types and the rows represent observations. Each attribute in  the
+backing SciDB array represents a column in the \verb+scidbdf+ object. The
+\verb+scidbdf+ object elements are read-only (the backing SciDB array may be
+manually updated, for example using the iquery function).  Non-integer row
+indices are not supported.
 
 Use either the \verb+df2scidb+ or \verb+as.scidb+ functions to create new SciDB
 arrays and corresponding \verb+scidbdf+ R objects by copying R data frames into
@@ -445,9 +402,7 @@ object representation of an existing SciDB array.
 Objects of class \verb+scidbdf+ obey a subset of R indexing operations.
 Columns may be selected by numeric index or attribute name, but the short-hand
 R \$-style variable selection notation is not supported. Rows may only be
-selected using the underlying SciDB dimension type, integer by default. And,
-only contiguous subsets of rows may be selected in the present version of the
-package.
+selected by integer.
 
 Subsets of \verb+scidbdf+ objects are returned as new \verb+scidbdf+ objects of
 the appropriate size (dimension, number of attributes/columns). The package
@@ -464,7 +419,7 @@ library("scidb")
 scidbconnect()
 
 # Copy the Michelson-Morley experiment data to SciDB, returning a scidbdf object
-X = as.scidb(morley)
+X = as.scidb(morley, name="morely")
 str(X)
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
 SciDB array name:  morley

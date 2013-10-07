@@ -514,7 +514,7 @@ iqiter = function (con, n = 1, excludecol, ...)
        {
         result = GET("/read_lines",list(id=con,n=n),header=FALSE)
         val = textConnection(result)
-        ret = read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,nrows=n,...)
+        ret = read.table(val,sep=",",stringsAsFactors=FALSE,header=FALSE,nrows=n,...)
         close(val)
         ret
        }, error = function(e) {dostop()},

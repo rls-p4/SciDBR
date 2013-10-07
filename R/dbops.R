@@ -124,7 +124,7 @@
 
   if(missing(`eval`))
   {
-    nf   = sys.nframe()
+    nf   = sys.nframe() - 2  # Note! this is a method and is on a deeper stack.
     `eval` = !called_from_scidb(nf)
   }
 # A bug in SciDB 13.6 unpack prevents us from using eval=FALSE for now.
@@ -194,7 +194,7 @@
     query = scidbexpr(sprintf("unpack(%s,%s)",temp@name,new_dim_name), lastclass="scidbdf")
   } else
   {
- query = sprintf("unpack(aggregate(%s, %s, %s),%s)",query, FUN, along, new_dim_name)
+    query = scidbexpr(sprintf("unpack(%s,%s)",query,new_dim_name), lastclass="scidbdf")
   }
   scidbeval(query,eval)
 }
