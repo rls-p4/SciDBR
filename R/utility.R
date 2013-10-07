@@ -89,18 +89,25 @@ scidbconnect = function(host='localhost', port=8080L, username, password)
     reg.finalizer(.scidbenv$authenv, function(e) scidblogout(), onexit=TRUE)
   }
 
-# Use the query ID from a bogus query as a unique ID for automated
+# Use the query ID from a query as a unique ID for automated
 # array name generation.
-  x = scidbquery(query="load_library('dense_linear_algebra')",release=1,resp=TRUE)
+  x = scidbquery(query="setopt('precision','16')",release=1,resp=TRUE)
   id = strsplit(x$response, split="\\r\\n")[[1]]
   id = id[[length(id)]]
   assign("uid",id,envir=.scidbenv)
-# Set the ASCII interface precision
-  scidbquery(query="setopt('precision','16')",release=1,resp=FALSE)
+# Try to load the dense_linear_algebra library
+  tryCatch(
+    scidbquery(query="load_library('dense_linear_algebra')",
+               release=1,resp=FALSE),
+    error=invisible)
 # Try to load the example_udos library (>= SciDB 13.6)
-  scidbquery(query="load_library('example_udos')",release=1,resp=FALSE)
+  tryCatch(
+    scidbquery(query="load_library('example_udos')",release=1,resp=FALSE),
+    error=invisible)
 # Try to load the P4 library
-  scidbquery(query="load_library('linear_algebra')",release=1,resp=FALSE)
+  tryCatch(
+    scidbquery(query="load_library('linear_algebra')",release=1,resp=FALSE),
+    error=invisible)
 # Save available operators
   assign("ops",iquery("list('operators')",return=TRUE),envir=.scidbenv)
   invisible()
@@ -203,7 +210,7 @@ GET = function(resource, args=list(), header=TRUE)
 # Output:
 # A list.
 scidblist = function(pattern,
-type= c("arrays","operators","functions","types","aggregates","instances","queries"),
+type= c("arrays","operators","functions","types","aggregates","instances","queries","libraries"),
               verbose=FALSE, n=Inf)
 {
   type = match.arg(type)
@@ -667,4 +674,11 @@ rename = function(A, name=A@name, gc)
 # R is unfortunately interpreting 'i' as an imaginary unit I think.
   if(any(is.na(x))) x[is.na(x)] = "i"
   list(attributes=x[,2],types=x[,3],nullable=(x[,4]=="true"))
+}
+
+
+# Returns TRUE if x is greater than or equal to than y
+compare_versions = function(x,y)
+{
+ as.logical(prod(as.numeric(strsplit(as.character(x),"\\.")[[1]]) >= as.numeric(strsplit(as.character(y),"\\.")[[1]])))
 }

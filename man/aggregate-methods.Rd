@@ -10,14 +10,15 @@ Aggregate a SciDB array object grouped by a subset of its dimensions and/or attr
 }
 
 \usage{
-\S4method{aggregate}{scidb}(x, by, FUN)
-\S4method{aggregate}{scidbdf}(x, by, FUN)
-\S4method{aggregate}{scidbexpr}(x, by, FUN)
+\S4method{aggregate}{scidb}(x, by, FUN, eval)
+\S4method{aggregate}{scidbdf}(x, by, FUN, eval)
+\S4method{aggregate}{scidbexpr}(x, by, FUN, eval)
 }
 \arguments{
   \item{x}{A \code{scidb}, \code{scidbdf}, or \code{scidexpr} object.}
   \item{by}{Either a single character string or a list of array dimension and/or attribute names to group by; or a SciDB array reference object to group by.}
   \item{FUN}{A character string representing a SciDB aggregation expression.}
+  \item{eval}{A logical value: if TRUE then evaluate the \code{bind} expression and return a \code{scidb} object, otherwise return a \code{scidbexpr} object that contains a character string representation of the un-evaluated SciDB query. By default, eval is set to FALSE if \code{bind} is called from another function in the scidb package.}
 }
 \details{
 Group the \code{scidbexpr}, \code{scidb}, or \code{scidbexpr} array object \code{x}

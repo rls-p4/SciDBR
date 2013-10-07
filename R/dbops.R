@@ -106,9 +106,8 @@
 #      a scidb or scidbdf object that will be cross_joined to x and then
 #      grouped by attribues of by.
 # FUN: A SciDB aggregation expresion
-`aggregate_scidb` = function(x,by,FUN)
+`aggregate_scidb` = function(x,by,FUN,eval)
 {
-  eval = TRUE
   if("scidbexpr" %in% class(x)) x = scidb_from_scidbexpr(x)
   b = `by`
   if(is.list(b)) b = b[[1]]
@@ -123,8 +122,13 @@
     by = list(n)
   }
 
-# XXX A bug in SciDB 13.6 unpack prevents us from using eval=FALSE for now.
-  if(!eval) stop("eval=FALSE not yet supported by aggregate due to a bug in SciDB 13.6")
+  if(missing(`eval`))
+  {
+    nf   = sys.nframe()
+    `eval` = !called_from_scidb(nf)
+  }
+# A bug in SciDB 13.6 unpack prevents us from using eval=FALSE for now.
+  if(!eval && !compare_versions(options("scidb.version")[[1]],13.9)) stop("eval=FALSE not yet supported by aggregate due to a bug in SciDB <= 13.6")
 
   b = `by`
   new_dim_name = make.names_(c(unlist(b),"row"))
@@ -180,16 +184,18 @@
   }
   along = paste(b,collapse=",")
 
-# XXX We use unpack to always return a data frame (a 1D scidb array) OK, as of
+# We use unpack to always return a data frame (a 1D scidb array). As of
 # SciDB 13.6 unpack has a bug that prevents it from working often. Saving to a
 # temporary array first seems to be a workaround for this problem. This sucks.
-
-# query = sprintf("unpack(aggregate(%s, %s, %s),%s)",query, FUN, along,
-# new_dim_name)
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
-  temp = scidbeval(query,TRUE)
-  query = scidbexpr(sprintf("unpack(%s,%s)",temp@name,new_dim_name), lastclass="scidbdf")
-# XXX
+  if(!compare_versions(options("scidb.version")[[1]],13.9))
+  {
+    temp = scidbeval(query,TRUE)
+    query = scidbexpr(sprintf("unpack(%s,%s)",temp@name,new_dim_name), lastclass="scidbdf")
+  } else
+  {
+ query = sprintf("unpack(aggregate(%s, %s, %s),%s)",query, FUN, along, new_dim_name)
+  }
   scidbeval(query,eval)
 }
 

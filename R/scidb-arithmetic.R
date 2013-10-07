@@ -40,8 +40,8 @@ Ops.scidb = function(e1,e2) {
 # e1 and e2 must each already be SciDB arrays.
 scidbmultiply = function(e1,e2)
 {
-# Check for availability of sparse_multiply
-  P4 = length(grep("sparse_multiply",scidb:::.scidbenv$ops[,2]))>0
+# Check for availability of spgemm
+  P4 = length(grep("spgemm",scidb:::.scidbenv$ops[,2]))>0
   SPARSE = FALSE
   if(P4)
   {
@@ -96,7 +96,7 @@ scidbmultiply = function(e1,e2)
   if(SPARSE && !P4)
     query = sprintf("multiply(%s, %s)", op1, op2)
   else if (SPARSE && P4)
-    query = sprintf("sparse_multiply(%s, %s)", op1, op2)
+    query = sprintf("spgemm(%s, %s)", op1, op2)
   else
     query = sprintf("gemm(%s, %s, %s)",op1,op2,op3)
 

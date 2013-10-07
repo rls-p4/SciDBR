@@ -100,12 +100,18 @@ blewis@paradigm4.com}
 %%{\bfseries\itshape\Large Using the scidb package for R.};
 %%\end{tikzpicture}
 %%\vfill	
+\vspace{0.5in}
+\includegraphics[width=0.4\textwidth]{scidblogo}
+\\[-62pt]
+\begin{minipage}[b]{\textwidth}
+\raggedleft
+\includegraphics[width=0.2\textwidth]{Rlogo}\hspace{1in}
+\end{minipage}
+\\[-1.1in]
 \begin{center}
-\scalebox{2.5}{
-{\Huge{SciDB and R}}
-}
+{\Huge{\textsf{\textbf{and}}}}
 \end{center}
-\vspace{4in}
+\vspace{5in}
 
 \begin{minipage}[b]{\textwidth}
 \raggedleft
@@ -146,10 +152,29 @@ through R data frames.
 
 \subsection{Connecting to SciDB}
 
-The \verb+scidbconnect+ function establishes a connection to a SciDB
-coordinator instance. The function may be safely called multiple times.
-Once a connection is established, connection information is maintained until a
+The \verb+scidbconnect+ function establishes a connection to a simple HTTP
+network service called shim running on a SciDB coordinator instance (see
+Section \ref{shim}). The function may be safely called multiple times.  Once a
+connection is established, connection information is maintained until a
 different connection is established or the R session ends.
+
+The network interface optionally supports TLS encryption and user
+authentication. Users are defined by the operating system users on
+the SciDB coordinator instance.
+\begin{Code}
+\begin{lstlisting}[caption=Connecting to SciDB, label=connect]
+library("scidb")
+# Connect to localhost by default on unencrypted port 8080:
+scidbconnect()
+
+# Connect to SciDB on an encrypted port 8083 with example authentication:
+scidbconnect(host="localhost", port=8083, username="scidbuser", password="test")
+\end{lstlisting}
+\end{Code}
+The shim service can be configured to support either open/unencrypted
+or encrypted/authenticated ports, or both. We recommend using only
+encrypted/authenticated sessions when communicating with SciDB over
+public networks.
 
 
 \subsection{Listing and removing SciDB arrays}
@@ -313,8 +338,8 @@ head(iquery("scan(iris)",return=TRUE))
 Data are organized by SciDB in $n$-dimensional sparse arrays.  ``Sparse''  in
 SciDB arrays means that array elements may be left undefined, and such array
 elements are omitted from computations. Note that this interpretation of sparse
-differs from that used by sparse matrices defined by R's Matrix package (whose
-sparse matrix elements are implicitly zero).
+may differ from that used by sparse matrices defined by R's Matrix package
+(whose sparse matrix elements are implicitly zero).
 
 %Listing \ref{scidbsparse} illustrates
 %the differences, and one way to emulate the R idea of sparse in SciDB.
@@ -385,14 +410,14 @@ by 62-bit signed integers (R indices are unsigned positive 31-bit integer
 or 52-bit integer-valued double values).
 
 SciDB attribute values within a cell may be explicitly marked missing,
-indicated by a special SciDB missing code.  SciDB internally supports a large
-number of possible missing codes. Presently, all SciDB missing code
-values are mapped to NA values in R.
+indicated by a special SciDB missing code also referred to as a NULL code.
+SciDB internally supports a large number of possible missing codes. All SciDB
+missing code values are mapped to NA values in R.
 
-In addition to available missing (NULL) codes, SciDB double-precision floating
-point values also provide a value indicating missing values identically to R,
-and use the identical {\tt NA} representation that R uses. Other SciDB data
-types do not define {\tt NA}.
+In addition to available SciDB missing codes, SciDB double-precision floating
+point values also provide a value indicating missingness identically to R,
+and use the identical {\tt NA} representation that R uses. Unlike R however,
+other SciDB data types do not define {\tt NA}.
  
 The \verb+scidb+ package defines two array classes for R with data backed
 by SciDB arrays.
@@ -411,9 +436,8 @@ supported.
 Use either the \verb+df2scidb+ or \verb+as.scidb+ functions to create new SciDB
 arrays and corresponding \verb+scidbdf+ R objects by copying R data frames into
 SciDB. The \verb+types+ and \verb+nullable+ options may be used to explicitly
-specify the SciDB type and nullability values of each data frame column, or
-leave these options undefined for the package to select SciDB types. See the
-R help page for \verb+df2scidb+ for more information.
+specify the SciDB type and nullability values of each data frame column.  See
+the R help page for \verb+df2scidb+ for more information.
 
 The \verb+scidb+ function returns an R \verb+scidbdf+ or \verb+scidb+
 object representation of an existing SciDB array.
@@ -455,7 +479,7 @@ Row dimension:
 \end{lstlisting}\begin{lstlisting}
 
 
-# Materialize the first five rows of X to R:
+# Materialize the first five rows of X to R (using [] to return results to R):
 X[1:5,][]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
   Expt Run Speed
@@ -467,9 +491,10 @@ X[1:5,][]
 \end{lstlisting}\begin{lstlisting}
 
 # Aggregate average speed by experiment using SciDB
-aggregate(X, Speed ~ Expt, FUN="avg(Speed) as mean")
+aggregate(X, by="Expt", FUN="avg(Speed) as mean")
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
   Expt  mean
+XXX CORRECT THIS EXAMPLE
 1    1 909.0
 2    2 856.0
 3    3 845.0
@@ -477,9 +502,9 @@ aggregate(X, Speed ~ Expt, FUN="avg(Speed) as mean")
 5    5 831.5
 \end{lstlisting}
 \end{Code}
-Note that the aggregation function for SciDB arrays has a slightly different syntax
-than aggregation of data frames. And note that the aggregation function is a SciDB
-expression, presented as a character string.
+Note that the aggregation function for SciDB arrays has a slightly different
+syntax than aggregation of data frames; in particular note that the aggregation
+function is a SciDB expression represented as a character string.
 
 
 \section{The {\tt scidb} array class}
@@ -929,6 +954,7 @@ install.packages("scidb")
 
 
 \subsection{Installing the simple network service for SciDB}
+\label{shim}
 
 The SciDB R package requires installation of a simple open-source HTTP network
 service called \verb+shim+ on the computer that SciDB is installed on. The
@@ -949,7 +975,7 @@ Paradigm4's laboratory on Paradigm4's Github repository at
 We outline installation for each supported operating system below. See our github page
 for source code. The open source package author, Bryan Lewis, maintains
 binary packages for SciDB-supported operating systems. They are tied to specific
-versions of SciDB. The present version is 13.2 (February, 2013).
+versions of SciDB. The present version is 13.9 (September, 2013).
 
 
 \subsubsection{Installation on RHEL/CentOS 6}

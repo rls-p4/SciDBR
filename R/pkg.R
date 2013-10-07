@@ -26,12 +26,17 @@
   options(scidb.index.sequence.limit=1000000)
 # Maximum allowed elements in an array return result
   options(scidb.max.array.elements=100000000)
+# change this to enable certain bug fixes specific to old versions of SciDB
+# In a future version, this will be automatically set (there is not presently
+# a SciDB query that returns the version).
+  options(scidb.version=13.9)
 }
 
 .onUnload = function(libpath)
 {
   options(scidb.index.sequence.limit=c())
   options(scidb.max.array.elements=c())
+  options(scidb.version=c())
 }
 
 # scidb array object type map. We don't yet support strings in scidb array
