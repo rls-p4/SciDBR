@@ -280,10 +280,10 @@ as.scidb = function(X,
 # a raw vector. But we need RCurl to support SSL. As a work-around, we save
 # the object. This copy sucks and must be fixed.
   fn = tempfile()
-  bytes = writeBin(as.vector(X),con=fn)
+  bytes = writeBin(as.vector(t(X)),con=fn)
   url = URI("upload_file",list(id=session))
   ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
-                 .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0))
+           .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0))
   unlink(fn)
   ans = ans[[1]]
   ans = gsub("\r","",ans)

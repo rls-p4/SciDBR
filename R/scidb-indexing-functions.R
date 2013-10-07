@@ -372,5 +372,8 @@ materialize = function(x, drop=FALSE)
     names(A)=c("values","coordinates")
     return(A)
   }
-  array(data=A[[1]], dim=x@D$length, dimnames=x@D$name)
+  if(ndim==2)
+    return(matrix(data=A[[1]], nrow=x@D$length[[1]],byrow=TRUE))
+  aperm(array(data=A[[1]], dim=x@D$length, dimnames=x@D$name),
+        perm=seq(from=length(x@D$length),to=1,by=-1))
 }
