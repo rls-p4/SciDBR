@@ -319,7 +319,7 @@ df2scidb = function(X,
                     chunkSize,
                     rowOverlap=0L,
                     types=NULL,
-                    nullable=FALSE,
+                    nullable,
                     schema_only=FALSE,
                     gc)
 {
