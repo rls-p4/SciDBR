@@ -119,6 +119,7 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
           append(&buf, "(");
           for (k = 0; k < n; ++k)
             {
+              memset(line,0,LINESIZE);
 // Check for factor and print factor level instead of integer
               if (!
                   (getAttrib (VECTOR_ELT (A, k), R_LevelsSymbol) ==

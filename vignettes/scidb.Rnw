@@ -445,36 +445,113 @@ X[1:5,][]
 4    1   5   930
 \end{lstlisting}\begin{lstlisting}
 
-# Aggregate average speed by experiment using SciDB
-aggregate(X, by="Expt", FUN="avg(Speed) as mean")
+# Aggregate average speed by experiment using SciDB (using [] again):
+aggregate(X, by="Expt", FUN="avg(Speed) as mean")[]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-  Expt  mean
-XXX CORRECT THIS EXAMPLE
-1    1 909.0
-2    2 856.0
-3    3 845.0
-4    4 820.5
-5    5 831.5
+  Expt_index  mean Expt
+0          0 909.0    1
+1          1 856.0    2
+2          2 845.0    3
+3          3 820.5    4
+4          4 831.5    5
 \end{lstlisting}
 \end{Code}
 Note that the aggregation function for SciDB arrays has a slightly different
 syntax than aggregation of data frames; in particular note that the aggregation
 function is a SciDB expression represented as a character string.
 
+\section{Data manipulation functions}
 
+The package defines a number of common SciDB data manipulation functions for
+\verb+scidbdf+ objects.
+
+\subsection{Subset operations}
+
+The package supports standard array subsetting operations along dimension
+indices.  Use the \verb+subset+ function to filter array contents by a boolean
+expression similarly to the usual R \verb+subset+ function. Under the hood,
+this function uses the SciDB \verb+filter+ operator--the function
+name \verb+subset+  more closely matches standard R syntax.
+
+The \verb+subset+ function requires two arguments, a SciDB array reference
+and a valid SciDB logical expression represented as a string.
+Here is an example:
+\begin{Code}
+\begin{lstlisting}[caption=A 1-d SciDB array object using one of several available attributes, label=SUBSET]
+# Upload the iris data to SciDB and create a data frame-like object
+# that refers to it:
+data(iris)
+df = as.scidb(iris,name="iris",gc=FALSE)
+head(df, n=3)
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+  Sepal_Length Sepal_Width Petal_Length Petal_Width Species
+1          5.1         3.5          1.4         0.2  setosa
+2          4.9         3.0          1.4         0.2  setosa
+3          4.7         3.2          1.3         0.2  setosa
+\end{lstlisting}\begin{lstlisting}
+
+subset(df,"Petal_Width>2.4")[]
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+    Sepal_Length Sepal_Width Petal_Length Petal_Width   Species
+100          6.3         3.3          6.0         2.5 virginica
+109          7.2         3.6          6.1         2.5 virginica
+144          6.7         3.3          5.7         2.5 virginica
+\end{lstlisting}\begin{lstlisting}
+
+\end{lstlisting}
+\end{Code}
+
+\subsetcion{Database joins}
+The package overloads the R \verb+merge+ function, enabling a number
+of database join-like operations on SciDB array objects. Use the
+R \verb+help("merge",package="scidb")+ function for detailed help.
+Here is a simple example:
+\begin{Code}
+\begin{lstlisting}[caption=A 1-d SciDB array object using one of several available attributes, label=SUBSET]
+authors <- data.frame(
+             surname = c("Tukey", "Venables", "Tierney", "Ripley", "McNeil"),
+             nationality = c("US", "Australia", "US", "UK", "Australia"),
+             deceased = c("yes", rep("no", 4)),
+           stringsAsFactors=FALSE)
+books <- data.frame(
+           name = c("Tukey", "Venables", "Tierney",
+                    "Ripley", "Ripley", "McNeil", "R Core"),
+           title = c("Exploratory Data Analysis",
+                     "Modern Applied Statistics ...",
+                     "LISP-STAT",
+                     "Spatial Statistics", "Stochastic Simulation",
+                     "Interactive Data Analysis",
+                     "An Introduction to R"),
+           other.author = c(NA, "Ripley", NA, NA, NA, NA,
+                            "Venables & Smith"),
+           stringsAsFactors=FALSE)
+
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+XXX
+\end{lstlisting}\begin{lstlisting}
+
+\end{lstlisting}
+\end{Code}
+
+
+
+
+\newpage
 \section{The {\tt scidb} array class}
 
-Similarly to the data frame-like class, the \verb+scidb+ package defines a
-\verb+scidb+ n-dimensional array class for R. Array objects defined by the {\tt
+Similarly to the data frame-like class, the package defines the
+\verb+scidb+ array class for R that represents vectors, matrices
+and general $n$-dimensional arrays. Array objects defined by the {\tt
 scidb} class behave in some ways like standard R arrays.  But their data
 reside in SciDB and most operations on them are computed by SciDB.
 
 The \verb+scidb+ array class supports working with a single array attribute at
 a time to conform to R arrays (which generally support a single value per
-cell).  Consider the iris data presented in Listing \ref{iris}, represented
-within SciDB as a 1-D array with five attributes. The following listing
-\ref{oned} illustrates creating a 1-D \verb+scidb+ array object in R that
-refers to the iris data in SciDB, using the \verb+Sepal_Width+ attribute.
+cell).  Consider the iris data presented in Listing \ref{oned}, represented
+within SciDB as a 1-D array with five attributes. Listing
+\ref{oned} illustrates creating a \verb+scidbdf+ data frame-like object
+in R refering to the iris data and also a 1-D \verb+scidb+ array object in R
+refering to the same data using the \verb+Sepal_Width+ attribute.
 Unlike R, SciDB numeric array indices may be zero or negative (indices begin at
 zero in the example in Listing \ref{oned}). Data from {\tt scidb} array objects
 are not materialized to R until subset with the empty indexing function,
@@ -482,8 +559,20 @@ are not materialized to R until subset with the empty indexing function,
 
 \begin{Code}
 \begin{lstlisting}[caption=A 1-d SciDB array object using one of several available attributes, label=oned]
+# Upload the iris data to SciDB and create a data frame-like object
+# that refers to it:
+data(iris)
+df = as.scidb(iris,name="iris",gc=FALSE)
+dim(df)
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+[1] 150   5
+\end{lstlisting}\begin{lstlisting}
+
+# Now create a vector-like object using the same data in SciDB, but
+# referring to only one of the available variables (Sepal_Width):
+
 x = scidb("iris", attribute="Sepal_Width", data.frame=FALSE)
-dim(x)
+length(x)
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
 [1] 150
 \end{lstlisting}\begin{lstlisting}
@@ -557,11 +646,10 @@ A[0:5,2:4][]
 \end{Code}
 
 
-Listing \ref{3dsimple} illustrates basic integer indexing operations
-on a sparse 3-D SciDB array.
-Note that since R has no direct way to represent sparse arrays with dimension
-greater than 2, the above result is returned as a list of values and their
-coordinates.
+Listing \ref{3dsimple} illustrates basic integer indexing operations on a
+sparse 3-D SciDB array.  Note that since R has no direct way to represent
+sparse arrays with dimension greater than 2, the above result is returned as a
+list of values and their coordinates.
 
 \begin{Code}
 \begin{lstlisting}[caption=Basic scidb subarray indexing, label=3dsimple]
@@ -601,17 +689,24 @@ $coordinates
 \end{lstlisting}
 \end{Code}
 
-Listing \ref{arithmetic} shows a more interesting 2-d dense array example
-that compares matrix arithmetic in R and SciDB.
-Similarly to data frames, the {\tt as.scidb} function can be used to
-export R matrices and vectors to SciDB arrays. Use {\tt as.scidb} for
-convenience--note that it's not a very efficient way to import data into
-SciDB. For very large data, use the SciDB bulk data loader as outlined in
-the SciDB documentation instead.
+\subsubsection{Arithmetic operations}
+
+The \verb+scidb+ array class supports many standard linear algebra operations
+for dense and sparse matrices and vectors.
+
+Listing \ref{arithmetic} shows a more interesting 2-d dense array example that
+compares matrix arithmetic in R and SciDB.  Similarly to data frames, the {\tt
+as.scidb} function can be used to export R matrices and vectors to SciDB
+arrays.
+
+Note that we generally use {\tt as.scidb} for convenience--note that it's not
+the most efficient way to import data into SciDB. For very large data, use the
+SciDB bulk data loader as outlined in the SciDB documentation instead.
+
 \begin{Code}
 \begin{lstlisting}[caption=Matrix arithmetic in R and SciDB, label=arithmetic]
 set.seed(1)
-v = as.scidb(matrix(random(25),5))
+v = as.scidb(matrix(rnorm(25),5))
 
 str(v)
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
@@ -623,26 +718,27 @@ Array dimensions:
 2  1    j     0      5              5             0   0    4 int64
 \end{lstlisting}\begin{lstlisting}
 
-t(v[]) %*%  v[]                   # Compute V %*% V using R
+crossprod( v[] )              # Compute t(v) %*% v using R
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-           [,1]       [,2]       [,3]       [,4]       [,5]
-[1,]  2.4472854 -0.6112716 -0.7989526 -0.3458323  3.6899737
-[2,] -0.6112716  5.7135883 -1.5864692  1.6222614  0.6946400
-[3,] -0.7989526 -1.5864692  3.1642127  0.9431258 -1.4995960
-[4,] -0.3458323  1.6222614  0.9431258  1.7942733  0.9610557
-[5,]  3.6899737  0.6946400 -1.4995960  0.9610557  8.0947717
+           [,1]       [,2]      [,3]       [,4]      [,5]
+[1,]  3.7779406  0.8044385 -3.518737  0.7422526 -3.463709
+[2,]  0.8044385  1.8806651 -3.127749  1.0173059 -1.652422
+[3,] -3.5187373 -3.1277487  8.993765 -1.8112513  6.750959
+[4,]  0.7422526  1.0173059 -1.811251  1.9202310 -1.249161
+[5,] -3.4637086 -1.6524219  6.750959 -1.2491613  5.803521
 \end{lstlisting}\begin{lstlisting}
 
-# Now compute using SciDB, and materialize the result to R:
-(t(v) %*% v)[]
 
+# Now compute using SciDB, and materialize the result to R:
+
+crossprod(v)[]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-         [,1]      [,2]      [,3]      [,4]      [,5]
-[1,] 55.00000 27.500000 18.333333 13.750000 11.000000
-[2,] 27.50000 13.750000  9.166667  6.875000  5.500000
-[3,] 18.33333  9.166667  6.111111  4.583333  3.666667
-[4,] 13.75000  6.875000  4.583333  3.437500  2.750000
-[5,] 11.00000  5.500000  3.666667  2.750000  2.200000
+           [,1]       [,2]      [,3]       [,4]      [,5]
+[1,]  3.7779406  0.8044385 -3.518737  0.7422526 -3.463709
+[2,]  0.8044385  1.8806651 -3.127749  1.0173059 -1.652422
+[3,] -3.5187373 -3.1277487  8.993765 -1.8112513  6.750959
+[4,]  0.7422526  1.0173059 -1.811251  1.9202310 -1.249161
+[5,] -3.4637086 -1.6524219  6.750959 -1.2491613  5.803521
 
 \end{lstlisting}
 \end{Code}
@@ -661,7 +757,9 @@ conforming to required database schema.  Listing \ref{mixed} shows an
 example of computations that mix {\tt scidb} array objects with R vectors.
 \begin{Code}
 \begin{lstlisting}[caption=Mixed R and SciDB array arithmetic, label=mixed]
-iquery("store(build(<x:double>[i=0:4,5,0,j=0:4,5,0],double(i+1)/double(j+1)),U)")
+# Build an array inside SciDB named 'U':
+iquery("store(build(<x:double>[i=0:4,5,0,j=0:4,5,0],(i+1)/double(j+1)),U)")
+
 u = scidb("U")         # u is an R representation of a SciDB array
 set.seed (1)
 x = cbind(rnorm(5))    # An R column vector
@@ -684,7 +782,7 @@ interesting computation. Later sections illustrate using this idea to overload
 more substantial functions in existing R packages.
 
 
-\subsubsection{Arithmetic operations and their rules}
+\subsubsection{Available arithmetic operations}
 
 The \verb+scidb+ class supports the operations shown in Table 1.
 \begin{table}[!h]\label{ops}
@@ -697,11 +795,11 @@ $A$ {\tt \%*\%} $B$ & Matrix multiplication & $A,B$ Conformable SciDB arrays or 
 $A \pm B$ & Matrix summation/difference & $A,B$ SciDB arrays or R matrices/vectors & SciDB array\\
 {\tt crossprod(}$A$,$B${\tt)} & Cross product {\tt t(A) \%*\% B} & $A,B$ SciDB arrays or R matrices/vectors & SciDB array\\
 {\tt tcrossprod(}$A$,$B${\tt)} & Cross product {\tt A \%*\% t(B)} & $A,B$ SciDB arrays or R matrices/vectors & SciDB array\\
-$A$ {\tt *} $B$ & Elementwise multiplication & $A,B$ Conformable SciDB arrays or R matrices/vectors & SciDB array\\
+$A$ {\tt */} $B$ & Elementwise product/quotient & $A,B$ Conformable SciDB arrays or R matrices/vectors & SciDB array\\
 $\alpha$ {\tt *} $A$ & Scalar multiplication & SciDB array $A$, scalar $\alpha$ & SciDB array\\
 {\tt t(}$A${\tt )}& Transpose & SciDB array $A$& SciDB array\\
 $A[\hbox{range},\hbox{range},\ldots]$ & Subarray &  SciDB array $A$ & SciDB Array\\
-$A[]$ & Materialize & SciDB array & R array \\
+$A[\,]$ & Materialize & SciDB array A& R array \\
 \hline
 \end{tabularx}}
 \vspace{28px}
@@ -710,11 +808,7 @@ $A[]$ & Materialize & SciDB array & R array \\
 
 \vspace{18px}
 The subarray/materialize operations \verb+[ ]+ support
-the standard \verb+drop+ argument and
-the argument \verb+default=x+, where \verb+x+ is the default scalar value to
-use to fill-in sparse array values when materialized to R. The use of
-\verb+default+ overrides the related global
-
+the standard \verb+drop+ argument.
 
 
 \subsection{Persistence of dynamically-allocated {\tt scidb} arrays}
@@ -727,14 +821,16 @@ when their corresponding R objects are deleted in R. Consider
 the example in Listing \ref{gc}, shown with debugging turned on.
 \begin{Code}
 \begin{lstlisting}[caption=Non-persistence of intermediate arrays, label=gc]
-iquery("store(build(<x:double>[i=0:4,5,0,j=0:4,5,0],double(i+1)/double(j+1)),U)")
+# Build an array inside SciDB named 'U':
+iquery("store(build(<x:double>[i=0:4,5,0,j=0:4,5,0],(i+1)/double(j+1)),U)")
+
 u = scidb("U")
 V = u[1:3,1:5]    # The subarray V is a new SciDB array
 options(scidb.debug=TRUE)
 rm(V)
 gc()              # Force R to run garbage collection
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-remove(array64626e31022a)
+remove(R_array817ceef8481100900000138) 
 \end{lstlisting}
 \end{Code}
 The debugging message in Listing \ref{gc} illustrates that the
@@ -743,6 +839,10 @@ SciDB when R garbage collection was run. In order to set any
 SciDB array associated with a {\tt scidb} array object as persistent,
 set the array \verb+@gc$remove+ setting to {\tt FALSE}--for example,
 \verb+V@gc$remove=FALSE+ in the above example.
+
+Dynamically allocated arrays use the following naming convention: They all
+begin with ``R\_array'' and end with a unique numeric identifier determined by
+the current SciDB session ($1100900000138$ in the above example).
 
 
 \subsection{Miscellaneous array functions}
