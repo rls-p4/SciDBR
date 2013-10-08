@@ -88,11 +88,41 @@
     stop("by must be either a single string describing a dimension to join on or a list in the form list(c('arrayX_dim1','arrayX_dim2'),c('arrayY_dim1','arrayY_dim2'))")
   if(length(`by`)>0)
   {
+    b = unlist(lapply(1:length(`by`[[1]]), function(j) unlist(lapply(`by`, function(x) x[[j]]))))
+    if(any(X@attributes %in% b) && length(b)==2)
+    {
+# Special case, join on attributes. Right now limited to one attribute per
+# array cause I am lazy and this is incredibly complicated.
+      XI = index_lookup(X,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE)),`by`[[1]], eval=FALSE)
+      YI = index_lookup(Y,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE)),`by`[[2]], eval=FALSE)
+      XI = scidb:::scidb_from_scidbexpr(XI)
+      YI = scidb:::scidb_from_scidbexpr(YI)
+
+      a = XI@attributes %in% paste(b,"index",sep="_")
+      n = XI@attributes[a]
+      redim = paste(paste(n,"=-1:*,100000,0",sep=""), collapse=",")
+      S = scidb:::build_attr_schema(X)
+      D = sprintf("[%s]",redim)
+      q1 = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s)",XI@name,n,S,D)
+
+      a = YI@attributes %in% paste(b,"index",sep="_")
+      n = YI@attributes[a]
+      redim = paste(paste(n,"=-1:*,100000,0",sep=""), collapse=",")
+      S = scidb:::build_attr_schema(Y)
+      D = sprintf("[%s]",redim)
+      q2 = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s)",YI@name,n,S,D)
+
+      query = sprintf("cross_join(%s as _cazart, %s as _yikes, _cazart.%s_index, _yikes.%s_index)",q1,q2,by[[1]],by[[2]])
+
+    } else
+    {
+# Join on dimensions.
 # Re-order list terms
-    b = as.list(unlist(lapply(1:length(`by`[[1]]), function(j) unlist(lapply(`by`, function(x) x[[j]])))))
-    cterms = paste(c("__X","__Y"), b, sep=".")
-    cterms = paste(cterms,collapse=",")
-    query  = paste(query,",",cterms,")",sep="")
+      b = as.list(unlist(lapply(1:length(`by`[[1]]), function(j) unlist(lapply(`by`, function(x) x[[j]])))))
+      cterms = paste(c("__X","__Y"), b, sep=".")
+      cterms = paste(cterms,collapse=",")
+      query  = paste(query,",",cterms,")",sep="")
+    }
   } else
   {
     query  = sprintf("%s)",query)

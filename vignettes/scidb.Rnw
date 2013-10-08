@@ -526,8 +526,20 @@ books <- data.frame(
                             "Venables & Smith"),
            stringsAsFactors=FALSE)
 
+merge(a,b,by=list("surname","name"))[]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-XXX
+   surname nationality deceased     name                         title
+0   McNeil   Australia       no   McNeil     Interactive Data Analysis
+1   Ripley          UK       no   Ripley            Spatial Statistics
+2  Tierney          US       no  Tierney                     LISP-STAT
+3    Tukey          US      yes    Tukey     Exploratory Data Analysis
+4 Venables   Australia       no Venables Modern Applied Statistics ...
+  other_author
+0         <NA>
+1         <NA>
+2         <NA>
+3         <NA>
+4       Ripley
 \end{lstlisting}\begin{lstlisting}
 
 \end{lstlisting}
