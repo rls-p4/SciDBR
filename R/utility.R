@@ -325,7 +325,7 @@ df2scidb = function(X,
 {
   if(!is.data.frame(X)) stop("X must be a data frame")
   if(missing(gc)) gc=FALSE
-  if(missing(nullable)) as.vector(unlist(lapply(X,function(x) any(is.na(x)))))
+  if(missing(nullable)) nullable = as.vector(unlist(lapply(X,function(x) any(is.na(x)))))
   if(length(nullable)==1) nullable = rep(nullable, ncol(X))
   if(length(nullable)!=ncol(X)) stop ("nullable must be either of length 1 or ncol(X)")
   if(!is.null(types) && length(types)!=ncol(X)) stop("types must match the number of columns of X")
