@@ -468,9 +468,14 @@ iquery = function(query, `return`=FALSE,
         sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
         result = GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE)
         val = textConnection(result)
-        ret=read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
+        ret = read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
         close(val)
         GET("/release_session",list(id=sessionid))
+        chr = sapply(ret, function(x) "character" %in% class(x))
+        if(any(chr))
+        {
+          for(j in which(chr)) ret[ret[,j]=="null",j] = NA
+        }
         ret
        }, error = function(e)
            {
