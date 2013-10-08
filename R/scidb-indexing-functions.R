@@ -364,7 +364,6 @@ materialize = function(x, drop=FALSE)
 # Check for sparse matrix case
   if(ndim==2 && nelem<p)
   {
-    require("Matrix")
     return(sparseMatrix(i=A[[2]][,1]+1,j=A[[2]][,2]+1,x=A[[1]],dims=x@D$length))
   } else if(nelem<p)
   {

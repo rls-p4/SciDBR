@@ -7,14 +7,14 @@ Upload an R matrix or data.frame to a SciDB array.
 Cast an R matrix or data.frame to a SciDB array, returning a reference scidb object.
 }
 \usage{
-as.scidb(X, name = tmpnam(), rowChunkSize = 1000L, colChunkSize = 1000L, start = c(0L,0L), gc=TRUE, ...)
+as.scidb(X, name = tmpnam(), rowChunkSize, colChunkSize, start = c(0L,0L), gc=TRUE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{X}{ A matrix of double-precision floating point values or a data.frame. }
   \item{name}{ The name of the SciDB array to create, defaulting to the R variable name if available.  }
-  \item{rowChunkSize}{Maximum SciDB chunk size for the 1st array dimension.}
-  \item{colChunkSize}{Maximum SciDB chunk size for the 2nd array dimension (ignored for vectors and data.frames). }
+  \item{rowChunkSize}{Optional maximum SciDB chunk size for the 1st array dimension.}
+  \item{colChunkSize}{Optional maximum SciDB chunk size for the 2nd array dimension (ignored for vectors and data.frames). }
   \item{start}{Starting dimension numeric index value or values.}
   \item{gc}{Set to TRUE to remove SciDB array when R object is garbage collected or R exists. FALSE means SciDB array persists.}
   \item{\dots}{ additional arguments to pass to \code{df2scidb} (see \code{\link{df2scidb}}).}

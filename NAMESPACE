@@ -17,6 +17,7 @@ export("count")
 export("index_lookup")
 importFrom("utils", "head", "tail")
 importFrom("stats", "aggregate", "sd", "var")
+importFrom("Matrix","nnzero", "sparseMatrix")
 
 # S4 methods
 exportClasses("scidb","scidbdf","scidbexpr")
