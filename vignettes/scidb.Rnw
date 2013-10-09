@@ -573,7 +573,7 @@ head(y, n=3)
 \subsection{Sort, unique and index\_lookup}
 
 Use the \verb+sort+ function to sort on a subset of dimensions and/or
-atribute of a SciDB array object, creating a new sorted array.
+attribute of a SciDB array object, creating a new sorted array.
 
 Use the \verb+unique+ function to return a SciDB array that removes
 duplicate elements of a single-attribute SciDB input array.
@@ -642,8 +642,8 @@ a time to conform to R arrays (which generally support a single value per
 cell).  Consider the iris data presented in Listing \ref{oned}, represented
 within SciDB as a 1-D array with five attributes. Listing
 \ref{oned} illustrates creating a \verb+scidbdf+ data frame-like object
-in R refering to the iris data and also a 1-D \verb+scidb+ array object in R
-refering to the same data using the \verb+Sepal_Width+ attribute.
+in R referring to the iris data and also a 1-D \verb+scidb+ array object in R
+referring to the same data using the \verb+Sepal_Width+ attribute.
 Unlike R, SciDB numeric array indices may be zero or negative (indices begin at
 zero in the example in Listing \ref{oned}). Data from {\tt scidb} array objects
 are not materialized to R until extracted with the empty indexing function,
@@ -888,7 +888,7 @@ $A \pm B$ & Matrix summation/difference & $A,B$ SciDB arrays or R matrices/vecto
 {\tt crossprod(}$A$,$B${\tt)} & Cross product {\tt t(A) \%*\% B} & $A,B$ SciDB arrays or R matrices/vectors & SciDB array\\
 {\tt tcrossprod(}$A$,$B${\tt)} & Cross product {\tt A \%*\% t(B)} & $A,B$ SciDB arrays or R matrices/vectors & SciDB array\\
 $A$ {\tt */} $B$ & Elementwise product/quotient & $A,B$ Conformable SciDB arrays or R matrices/vectors & SciDB array\\
-$\alpha$ {\tt */} $A$ & Scalar multplication/division & SciDB array $A$, scalar $\alpha$ & SciDB array\\
+$\alpha$ {\tt */} $A$ & Scalar multiplication/division & SciDB array $A$, scalar $\alpha$ & SciDB array\\
 {\tt t(}$A${\tt )}& Transpose & SciDB array $A$& SciDB array\\
 $A[\hbox{range},\hbox{range},\ldots]$ & Subarray &  SciDB array $A$ & SciDB Array\\
 $A[\,]$ & Materialize & SciDB array A& R array \\
@@ -1083,7 +1083,7 @@ versions of SciDB. The present version is 13.9 (September, 2013).
 \begin{lstlisting}[caption=Installing the simple HTTP service on RHEL, label=shimrhel]
 # Install with:
 wget http://illposed.net/shim-13.2-1.x86_64.rpm
-rpm -i shim-13.2-1.x86_64.rpm
+rpm -i shim-13.9-1.x86_64.rpm
 
 # (Uninstall, if desired, with:)
 yum remove shim
@@ -1096,7 +1096,7 @@ yum remove shim
 \begin{lstlisting}[caption=Installing the simple HTTP service on Ubuntu, label=shimubuntu]
 # Install with:
 wget http://illposed.net/shim_13.2_amd64.deb
-sudo gdebi shim_13.2_amd64.deb
+sudo gdebi shim_13.9_amd64.deb
 
 # (Uninstall, if desired, with:)
 apt-get remove shim

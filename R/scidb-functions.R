@@ -103,27 +103,27 @@ scidb = function(name, attribute, `data.frame`, gc)
 
 colnames.scidb = function(x)
 {
-  if(length(x@D$name)<2) return(NULL)
-  if(x@D$type[2] != "string") return(c(x@D$start[2],x@D$start[2]+x@D$length[2]-1))
-  if(x@D$length[2] > options("scidb.max.array.elements"))
-    stop("Result will be too big. Perhaps try a manual query with an iterative result.")
-  Q = sprintf("scan(%s:%s)",x@name,x@D$name[2])
-  iquery(Q,return=TRUE,n=x@D$length[2]+1)[,2]
+  NULL
 }
 
 rownames.scidb = function(x)
 {
-  if(x@D$type[1] != "string") return(c(x@D$start[1],x@D$start[1]+x@D$length[1]-1))
-  if(x@D$length[1] > options("scidb.max.array.elements"))
-    stop("Result will be too big. Perhaps try a manual query with an iterative result.")
-  Q = sprintf("scan(%s:%s)",x@name,x@D$name[1])
-  iquery(Q,return=TRUE,n=x@D$length[1]+1)[,2]
+  NULL
 }
 
 names.scidb = function(x)
 {
   if(is.null(dim(x))) rownames(x)
   colnames(x)
+}
+
+`names<-.scidb` = function(x, value)
+{
+  old = x@attributes
+  if(length(value)!=length(old)) stop(paste("Incorrect number of names (should be",length(old),")"))
+  arg = paste(paste(old,value,sep=","),collapse=",")
+  query = sprintf("attribute_rename(%s,%s)",x@name,arg)
+  iquery(query)
 }
 
 dimnames.scidb = function(x)

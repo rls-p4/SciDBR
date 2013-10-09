@@ -40,6 +40,15 @@ names.scidbdf = function(x)
   x@attributes
 }
 
+`names<-.scidbdf` = function(x,value)
+{
+  old = x@attributes
+  if(length(value)!=length(old)) stop(paste("Incorrect number of names (should be",length(old),")"))
+  arg = paste(paste(old,value,sep=","),collapse=",")
+  query = sprintf("attribute_rename(%s,%s)",x@name,arg)
+  iquery(query)
+}
+
 dimnames.scidbdf = function(x)
 {
   list(rownames.scidbdf(x), x@attributes)

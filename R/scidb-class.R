@@ -264,3 +264,19 @@ function(x, grid=c(x@D$chunk_interval[1], x@D$chunk_interval[2]), op=sprintf("su
 setOldClass("aggregate")
 setGeneric("aggregate")
 setMethod("aggregate", signature(x="scidb"), aggregate_scidb)
+
+
+svd_scidb = function(x)
+{
+  u = sprintf("%s_U",x@name)
+  d = sprintf("%s_S",x@name)
+  v = sprintf("%s_V",x@name)
+  iquery(sprintf("store(gesvd(%s,'left'),%s)",x@name,u))
+  iquery(sprintf("store(gesvd(%s,'values'),%s)",x@name,d))
+  iquery(sprintf("store(gesvd(%s,'right'),%s)",x@name,v))
+  list(u=scidb(u,gc=TRUE),d=scidb(d,gc=TRUE),v=scidb(v,gc=TRUE))
+}
+
+setOldClass("svd")
+setGeneric("svd")
+setMethod("svd", signature(x="scidb"), svd_scidb)

@@ -12,6 +12,21 @@
   iquery(sprintf("count(%s)",x@name),return=TRUE)$count
 }
 
+# The new (SciDB 13.9) cumulate
+`cumulate` = function(x, expression, dimension, eval)
+{
+  lastclass = checkclass(x)
+  if(missing(`eval`))
+  {
+    nf   = sys.nframe()
+    `eval` = !called_from_scidb(nf)
+  }
+  if(class(x)=="scidbexpr") x = scidb:::scidb_from_scidbexpr(x)
+  if(missing(dimension)) dimension = x@D$name[[1]]
+  query = sprintf("cumulate(%s, %s, %s)",x@name,expression,dimension)
+  scidbeval(query,eval,lastclass=lastclass)
+}
+
 # Filter the attributes of the scidb, scidbdf, or scidbexpr object to contain
 # only those specified in expr.
 # X:    a scidb, scidbdf, or scidbexpr object
