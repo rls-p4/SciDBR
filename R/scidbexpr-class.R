@@ -68,7 +68,7 @@ scidb_from_schemastring = function(s,expr=character())
   nid = !grepl(":",d)
   if(any(nid))
     d[nid] = paste("1:",d[nid],sep="")
-  dlength = unlist(lapply(d,function(x)diff(as.numeric(strsplit(x,":")[[1]]))+1))
+  dlength = unlist(lapply(d,function(x)diff(as.numeric(gsub("\\*",.scidb_DIM_MAX,strsplit(x,":")[[1]])))+1))
   dstart = unlist(lapply(d,function (x)as.numeric(strsplit(x,":")[[1]][[1]])))
 
   D = list(name=dname,

@@ -108,27 +108,30 @@
     {
 # Special case, join on attributes. Right now limited to one attribute per
 # array cause I am lazy and this is incredibly complicated.
-      XI = index_lookup(X,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE)),`by`[[1]], eval=FALSE)
-      YI = index_lookup(Y,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE)),`by`[[2]], eval=FALSE)
+      XI = index_lookup(X,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE),sort=FALSE),`by`[[1]], eval=FALSE)
+      YI = index_lookup(Y,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE),sort=FALSE),`by`[[2]], eval=FALSE)
       XI = scidb:::scidb_from_scidbexpr(XI)
       YI = scidb:::scidb_from_scidbexpr(YI)
 
-# Note! Limited to inner-join for now until redimension supports synthetic dimension.
+# Note! Limited to inner-join for now.
+      new_dim_name = make.names_(c(X@D$name,Y@D$name,"row"))
+      new_dim_name = new_dim_name[length(new_dim_name)]
       a = XI@attributes %in% paste(b,"index",sep="_")
       n = XI@attributes[a]
       redim = paste(paste(n,"=-1:*,100000,0",sep=""), collapse=",")
       S = scidb:::build_attr_schema(X)
-      D = sprintf("[%s]",redim)
+      D = sprintf("[%s,%s]",redim,scidb:::build_dim_schema(X,bracket=FALSE))
       q1 = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s)",XI@name,n,S,D)
 
       a = YI@attributes %in% paste(b,"index",sep="_")
       n = YI@attributes[a]
       redim = paste(paste(n,"=-1:*,100000,0",sep=""), collapse=",")
       S = scidb:::build_attr_schema(Y)
-      D = sprintf("[%s]",redim)
-      q2 = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s)",YI@name,n,S,D)
+      D = sprintf("[%s,%s]",redim,scidb:::build_dim_schema(Y,bracket=FALSE))
+      D2 = sprintf("[%s,_%s]",redim,scidb:::build_dim_schema(Y,bracket=FALSE))
+      q2 = sprintf("cast(redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s),%s%s)",YI@name,n,S,D,S,D2)
 
-      query = sprintf("cross_join(%s as _cazart, %s as _yikes, _cazart.%s_index, _yikes.%s_index)",q1,q2,by[[1]],by[[2]])
+      query = sprintf("unpack(cross_join(%s as _cazart, %s as _yikes, _cazart.%s_index, _yikes.%s_index),%s)",q1,q2,by[[1]],by[[2]],new_dim_name)
 
     } else
     {
@@ -205,7 +208,7 @@
 # Adjust the FUN expression to include the original attribute
         FUN = sprintf("%s, min(%s) as %s", FUN, atr, atr)
 # Factorize atr
-        x       = index_lookup(x,unique(sort(project(x,atr))),atr)
+        x       = index_lookup(x,unique(sort(project(x,atr)),sort=FALSE),atr)
 # Name the new attribute and sort by it instead of originally specified one.
         newname = paste(atr,"index",sep="_")
         newname = make.unique_(oldatr,newname)
@@ -276,7 +279,7 @@
   scidbeval(query,eval,lastclass=checkclass(X))
 }
 
-`unique_scidb` = function(x, incomparables=FALSE,...)
+`unique_scidb` = function(x, incomparables=FALSE, sort=TRUE, ...)
 {
   nf   = sys.nframe()  - 2
   `eval` = !called_from_scidb(nf)
@@ -288,7 +291,13 @@
     x = scidb_from_scidbexpr(x)
   }
   xname = x@name
-  query = sprintf("uniq(sort(project(%s,%s),%s))",xname,x@attributes[[1]],x@attributes[[1]])
+  if(sort)
+  {
+    query = sprintf("uniq(sort(project(%s,%s),%s))",xname,x@attributes[[1]],x@attributes[[1]])
+  } else
+  {
+    query = sprintf("uniq(%s)",xname)
+  }
   scidbeval(query,eval,lastclass=checkclass(x))
 }
 
@@ -327,9 +336,9 @@
 `sort.scidb` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `sort.scidbdf` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `sort.scidbexpr` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
-`unique.scidb` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
-`unique.scidbdf` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
-`unique.scidbexpr` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
+`unique.scidb` = function(x,incomparables=FALSE,sort=TRUE,...) unique_scidb(x,incomparables,sort,...)
+`unique.scidbdf` = function(x,incomparables=FALSE,sort=TRUE,...) unique_scidb(x,incomparables,sort,...)
+`unique.scidbexpr` = function(x,incomparables=FALSE,sort=TRUE,...) unique_scidb(x,incomparables,sort,...)
 `subset.scidb` = function(x,subset,...) filter_scidb(x,expr=subset,...)
 `subset.scidbdf` = function(x,subset,...) filter_scidb(x,expr=subset,...)
 `subset.scidbexpr` = function(x,subset,...) filter_scidb(x,expr=subset,...)

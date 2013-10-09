@@ -628,9 +628,9 @@ iqiter = function (con, n = 1, excludecol, ...)
   N = paste(A@D$name, N,sep="")
   low = noE(A@D$low)
   high = noE(A@D$high)
-  if(is.na(A@D$low))
+  if(any(is.na(A@D$low)))
     low = noE(A@D$start)
-  if(is.na(A@D$high))
+  if(any(is.na(A@D$high)))
   {
     high = noE(A@D$start + A@D$length - 1)
   }

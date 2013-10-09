@@ -504,15 +504,16 @@ books = data.frame(
 a = as.scidb(authors)
 b = as.scidb(books)
 
-merge(a,b,by=list("surname","name"))[,c(1:3,5:6)][]
+merge(a,b,by=list("surname","name"))[,c(4:6,8:9)][]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+\end{lstlisting}\begin{lstlisting}
    surname nationality deceased                         title other_author
 0   McNeil   Australia       no     Interactive Data Analysis         <NA>
 1   Ripley          UK       no            Spatial Statistics         <NA>
-2  Tierney          US       no                     LISP-STAT         <NA>
-3    Tukey          US      yes     Exploratory Data Analysis         <NA>
-4 Venables   Australia       no Modern Applied Statistics ...       Ripley
-\end{lstlisting}\begin{lstlisting}
+2   Ripley          UK       no         Stochastic Simulation         <NA>
+3  Tierney          US       no                     LISP-STAT         <NA>
+4    Tukey          US      yes     Exploratory Data Analysis         <NA>
+5 Venables   Australia       no Modern Applied Statistics ...       Ripley
 
 \end{lstlisting}
 \end{Code}
