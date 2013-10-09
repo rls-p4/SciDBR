@@ -152,8 +152,6 @@ scidbmultiply = function(e1,e2)
   if(inherits(e2,"scidb"))
     q2 = sprintf("subarray(project(%s,%s),%s,%s)",e2@name,e2@attribute,lb,ub)
 # Adjust the 2nd array to be schema-compatible with the 1st:
-# XXX PGB Makes the good point here that we should repart the smaller of the
-# two arrays...
   if(l==2 && l1==2)
   {
     schema = sprintf(

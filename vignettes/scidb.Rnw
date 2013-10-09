@@ -526,6 +526,9 @@ books <- data.frame(
                             "Venables & Smith"),
            stringsAsFactors=FALSE)
 
+a <- as.scidb(authors)
+b <- as.scidb(books)
+
 merge(a,b,by=list("surname","name"))[]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
    surname nationality deceased     name                         title

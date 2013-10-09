@@ -85,7 +85,7 @@
 
   query = sprintf("cross_join(%s as __X, %s as __Y", xname, yname)
   if(length(`by`)>1 && !is.list(`by`))
-    stop("by must be either a single string describing a dimension to join on or a list in the form list(c('arrayX_dim1','arrayX_dim2'),c('arrayY_dim1','arrayY_dim2'))")
+    stop("by must be either a single string describing a dimension to join on, or a list of attributes or dimensions in the form list(c('arrayX_dim1','arrayX_dim2',...),c('arrayY_dim1','arrayY_dim2',...))")
   if(length(`by`)>0)
   {
     b = unlist(lapply(1:length(`by`[[1]]), function(j) unlist(lapply(`by`, function(x) x[[j]]))))
@@ -98,6 +98,7 @@
       XI = scidb:::scidb_from_scidbexpr(XI)
       YI = scidb:::scidb_from_scidbexpr(YI)
 
+# Note! Limited to inner-join for now until redimension supports synthetic dimension.
       a = XI@attributes %in% paste(b,"index",sep="_")
       n = XI@attributes[a]
       redim = paste(paste(n,"=-1:*,100000,0",sep=""), collapse=",")
