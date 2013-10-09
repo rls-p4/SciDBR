@@ -433,32 +433,17 @@ Row dimension:
 1  0  row     1    100            100             0   1  100 int64
 \end{lstlisting}\begin{lstlisting}
 
-
 # Materialize the first five rows of X to R (using [] to return results to R):
-X[1:5,][]
+X[1:5, c("Run","Speed")][]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-  Expt Run Speed
-0    1   1   850
-1    1   2   740
-2    1   3   900
-3    1   4  1070
-4    1   5   930
-\end{lstlisting}\begin{lstlisting}
-
-# Aggregate average speed by experiment using SciDB (using [] again):
-aggregate(X, by="Expt", FUN="avg(Speed) as mean")[]
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-  Expt_index  mean Expt
-0          0 909.0    1
-1          1 856.0    2
-2          2 845.0    3
-3          3 820.5    4
-4          4 831.5    5
+   Run Speed
+0    1   850
+1    2   740
+2    3   900
+3    4  1070
+4    5   930
 \end{lstlisting}
 \end{Code}
-Note that the aggregation function for SciDB arrays has a slightly different
-syntax than aggregation of data frames; in particular note that the aggregation
-function is a SciDB expression represented as a character string.
 
 \section{Data manipulation functions}
 
@@ -482,13 +467,6 @@ Here is an example:
 # that refers to it:
 data(iris)
 df = as.scidb(iris,name="iris",gc=FALSE)
-head(df, n=3)
-\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-  Sepal_Length Sepal_Width Petal_Length Petal_Width Species
-1          5.1         3.5          1.4         0.2  setosa
-2          4.9         3.0          1.4         0.2  setosa
-3          4.7         3.2          1.3         0.2  setosa
-\end{lstlisting}\begin{lstlisting}
 
 subset(df,"Petal_Width>2.4")[]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
@@ -501,55 +479,154 @@ subset(df,"Petal_Width>2.4")[]
 \end{lstlisting}
 \end{Code}
 
-\subsetcion{Database joins}
+\subsection{Database joins}
 The package overloads the R \verb+merge+ function, enabling a number
 of database join-like operations on SciDB array objects. Use the
 R \verb+help("merge",package="scidb")+ function for detailed help.
-Here is a simple example:
+Here is a simple example that performs an inner join on array attributes:
 \begin{Code}
-\begin{lstlisting}[caption=A 1-d SciDB array object using one of several available attributes, label=SUBSET]
-authors <- data.frame(
+\begin{lstlisting}[caption=Merge example, label=merge]
+authors = data.frame(
              surname = c("Tukey", "Venables", "Tierney", "Ripley", "McNeil"),
              nationality = c("US", "Australia", "US", "UK", "Australia"),
              deceased = c("yes", rep("no", 4)),
            stringsAsFactors=FALSE)
-books <- data.frame(
+books = data.frame(
            name = c("Tukey", "Venables", "Tierney",
                     "Ripley", "Ripley", "McNeil", "R Core"),
            title = c("Exploratory Data Analysis",
                      "Modern Applied Statistics ...",
-                     "LISP-STAT",
-                     "Spatial Statistics", "Stochastic Simulation",
-                     "Interactive Data Analysis",
-                     "An Introduction to R"),
-           other.author = c(NA, "Ripley", NA, NA, NA, NA,
-                            "Venables & Smith"),
+                     "LISP-STAT", "Spatial Statistics", "Stochastic Simulation",
+                     "Interactive Data Analysis", "An Introduction to R"),
+           other.author = c(NA, "Ripley", NA, NA, NA, NA, "Venables & Smith"),
            stringsAsFactors=FALSE)
 
-a <- as.scidb(authors)
-b <- as.scidb(books)
+a = as.scidb(authors)
+b = as.scidb(books)
 
-merge(a,b,by=list("surname","name"))[]
+merge(a,b,by=list("surname","name"))[,c(1:3,5:6)][]
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-   surname nationality deceased     name                         title
-0   McNeil   Australia       no   McNeil     Interactive Data Analysis
-1   Ripley          UK       no   Ripley            Spatial Statistics
-2  Tierney          US       no  Tierney                     LISP-STAT
-3    Tukey          US      yes    Tukey     Exploratory Data Analysis
-4 Venables   Australia       no Venables Modern Applied Statistics ...
-  other_author
-0         <NA>
-1         <NA>
-2         <NA>
-3         <NA>
-4       Ripley
+   surname nationality deceased                         title other_author
+0   McNeil   Australia       no     Interactive Data Analysis         <NA>
+1   Ripley          UK       no            Spatial Statistics         <NA>
+2  Tierney          US       no                     LISP-STAT         <NA>
+3    Tukey          US      yes     Exploratory Data Analysis         <NA>
+4 Venables   Australia       no Modern Applied Statistics ...       Ripley
 \end{lstlisting}\begin{lstlisting}
+
+\end{lstlisting}
+\end{Code}
+The \verb+merge+ implementation has some limitations outlined in its man page.
+Joins on attributes are presently the most limited case, and are restricted to
+inner joins at the moment. Use \verb+merge+ on array dimensions for the most
+flexibility.
+
+\subsection{Aggregation}
+SciDB aggregation functions are available generally for SciDB array objects
+with the \verb+aggregate+ function. Aggregation may be defined over array
+dimensions and/or array attributes very similarly to standard R aggregation
+syntax. Aggregation functions must be valid
+SciDB aggregate expressions, represented as strings.
+\begin{Code}
+\begin{lstlisting}[caption=Aggregation examples, label=agg]
+# Upload the iris data to SciDB and create a data frame-like object
+# that refers to it:
+data(iris)
+df = as.scidb(iris,name="iris",gc=FALSE)
+
+aggregate(df, by="Species", FUN="avg(Petal_Length) as avg_pl, stdev(Petal_Width)")[]
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+  Species_index avg_pl Petal_Width_stdev    Species
+0             0  1.462         0.1053856     setosa
+1             1  4.260         0.1977527 versicolor
+2             2  5.552         0.2746501  virginica
+\end{lstlisting}\begin{lstlisting}
+
+\end{lstlisting}
+\end{Code}
+Note that variable names may be specified in the SciDB aggregate expression.
+
+\subsection{Binding new values to an array}
+
+The SciDB package defines the \verb+bind+ function to add variables to arrays
+similar to the R \verb+cbind+ function for data frames. In the 1-d SciDB array
+\verb+scidbdf+ class the \verb+bind+ function is equivalent to the \verb+cbind+
+function for data frames. However, \verb+bind+ can also operate on
+higher-dimensional arrays.
+
+\begin{Code}
+\begin{lstlisting}[caption=Binding new variables to an array, label=bind]
+df = as.scidb(iris,name="iris",gc=FALSE)
+y  = bind(df, "prod", "Petal_Length * Petal_Width")
+
+head(y, n=3)
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+  Sepal_Length Sepal_Width Petal_Length Petal_Width Species prod
+1          5.1         3.5          1.4         0.2  setosa 0.28
+2          4.9         3.0          1.4         0.2  setosa 0.28
+3          4.7         3.2          1.3         0.2  setosa 0.26
+\end{lstlisting}\begin{lstlisting}
+
+\end{lstlisting}
+\end{Code}
+
+\subsection{Sort, unique and index\_lookup}
+
+Use the \verb+sort+ function to sort on a subset of dimensions and/or
+atribute of a SciDB array object, creating a new sorted array.
+
+Use the \verb+unique+ function to return a SciDB array that removes
+duplicate elements of a single-attribute SciDB input array.
+
+Use the \verb+index_lookup+ function along with  \verb+unique+ to bind a new
+variable that enumerates unique values of a variable similarly to the R
+\verb+factor+ function.
+
+Examples follow. Note that we use the SciDB \verb+project+ function in one
+example. \verb+project+ presents an alternative syntax to the functionally
+equivalent column subset selection of variables using brackets. In some
+cases using \verb+project+  can be more efficient.
+
+\begin{Code}
+\begin{lstlisting}[caption=Sorting variables and enumerating unique values, label=sort]
+x = as.scidb(iris,name="iris")
+
+# Sort x by Petal_Width and Species
+a = sort(x, attributes=c("Petal_Width","Species"))
+head(a, n=3)
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+  Sepal_Length Sepal_Width Petal_Length Petal_Width Species
+1          4.9         3.1          1.5         0.1  setosa
+2          4.9         3.6          1.4         0.1  setosa
+3          4.8         3.0          1.4         0.1  setosa
+\end{lstlisting}\begin{lstlisting}
+
+# Find unique values of Species:
+unique(a[,"Species"])[]
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+     Species
+0     setosa
+1 versicolor
+2  virginica
+\end{lstlisting}\begin{lstlisting}
+
+# Add a new variable that enumerates the unique values of Species:
+head(index_lookup(a, unique(project(a,"Species")), "Species"))
+\end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
+  Sepal_Length Sepal_Width Petal_Length Petal_Width Species Species_index
+1          4.9         3.1          1.5         0.1  setosa             0
+2          4.9         3.6          1.4         0.1  setosa             0
+3          4.8         3.0          1.4         0.1  setosa             0
 
 \end{lstlisting}
 \end{Code}
 
 
 
+
+
+
+HOMER
 
 \newpage
 \section{The {\tt scidb} array class}
@@ -569,7 +646,7 @@ in R refering to the iris data and also a 1-D \verb+scidb+ array object in R
 refering to the same data using the \verb+Sepal_Width+ attribute.
 Unlike R, SciDB numeric array indices may be zero or negative (indices begin at
 zero in the example in Listing \ref{oned}). Data from {\tt scidb} array objects
-are not materialized to R until subset with the empty indexing function,
+are not materialized to R until extracted with the empty indexing function,
 \verb+[]+.
 
 \begin{Code}
@@ -706,7 +783,7 @@ $coordinates
 
 \subsubsection{Arithmetic operations}
 
-The \verb+scidb+ array class supports many standard linear algebra operations
+The \verb+scidb+ array class supports a few standard linear algebra operations
 for dense and sparse matrices and vectors.
 
 Listing \ref{arithmetic} shows a more interesting 2-d dense array example that
@@ -758,9 +835,9 @@ crossprod(v)[]
 \end{lstlisting}
 \end{Code}
 Linear algebra operations like the cross product in Listing \ref{arithmetic}
-store their results in new dynamically-named SciDB arrays. One
-may always find the SciDB name for a \verb+scidb+ array object from the
-array object's \verb+@name+ slot.
+store their results in new dynamically-named SciDB arrays.
+The underlying SciDB array name for a \verb+scidb+ array object is
+available from the array object's \verb+@name+ slot.
 
 Basic matrix/vector arithmetic operations on SciDB arrays
 (addition, subtraction, matrix and
@@ -811,10 +888,11 @@ $A \pm B$ & Matrix summation/difference & $A,B$ SciDB arrays or R matrices/vecto
 {\tt crossprod(}$A$,$B${\tt)} & Cross product {\tt t(A) \%*\% B} & $A,B$ SciDB arrays or R matrices/vectors & SciDB array\\
 {\tt tcrossprod(}$A$,$B${\tt)} & Cross product {\tt A \%*\% t(B)} & $A,B$ SciDB arrays or R matrices/vectors & SciDB array\\
 $A$ {\tt */} $B$ & Elementwise product/quotient & $A,B$ Conformable SciDB arrays or R matrices/vectors & SciDB array\\
-$\alpha$ {\tt *} $A$ & Scalar multiplication & SciDB array $A$, scalar $\alpha$ & SciDB array\\
+$\alpha$ {\tt */} $A$ & Scalar multplication/division & SciDB array $A$, scalar $\alpha$ & SciDB array\\
 {\tt t(}$A${\tt )}& Transpose & SciDB array $A$& SciDB array\\
 $A[\hbox{range},\hbox{range},\ldots]$ & Subarray &  SciDB array $A$ & SciDB Array\\
 $A[\,]$ & Materialize & SciDB array A& R array \\
+{\tt svd}$(A)$ & Singular value decomposition & Dense SciDB array A& SciDB arrays \\
 \hline
 \end{tabularx}}
 \vspace{28px}
@@ -874,12 +952,6 @@ function parameter specifies the regrid window sizes in each array dimension,
 and defaults to the array chunk sizes. The regrid aggregation function may be
 specified using the \verb+op+ function argument, and by default averages the
 array values over the regrid windows.
-
-The \verb+filter+ function may be used to apply arbitrary SciDB filter logic to
-array attributes. Simple filtering comparisons against scalars may be directly
-specified with the usual comparison symbols, \verb+<, >, <=, >=, ==, !=+.  The
-result of the {\tt filter} function and the simple binary comparison operations
-is a new {\tt scidb} object containing the filtered values.
 
 
 \section{Using SciDB arrays with existing R code}

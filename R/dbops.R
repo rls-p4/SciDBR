@@ -268,9 +268,12 @@
   mc = list(...)
   `eval` = ifelse(is.null(mc$eval), `eval`, mc$eval)
   if(incomparables!=FALSE) warning("The incomparables option is not available yet.")
-  xname = x
-  if(class(x) %in% c("scidbdf","scidb")) xname = x@name
-  query = sprintf("uniq(%s)",xname)
+  if(class(x) == "scidbexpr")
+  {
+    x = scidb_from_scidbexpr(x)
+  }
+  xname = x@name
+  query = sprintf("uniq(sort(project(%s,%s),%s))",xname,x@attributes[[1]],x@attributes[[1]])
   scidbeval(query,eval,lastclass=checkclass(x))
 }
 
