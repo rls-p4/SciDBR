@@ -1045,6 +1045,23 @@ Installation proceeds in two steps: installing the R package on any computer
 that has a network connection to a SciDB database, and installing a simple
 network service on the SciDB database coordinator computer.
 
+\subsection{Installing the R package from sources on GitHub}
+
+The \verb+scidb+ package source is maintained in the SciDBR GitHub repository.
+That's where the most up-to-date version of the package is available. Released
+versions of the package posted to CRAN are updated much less frequently,
+approximatley semiannually. A git tag indicates each CRAN release version of
+the package in the source code repository.
+
+The wonderful {\tt devtools} R package makes installation of source
+packages from GitHub nearly as simple as installation from CRAN.
+\begin{Code}
+\begin{lstlisting}[caption=Installing the R package from GitHub, label=github]
+library("devtools")
+install_github("scidb", "Paradigm4")
+\end{lstlisting}
+\end{Code}
+
 \subsection{Installing the R package from CRAN}
 The \verb+scidb+ package is available on CRAN. Start an R session and run:
 \begin{Code}
@@ -1054,7 +1071,7 @@ install.packages("scidb")
 \end{Code}
 
 
-\subsection{Installing the simple network service for SciDB}
+\subsection{Installing the simple HTTP service for SciDB}
 \label{shim}
 
 The SciDB R package requires installation of a simple open-source HTTP network
@@ -1083,7 +1100,7 @@ versions of SciDB. The present version is 13.9 (September, 2013).
 \begin{Code}
 \begin{lstlisting}[caption=Installing the simple HTTP service on RHEL, label=shimrhel]
 # Install with:
-wget http://illposed.net/shim-13.2-1.x86_64.rpm
+wget http://paradigm4.github.io/shim/shim-13.9-1.x86_64.rpm
 rpm -i shim-13.9-1.x86_64.rpm
 
 # (Uninstall, if desired, with:)
@@ -1096,7 +1113,7 @@ yum remove shim
 \begin{Code}
 \begin{lstlisting}[caption=Installing the simple HTTP service on Ubuntu, label=shimubuntu]
 # Install with:
-wget http://illposed.net/shim_13.2_amd64.deb
+wget http://paradigm4.github.io/shim/shim_13.9_amd64.deb
 sudo gdebi shim_13.9_amd64.deb
 
 # (Uninstall, if desired, with:)
