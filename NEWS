@@ -34,7 +34,7 @@ CHANGES IN scidb 1.1-1:
     o We introduced a dependency on RCurl in order to support SSL and
       authentication with the SciDB shim service.
 
-   NO MORE SciDB NID
+  NO MORE SciDB NID
 
     o The package no longer tries to support SciDB arrays with NID dimensions,
       which never really worked anyway. Instead, many functions now take
@@ -43,6 +43,10 @@ CHANGES IN scidb 1.1-1:
       Future package versions will take this further and introduce array
       dimension labeling using the new operators.
 
+  MANY NEW DATABASE-LIKE FEATURES
+
+    o Aggregate was improved, merge sort, unique, index_lookup, and other new
+      functions were added. See the vignette for more information.
 
 CHANGES IN scidb 1.1-0:
 
