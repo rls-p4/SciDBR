@@ -1058,7 +1058,7 @@ packages from GitHub nearly as simple as installation from CRAN.
 \begin{Code}
 \begin{lstlisting}[caption=Installing the R package from GitHub, label=github]
 library("devtools")
-install_github("scidb", "Paradigm4")
+install_github("SciDBR", "Paradigm4")
 \end{lstlisting}
 \end{Code}
 
