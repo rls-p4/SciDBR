@@ -94,8 +94,6 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
   abuf buf;
   double x;
   SEXP ans;
-  struct stat sb;
-  off_t length;
   const char *rfmt = CHAR(STRING_ELT(REALFORMAT,0));
   double S = *(REAL (start));
   int R = *(INTEGER (chunk));
@@ -354,7 +352,7 @@ scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE)
   int nullable = INTEGER(NULLABLE)[0];
   char *raw = RAW(DATA);
 
-  l = INTEGER(LEN)[0];
+  l = (long long)INTEGER(LEN)[0];
   ndim = INTEGER(NDIM)[0];
 
   PROTECT (A = allocVector (TYPEOF (TYPE), l));
