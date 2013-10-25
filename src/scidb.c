@@ -350,7 +350,7 @@ scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE)
   char a;
   char nx;
   int nullable = INTEGER(NULLABLE)[0];
-  char *raw = RAW(DATA);
+  char *raw = (char *)RAW(DATA);
 
   l = (long long)INTEGER(LEN)[0];
   ndim = INTEGER(NDIM)[0];
