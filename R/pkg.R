@@ -30,6 +30,8 @@
 # In a future version, this will be automatically set (there is not presently
 # a SciDB query that returns the version).
   options(scidb.version=13.9)
+# Set this to 32 for SciDB version 13.6
+  options(scidb.gemm_chunk_size=1000)
 }
 
 .onUnload = function(libpath)
@@ -37,6 +39,7 @@
   options(scidb.index.sequence.limit=c())
   options(scidb.max.array.elements=c())
   options(scidb.version=c())
+  options(scidb.gemm_chunk_size=c())
 }
 
 # scidb array object type map. We don't yet support strings in scidb array

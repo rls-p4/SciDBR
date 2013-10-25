@@ -76,21 +76,14 @@ scidbmultiply = function(e1,e2)
 
   dnames = make.names_(c(e1@D$name[[1]],e2@D$name[[2]]))
 
-  if(!SPARSE && !P4)
+  CHUNK_SIZE = options("scidb.gemm_chunk_size")[[1]]
+
+  if(!SPARSE)
   {
-# Adjust the arrays to conform to GEMM requirements (only for old GEMM)
-    op1 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,32,0,%s=0:%.0f,32,0])",op1,a1,e1@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,e1@D$name[[2]],e1@D$length[[2]]-1)
-    op2 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,32,0,%s=0:%.0f,32,0])",op2,a2,e2@type[1],e2@D$name[[1]],e2@D$length[[1]]-1,e2@D$name[[2]],e2@D$length[[2]]-1)
-    op3 = sprintf("build(<%s:%s>[%s=0:%.0f,32,0,%s=0:%.0f,32,0],0)",a1,e1@type[1],dnames[[1]],e1@D$length[[1]]-1,dnames[[2]],e2@D$length[[2]]-1)
-  } else
-  {
-# Just adjust for conformable chunk sizes
-    if(e1@D$chunk_interval[[1]] < 32 || e1@D$chunk_interval[[2]] < 32)
-    {
-      op1 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0])",op1,a1,e1@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,max(e1@D$chunk_interval[[1]],32),e1@D$name[[2]],e1@D$length[[2]]-1,max(e1@D$chunk_interval[[2]],32))
-    }
-    op2 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0])",op2,a2,e2@type[1],e2@D$name[[1]],e2@D$length[[1]]-1,max(e1@D$chunk_interval[[2]],32),e2@D$name[[2]],e2@D$length[[2]]-1,max(e2@D$chunk_interval[[2]],32))
-    op3 = sprintf("build(<%s:%s>[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0],0)",a1,e1@type[1],dnames[[1]],e1@D$length[[1]]-1,max(e1@D$chunk_interval[[1]],32),dnames[[2]],e2@D$length[[2]]-1,max(e2@D$chunk_interval[[2]],32))
+# Adjust the arrays to conform to GEMM requirements
+    op1 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0])",op1,a1,e1@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,e1@D$name[[2]],e1@D$length[[2]]-1,CHUNK_SIZE)
+    op2 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0])",op2,a2,e2@type[1],e2@D$name[[1]],e2@D$length[[1]]-1,CHUNK_SIZE,e2@D$name[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
+    op3 = sprintf("build(<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0],0)",a1,e1@type[1],dnames[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,dnames[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
   }
 
 # Decide which multiplication algorithm to use
