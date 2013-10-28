@@ -5,6 +5,41 @@
 # nested by explicitly setting eval=FALSE on inner functions, deferring
 # computation until eval=TRUE.
 
+
+# SciDB build wrapper, intended to act something like the R 'array' function.
+build = function(data, dim, names, type="double",
+                 start, name, chunksize, overlap, gc=TRUE,
+                 sparse=FALSE, condition, eval=TRUE)
+{
+  if(missing(start)) start = rep(0,length(dim))
+  if(missing(overlap)) overlap = rep(0,length(dim))
+  if(missing(chunksize))
+  {
+    chunksize = rep(ceiling(1e6^(1/length(dim))),length(dim))
+  }
+  if(length(start)!=length(dim)) stop("Mismatched dimension/start lengths")
+  if(length(chunksize)!=length(dim)) stop("Mismatched dimension/chunksize lengths")
+  if(length(overlap)!=length(dim)) stop("Mismatched dimension/overlap lengths")
+  if(missing(names))
+  {
+    names = c("val", letters[9:(8+length(dim))])
+  }
+  schema = paste("<",names[1],":",type,">",sep="")
+  schema = paste(schema, paste("[",paste(paste(paste(
+        paste(names[-1],start,sep="="), dim-1, sep=":"),
+        chunksize, overlap, sep=","), collapse=","),"]",sep=""), sep="")
+  if(sparse)
+  {
+    if(missing(condition)) stop("build_sparse requires logical condition")
+    query = sprintf("build(%s,%s,%s)",schema,data,condition)
+  } else
+  {
+    query = sprintf("build(%s,%s)",schema,data)
+  }
+  if(missing(name)) return(scidbeval(query,eval))
+  scidbeval(query,eval,name)
+}
+
 # Count the number of non-empty cells
 `count` = function(x)
 {

@@ -1,5 +1,6 @@
 useDynLib(scidb)
 export("df2scidb")
+export("build")
 export("cumulate")
 export("between")
 export("as.scidb")

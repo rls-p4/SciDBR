@@ -30,12 +30,13 @@
 # query string `expr` (eval=TRUE), returning a scidb object,
 # or returns a scidbexpr object (eval=FALSE).
 # Optionally set lastclass to retain class information for evaluated result.
-`scidbeval` = function(expr,eval,lastclass=c("scidb","scidbdf"))
+`scidbeval` = function(expr,eval,lastclass=c("scidb","scidbdf"),name)
 {
   lastclass = match.arg(lastclass)
   if(`eval`)
   {
-    newarray = tmpnam()
+    if(missing(name)) newarray = tmpnam()
+    else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
     scidbquery(query)
     if(lastclass=="scidb") return(scidb(newarray,gc=TRUE))
