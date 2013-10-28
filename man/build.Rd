@@ -16,7 +16,7 @@ build = function(data, dim, names, type="double",
 \arguments{
   \item{data}{A valid SciDB expression (expressed as a character string) or constant to fill the array.}
   \item{dim}{A vector of dimension lengths.}
-  \item{names}{An optional vector of attribute and dimension names.}
+  \item{names}{An optional vector of attribute and dimension names. Default attribute name is `val` and the dimension names are labeled i,j,... by default.}
   \item{type}{The SciDB type of the array attribute.}
   \item{start}{An optional vector of starting dimension coordinate indices. Must match the length of the dim vector.}
   \item{type}{Option name of the SciDB array. An automatically generated name is used by default.}
