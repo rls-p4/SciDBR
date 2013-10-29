@@ -148,6 +148,8 @@ build = function(data, dim, names, type="double",
   } else `eval`=mc$eval
   xname = X
   yname = Y
+  if("scidbexpr" %in% class(X)) X = scidb_from_scidbexpr(X)
+  if("scidbexpr" %in% class(Y)) Y = scidb_from_scidbexpr(Y)
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   if(class(Y) %in% c("scidbdf","scidb")) yname = Y@name
 
