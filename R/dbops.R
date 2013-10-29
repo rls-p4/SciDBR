@@ -6,11 +6,31 @@
 # computation until eval=TRUE.
 
 
+# SciDB redimension wrapper
+redimension = function(x, s, eval)
+{
+  if(!(class(x) %in% c("scidb","scidbdf","scidbexpr"))) stop("Invalid SciDB object")
+  if(missing(`eval`))
+  {
+    nf   = sys.nframe()
+    `eval` = !called_from_scidb(nf)
+  }
+  if(class(x)=="scidbexpr") x = scidb:::scidb_from_scidbexpr(x)
+  sc = scidb_from_schemastring(s)
+  query = paste("substitute(",x@name,",build(<___i:int64>[___j=0:0,1,0],0),",paste(sc@D$name,collapse=","),")",sep="")
+  query = sprintf("redimension(%s,%s)",query,s)
+  scidbeval(query,eval)
+}
+
 # SciDB build wrapper, intended to act something like the R 'array' function.
 build = function(data, dim, names, type="double",
-                 start, name, chunksize, overlap, gc=TRUE,
-                 sparse=FALSE, condition, eval=TRUE)
+                 start, name, chunksize, overlap, gc=TRUE, eval)
 {
+  if(missing(`eval`))
+  {
+    nf   = sys.nframe()
+    `eval` = !called_from_scidb(nf)
+  }
   if(missing(start)) start = rep(0,length(dim))
   if(missing(overlap)) overlap = rep(0,length(dim))
   if(missing(chunksize))
@@ -24,18 +44,16 @@ build = function(data, dim, names, type="double",
   {
     names = c("val", letters[9:(8+length(dim))])
   }
+# No scientific notation please
+  start = sprintf("%.0f",start)
+  chunksize = sprintf("%.0f",chunksize)
+  overlap = sprintf("%.0f",overlap)
+  dim = sprintf("%.0f", dim-1)
   schema = paste("<",names[1],":",type,">",sep="")
   schema = paste(schema, paste("[",paste(paste(paste(
-        paste(names[-1],start,sep="="), dim-1, sep=":"),
+        paste(names[-1],start,sep="="), dim, sep=":"),
         chunksize, overlap, sep=","), collapse=","),"]",sep=""), sep="")
-  if(sparse)
-  {
-    if(missing(condition)) stop("build_sparse requires logical condition")
-    query = sprintf("build(%s,%s,%s)",schema,data,condition)
-  } else
-  {
-    query = sprintf("build(%s,%s)",schema,data)
-  }
+  query = sprintf("build(%s,%s)",schema,data)
   if(missing(name)) return(scidbeval(query,eval))
   scidbeval(query,eval,name)
 }

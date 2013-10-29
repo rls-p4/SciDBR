@@ -10,8 +10,7 @@ It creates a new single-attribute SciDB array based on the specified parameters.
 }
 \usage{
 build = function(data, dim, names, type="double",
-                 start, name, chunksize, overlap, gc=TRUE,
-                 sparse=FALSE, condition, eval=TRUE)
+                 start, name, chunksize, overlap, gc=TRUE, eval)
 }
 \arguments{
   \item{data}{A valid SciDB expression (expressed as a character string) or constant to fill the array.}
@@ -23,8 +22,6 @@ build = function(data, dim, names, type="double",
   \item{chunksize}{An optional vector of dimension chunk sizes. Must match the length of the dim vector.}
   \item{overlap}{An optional vector of dimension overlap values. Must match the length of the dim vector.}
   \item{gc}{gc=TRUE (the default) removes the array when corresponding R objects are garbage collected. Set gc=FALSE to preserve arrays.}
-  \item{sparse}{Optionally set sparse=TRUE to build a sparse array. If TRUE, the condition parameter is also required.}
-  \item{condition}{A SciDB logical expression expressed as a character string that determines sparse array fill-in when TRUE.}
   \item{eval}{A logical value: if TRUE then evaluate the \code{build} expression and return a \code{scidb} object, otherwise return a \code{scidbexpr} object that contains a character string representation of the un-evaluated SciDB query. By default, eval is set to FALSE if \code{build} is called from another function in the scidb package.}
 }
 \value{
