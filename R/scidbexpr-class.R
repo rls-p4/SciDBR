@@ -21,9 +21,8 @@
 #*/
 
 # This file contains class definitions, generics, and methods for the
-# aflexpr class, which is really just a character string that represents
-# an afl expression. We use this class instead of character to differentiate
-# it for functions like 'merge.'
+# scidbexpr class, which is really just a character string that represents
+# an afl expression.
 
 scidbexpr = setClass("scidbexpr", representation=list(lastclass="character"), contains = "character")
 setMethod("aggregate", signature(x="scidbexpr"), aggregate_scidb)
