@@ -32,6 +32,23 @@
     "_sweep", `name`, eval=eval)
 }
 
+`apply_scidb` = function(x,MARGIN,FUN,eval,`name`)
+{
+  if(!is.scidb(x)) stop("x must be a scidb object")
+  if(length(MARGIN)!=1) stop("MARGIN must indicate a single dimension")
+  if(is.numeric(MARGIN)) MARGIN = x@D$name[MARGIN]
+  if(missing(`name`)) `name` = x@attribute
+  if(missing(`eval`))
+  {
+    nf   = sys.nframe() - 2  # Note! this is a method and is on a deeper stack.
+    `eval` = !called_from_scidb(nf)
+  }
+  attribute_rename(
+    project(
+      bind(x, ,"_aply",FUN,eval=FALSE),"_sweep",eval=FALSE),
+    "_aply", `name`, eval=eval)
+}
+
 # x:   A scidb, scidbdf object
 # by:  A character vector of dimension and or attribute names of x, or,
 #      a scidb or scidbdf object that will be cross_joined to x and then

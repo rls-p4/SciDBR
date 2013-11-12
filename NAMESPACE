@@ -4,6 +4,7 @@ export("build")
 export("redimension")
 export("cumulate")
 export("between")
+export("cast")
 export("as.scidb")
 export("scidblist")
 export("scidbls")
@@ -24,7 +25,7 @@ importFrom("Matrix","nnzero", "sparseMatrix")
 
 # S4 methods
 exportClasses("scidb","scidbdf")
-exportMethods("%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,sweep,sd,var,min,max,svd)
+exportMethods("%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,sd,var,min,max,svd)
 
 # S3 methods
 S3method("Ops",scidb)

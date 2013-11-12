@@ -4,6 +4,20 @@
 # frames). They can be efficiently nested by explicitly setting eval=FALSE on
 # inner functions, deferring computation until eval=TRUE.
 
+# SciDB cast wrapper
+cast = function(x, s, eval)
+{
+  if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  if(missing(`eval`))
+  {
+    nf   = sys.nframe()
+    `eval` = !called_from_scidb(nf)
+  }
+# Default cast strips "Not nullable" array property
+  if(missing(s)) s = scidb:::extract_schema(scidb:::scidb_from_schemastring(x@schema))
+  query = sprintf("cast(%s,%s)",x@name,s)
+  scidbeval(query,eval)
+}
 
 # SciDB redimension wrapper
 redimension = function(x, s, eval)

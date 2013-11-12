@@ -270,6 +270,10 @@ setOldClass("sweep")
 setGeneric("sweep")
 setMethod("sweep", signature(x="scidb"), sweep_scidb)
 
+setOldClass("apply")
+setGeneric("apply")
+setMethod("apply", signature(x="scidb"), apply_scidb)
+
 svd_scidb = function(x)
 {
   u = sprintf("%s_U",x@name)
