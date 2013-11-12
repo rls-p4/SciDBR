@@ -120,11 +120,11 @@ materialize = function(x, drop=FALSE)
   if(length(type)<1) stop("Unsupported data type. Try using the iquery function instead.")
   tval = vector(mode=type,length=1)
 
-# Set origin to zero
+# Set origin to zero and project.
   l1 = length(dim(x))
   lb = paste(rep("null",l1),collapse=",")
   ub = paste(rep("null",l1),collapse=",")
-  query = sprintf("subarray(%s,%s,%s)",x@name,lb,ub)
+  query = sprintf("subarray(project(%s,%s),%s,%s)",x@name,x@attribute,lb,ub)
 
 # Unpack
   query = sprintf("unpack(%s,%s)",query,"__row")

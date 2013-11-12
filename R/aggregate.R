@@ -5,6 +5,7 @@
 # FUN: A SciDB aggregation expresion
 `aggregate_scidb` = function(x,by,FUN,eval)
 {
+  unpack = FALSE
   b = `by`
   if(is.list(b)) b = b[[1]]
   if(class(b) %in% c("scidb","scidbdf"))
@@ -22,18 +23,19 @@
     nf   = sys.nframe() - 2  # Note! this is a method and is on a deeper stack.
     `eval` = !called_from_scidb(nf)
   }
-# A bug in SciDB 13.6 unpack prevents us from using eval=FALSE for now.
+# A bug up to SciDB 13.6 unpack prevents us from using eval=FALSE
   if(!eval && !compare_versions(options("scidb.version")[[1]],13.9)) stop("eval=FALSE not supported by aggregate due to a bug in SciDB <= 13.6")
 
   b = `by`
+  if(length(b)>1) unpack = TRUE
   new_dim_name = make.names_(c(unlist(b),"row"))
   new_dim_name = new_dim_name[length(new_dim_name)]
   if(!all(b %in% c(x@attributes, x@D$name))) stop("Invalid attribute or dimension name in by")
   a = x@attributes %in% b
   query = x@name
 # Handle group by attributes with redimension. We don't use a redimension
-# aggregate, however, because some of the other group by variables may
-# already be dimensions.
+# aggregate, however, because some of the other group by variables may already
+# be dimensions.
   if(any(a))
   {
 # First, we check to see if any of the attributes are not int64. In such cases,
@@ -46,6 +48,7 @@
     {
 # Use index_lookup to factorize non-integer indices, creating new enumerated
 # attributes to sort by. It's probably not a great idea to have too many.
+      unpack = TRUE
       idx = which(nonint)
       oldatr = x@attributes
       for(j in idx)
@@ -60,13 +63,14 @@
         newname = make.unique_(oldatr,newname)
         b[which(b==atr)] = newname
       }
-# XXX XXX length(idx) > 1???
     }
 
 # Reset in case things changed above
     a = x@attributes %in% b
     n = x@attributes[a]
+# XXX XXX XXX
 # XXX What about chunk sizes? NULLs? Ugh. Also insert reasonable upper bound instead of *? XXX Take care of all these issues...
+# XXX XXX XXX
     redim = paste(paste(n,"=0:*,1000,0",sep=""), collapse=",")
     D = paste(build_dim_schema(x,FALSE),redim,sep=",")
     A = x
@@ -79,17 +83,10 @@
   }
   along = paste(b,collapse=",")
 
-# We use unpack to always return a data frame (a 1D scidb array). As of
-# SciDB 13.6 unpack has a bug that prevents it from working often. Saving to a
-# temporary array first seems to be a workaround for this problem. This sucks.
+# We use unpack to always return a data frame (a 1D scidb array). EXCEPT when
+# aggregating along a single integer coordinate axis (not along attributes or
+# multiple axes).
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
-  if(!compare_versions(options("scidb.version")[[1]],13.9))
-  {
-    temp = scidbeval(query,TRUE)
-    query = sprintf("unpack(%s,%s)",temp@name,new_dim_name)
-  } else
-  {
-    query = sprintf("unpack(%s,%s)",query,new_dim_name)
-  }
+  if(unpack) query = sprintf("unpack(%s,%s)",query,new_dim_name)
   scidbeval(query,eval)
 }
