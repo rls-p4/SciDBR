@@ -259,9 +259,6 @@ function(x, grid=c(x@D$chunk_interval[1], x@D$chunk_interval[2]), op=sprintf("su
   B
 })
 
-# x:   A SciDB array
-# by:  A list of dimension and/or attribute names in x to aggregate along
-# FUN: A valid SciDB aggregation expression (string)
 setOldClass("aggregate")
 setGeneric("aggregate")
 setMethod("aggregate", signature(x="scidb"), aggregate_scidb)
@@ -272,7 +269,7 @@ setMethod("sweep", signature(x="scidb"), sweep_scidb)
 
 setOldClass("apply")
 setGeneric("apply")
-setMethod("apply", signature(x="scidb"), apply_scidb)
+setMethod("apply", signature(X = "scidb"), apply_scidb)
 
 svd_scidb = function(x)
 {

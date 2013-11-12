@@ -1,3 +1,5 @@
+# Nifty aggregation-related functions
+
 `sweep_scidb` = function(x, MARGIN, STATS, FUN="-", check.margin=NULL, eval, `name`)
 {
   if(!is.scidb(x)) stop("x must be a scidb object")
@@ -32,21 +34,20 @@
     "_sweep", `name`, eval=eval)
 }
 
-`apply_scidb` = function(x,MARGIN,FUN,eval,`name`)
+`apply_scidb` = function(X,MARGIN,FUN,eval,`name`,...)
 {
-  if(!is.scidb(x)) stop("x must be a scidb object")
+  if(!is.scidb(X)) stop("X must be a scidb object")
   if(length(MARGIN)!=1) stop("MARGIN must indicate a single dimension")
-  if(is.numeric(MARGIN)) MARGIN = x@D$name[MARGIN]
-  if(missing(`name`)) `name` = x@attribute
+  if(is.numeric(MARGIN)) MARGIN = X@D$name[MARGIN]
+  if(missing(`name`)) `name` = X@attribute
   if(missing(`eval`))
   {
     nf   = sys.nframe() - 2  # Note! this is a method and is on a deeper stack.
     `eval` = !called_from_scidb(nf)
   }
-  attribute_rename(
-    project(
-      bind(x, ,"_aply",FUN,eval=FALSE),"_sweep",eval=FALSE),
-    "_aply", `name`, eval=eval)
+  Y = aggregate(X,MARGIN,FUN,eval=FALSE)
+  a = Y@attributes[length(Y@attributes)]
+  attribute_rename(project(Y,a,eval=FALSE),a, `name`, eval=eval)
 }
 
 # x:   A scidb, scidbdf object
