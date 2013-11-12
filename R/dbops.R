@@ -4,6 +4,12 @@
 # frames). They can be efficiently nested by explicitly setting eval=FALSE on
 # inner functions, deferring computation until eval=TRUE.
 
+slice = function(x, d, n, `eval`=FALSE)
+{
+  query = sprintf("slice(%s, %s, %d)", x@name, d, n)
+  scidbeval(query, `eval`)
+}
+
 substitute = function(x, value, `attribute`, `eval`=FALSE)
 {
   if(missing(attribute)) attribute = x@attribute

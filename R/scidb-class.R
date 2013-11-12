@@ -86,42 +86,43 @@ setMethod("%*%",signature(x="ANY", y="scidb"),
   valueClass="scidb"
 )
 
+setOldClass("crossprod")
+setGeneric("crossprod")
+setMethod("crossprod",signature(x="scidb", y="missing"),
+  function(x)
+  {
+    t(x) %*% x
+  },
+  valueClass="scidb"
+)
 
-setMethod("crossprod",signature(x="scidb", y="ANY"),
+setOldClass("crossprod")
+setGeneric("crossprod")
+setMethod("crossprod",signature(x="scidb", y="scidb"),
   function(x,y)
   {
-    if(is.null(y)) y = x
     t(x) %*% y
   },
   valueClass="scidb"
 )
 
-setMethod("crossprod",signature(x="ANY", y="scidb"),
-  function(x,y)
-  {
-    if(is.null(x)) x = y
-    t(x) %*% y
-  },
-  valueClass="scidb"
-)
 
-setMethod("tcrossprod",signature(x="scidb", y="ANY"),
+setMethod("tcrossprod",signature(x="scidb", y="scidb"),
   function(x,y)
   {
-    if(is.null(y)) y = x
     x %*% t(y)
   },
   valueClass="scidb"
 )
 
-setMethod("tcrossprod",signature(x="ANY", y="scidb"),
-  function(x,y)
+setMethod("tcrossprod",signature(x="scidb", y="missing"),
+  function(x)
   {
-    if(is.null(x)) x = y
-    x %*% t(y)
+    x %*% t(x)
   },
   valueClass="scidb"
 )
+
 
 
 # The remaining functions return data to R:
@@ -271,17 +272,25 @@ setOldClass("apply")
 setGeneric("apply")
 setMethod("apply", signature(X = "scidb"), apply_scidb)
 
-svd_scidb = function(x)
+svd_scidb = function(x, nu, ...)
 {
-  u = sprintf("%s_U",x@name)
-  d = sprintf("%s_S",x@name)
-  v = sprintf("%s_V",x@name)
-  iquery(sprintf("store(gesvd(%s,'left'),%s)",x@name,u))
-  iquery(sprintf("store(gesvd(%s,'values'),%s)",x@name,d))
-  iquery(sprintf("store(gesvd(%s,'right'),%s)",x@name,v))
-  list(u=scidb(u,gc=TRUE),d=scidb(d,gc=TRUE),v=scidb(v,gc=TRUE))
+  if(missing(nu))
+  {
+    u = sprintf("%s_U",x@name)
+    d = sprintf("%s_S",x@name)
+    v = sprintf("%s_V",x@name)
+    schema = sprintf("[%s=0:%d,1000,0,%s=0:%d,1000,0]",
+                     x@D$name[1],x@D$length[1]-1,
+                     x@D$name[2],x@D$length[2]-1)
+    schema = sprintf("%s%s",build_attr_schema(x),schema)
+    iquery(sprintf("store(gesvd(repart(%s,%s),'left'),%s)",x@name,schema,u))
+    iquery(sprintf("store(gesvd(repart(%s,%s),'values'),%s)",x@name,schema,d))
+    iquery(sprintf("store(gesvd(repart(%s,%s),'right'),%s)",x@name,schema,v))
+    return(list(u=scidb(u,gc=TRUE),d=scidb(d,gc=TRUE),v=scidb(v,gc=TRUE)))
+  }
+  return(tsvd(x,nu))
 }
 
 setOldClass("svd")
 setGeneric("svd")
-setMethod("svd", signature(x="scidb"), svd_scidb)
+#setMethod("svd", signature(x="scidb",nu="numeric"), svd_scidb)

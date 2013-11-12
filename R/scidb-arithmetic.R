@@ -43,13 +43,16 @@ scidbmultiply = function(e1,e2)
 # Check for availability of spgemm
   P4 = length(grep("spgemm",scidb:::.scidbenv$ops[,2]))>0
   SPARSE = FALSE
-  if(P4)
-  {
-    e1_count = count(e1)
-    e2_count = count(e2)
-    if(e1_count < prod(dim(e1)) || e2_count < prod(dim(e2)))
-      SPARSE = TRUE
-  }
+
+# XXX Handle this differently. Perhaps a manual flag instead?
+# XXX For now, sparse is disabled.
+#  if(P4)
+#  {
+#    e1_count = count(e1)
+#    e2_count = count(e2)
+#    if(e1_count < prod(dim(e1)) || e2_count < prod(dim(e2)))
+#      SPARSE = TRUE
+#  }
 
   a1 = e1@attribute
   a2 = e2@attribute
@@ -82,7 +85,8 @@ scidbmultiply = function(e1,e2)
 # Adjust the arrays to conform to GEMM requirements
     op1 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0])",op1,a1,e1@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,e1@D$name[[2]],e1@D$length[[2]]-1,CHUNK_SIZE)
     op2 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0])",op2,a2,e2@type[1],e2@D$name[[1]],e2@D$length[[1]]-1,CHUNK_SIZE,e2@D$name[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
-    op3 = sprintf("build(<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0],0)",a1,e1@type[1],dnames[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,dnames[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
+    osc = sprintf("<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0]",a1,e1@type[1],dnames[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,dnames[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
+    op3 = sprintf("build(%s,0)",osc)
   }
 
 # Decide which multiplication algorithm to use
@@ -94,19 +98,19 @@ scidbmultiply = function(e1,e2)
     query = sprintf("gemm(%s, %s, %s)",op1,op2,op3)
 
 # Repartition the output back to conform with inputs
-  schema = sprintf(
-           "<gemm:double>[%s=0:%.0f,%.0f,%.0f, %s=0:%.0f,%.0f,%.0f]",
-            dnames[[1]],
-            e1@D$length[[1]]-1,
-            e1@D$chunk_interval[[1]],
-            e1@D$chunk_overlap[[1]],
-            dnames[[2]],
-            e2@D$length[[2]]-1,
-            e2@D$chunk_interval[[2]],
-            e2@D$chunk_overlap[[2]])
-  
-  query = sprintf("cast(repart(%s,%s),%s)",query,schema,schema)
-  scidbeval(query,gc=TRUE,eval=FALSE)
+#  schema = sprintf(
+#           "<gemm:double>[%s=0:%.0f,%.0f,%.0f, %s=0:%.0f,%.0f,%.0f]",
+#            dnames[[1]],
+#            e1@D$length[[1]]-1,
+#            e1@D$chunk_interval[[1]],
+#            e1@D$chunk_overlap[[1]],
+#            dnames[[2]],
+#            e2@D$length[[2]]-1,
+#            e2@D$chunk_interval[[2]],
+#            e2@D$chunk_overlap[[2]])
+#  query = sprintf("cast(repart(%s,%s),%s)",query,schema,schema)
+  query = sprintf("cast(%s,%s)",query,osc)
+  scidbeval(query,gc=TRUE,eval=TRUE)
 }
 
 # Element-wise binary operations
@@ -176,7 +180,7 @@ scidbmultiply = function(e1,e2)
     Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
   }
   Q = sprintf("project(%s, %s)",Q,v)
-  scidbeval(Q, eval=FALSE, gc=TRUE)
+  scidbeval(Q, eval=TRUE, gc=TRUE)
 }
 
 # Very basic comparisons. See also filter.
@@ -195,10 +199,30 @@ scidbmultiply = function(e1,e2)
   op = gsub("==","=",op,perl=TRUE)
   tval = vector(mode=type,length=1)
   query = sprintf("filter(%s, %s %s %s)",e1@name, e1@attribute, op, e2)
-  scidbeval(query, eval=FALSE, gc=TRUE)
+  scidbeval(query, eval=TRUE, gc=TRUE)
 }
 
 .joincompare = function(e1,e2,op)
 {
   stop("Yikes! Not implemented yet...")
+}
+
+tsvd = function(x,nu)
+{
+  m = ceiling(nrow(x)/1e6)
+  n = ceiling(ncol(x)/1e6)
+  schema = sprintf("[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0]",
+                     x@D$name[1], nrow(x)-1, m,
+                     x@D$name[2], ncol(x)-1, ncol(x))
+  tschema = sprintf("[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0]",
+                     x@D$name[2], ncol(x)-1, n,
+                     x@D$name[1], nrow(x)-1, nrow(x))
+  schema = sprintf("%s%s",scidb:::build_attr_schema(x), schema)
+  tschema = sprintf("%s%s",scidb:::build_attr_schema(x), tschema)
+  query  = sprintf("tsvd(redimension(unpack(%s,row),%s), redimension(unpack(transpose(%s),row),%s), %d, 0.001, 20)", x@name, schema, x@name, tschema, nu)
+  narray = scidb:::scidbeval(query, eval=TRUE, gc=TRUE)
+  ans = list(u=slice(narray, "matrix", 0,eval=FALSE),
+             d=slice(narray, "matrix", 1,eval=FALSE),
+             v=slice(narray, "matrix", 2,eval=FALSE), narray)
+  ans
 }
