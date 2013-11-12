@@ -58,7 +58,7 @@ scidb = function(name, attribute, gc, `data.frame`)
 # An internal convenience function that returns a scidb object.  If eval=TRUE,
 # a new SciDB array is created the returned scidb object refers to that.
 # Otherwise, the returned scidb object represents a SciDB array promise.
-`scidbeval` = function(expr,eval,name,gc=FALSE)
+`scidbeval` = function(expr,eval,name,gc=TRUE)
 {
   if(`eval`)
   {
@@ -713,13 +713,15 @@ iqiter = function (con, n = 1, excludecol, ...)
 
 # Build the attibute part of a SciDB array schema from a scidb,
 # scidbdf object.
-`build_attr_schema` = function(A)
+# Set prefix to add a prefix to all attribute names.
+`build_attr_schema` = function(A, prefix="")
 {
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   N = rep("",length(A@nullable))
   N[A@nullable] = " NULL"
   N = paste(A@types,N,sep="")
-  S = paste(paste(A@attributes,N,sep=":"),collapse=",")
+  attributes = paste(prefix,A@attributes,sep="")
+  S = paste(paste(attributes,N,sep=":"),collapse=",")
   sprintf("<%s>",S)
 }
 

@@ -156,10 +156,9 @@ build = function(data, dim, names, type="double",
     nf   = sys.nframe() - 2
     `eval` = !called_from_scidb(nf)
   } else `eval`=mc$eval
-  xname = X
-  yname = Y
-  if(class(X) %in% c("scidbdf","scidb")) xname = X@name
-  if(class(Y) %in% c("scidbdf","scidb")) yname = Y@name
+  xname = X@name
+  yname = Y@name
+
 
   query = sprintf("cross_join(%s as __X, %s as __Y", xname, yname)
   if(length(`by`)>1 && !is.list(`by`))

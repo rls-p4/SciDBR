@@ -1,6 +1,6 @@
 # Nifty aggregation-related functions
 
-`sweep_scidb` = function(x, MARGIN, STATS, FUN="-", check.margin=NULL, eval, `name`)
+`sweep_scidb` = function(x, MARGIN, STATS, FUN="-", check.margin=NULL, `eval`, `name`)
 {
   if(!is.scidb(x)) stop("x must be a scidb object")
   if(!is.scidb(STATS) && !is.scidbdf(STATS)) stop("STATS must be a scidb or scidbdf object")
@@ -22,6 +22,11 @@
     query = sprintf("cast(%s,%s)",STATS,schema)
     STATS = scidbeval(query,eval=FALSE)
   }
+# Check for potential attribute name conflicts and adjust.
+  if(length(intersect(x@attributes, STATS@attributes))>0)
+  {
+    STATS = cast(STATS,paste(build_attr_schema(STATS,"V_"),build_dim_schema(STATS)),eval=FALSE)
+  }
   if(nchar(FUN)==1)
   {
     FUN = sprintf("%s %s %s",x@attribute, FUN, STATS@attribute)
@@ -31,10 +36,10 @@
       bind(
         merge(x,STATS,by=MARGIN,eval=FALSE)
         ,"_sweep",FUN,eval=FALSE),"_sweep",eval=FALSE),
-    "_sweep", `name`, eval=eval)
+    "_sweep", `name`, eval=`eval`)
 }
 
-`apply_scidb` = function(X,MARGIN,FUN,eval,`name`,...)
+`apply_scidb` = function(X,MARGIN,FUN,`eval`,`name`,...)
 {
   if(!is.scidb(X)) stop("X must be a scidb object")
   if(length(MARGIN)!=1) stop("MARGIN must indicate a single dimension")
@@ -42,12 +47,12 @@
   if(missing(`name`)) `name` = X@attribute
   if(missing(`eval`))
   {
-    nf   = sys.nframe() - 2  # Note! this is a method and is on a deeper stack.
+    nf   = sys.nframe() - 1  # Note! this is a method and is on a deeper stack?
     `eval` = !called_from_scidb(nf)
   }
   Y = aggregate(X,MARGIN,FUN,eval=FALSE)
   a = Y@attributes[length(Y@attributes)]
-  attribute_rename(project(Y,a,eval=FALSE),a, `name`, eval=eval)
+  attribute_rename(project(Y,a,eval=FALSE),a, `name`, eval=`eval`)
 }
 
 # x:   A scidb, scidbdf object
