@@ -266,6 +266,9 @@ setOldClass("aggregate")
 setGeneric("aggregate")
 setMethod("aggregate", signature(x="scidb"), aggregate_scidb)
 
+setOldClass("sweep")
+setGeneric("sweep")
+setMethod("sweep", signature(x="scidb"), sweep_scidb)
 
 svd_scidb = function(x)
 {

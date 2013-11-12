@@ -151,6 +151,12 @@ scidb_from_schemastring = function(s,expr=character(), `data.frame`)
   )
 }
 
+`attribute_rename` = function(x, old=x@attribute, new, eval=FALSE)
+{
+  query = sprintf("attribute_rename(%s,%s,%s)",x@name,old,new)
+  scidbeval(query,eval)
+}
+
 # Return TRUE if our parent function lives in the scidb namespace, otherwise
 # FALSE. This function is used to automatically control deferred evaluation
 # of SciDB query expressions. If not nested, return FALSE.
@@ -781,7 +787,6 @@ rename = function(A, name=A@name, gc)
   if(any(is.na(x))) x[is.na(x)] = "i"
   list(attributes=x[,2],types=x[,3],nullable=(x[,4]=="true"))
 }
-
 
 # Returns TRUE if x is greater than or equal to than y
 compare_versions = function(x,y)

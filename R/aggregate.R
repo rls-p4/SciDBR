@@ -1,3 +1,36 @@
+`sweep_scidb` = function(x, MARGIN, STATS, FUN, name=x@attribute, check.margin=NULL, eval)
+{
+  if(!is.scidb(x)) stop("x must be a scidb object")
+  if(!is.scidb(STATS) && !is.scidbdf(STATS)) stop("STATS must be a scidb or scidbdf object")
+  if(length(MARGIN)!=1) stop("MARGIN must indicate a single dimension")
+  if(length(STATS@D$name)>1) stop("STATS must be a one-dimensional SciDB array")
+  if(is.numeric(MARGIN)) MARGIN = x@D$name[MARGIN]
+  if(missing(`eval`))
+  {
+    nf   = sys.nframe() - 2  # Note! this is a method and is on a deeper stack.
+    `eval` = !called_from_scidb(nf)
+  }
+  if(!(MARGIN %in% STATS@D$name))
+  {
+# Make sure coordinate axis along MARGIN are named the same in each array
+    old = sprintf("%s=",STATS@D$name[1])
+    new = sprintf("%s=",MARGIN)
+    schema = gsub(old,new,STATS@schema)
+    query = sprintf("cast(%s,%s)",STATS,schema)
+    STATS = scidbeval(query,eval=FALSE)
+  }
+  if(nchar(FUN)==1)
+  {
+    FUN = sprintf("%s %s %s",x@attribute, FUN, STATS@attribute)
+  }
+  attribute_rename(
+    project(
+      bind(
+        merge(x,STATS,by=MARGIN,eval=FALSE)
+        ,"_sweep",FUN,eval=FALSE),"_sweep",eval=FALSE),
+    "_sweep", name, eval=eval)
+}
+
 # x:   A scidb, scidbdf object
 # by:  A character vector of dimension and or attribute names of x, or,
 #      a scidb or scidbdf object that will be cross_joined to x and then
@@ -11,7 +44,7 @@
   if(class(b) %in% c("scidb","scidbdf"))
   {
 # We are grouping by attributes in another SciDB array `by`. We assume that
-# x and by have conformable dimensions to join along.
+# x and by have conformable dimensions to join along!
     j = intersect(x@D$name, b@D$name)
     X = merge(x,b,by=list(j,j),eval=FALSE)
     n = by@attributes
@@ -30,6 +63,18 @@
   if(length(b)>1) unpack = TRUE
   new_dim_name = make.names_(c(unlist(b),"row"))
   new_dim_name = new_dim_name[length(new_dim_name)]
+  if(!all(b %in% c(x@attributes, x@D$name)))
+  {
+# Check for numerically-specified coordinate axes and replace with dimension
+# labels.
+    for(k in 1:length(b))
+    {
+      if(is.numeric(b[[k]]))
+      {
+        b[[k]] = x@D$name[b[[k]]]
+      }
+    }
+  } 
   if(!all(b %in% c(x@attributes, x@D$name))) stop("Invalid attribute or dimension name in by")
   a = x@attributes %in% b
   query = x@name
