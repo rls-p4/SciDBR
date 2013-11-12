@@ -68,7 +68,6 @@ build = function(data, dim, names, type="double",
 # The new (SciDB 13.9) cumulate
 `cumulate` = function(x, expression, dimension, eval)
 {
-  lastclass = checkclass(x)
   if(missing(`eval`))
   {
     nf   = sys.nframe()
@@ -77,7 +76,7 @@ build = function(data, dim, names, type="double",
   if(class(x)=="scidbexpr") x = scidb:::scidb_from_scidbexpr(x)
   if(missing(dimension)) dimension = x@D$name[[1]]
   query = sprintf("cumulate(%s, %s, %s)",x@name,expression,dimension)
-  scidbeval(query,eval,lastclass=lastclass)
+  scidbeval(query,eval)
 }
 
 # Filter the attributes of the scidb, scidbdf, or scidbexpr object to contain
@@ -98,7 +97,7 @@ build = function(data, dim, names, type="double",
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   query = sprintf("project(%s,%s)", xname,paste(attributes,collapse=","))
-  scidbeval(query,eval,lastclass=checkclass(X))
+  scidbeval(query,eval)
 }
 
 # This is the SciDB filter operation, not the R timeseries one.
@@ -120,7 +119,7 @@ build = function(data, dim, names, type="double",
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   query = sprintf("filter(%s,%s)", xname,expr)
-  scidbeval(query,eval,lastclass=checkclass(X))
+  scidbeval(query,eval)
 }
 
 # SciDB cross_join wrapper internal function to support merge on various
@@ -201,7 +200,7 @@ build = function(data, dim, names, type="double",
   {
     query  = sprintf("%s)",query)
   }
-  scidbeval(query,eval,lastclass=checkclass(X))
+  scidbeval(query,eval)
 }
 
 
@@ -295,10 +294,10 @@ build = function(data, dim, names, type="double",
   if(!compare_versions(options("scidb.version")[[1]],13.9))
   {
     temp = scidbeval(query,TRUE)
-    query = scidbexpr(sprintf("unpack(%s,%s)",temp@name,new_dim_name), lastclass="scidbdf")
+    query = scidbexpr(sprintf("unpack(%s,%s)",temp@name,new_dim_name))
   } else
   {
-    query = scidbexpr(sprintf("unpack(%s,%s)",query,new_dim_name), lastclass="scidbdf")
+    query = scidbexpr(sprintf("unpack(%s,%s)",query,new_dim_name))
   }
   scidbeval(query,eval)
 }
@@ -315,7 +314,7 @@ build = function(data, dim, names, type="double",
   iname = I
   if(class(I) %in% c("scidb","scidbdf")) iname=I@name
   query = sprintf("index_lookup(%s as __cazart__, %s, __cazart__.%s, %s)",xname, iname, attr, new_attr)
-  scidbeval(query,eval,lastclass=checkclass(X))
+  scidbeval(query,eval)
 }
 
 # Sort of like cbind for data frames.
@@ -331,7 +330,7 @@ build = function(data, dim, names, type="double",
   if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
   expr = paste(paste(name,FUN,sep=","),collapse=",")
   query = sprintf("apply(%s, %s)",aname, expr)
-  scidbeval(query,eval,lastclass=checkclass(X))
+  scidbeval(query,eval)
 }
 
 `unique_scidb` = function(x, incomparables=FALSE, sort=TRUE, ...)
@@ -353,7 +352,7 @@ build = function(data, dim, names, type="double",
   {
     query = sprintf("uniq(%s)",xname)
   }
-  scidbeval(query,eval,lastclass=checkclass(x))
+  scidbeval(query,eval)
 }
 
 `sort_scidb` = function(X, decreasing = FALSE, ...)
@@ -381,7 +380,7 @@ build = function(data, dim, names, type="double",
   if(!is.null(mc$chunk_size)) a = paste(a, mc$chunk_size, sep=",")
 
   query = sprintf("sort(%s,%s)", xname,a)
-  scidbeval(query,eval,lastclass=checkclass(X))
+  scidbeval(query,eval)
 }
 
 # S3 methods

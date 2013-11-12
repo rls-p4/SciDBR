@@ -47,76 +47,22 @@ between = function(a,b)
 }
 
 
-# Return a query that converts selected NIDs to integer for a single-attrbute
-# SciDB array.
-# A a scidb object
-# idx a list of dimensions numbers to drop NID, or a boolean vector of length
-#     equal to the number of dimensions with TRUE indicating drop NID.
-# schema_only means only return the new schema string.
-# query is a query to be wrapped in drop_nid, defaults to array name.
-# nullable is  either "NULL" or "" and indicates nullable on the attribute.
-selectively_drop_nid = function(A, idx, schema_only=FALSE, query, nullable)
-{
-  if(missing(nullable)) nullable = ""
-  if(inherits(A,"scidb"))
-  {
-    D = A@D
-    if(missing(nullable))
-      nullable = ifelse(A@nullable[A@attributes == A@attribute][[1]],"NULL","")
-  }
-  else stop("A must be a SciDB reference object")
-  if(missing(query)) query = A@name
-  if(missing(idx)) idx = rep(TRUE,length(D$name))
-  if(is.numeric(idx)) idx = is.na(match(1:length(D$name),idx))
-# XXX This is a problem...SciDB can index up to 2^62 - 1, but we can only
-# really resolve smaller numbers here since we don't have 64-bit integers in R.
-  j=which(D$length>=2^62)
-  if(length(j)>0) D$length[j] = .scidb_DIM_MAX
-  query = sprintf("project(%s, %s)",query, A@attribute)
-#  if(!any(idx)) return(query) # XXX screws up schema_only requests...
-# Pass-through non-nid indices
-  idx = idx | (D$type %in% "int64")
-
-  schema = lapply(1:length(D$name), function(j) {
-    dlen = D$length[j]
-    if(idx[j]) {
-# Drop NID
-      if(is.character(dlen))
-        sprintf("%s=%.0f:%s,%.0f,%.0f",D$name[j],D$start[j],dlen,D$chunk_interval[j],D$chunk_overlap[j])
-      else
-        sprintf("%s=%.0f:%.0f,%.0f,%.0f",D$name[j],D$start[j],dlen+D$start[j]-1,D$chunk_interval[j],D$chunk_overlap[j])
-    } else {
-# Don't drop NID
-      if(is.character(dlen))
-        sprintf("%s(%s)=%s,%.0f,%.0f",D$name[j],D$type[j],dlen,D$chunk_interval[j],D$chunk_overlap[j])
-      else
-        sprintf("%s(%s)=%.0f,%.0f,%.0f",D$name[j],D$type[j],dlen,D$chunk_interval[j],D$chunk_overlap[j])
-    }
-  })
-  schema = paste(schema,collapse=",")
-  schema = sprintf("<%s:%s %s>[%s]",A@attribute,A@type,nullable,schema)
-  if(schema_only) return(schema)
-  sprintf("cast(%s,%s)",query, schema)
-}
-
-
-
 # dimfilter: The workhorse array subsetting function
 # INPUT
-# x: A SciDB array reference object
+# x: A scidb object
 # i: a list of index expressions
+# eval: (logical) if TRUE, return a new SciDB array, otherwise just a promise
 # OUTPUT
-# returns a new SciDB reference array
+# a scidb object
 #
 # dimfilter distinguishes between four kinds of indexing operations:
 # 'si' sequential numeric index range, for example c(1,2,3,4,5)
 # 'bi' special between index range, that is a function or a list
 #      that returns upper/lower limits
 # 'ui' not specified range (everything, by R convention)
-# 'ci' lookup-style range, a non-sequential numeric or labeled set, for example
-#      c(3,3,1,5,3)   or  c('a1','a3')
+# 'ci' lookup-style range, for example c(3,3,1,5,3)
 #
-dimfilter = function(x, i)
+dimfilter = function(x, i, eval)
 {
 # Partition the indices into class:
 # Identify sequential, numeric indices
@@ -128,187 +74,43 @@ dimfilter = function(x, i)
 # Identify lookup-type indices
   ci = !(si | bi | ui)
 
-# Check for mismatched range and dimension types.
-  rt = rangetype(x,i, si, bi, ci)
-  q = rt$query
+  if(length(x@attribute)<1) x@attribute=x@attributes[1]
   r = lapply(1:length(bi), function(j)
     {
       if(bi[j])
       {
-# Just use the provided range
-        rx = unlist(i[j][[1]]())
-        if(inherits(rx,"character"))
-          rx = paste("'",rx,"'",sep="")
-        rx
+# Just use the provided between-style range
+        unlist(i[j][[1]]())
       }
       else if(si[j] || ci[j])
       {
-# numeric or lookup-type range
-        rx = c(min(i[j][[1]]),max(i[j][[1]]))
-        if(inherits(rx,"character"))
-          rx = paste("'",rx,"'",sep="")
-        rx
+# sequential numeric or lookup-type range
+        c(min(i[j][[1]]),max(i[j][[1]]))
       }
       else
        {
 # Unspecified range
-         if(x@D$type[j]=="string")
-         {
-# XXX Is there a better way that avoids the query?
-           mx = iquery(sprintf("max(%s:%s)",x@name,x@D$name[j]),return=TRUE)[1,2]
-           c("''",sprintf("'%s'",mx))
-         }
-         else
-         {
-           c(x@D$start[j],x@D$start[j] + x@D$length[j] - 1)
-         }
+         c(x@D$start[j],x@D$start[j] + x@D$length[j] - 1)
        }
     })
   r = unlist(lapply(r,function(x)sprintf("%.0f",x)))
   ro = r[seq(from=1,to=length(r),by=2)]
   re = r[seq(from=2,to=length(r),by=2)]
   r = paste(c(ro,re),collapse=",")
-  q = sprintf("between(%s,%s)",q,r)
+  q = sprintf("between(%s,%s)",x@name,r)
 
 # Return a new scidb array reference
   if(any(ci)) 
   {
-    ans = lookup_subarray(x,q,i,ci,rt$mask)
+    stop("Not yet supported")
   }
-  else
-  {
-    ans = tmpnam()
-#    q = sprintf("store(%s,%s)",q,ans)
-# We use subarray here to set the origin of the new array
-    q = sprintf("store(subarray(%s,%s),%s)",q,r,ans)
-    iquery(q)
-  }
-  scidb(ans,gc=TRUE,`data.frame`=FALSE)
+  q = sprintf("subarray(%s,%s)",q,r)
+# Unfortunately not the same as:
+#  sub = paste(rep('null',length(r)),collapse=",")
+#  q = sprintf("subarray(%s,%s)",q,r)
+  scidbeval(q,eval=eval,gc=TRUE)
 }
 
-# x: SciDB array reference
-# q: A query string with a between statement that bounds the selection
-# i: list of requested indices from user
-# ci: logical vector of length(i) indicating which ones are lookup-type
-# mask
-lookup_subarray = function(x, q, i, ci, mask)
-{
-# Create ancillary arrays for each dimension index list.
-  n = length(ci)
-  if(n>2) stop ("This kind of indexing not yet supported in the R package yet for arrays of dimension > 2, sorry. Use numeric indices instead.")
-  xdim = unlist(lapply(ci, function(j) tmpnam()))
-  on.exit(scidbremove(xdim[!is.na(xdim)],error=function(e) invisible()),add=TRUE)
-  for(j in 1:n)
-  {
-    if(ci[[j]])
-    {
-# User-specified indices
-      X = data.frame(i[[j]])
-      names(X) = "xxx__a"
-      if(!is.numeric(i[[j]]))
-      {
-        df2scidb(X,types="string",nullable=FALSE,name=xdim[j],dimlabel=x@D$name[[j]])
-        mask[j] = TRUE
-        warning("Dimension labels were dropped.")
-      } else
-      {
-        df2scidb(X,types="int64",nullable=FALSE,name=xdim[j],dimlabel=x@D$name[[j]])
-      }
-    } else # Not lookup-style index
-    {
-      if(x@D$type[[j]]=="string")
-      {
-        q1=sprintf("create_array(%s,<value:string>[%s(string)=*,%.0f,0])",xdim[j],x@D$name[[j]],x@D$chunk_interval[[j]])
-        iquery(q1)
-        q2=sprintf("redimension_store(apply(%s:%s,%s,value),%s)",x@name,x@D$name[[j]],x@D$name[[j]],xdim[j])
-        iquery(q2)
-      } else # assume integer dimension
-      {
-         if(!is.null(i[[j]]))
-           q1 = sprintf("build(<xxx__a:int64>[%s=%.0f:%.0f,%.0f,0],%s)",x@D$name[[j]],min(i[[j]]),max(i[[j]]),x@D$chunk_interval[[j]],x@D$name[[j]])
-         else
-           q1 = sprintf("build(<xxx__a:int64>[%s=%.0f:%.0f,%.0f,0],%s)",x@D$name[[j]],x@D$low[[j]],x@D$high[[j]],x@D$chunk_interval[[j]],x@D$name[[j]])
-         q1 = sprintf("store(%s,%s)",q1,xdim[j])
-         iquery(q1)
-      }
-    }
-  }
-
-  ans = tmpnam()
-  if(n==1) q = sprintf("lookup(%s, %s)",xdim[1],q)
-  else     q = sprintf("lookup(cross(%s,%s),%s)",xdim[1],xdim[2],q)
-  lb = x@D$type
-  ub = x@D$type
-# Adjust for NIDs selectively dropped
-  if(any(mask))
-  {
-    lb[mask] = "int64"
-    ub[mask] = "int64"
-  }
-  li = lb == "int64"
-  lb[li] = .scidb_DIM_MIN
-  lb[!li] = "null"
-  ui = ub == "int64"
-  ub[ui] = .scidb_DIM_MAX
-  ub[!ui] = "null"   # XXX only approx upper bound
-  lb = paste(lb, collapse=",")
-  ub = paste(ub, collapse=",")
-  q = sprintf("store(subarray(%s,%s,%s),%s)",q,lb,ub,ans)
-  iquery(q)
-  ans
-}
-
-# x: A SciDB array reference
-# i: A list of index ranges
-# si: A vector of logicals equal to length of i showing positions with
-#     sequential numeric index types.
-# bi: A vector showing positions of i with between/subarray-style index types
-# ci: A vector showing positions of i with lookup-style types
-# Returns a list with two elements:
-# $query:  A starting query
-# $mismatch: A logical value. TRUE means the schema differs from the
-#            input array.
-# mask: A vector set to TRUE in positions that have been cast to int64
-#
-# The rangetype function checks for mismatches between index range types
-# and array schema, for example specifying integer indices instead of
-# NID. The function tries to harmonize the types with CAST. It will fail
-# with an error if the ranges can't be fixed up with CAST.
-rangetype = function(x, i, si, bi, ci)
-{
-  mismatch = FALSE
-  schema   = NA
-  q        = x@name
-  M        = rep(FALSE,length(x@D$type))
-# Check si types
-  if(any(si))
-  {
-    sim = x@D$type != "int64" & si
-    M   = M | sim
-    if(any(sim))
-    {
-      mismatch = TRUE
-      schema = selectively_drop_nid(x,sim, schema_only=TRUE)
-      q = selectively_drop_nid(x,sim)
-    }
-  }
-# Check ci types
-  if(any(ci))
-  {
-    mask = x@D$type =="string" & sapply(i,class)=="numeric"
-    M   = M | mask
-    if(any(mask))
-    {
-      mismatch = TRUE
-      schema = selectively_drop_nid(x,mask, schema_only=TRUE)
-      q = selectively_drop_nid(x,mask)
-    }
-  }
-# Check bi types XXX to do
-
-  if(!mismatch) q = sprintf("project(%s,%s)",q,x@attribute)
-  list(mismatch=mismatch, query=q, schema=schema, mask=M)
-}
 
 
 # Materialize the single-attribute scidb array x as an R array.
@@ -317,14 +119,12 @@ materialize = function(x, drop=FALSE)
   type = names(.scidbtypes[.scidbtypes==x@type])
   if(length(type)<1) stop("Unsupported data type. Try using the iquery function instead.")
   tval = vector(mode=type,length=1)
-# Dispense with NID
-  query = selectively_drop_nid(x,rep(TRUE,length(x@D$type)),nullable="NULL")
 
 # Set origin to zero
   l1 = length(dim(x))
   lb = paste(rep("null",l1),collapse=",")
   ub = paste(rep("null",l1),collapse=",")
-  query = sprintf("subarray(%s,%s,%s)",query,lb,ub)
+  query = sprintf("subarray(%s,%s,%s)",x@name,lb,ub)
 
 # Unpack
   query = sprintf("unpack(%s,%s)",query,"__row")

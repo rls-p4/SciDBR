@@ -29,26 +29,69 @@
 # An internal convenience function that conditionally evaluates a scidb
 # query string `expr` (eval=TRUE), returning a scidb object,
 # or returns a scidbexpr object (eval=FALSE).
-# Optionally set lastclass to retain class information for evaluated result.
-`scidbeval` = function(expr,eval,lastclass=c("scidb","scidbdf"),name)
+`scidbeval` = function(expr,eval,name,gc=FALSE)
 {
-  lastclass = match.arg(lastclass)
   if(`eval`)
   {
     if(missing(name)) newarray = tmpnam()
     else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
     scidbquery(query)
-    if(lastclass=="scidb") return(scidb(newarray,gc=TRUE))
-    return(scidb(newarray,gc=TRUE,`data.frame`=TRUE))
+    return(scidb(newarray,gc=gc))
   }
-  scidbexpr(expr, lastclass=lastclass)
+  scidb(expr,gc=gc)
 }
 
-checkclass = function(x)
+
+# Construct a scidb promise from a SciDB schema string.
+scidb_from_schemastring = function(s,expr=character())
 {
-  if("scidbexpr" %in% class(x)) return(x@lastclass)
-  class(x)[[1]]
+  a=strsplit(strsplit(strsplit(strsplit(s,">")[[1]][1],"<")[[1]][2],",")[[1]],":")
+  attributes=unlist(lapply(a,function(x)x[[1]]))
+  attribute=attributes[[1]]
+
+  ts = lapply(a,function(x)x[[2]])
+  nullable = rep(FALSE,length(ts))
+  n = grep("null",ts,ignore.case=TRUE)
+  if(any(n)) nullable[n]=TRUE
+
+  types = gsub(" .*","",ts)
+  type = types[1]
+
+  d = gsub("\\]","",strsplit(s,"\\[")[[1]][[2]])
+  d = strsplit(strsplit(d,"=")[[1]],",")
+  dname = unlist(lapply(d[-length(d)],function(x)x[[length(x)]]))
+  dtype = rep("int64",length(dname))
+  chunk_interval = as.numeric(unlist(lapply(d[-1],function(x)x[[2]])))
+  chunk_overlap = as.numeric(unlist(lapply(d[-1],function(x)x[[3]])))
+  d = lapply(d[-1],function(x)x[[1]])
+  dlength = unlist(lapply(d,function(x)diff(as.numeric(gsub("\\*",.scidb_DIM_MAX,strsplit(x,":")[[1]])))+1))
+  dstart = unlist(lapply(d,function (x)as.numeric(strsplit(x,":")[[1]][[1]])))
+
+  D = list(name=dname,
+           type=dtype,
+           start=dstart,
+           length=dlength,
+           chunk_interval=chunk_interval,
+           chunk_overlap=chunk_overlap,
+           low=rep(NA,length(dname)),
+           high=rep(NA,length(dname))
+           )
+
+  obj = new("scidb",
+            name=expr,
+            schema=s,
+            attribute=attribute,
+            type=type,
+            attributes=attributes,
+            types=types,
+            nullable=nullable,
+            D=D,
+            dim=D$length,
+            gc=new.env(),
+            length=prod(D$length)
+        )
+  obj
 }
 
 # Return TRUE if our parent function lives in the scidb namespace, otherwise

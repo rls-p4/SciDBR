@@ -212,5 +212,5 @@ scidbmultiply = function(e1,e2)
 
 .joincompare = function(e1,e2,op)
 {
-  stop("Yikes!")
+  stop("Yikes! Not implemented yet...")
 }

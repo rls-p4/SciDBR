@@ -20,17 +20,18 @@
 #* END_COPYRIGHT
 #*/
 
-# This file contains class definitions, generics, and methods for the scidb
-# matrix/vector class. It's a hybrid S4 class with some S3 methods. The class
-# contains the slots:
-# call = call that created the object
-# name = SciDB array name
-# D = dimensions data
-# dim = dim vector
-# length = number of elements
+# A general SciDB array class for R. It's a hybrid S4 class with some S3
+# methods. The class can represent SciDB arrays and array promises.
+# slots:
+# name = any SciDB expression that can produce an array 
+# schema = the corresponding SciDB array schema for 'name' above
+# D = dimensions data derived from the schema
+# dim = R dim vector derived from the schema
+# length = number of elements derived from the schema
 # attribute = attribute in use or 0-length string, in which case the 
-#             1st listed attribute is used
-# attributes = table (data frame) of array attributes
+#             1st listed attribute is used specified by user for  objects that
+#             can only work with one attribute at a time (linear algebra)
+# attributes = table (data frame) of array attributes parsed from schema
 # type = SciDB type of the attribute in use (character)
 # types = list of SciDB types of all attributes (character)
 # gc = environment
@@ -38,8 +39,8 @@
 
 setClassUnion("numericOrNULL", c("numeric", "NULL")) 
 setClass("scidb",
-         representation(call="call",
-                        name="character",
+         representation(name="character",
+                        schema="character",
                         D="list",
                         dim="numericOrNULL",
                         length="numeric",
