@@ -51,7 +51,6 @@ scidbmultiply = function(e1,e2)
       SPARSE = TRUE
   }
 
-  x = tmpnam()
   a1 = e1@attribute
   a2 = e2@attribute
   op1 = e1@name
@@ -95,20 +94,19 @@ scidbmultiply = function(e1,e2)
     query = sprintf("gemm(%s, %s, %s)",op1,op2,op3)
 
 # Repartition the output back to conform with inputs
-  query = sprintf(
-           "repart(%s,<gemm:double>[%s=0:%.0f,%.0f,%.0f, %s=0:%.0f,%.0f,%.0f])",
-            query, dnames[[1]],
-                   e1@D$length[[1]]-1,
-                   e1@D$chunk_interval[[1]],
-                   e1@D$chunk_overlap[[1]],
-                   dnames[[2]],
-                   e2@D$length[[2]]-1,
-                   e2@D$chunk_interval[[2]],
-                   e2@D$chunk_overlap[[2]])
-
-  query = sprintf("store(%s,%s)",query,x)
-  scidbquery(query)
-  return(scidb(x,gc=TRUE))
+  schema = sprintf(
+           "<gemm:double>[%s=0:%.0f,%.0f,%.0f, %s=0:%.0f,%.0f,%.0f]",
+            dnames[[1]],
+            e1@D$length[[1]]-1,
+            e1@D$chunk_interval[[1]],
+            e1@D$chunk_overlap[[1]],
+            dnames[[2]],
+            e2@D$length[[2]]-1,
+            e2@D$chunk_interval[[2]],
+            e2@D$chunk_overlap[[2]])
+  
+  query = sprintf("cast(repart(%s,%s),%s)",query,schema,schema)
+  scidbeval(query,gc=TRUE,eval=FALSE)
 }
 
 # Element-wise binary operations
@@ -129,7 +127,6 @@ scidbmultiply = function(e1,e2)
   if(inherits(e1,"scidb")) e1a = e1@attribute
   if(inherits(e2,"scidb")) e2a = e2@attribute
 # OK, we've got two scidb arrays, op them:
-  x = tmpnam()
   v = paste(e1a,e2a,sep="_")
 
 # We use subarray to handle starting index mismatches...
@@ -156,7 +153,7 @@ scidbmultiply = function(e1,e2)
                           e1@D$chunk_interval[[2]], e1@D$chunk_overlap[[2]])
     q2 = sprintf("repart(%s, %s)", q2, schema)
 
-# Handle sparsity
+# Handle sparsity by cross-merging data
     q1 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q1,q2,e1@type)
     q2 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q2,q1,e2@type)
   }
@@ -179,13 +176,7 @@ scidbmultiply = function(e1,e2)
     Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
   }
   Q = sprintf("project(%s, %s)",Q,v)
-  Q = sprintf("store(%s, %s)",Q,x)
-#  Q = paste("join(",q1," as e1, ",q2," as e2)",sep="")
-#  Q = paste("apply(",Q,",",v,", e1.",e1a," ",op," e2.",e2a,")",sep="")
-#  Q = paste("project(",Q,",",v,")")
-#  Q = paste("store(",Q,",",x,")",sep="")
-  scidbquery(Q)
-  return(scidb(x,gc=TRUE))
+  scidbeval(Q, eval=FALSE, gc=TRUE)
 }
 
 # Very basic comparisons. See also filter.
@@ -204,10 +195,7 @@ scidbmultiply = function(e1,e2)
   op = gsub("==","=",op,perl=TRUE)
   tval = vector(mode=type,length=1)
   query = sprintf("filter(%s, %s %s %s)",e1@name, e1@attribute, op, e2)
-  x = tmpnam()
-  query = sprintf("store(%s,%s)",query,x)
-  scidbquery(query)
-  return(scidb(x,gc=TRUE))
+  scidbeval(query, eval=FALSE, gc=TRUE)
 }
 
 .joincompare = function(e1,e2,op)
