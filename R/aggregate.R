@@ -31,12 +31,13 @@
   {
     FUN = sprintf("%s %s %s",x@attribute, FUN, STATS@attribute)
   }
+  substitute(
   attribute_rename(
     project(
       bind(
         merge(x,STATS,by=MARGIN,eval=FALSE)
         ,"_sweep",FUN,eval=FALSE),"_sweep",eval=FALSE),
-    "_sweep", `name`, eval=`eval`)
+    "_sweep", `name`, eval=FALSE), eval=`eval`)
 }
 
 `apply_scidb` = function(X,MARGIN,FUN,`eval`,`name`,...)

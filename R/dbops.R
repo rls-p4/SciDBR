@@ -4,15 +4,18 @@
 # frames). They can be efficiently nested by explicitly setting eval=FALSE on
 # inner functions, deferring computation until eval=TRUE.
 
+substitute = function(x, value, `attribute`, `eval`=FALSE)
+{
+  if(missing(attribute)) attribute = x@attribute
+  if(missing(value)) value = "build(<v:double>[i=0:0,1,0],NA)"
+  query = sprintf("substitute(%s,%s,%s)",x@name, value, attribute)
+  scidbeval(query, `eval`)
+}
+
 # SciDB cast wrapper
-cast = function(x, s, eval)
+cast = function(x, s, eval=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-  if(missing(`eval`))
-  {
-    nf   = sys.nframe()
-    `eval` = !called_from_scidb(nf)
-  }
 # Default cast strips "Not nullable" array property
   if(missing(s)) s = scidb:::extract_schema(scidb:::scidb_from_schemastring(x@schema))
   query = sprintf("cast(%s,%s)",x@name,s)
