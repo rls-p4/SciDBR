@@ -1,21 +1,19 @@
 # The functions and methods defined below are based closely on native SciDB
 # functions, some of which have weak or limited analogs in R. The functions
 # defined below work with objects of class scidb (arrays), scidbdf (data
-# frames), or scidbexpr (generic scidb query strings). They can be efficiently
-# nested by explicitly setting eval=FALSE on inner functions, deferring
-# computation until eval=TRUE.
+# frames). They can be efficiently nested by explicitly setting eval=FALSE on
+# inner functions, deferring computation until eval=TRUE.
 
 
 # SciDB redimension wrapper
 redimension = function(x, s, eval)
 {
-  if(!(class(x) %in% c("scidb","scidbdf","scidbexpr"))) stop("Invalid SciDB object")
+  if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   if(missing(`eval`))
   {
     nf   = sys.nframe()
     `eval` = !called_from_scidb(nf)
   }
-  if(class(x)=="scidbexpr") x = scidb:::scidb_from_scidbexpr(x)
   sc = scidb_from_schemastring(s)
   query = paste("substitute(",x@name,",build(<___i:int64>[___j=0:0,1,0],0),",paste(sc@D$name,collapse=","),")",sep="")
   query = sprintf("redimension(%s,%s)",query,s)
@@ -61,7 +59,7 @@ build = function(data, dim, names, type="double",
 # Count the number of non-empty cells
 `count` = function(x)
 {
-  if(!(class(x) %in% c("scidb","scidbdf","scidbexpr"))) stop("Invalid SciDB object")
+  if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   iquery(sprintf("count(%s)",x@name),return=TRUE)$count
 }
 
@@ -73,18 +71,17 @@ build = function(data, dim, names, type="double",
     nf   = sys.nframe()
     `eval` = !called_from_scidb(nf)
   }
-  if(class(x)=="scidbexpr") x = scidb:::scidb_from_scidbexpr(x)
   if(missing(dimension)) dimension = x@D$name[[1]]
   query = sprintf("cumulate(%s, %s, %s)",x@name,expression,dimension)
   scidbeval(query,eval)
 }
 
-# Filter the attributes of the scidb, scidbdf, or scidbexpr object to contain
+# Filter the attributes of the scidb, scidbdf object to contain
 # only those specified in expr.
-# X:    a scidb, scidbdf, or scidbexpr object
+# X:    a scidb, scidbdf object
 # attributes: a character vector describing the list of attributes to project onto
 # eval: a boolean value. If TRUE, the query is executed returning a scidb array.
-#       If FALSE, a scidbexpr object describing the query is returned.
+#       If FALSE, a promise object describing the query is returned.
 `project` = function(X,attributes,eval)
 {
   if(missing(`eval`))
@@ -101,10 +98,10 @@ build = function(data, dim, names, type="double",
 }
 
 # This is the SciDB filter operation, not the R timeseries one.
-# X is either a scidb, scidbdf, or scidbexpr object.
+# X is either a scidb, scidbdf object.
 # expr is a valid SciDB expression (character)
 # eval=TRUE means run the query and return a scidb object.
-# eval=FALSE means return a scidbexpr object representing the query.
+# eval=FALSE means return a promise object representing the query.
 `filter_scidb` = function(X,expr,eval)
 {
   if(missing(`eval`))
@@ -123,14 +120,14 @@ build = function(data, dim, names, type="double",
 }
 
 # SciDB cross_join wrapper internal function to support merge on various
-# classes (scidb, scidbdf, scidbexpr). This is an internal function to support
+# classes (scidb, scidbdf). This is an internal function to support
 # merge on various SciDB objects.
-# X and Y are SciDB array references of any kind (scidb, scidbdf, scidbexpr)
+# X and Y are SciDB array references of any kind (scidb, scidbdf)
 # by is either a single character indicating a dimension name common to both
 # arrays to join on, or a two-element list of character vectors of array
 # dimensions to join on.
 # eval=TRUE means run the query and return a scidb object.
-# eval=FALSE means return a scidbexpr object representing the query.
+# eval=FALSE means return a promise object representing the query.
 # Examples:
 # merge(X,Y,by='i')
 # merge(X,Y,by=list('i','i'))  # equivalent to last expression
@@ -147,8 +144,6 @@ build = function(data, dim, names, type="double",
   } else `eval`=mc$eval
   xname = X
   yname = Y
-  if("scidbexpr" %in% class(X)) X = scidb_from_scidbexpr(X)
-  if("scidbexpr" %in% class(Y)) Y = scidb_from_scidbexpr(Y)
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   if(class(Y) %in% c("scidbdf","scidb")) yname = Y@name
 
@@ -164,8 +159,6 @@ build = function(data, dim, names, type="double",
 # array cause I am lazy and this is incredibly complicated.
       XI = index_lookup(X,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE),sort=FALSE),`by`[[1]], eval=FALSE)
       YI = index_lookup(Y,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE),sort=FALSE),`by`[[2]], eval=FALSE)
-      XI = scidb:::scidb_from_scidbexpr(XI)
-      YI = scidb:::scidb_from_scidbexpr(YI)
 
 # Note! Limited to inner-join for now.
       new_dim_name = make.names_(c(X@D$name,Y@D$name,"row"))
@@ -204,14 +197,13 @@ build = function(data, dim, names, type="double",
 }
 
 
-# x:   A scidb, scidbdf, or scidbexpr object
+# x:   A scidb, scidbdf object
 # by:  A character vector of dimension and or attribute names of x, or,
 #      a scidb or scidbdf object that will be cross_joined to x and then
 #      grouped by attribues of by.
 # FUN: A SciDB aggregation expresion
 `aggregate_scidb` = function(x,by,FUN,eval)
 {
-  if("scidbexpr" %in% class(x)) x = scidb_from_scidbexpr(x)
   b = `by`
   if(is.list(b)) b = b[[1]]
   if(class(b) %in% c("scidb","scidbdf"))
@@ -220,7 +212,6 @@ build = function(data, dim, names, type="double",
 # x and by have conformable dimensions to join along.
     j = intersect(x@D$name, b@D$name)
     X = merge(x,b,by=list(j,j),eval=FALSE)
-    x = scidb_from_scidbexpr(X)
     n = by@attributes
     by = list(n)
   }
@@ -268,7 +259,7 @@ build = function(data, dim, names, type="double",
         newname = make.unique_(oldatr,newname)
         b[which(b==atr)] = newname
       }
-      x = scidb_from_scidbexpr(x)
+# XXX XXX length(idx) > 1???
     }
 
 # Reset in case things changed above
@@ -294,10 +285,10 @@ build = function(data, dim, names, type="double",
   if(!compare_versions(options("scidb.version")[[1]],13.9))
   {
     temp = scidbeval(query,TRUE)
-    query = scidbexpr(sprintf("unpack(%s,%s)",temp@name,new_dim_name))
+    query = sprintf("unpack(%s,%s)",temp@name,new_dim_name)
   } else
   {
-    query = scidbexpr(sprintf("unpack(%s,%s)",query,new_dim_name))
+    query = sprintf("unpack(%s,%s)",query,new_dim_name)
   }
   scidbeval(query,eval)
 }
@@ -340,10 +331,6 @@ build = function(data, dim, names, type="double",
   mc = list(...)
   `eval` = ifelse(is.null(mc$eval), `eval`, mc$eval)
   if(incomparables!=FALSE) warning("The incomparables option is not available yet.")
-  if(class(x) == "scidbexpr")
-  {
-    x = scidb_from_scidbexpr(x)
-  }
   xname = x@name
   if(sort)
   {
@@ -366,10 +353,6 @@ build = function(data, dim, names, type="double",
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   EX = X
-  if("scidbexpr" %in% class(X))
-  {
-    EX = scidb_from_scidbexpr(X)
-  }
   if(is.null(mc$attributes))
   {
     if(length(EX@attributes)>1) stop("Array contains more than one attribute. Specify one or more attributes to sort on with the attributes= function argument")
@@ -386,13 +369,9 @@ build = function(data, dim, names, type="double",
 # S3 methods
 `merge.scidb` = function(x,y,...) merge_scidb(x,y,...)
 `merge.scidbdf` = function(x,y,...) merge_scidb(x,y,...)
-`merge.scidbexpr` = function(x,y,...) merge_scidb(x,y,...)
 `sort.scidb` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `sort.scidbdf` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
-`sort.scidbexpr` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `unique.scidb` = function(x,incomparables=FALSE,sort=TRUE,...) unique_scidb(x,incomparables,sort,...)
 `unique.scidbdf` = function(x,incomparables=FALSE,sort=TRUE,...) unique_scidb(x,incomparables,sort,...)
-`unique.scidbexpr` = function(x,incomparables=FALSE,sort=TRUE,...) unique_scidb(x,incomparables,sort,...)
 `subset.scidb` = function(x,subset,...) filter_scidb(x,expr=subset,...)
 `subset.scidbdf` = function(x,subset,...) filter_scidb(x,expr=subset,...)
-`subset.scidbexpr` = function(x,subset,...) filter_scidb(x,expr=subset,...)

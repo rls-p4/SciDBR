@@ -26,9 +26,38 @@
 # An environment to hold connection state
 .scidbenv = new.env()
 
-# An internal convenience function that conditionally evaluates a scidb
-# query string `expr` (eval=TRUE), returning a scidb object,
-# or returns a scidbexpr object (eval=FALSE).
+# Create a new scidb reference to an existing SciDB array.
+# name (character): Name of the backing SciDB array
+#    alternatively, a scidb expression object
+# attribute (character): Attribute in the backing SciDB array (applies to n-d arrays)
+# gc (logical): Remove backing SciDB array when R object is garbage collected?
+# data.frame (logical): If true, return a data.frame-like object. Otherwise an array.
+scidb = function(name, attribute, gc, `data.frame`)
+{
+  if(missing(name)) stop("array name or expression must be specified")
+  if(missing(gc)) gc=FALSE
+  query = sprintf("show('%s as hullabaloo','afl')",name)
+  schema = iquery(query,re=1)$schema
+  obj = scidb_from_schemastring(schema, name, `data.frame`)
+  if(!missing(attribute))
+  {
+    if(!(attribute %in% obj@attributes)) warning("Requested attribute not found")
+    obj@attribute = attribute
+  }
+  if(gc)
+  {
+    obj@gc$name = name
+    obj@gc$remove = TRUE
+    reg.finalizer(obj@gc, function(e) if (e$remove) 
+        tryCatch(scidbremove(e$name), error = function(e) invisible()), 
+            onexit = TRUE)
+  } else obj@gc = new.env()
+  obj
+}
+
+# An internal convenience function that returns a scidb object.  If eval=TRUE,
+# a new SciDB array is created the returned scidb object refers to that.
+# Otherwise, the returned scidb object represents a SciDB array promise.
 `scidbeval` = function(expr,eval,name,gc=FALSE)
 {
   if(`eval`)
@@ -44,7 +73,7 @@
 
 
 # Construct a scidb promise from a SciDB schema string.
-scidb_from_schemastring = function(s,expr=character())
+scidb_from_schemastring = function(s,expr=character(), `data.frame`)
 {
   a=strsplit(strsplit(strsplit(strsplit(s,">")[[1]][1],"<")[[1]][2],",")[[1]],":")
   attributes=unlist(lapply(a,function(x)x[[1]]))
@@ -65,6 +94,7 @@ scidb_from_schemastring = function(s,expr=character())
   chunk_interval = as.numeric(unlist(lapply(d[-1],function(x)x[[2]])))
   chunk_overlap = as.numeric(unlist(lapply(d[-1],function(x)x[[3]])))
   d = lapply(d[-1],function(x)x[[1]])
+
   dlength = unlist(lapply(d,function(x)diff(as.numeric(gsub("\\*",.scidb_DIM_MAX,strsplit(x,":")[[1]])))+1))
   dstart = unlist(lapply(d,function (x)as.numeric(strsplit(x,":")[[1]][[1]])))
 
@@ -77,21 +107,47 @@ scidb_from_schemastring = function(s,expr=character())
            low=rep(NA,length(dname)),
            high=rep(NA,length(dname))
            )
+  if(missing(`data.frame`)) `data.frame` = ( (length(dname)==1) &&  (length(attributes)>1))
+  if(length(dname)>1 && `data.frame`) stop("SciDB data frame objects can only be associated with 1-D SciDB arrays")
 
-  obj = new("scidb",
-            name=expr,
-            schema=s,
-            attribute=attribute,
-            type=type,
-            attributes=attributes,
-            types=types,
-            nullable=nullable,
-            D=D,
-            dim=D$length,
-            gc=new.env(),
-            length=prod(D$length)
-        )
-  obj
+  if(`data.frame`)
+  {
+# Set default column types
+    ctypes = c("int64",dtype)
+    cc = rep(NA,length(ctypes))
+    cc[ctypes=="datetime"] = "Date"
+    cc[ctypes=="float"] = "double"
+    cc[ctypes=="double"] = "double"
+    cc[ctypes=="bool"] = "logical"
+    st = grep("string",ctypes)
+    if(length(st>0)) cc[st] = "character"
+    return(new("scidbdf",
+                call=match.call(),
+                name=expr,
+                attributes=attributes,
+                types=types,
+                nullable=nullable,
+                D=D,
+                dim=c(D$length,length(attributes)),
+                colClasses=cc,
+                gc=new.env(),
+                length=length(attributes)
+             ))
+  }
+
+  new("scidb",
+      name=expr,
+      schema=s,
+      attribute=attribute,
+      type=type,
+      attributes=attributes,
+      types=types,
+      nullable=nullable,
+      D=D,
+      dim=D$length,
+      gc=new.env(),
+      length=prod(D$length)
+  )
 }
 
 # Return TRUE if our parent function lives in the scidb namespace, otherwise
@@ -348,6 +404,7 @@ scidbremove = function(x, error=warning)
   if(inherits(x,"scidb")) x = x@name
   if(!inherits(x,"character")) stop("Invalid argument. Perhaps you meant to quote the variable name(s)?")
   for(y in x) {
+    if(grepl("\\(",y)) next
     tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=FALSE, release=1),
               error=function(e) error(e))
   }
@@ -646,10 +703,9 @@ iqiter = function (con, n = 1, excludecol, ...)
 }
 
 # Build the attibute part of a SciDB array schema from a scidb,
-# scidbdf, or scidbexpr object.
+# scidbdf object.
 `build_attr_schema` = function(A)
 {
-  if("scidbexpr" %in% class(A)) A = scidb_from_scidbexpr(A)
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   N = rep("",length(A@nullable))
   N[A@nullable] = " NULL"
@@ -661,10 +717,9 @@ iqiter = function (con, n = 1, excludecol, ...)
 `noE` = function(w) sapply(w, function(x) sprintf("%.0f",x))
 
 # Build the dimension part of a SciDB array schema from a scidb,
-# scidbdf, or scidbexpr object.
+# scidbdf object.
 `build_dim_schema` = function(A,bracket=TRUE)
 {
-  if("scidbexpr" %in% class(A)) A = scidb_from_scidbexpr(A)
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   notint = A@D$type != "int64"
   N = rep("",length(A@D$name))

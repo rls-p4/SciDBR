@@ -12,7 +12,6 @@ export("scidbremove")
 export("scidbrm")
 export("iquery")
 export("scidb")
-export("scidbexpr")
 export("project")
 export("bind")
 export("rename")
@@ -23,7 +22,7 @@ importFrom("stats", "aggregate", "sd", "var")
 importFrom("Matrix","nnzero", "sparseMatrix")
 
 # S4 methods
-exportClasses("scidb","scidbdf","scidbexpr")
+exportClasses("scidb","scidbdf")
 exportMethods("%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,sd,var,min,max,svd)
 
 # S3 methods
@@ -62,8 +61,3 @@ S3method("length",scidbdf)
 S3method("sort",scidbdf)
 S3method("unique",scidbdf)
 S3method("subset",scidbdf)
-
-S3method("merge",scidbexpr)
-S3method("sort",scidbexpr)
-S3method("unique",scidbexpr)
-S3method("subset",scidbexpr)

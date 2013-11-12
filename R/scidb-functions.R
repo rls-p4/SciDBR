@@ -20,33 +20,6 @@
 #* END_COPYRIGHT
 #*/
 
-# Create a new scidb reference to an existing SciDB array.
-# name (character): Name of the backing SciDB array
-#    alternatively, a scidb expression object
-# attribute (character): Attribute in the backing SciDB array (applies to n-d arrays)
-# gc (logical): Remove backing SciDB array when R object is garbage collected?
-scidb = function(name, attribute, gc)
-{
-  if(missing(name)) stop("array name or expression must be specified")
-  if(missing(gc)) gc=FALSE
-  query = sprintf("show('%s as hullabaloo','afl')",name)
-  schema = iquery(query,re=1)$schema
-  obj = scidb_from_schemastring(schema, name)
-  if(!missing(attribute))
-  {
-    if(!(attribute %in% obj@attributes)) warning("Requested attribute not found")
-    obj@attribute = attribute
-  }
-  if(gc)
-  {
-    obj@gc$name = name
-    obj@gc$remove = TRUE
-    reg.finalizer(obj@gc, function(e) if (e$remove) 
-        tryCatch(scidbremove(e$name), error = function(e) invisible()), 
-            onexit = TRUE)
-  } else obj@gc = new.env()
-  obj
-}
 
 
 colnames.scidb = function(x)

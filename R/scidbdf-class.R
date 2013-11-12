@@ -57,7 +57,7 @@ setMethod('print', signature(x='scidbdf'),
   function(x) {
     l = length(x@attributes)
     v = ifelse(l<2, "variable", "variables")
-    cat(sprintf("SciDB array %s: %.0f obs. of %d %s.\n",x@name, (x@D$high - x@D$low + 1), length(x@attributes), v))
+    cat(sprintf("SciDB array %s: %.0f obs. of %d %s.\n",x@name, (x@D$length), length(x@attributes), v))
   })
 
 setMethod('show', 'scidbdf',
