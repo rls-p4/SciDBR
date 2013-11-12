@@ -1,10 +1,11 @@
-`sweep_scidb` = function(x, MARGIN, STATS, FUN, name=x@attribute, check.margin=NULL, eval)
+`sweep_scidb` = function(x, MARGIN, STATS, FUN="-", check.margin=NULL, eval, `name`)
 {
   if(!is.scidb(x)) stop("x must be a scidb object")
   if(!is.scidb(STATS) && !is.scidbdf(STATS)) stop("STATS must be a scidb or scidbdf object")
   if(length(MARGIN)!=1) stop("MARGIN must indicate a single dimension")
   if(length(STATS@D$name)>1) stop("STATS must be a one-dimensional SciDB array")
   if(is.numeric(MARGIN)) MARGIN = x@D$name[MARGIN]
+  if(missing(`name`)) `name` = x@attribute
   if(missing(`eval`))
   {
     nf   = sys.nframe() - 2  # Note! this is a method and is on a deeper stack.
@@ -28,7 +29,7 @@
       bind(
         merge(x,STATS,by=MARGIN,eval=FALSE)
         ,"_sweep",FUN,eval=FALSE),"_sweep",eval=FALSE),
-    "_sweep", name, eval=eval)
+    "_sweep", `name`, eval=eval)
 }
 
 # x:   A scidb, scidbdf object
