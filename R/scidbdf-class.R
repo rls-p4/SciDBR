@@ -23,6 +23,7 @@
 setClass("scidbdf",
          representation(call="call",
                         name="character",
+                        schema="character",
                         D="list",
                         dim="numericOrNULL",
                         length="numeric",
@@ -64,7 +65,7 @@ setMethod('show', 'scidbdf',
   function(object) {
     l = length(object@attributes)
     v = ifelse(l<2, "variable", "variables")
-    cat(sprintf("SciDB array %s: %.0f obs. of %d %s.\n",object@name, (object@D$high - object@D$low + 1), length(object@attributes),v))
+    cat(sprintf("SciDB array %s: %.0f obs. of %d %s.\n",object@name, (object@D$length), length(object@attributes),v))
   })
 
 setMethod("aggregate", signature(x="scidbdf"), aggregate_scidb)
