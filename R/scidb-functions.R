@@ -20,85 +20,6 @@
 #* END_COPYRIGHT
 #*/
 
-# This file defines functions that support a Bigmemory-like SciDB R
-# object. See the scidb-class.R file.
-
-# Create a new scidb reference to an existing SciDB array.
-# name (character): Name of the backing SciDB array
-#    alternatively, a scidb expression object
-# attribute (character): Attribute in the backing SciDB array (applies to n-d arrays)
-# gc (logical): Remove backing SciDB array when R object is garbage collected?
-# data.frame (logical): Return a SciDB data frame object (class scidbdf)
-scidb = function(name, attribute, `data.frame`, gc)
-{
-  if(missing(name)) stop("array name must be specified")
-  if("scidbexpr" %in% class(name)) {return(scidb_from_scidbexpr(name))}
-  if(missing(attribute)) attribute=""
-  if(missing(gc)) gc=FALSE
-  D = .scidbdim(name)
-  x = .scidbattributes(name)
-  if(missing(`data.frame`)) `data.frame` = ( (dim(D)[1]==1) &&  (length(x$attributes)>1))
-  if(dim(D)[1]>1 && `data.frame`) stop("SciDB data frame objects can only be associated with 1-D SciDB arrays")
-  TYPES = x$types
-  A = x$attributes
-  NULLABLE = x$nullable
-  if(attribute=="") w = 1
-  else w = which(A == attribute)
-  if(length(w)<1) stop(paste(attribute,"is not a valid attribute name. The array ",name," contains the attributes:\n\n",paste(A,collapse="\n"),"\nTry selecting one of those.",sep=""))
-  attribute = A[w]
-  TYPE = TYPES[w]
-
-  DIM = D$length
-  LENGTH = prod(DIM)
-
-  if(`data.frame`)
-  {
-# Set default column types
-    ctypes = c("int64",TYPES)
-    cc = rep(NA,length(ctypes))
-    cc[ctypes=="datetime"] = "Date"
-    cc[ctypes=="float"] = "double"
-    cc[ctypes=="double"] = "double"
-    cc[ctypes=="bool"] = "logical"
-    st = grep("string",ctypes)
-    if(length(st>0)) cc[st] = "character"
-    obj = new("scidbdf",
-            call=match.call(),
-            name=name,
-            attributes=A,
-            types=TYPES,
-            nullable=NULLABLE,
-            D=D,
-            dim=c(DIM,length(A)),
-            colClasses=cc,
-            gc=new.env(),
-            length=length(A)
-        )
-  } else
-  {
-    obj = new("scidb",
-            call=match.call(),
-            name=name,
-            attribute=attribute,
-            type=TYPE,
-            attributes=A,
-            types=TYPES,
-            nullable=NULLABLE,
-            D=D,
-            dim=DIM,
-            gc=new.env(),
-            length=LENGTH
-        )
-  }
-  if(gc){
-    obj@gc$name   = name
-    obj@gc$remove = TRUE
-    reg.finalizer(obj@gc, function(e) if(e$remove) 
-                  tryCatch(scidbremove(e$name),error=function(e) invisible()),
-                  onexit=TRUE)
-  }
-  obj
-}
 
 
 colnames.scidb = function(x)
@@ -155,18 +76,19 @@ summary.scidb = function(x)
 #  stop("Sorry, scidb array objects are read only for now.")
 #}
 
-# Flexible array subsetting wrapper.
+# Array subsetting wrapper.
 # x: A Scidb array object
 # ...: list of dimensions
 # 
 # Returns a materialized R array if length(list(...))==0.
-# Or, a scidb array object that represents the subarray.
+# Or, a scidb subrray promise.
 `[.scidb` = function(x, ...)
 {
   M = match.call()
   drop = ifelse(is.null(M$drop),TRUE,M$drop)
+  eval = ifelse(is.null(M$eval),FALSE,M$eval)
   M = M[3:length(M)]
-  if(!is.null(names(M))) M = M[!(names(M) %in% c("drop"))]
+  if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","eval"))]
 # i shall contain a list of requested index values
   E = parent.frame()
   i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],E),error=function(e)c()))
@@ -175,7 +97,7 @@ summary.scidb = function(x)
     return(materialize(x,drop=drop))
 # Not materializing, return a SciDB array
   if(length(i)!=length(dim(x))) stop("Dimension mismatch")
-  dimfilter(x,i)
+  dimfilter(x,i,eval)
 }
 
 `dim.scidb` = function(x)
@@ -260,6 +182,7 @@ as.scidb = function(X,
     schema = sprintf(
       "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
       nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap)
+    load_schema = schema
   } else {
 # X is a matrix
     if(missing(rowChunkSize)) rowChunkSize = min(1000L, nrow(X))
@@ -268,6 +191,7 @@ as.scidb = function(X,
       "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
       nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],
       min(ncol(X),colChunkSize), colOverlap)
+    load_schema = sprintf("<val:%s>[row=1:%.0f,1000000,0]",type,length(X))
   }
   if(!is.matrix(X)) stop ("X must be a matrix or a vector")
 
@@ -290,7 +214,7 @@ as.scidb = function(X,
   ans = gsub("\n","",ans)
 
 # Load query
-  query = sprintf("store(input(%s,'%s', 0, '(%s)'),%s)",schema,ans,type,name)
+  query = sprintf("store(reshape(input(%s,'%s', 0, '(%s)'),%s),%s)",load_schema,ans,type,schema,name)
   iquery(query)
   ans = scidb(name,gc=gc)
   ans
@@ -298,10 +222,8 @@ as.scidb = function(X,
 
 
 # Transpose array
-t.scidb = function(x)
+t.scidb = function(x,eval=FALSE)
 {
-  tmp = tmpnam()
-  query = paste("store(transpose(",x@name,"),",tmp,")",sep="")
-  scidbquery(query)
-  scidb(tmp,gc=TRUE)
+  query = sprintf("transpose(%s)",x@name)
+  scidbeval(query,eval=eval,gc=TRUE)
 }
