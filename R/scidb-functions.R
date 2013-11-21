@@ -182,6 +182,7 @@ as.scidb = function(X,
     schema = sprintf(
       "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
       nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap)
+    load_schema = schema
   } else {
 # X is a matrix
     if(missing(rowChunkSize)) rowChunkSize = min(1000L, nrow(X))
@@ -190,6 +191,7 @@ as.scidb = function(X,
       "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
       nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],
       min(ncol(X),colChunkSize), colOverlap)
+    load_schema = sprintf("<val:%s>[row=1:%.0f,1000000,0]",type,length(X))
   }
   if(!is.matrix(X)) stop ("X must be a matrix or a vector")
 
@@ -212,7 +214,7 @@ as.scidb = function(X,
   ans = gsub("\n","",ans)
 
 # Load query
-  query = sprintf("store(input(%s,'%s', 0, '(%s)'),%s)",schema,ans,type,name)
+  query = sprintf("store(reshape(input(%s,'%s', 0, '(%s)'),%s),%s)",load_schema,ans,type,schema,name)
   iquery(query)
   ans = scidb(name,gc=gc)
   ans
