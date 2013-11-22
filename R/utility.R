@@ -578,7 +578,9 @@ iquery = function(query, `return`=FALSE,
         sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
         result = GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE)
         val = textConnection(result)
-        ret = read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
+        ret = tryCatch(
+                read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...),
+                error=function(e){warning(e);c()})
         close(val)
         GET("/release_session",list(id=sessionid))
         chr = sapply(ret, function(x) "character" %in% class(x))

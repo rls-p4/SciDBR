@@ -63,7 +63,7 @@ scidbmultiply = function(e1,e2)
   if(length(e2@attributes)>1)
     op2 = sprintf("project(%s,%s)",e2@name,a2)
 
-# We use subarray to handle starting index mismatches (subarray always
+# We use subarray to handle starting index mismatches (subarray
 # returns an array with dimension indices starting at zero).
   l1 = length(dim(e1))
   lb = paste(rep("null",l1),collapse=",")

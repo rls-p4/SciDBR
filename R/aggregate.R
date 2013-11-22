@@ -71,7 +71,7 @@
 # We are grouping by attributes in another SciDB array `by`. We assume that
 # x and by have conformable dimensions to join along!
     j = intersect(x@D$name, b@D$name)
-    X = merge(x,b,by=list(j,j),eval=FALSE)
+    x = merge(x,b,by=list(j,j),eval=FALSE)
     n = by@attributes
     by = list(n)
   }
@@ -149,7 +149,7 @@
     A@types      = x@types[!a]
     S = build_attr_schema(A)
     D = sprintf("[%s]",D)
-    query = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1)),%s%s)",x@name,S,D)
+    query = sprintf("redimension(substitute(%s,build(<v:int64>[_i=0:0,1,0],-1),%s),%s%s)",x@name,paste(n,collapse=","),S,D)
   }
   along = paste(b,collapse=",")
 
