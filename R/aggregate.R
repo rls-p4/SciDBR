@@ -20,7 +20,7 @@
     new = sprintf("%s=",MARGIN)
     schema = gsub(old,new,STATS@schema)
     query = sprintf("cast(%s,%s)",STATS,schema)
-    STATS = scidbeval(query,eval=FALSE)
+    STATS = scidbeval(query,eval=FALSE, depend=list(x))
   }
 # Check for potential attribute name conflicts and adjust.
   if(length(intersect(x@attributes, STATS@attributes))>0)
@@ -71,7 +71,7 @@
 # We are grouping by attributes in another SciDB array `by`. We assume that
 # x and by have conformable dimensions to join along!
     j = intersect(x@D$name, b@D$name)
-    x = merge(x,b,by=list(j,j),eval=FALSE)
+    x = merge(x,b,by=list(j,j),eval=FALSE,depend=list(x,b))
     n = by@attributes
     by = list(n)
   }
@@ -139,7 +139,7 @@
     a = x@attributes %in% b
     n = x@attributes[a]
 # XXX XXX XXX
-# XXX What about chunk sizes? NULLs? Ugh. Also insert reasonable upper bound instead of *? XXX Take care of all these issues...
+# XXX What about chunk sizes? Also insert reasonable upper bound instead of *? XXX Take care of all these issues...
 # XXX XXX XXX
     redim = paste(paste(n,"=0:*,1000,0",sep=""), collapse=",")
     D = paste(build_dim_schema(x,FALSE),redim,sep=",")
@@ -158,5 +158,5 @@
 # multiple axes).
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
   if(unpack) query = sprintf("unpack(%s,%s)",query,new_dim_name)
-  scidbeval(query,eval,gc=TRUE)
+  scidbeval(query,eval,gc=TRUE,depend=list(x))
 }

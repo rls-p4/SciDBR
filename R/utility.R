@@ -57,20 +57,48 @@ scidb = function(name, attribute, gc, `data.frame`)
   obj
 }
 
-# An internal convenience function that returns a scidb object.  If eval=TRUE,
-# a new SciDB array is created the returned scidb object refers to that.
-# Otherwise, the returned scidb object represents a SciDB array promise.
-`scidbeval` = function(expr,eval,name,gc=TRUE)
+# An important internal convenience function that returns a scidb object.  If
+# eval=TRUE, a new SciDB array is created the returned scidb object refers to
+# that.  Otherwise, the returned scidb object represents a SciDB array promise.
+#
+# INPUT
+# expr: (character) A SciDB expression or array name
+# eval: (logical) If TRUE evaluate expression and assign to new SciDB array.
+#                 If FALSE, infer output schema but don't evaluate.
+# name: (optional character) If supplied, name for stored array when eval=TRUE
+# gc: (optional logical) If TRUE, tie SciDB object to  garbage collector.
+# depend: (optional list) An optional list of other scidb or scidbdf objects
+#         that this expression depends on (preventing their garbage collection
+#         if other references to them go away).
+#
+# OUTPUT
+# A `scidb` or `scidbdf` array object.
+#
+# NOTE
+# AFL only in SciDB expressions--AQL is not supported.
+`scidbeval` = function(expr,eval,name,gc=TRUE, depend)
 {
+  ans = c()
+  if(missing(depend)) depend=c()
+  if(!is.list(depend)) depend=list(depend)
   if(`eval`)
   {
     if(missing(name)) newarray = tmpnam()
     else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
     scidbquery(query)
-    return(scidb(newarray,gc=gc))
+    ans = scidb(newarray,gc=gc)
+  } else
+  {
+    ans = scidb(expr,gc=gc)
   }
-  scidb(expr,gc=gc)
+# Assign dependencies
+  if(length(depend)>0)
+  {
+    for (x in depend) assign(tail(make.names(c(ls(ans@gc),"V"),unique=TRUE),n=1), x, envir=ans@gc)
+  }
+
+  ans
 }
 
 
