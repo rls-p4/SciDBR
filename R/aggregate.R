@@ -158,5 +158,5 @@
 # multiple axes).
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
   if(unpack) query = sprintf("unpack(%s,%s)",query,new_dim_name)
-  scidbeval(query,eval)
+  scidbeval(query,eval,gc=TRUE)
 }

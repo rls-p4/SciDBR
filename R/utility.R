@@ -29,9 +29,11 @@
 # Create a new scidb reference to an existing SciDB array.
 # name (character): Name of the backing SciDB array
 #    alternatively, a scidb expression object
-# attribute (character): Attribute in the backing SciDB array (applies to n-d arrays)
+# attribute (character): Attribute in the backing SciDB array
+#   (applies to n-d arrays)
 # gc (logical): Remove backing SciDB array when R object is garbage collected?
-# data.frame (logical): If true, return a data.frame-like object. Otherwise an array.
+# data.frame (logical): If true, return a data.frame-like object.
+#   Otherwise an array.
 scidb = function(name, attribute, gc, `data.frame`)
 {
   if(missing(name)) stop("array name or expression must be specified")
@@ -745,6 +747,10 @@ iqiter = function (con, n = 1, excludecol, ...)
   if(any(is.na(A@D$high)))
   {
     high = noE(A@D$start + A@D$length - 1)
+  }
+  if(as.numeric(high) >= 4.611686e+18)
+  {
+    high = .scidb_DIM_MAX
   }
   R = paste(low,high,sep=":")
   R[notint] = noE(A@D$length)
