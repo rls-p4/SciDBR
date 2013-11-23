@@ -108,7 +108,10 @@ dimnames.scidbdf = function(x)
 
 `str.scidbdf` = function(object, ...)
 {
-  cat("SciDB array name: ",object@name)
+  name = substr(object@name,1,20)
+  if(nchar(object@name)>20) name = paste(name,"...",sep="")
+  cat("SciDB array name: ",name)
+  cat("\nSciDB array schema: ",object@schema)
   cat("\nAttributes:\n")
   cat(paste(capture.output(print(data.frame(attribute=object@attributes,type=object@types,nullable=object@nullable))),collapse="\n"))
   cat("\nRow dimension:\n")

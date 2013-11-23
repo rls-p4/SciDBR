@@ -220,8 +220,7 @@ setMethod('is.scidb', signature(x='ANY'),
 setGeneric('print', function(x) standardGeneric('print'))
 setMethod('print', signature(x='scidb'),
   function(x) {
-    cat("A reference to a ",paste(nrow(x),ncol(x),sep="x"),
-        "SciDB array\n")
+    show(x)
   })
 
 setMethod('show', 'scidb',

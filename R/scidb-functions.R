@@ -114,8 +114,11 @@ summary.scidb = function(x)
 
 `str.scidb` = function(object, ...)
 {
-  cat("SciDB array name: ",object@name)
-  cat("\tattribute in use: ",object@attribute)
+  name = substr(object@name,1,20)
+  if(nchar(object@name)>20) name = paste(name,"...",sep="")
+  cat("SciDB array name: ",name)
+  cat("\nSciDB array schema: ",object@schema)
+  cat("\nattribute in use: ",object@attribute)
   cat("\nAll attributes: ",object@attributes)
   cat("\nArray dimensions:\n")
   cat(paste(capture.output(print(data.frame(object@D))),collapse="\n"))

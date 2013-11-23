@@ -41,15 +41,16 @@ dbeval = function(expr, eval=TRUE, name, gc)
 # name (character): Name of the backing SciDB array
 #    alternatively, a scidb expression object
 # attribute (character): Attribute in the backing SciDB array
-#   (applies to n-d arrays)
-# gc (logical): Remove backing SciDB array when R object is garbage collected?
-# data.frame (logical): If true, return a data.frame-like object.
+#   (applies to n-d arrays, not data.frame-like 1-d arrays)
+# gc (logical, optional): Remove backing SciDB array when R object is
+#     garbage collected? Default is FALSE.
+# data.frame (logical, optional): If true, return a data.frame-like object.
 #   Otherwise an array.
 scidb = function(name, attribute, gc, `data.frame`)
 {
   if(missing(name)) stop("array name or expression must be specified")
   if(missing(gc)) gc=FALSE
-  query = sprintf("show('%s as hullabaloo','afl')",name)
+  query = sprintf("show('%s as array','afl')",name)
   schema = iquery(query,re=1)$schema
   obj = scidb_from_schemastring(schema, name, `data.frame`)
   if(!missing(attribute))

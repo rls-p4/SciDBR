@@ -209,7 +209,7 @@ scidbmultiply = function(e1,e2)
   op = gsub("==","=",op,perl=TRUE)
   tval = vector(mode=type,length=1)
   query = sprintf("filter(%s, %s %s %s)",e1@name, e1@attribute, op, e2)
-  scidbeval(query, eval=FALSE, gc=TRUE, depend=list(e1,e2))
+  scidbeval(query, eval=FALSE, gc=TRUE, depend=list(e1))
 }
 
 .joincompare = function(e1,e2,op)
