@@ -26,6 +26,17 @@
 # An environment to hold connection state
 .scidbenv = new.env()
 
+# Force evaluation of an expression that yields a scidb or scidbdf object,
+# storing result to a SciDB array when eval=TRUE.
+# name: (character) optional SciDB array name to store to
+# gc: (logical) optional, when TRUE tie result to R garbage collector
+dbeval = function(expr, eval=TRUE, name, gc)
+{
+  ans = eval(expr)
+  if(!(inherits(ans,"scidb") || inherits(ans,"scidbdf"))) return(ans)
+  scidbeval(ans@name, `eval`=eval, name=name, gc=gc)
+}
+
 # Create a new scidb reference to an existing SciDB array.
 # name (character): Name of the backing SciDB array
 #    alternatively, a scidb expression object
@@ -179,12 +190,6 @@ scidb_from_schemastring = function(s,expr=character(), `data.frame`)
       gc=new.env(),
       length=prod(D$length)
   )
-}
-
-`attribute_rename` = function(x, old=x@attribute, new, eval=FALSE)
-{
-  query = sprintf("attribute_rename(%s,%s,%s)",x@name,old,new)
-  scidbeval(query,eval)
 }
 
 # Return TRUE if our parent function lives in the scidb namespace, otherwise

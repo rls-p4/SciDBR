@@ -4,6 +4,12 @@
 # frames). They can be efficiently nested by explicitly setting eval=FALSE on
 # inner functions, deferring computation until eval=TRUE.
 
+`attribute_rename` = function(x, old, new, eval=FALSE)
+{
+  query = sprintf("attribute_rename(%s,%s,%s)",x@name,old,new)
+  scidbeval(query,eval,depend=list(x))
+}
+
 slice = function(x, d, n, `eval`=FALSE)
 {
   query = sprintf("slice(%s, %s, %d)", x@name, d, n)

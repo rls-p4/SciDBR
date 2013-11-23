@@ -110,7 +110,7 @@ scidbmultiply = function(e1,e2)
 #            e2@D$chunk_overlap[[2]])
 #  query = sprintf("cast(repart(%s,%s),%s)",query,schema,schema)
   query = sprintf("cast(%s,%s)",query,osc)
-  scidbeval(query,gc=TRUE,eval=TRUE)
+  scidbeval(query,gc=TRUE,eval=FALSE,depend=list(e1,e2))
 }
 
 # Element-wise binary operations
@@ -120,6 +120,8 @@ scidbmultiply = function(e1,e2)
   e2s = e2
   e1a = "scalar"
   e2a = "scalar"
+  depend = c()
+# Check for non-scidb object arguments and convert to scidb
   if(!inherits(e1,"scidb") && length(e1)>1) {
     x = tmpnam()
     e1 = as.scidb(e1,name=x,gc=TRUE)
@@ -128,8 +130,16 @@ scidbmultiply = function(e1,e2)
     x = tmpnam()
     e2 = as.scidb(e2,name=x,gc=TRUE)
   }
-  if(inherits(e1,"scidb")) e1a = e1@attribute
-  if(inherits(e2,"scidb")) e2a = e2@attribute
+  if(inherits(e1,"scidb"))
+  {
+    e1a = e1@attribute
+    depend = c(depend, e1)
+  }
+  if(inherits(e2,"scidb"))
+  {
+    e2a = e2@attribute
+    depend = c(depend, e2)
+  }
 # OK, we've got two scidb arrays, op them:
   v = paste(e1a,e2a,sep="_")
 
@@ -180,7 +190,7 @@ scidbmultiply = function(e1,e2)
     Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
   }
   Q = sprintf("project(%s, %s)",Q,v)
-  scidbeval(Q, eval=TRUE, gc=TRUE)
+  scidbeval(Q, eval=FALSE, gc=TRUE, depend=depend)
 }
 
 # Very basic comparisons. See also filter.
@@ -199,7 +209,7 @@ scidbmultiply = function(e1,e2)
   op = gsub("==","=",op,perl=TRUE)
   tval = vector(mode=type,length=1)
   query = sprintf("filter(%s, %s %s %s)",e1@name, e1@attribute, op, e2)
-  scidbeval(query, eval=TRUE, gc=TRUE)
+  scidbeval(query, eval=FALSE, gc=TRUE, depend=list(e1,e2))
 }
 
 .joincompare = function(e1,e2,op)
