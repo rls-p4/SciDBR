@@ -46,7 +46,7 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
 #     garbage collected? Default is FALSE.
 # data.frame (logical, optional): If true, return a data.frame-like object.
 #   Otherwise an array.
-scidb = function(name, attribute, gc, `data.frame`)
+`scidb` = function(name, attribute, gc, `data.frame`)
 {
   if(missing(name)) stop("array name or expression must be specified")
   if(missing(gc)) gc=FALSE
