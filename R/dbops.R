@@ -34,6 +34,22 @@ cast = function(x, s, eval=FALSE)
   .scidbeval(query,eval,depend=list(x))
 }
 
+# SciDB repartition wrapper
+repart = function(x, upper, chunk, overlap, eval=FALSE)
+{
+  a = build_attr_schema(x)
+  if(missing(upper)) upper = x@D$start + x@D$length - 1
+  if(missing(chunk)) chunk = x@D$chunk_interval
+  if(missing(overlap)) overlap = x@D$chunk_overlap
+  y = x
+  y@D$length = upper - y@D$start + 1
+  y@D$chunk_interval = chunk
+  y@D$chunk_overlap = overlap
+  d = build_dim_schema(y)
+  query = sprintf("repart(%s, %s%s)", x@name, a, d)
+  .scidbeval(query,eval,depend=list(x))
+}
+
 # SciDB redimension wrapper
 redimension = function(x, s, eval)
 {
@@ -44,6 +60,7 @@ redimension = function(x, s, eval)
     `eval` = !called_from_scidb(nf)
   }
   sc = scidb_from_schemastring(s)
+# SciDB NULL is not allowed along a coordinate axis
   query = paste("substitute(",x@name,",build(<___i:int64>[___j=0:0,1,0],0),",paste(sc@D$name,collapse=","),")",sep="")
   query = sprintf("redimension(%s,%s)",query,s)
   .scidbeval(query,eval,depend=list(x))

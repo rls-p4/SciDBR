@@ -782,9 +782,10 @@ iqiter = function (con, n = 1, excludecol, ...)
   {
     high = noE(A@D$start + A@D$length - 1)
   }
-  if(as.numeric(high) >= 4.611686e+18)
+  wh = as.numeric(high) >= 4.611686e+18
+  if(any(wh))
   {
-    high = .scidb_DIM_MAX
+    high[wh] = .scidb_DIM_MAX
   }
   R = paste(low,high,sep=":")
   R[notint] = noE(A@D$length)
@@ -796,6 +797,7 @@ iqiter = function (con, n = 1, excludecol, ...)
   S
 }
 
+# SciDB rename wrapper
 rename = function(A, name=A@name, gc)
 {
   if(!(inherits(A,"scidb") || inherits(A,"scidbdf"))) stop("`A` must be a scidb object.")
