@@ -60,30 +60,20 @@ setMethod("%*%",signature(x="scidb", y="scidb"),
   valueClass="scidb"
 )
 
-setMethod("%*%",signature(x="scidb", y="ANY"),
+setMethod("%*%",signature(x="scidb", y="numeric"),
   function(x,y)
   {
-    if(!inherits(y,"scidb"))
-    {
-      on.exit(tryCatch(scidbremove(y@name),error=function(e)invisible()))
-      y = as.scidb(cbind(y),name=basename(tempfile(pattern="array")), rowChunkSize=x@D$chunk_interval[2],start=c(x@D$start[[1]],0L))
-    }
-    scidbmultiply(x,y)
+    "XXX WRITE ME"
   },
-  valueClass="scidb"
+  valueClass="character"
 )
 
-setMethod("%*%",signature(x="ANY", y="scidb"),
+setMethod("%*%",signature(x="numeric", y="scidb"),
   function(x,y)
   {
-    if(!inherits(x,"scidb"))
-    { # Lazy evaluation saves the day...
-      on.exit(tryCatch(scidbremove(x@name),error=function(e)invisible()))
-      x = as.scidb(cbind(x),name=basename(tempfile(pattern="array")),colChunkSize=y@D$chunk_interval[1],start=c(0L,y@D$start[[2]]))
-    }
-    scidbmultiply(x,y)
+    "XXX WRITE ME"
   },
-  valueClass="scidb"
+  valueClass="character"
 )
 
 setOldClass("crossprod")

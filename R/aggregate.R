@@ -20,7 +20,7 @@
     new = sprintf("%s=",MARGIN)
     schema = gsub(old,new,STATS@schema)
     query = sprintf("cast(%s,%s)",STATS,schema)
-    STATS = scidbeval(query,eval=FALSE, depend=list(x))
+    STATS = .scidbeval(query,eval=FALSE, depend=list(x))
   }
 # Check for potential attribute name conflicts and adjust.
   if(length(intersect(x@attributes, STATS@attributes))>0)
@@ -158,5 +158,5 @@
 # multiple axes).
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
   if(unpack) query = sprintf("unpack(%s,%s)",query,new_dim_name)
-  scidbeval(query,eval,gc=TRUE,depend=list(x))
+  .scidbeval(query,eval,gc=TRUE,depend=list(x))
 }

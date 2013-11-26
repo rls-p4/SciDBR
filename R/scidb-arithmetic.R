@@ -110,7 +110,7 @@ scidbmultiply = function(e1,e2)
 #            e2@D$chunk_overlap[[2]])
 #  query = sprintf("cast(repart(%s,%s),%s)",query,schema,schema)
   query = sprintf("cast(%s,%s)",query,osc)
-  scidbeval(query,gc=TRUE,eval=FALSE,depend=list(e1,e2))
+  .scidbeval(query,gc=TRUE,eval=FALSE,depend=list(e1,e2))
 }
 
 # Element-wise binary operations
@@ -190,7 +190,7 @@ scidbmultiply = function(e1,e2)
     Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
   }
   Q = sprintf("project(%s, %s)",Q,v)
-  scidbeval(Q, eval=FALSE, gc=TRUE, depend=depend)
+  .scidbeval(Q, eval=FALSE, gc=TRUE, depend=depend)
 }
 
 # Very basic comparisons. See also filter.
@@ -209,7 +209,7 @@ scidbmultiply = function(e1,e2)
   op = gsub("==","=",op,perl=TRUE)
   tval = vector(mode=type,length=1)
   query = sprintf("filter(%s, %s %s %s)",e1@name, e1@attribute, op, e2)
-  scidbeval(query, eval=FALSE, gc=TRUE, depend=list(e1))
+  .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(e1))
 }
 
 .joincompare = function(e1,e2,op)
@@ -230,7 +230,7 @@ tsvd = function(x,nu)
   schema = sprintf("%s%s",scidb:::build_attr_schema(x), schema)
   tschema = sprintf("%s%s",scidb:::build_attr_schema(x), tschema)
   query  = sprintf("tsvd(redimension(unpack(%s,row),%s), redimension(unpack(transpose(%s),row),%s), %d, 0.001, 20)", x@name, schema, x@name, tschema, nu)
-  narray = scidb:::scidbeval(query, eval=TRUE, gc=TRUE)
+  narray = scidb:::.scidbeval(query, eval=TRUE, gc=TRUE)
   ans = list(u=slice(narray, "matrix", 0,eval=FALSE),
              d=slice(narray, "matrix", 1,eval=FALSE),
              v=slice(narray, "matrix", 2,eval=FALSE), narray)

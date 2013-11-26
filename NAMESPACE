@@ -1,6 +1,6 @@
 useDynLib(scidb)
 export("df2scidb")
-export("dbeval")
+export("scidbeval")
 export("build")
 export("redimension")
 export("cumulate")

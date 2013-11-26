@@ -7,13 +7,13 @@
 `attribute_rename` = function(x, old, new, eval=FALSE)
 {
   query = sprintf("attribute_rename(%s,%s,%s)",x@name,old,new)
-  scidbeval(query,eval,depend=list(x))
+  .scidbeval(query,eval,depend=list(x))
 }
 
 slice = function(x, d, n, `eval`=FALSE)
 {
   query = sprintf("slice(%s, %s, %d)", x@name, d, n)
-  scidbeval(query, `eval`, depend=list(x))
+  .scidbeval(query, `eval`, depend=list(x))
 }
 
 substitute = function(x, value, `attribute`, `eval`=FALSE)
@@ -21,7 +21,7 @@ substitute = function(x, value, `attribute`, `eval`=FALSE)
   if(missing(attribute)) attribute = x@attribute
   if(missing(value)) value = "build(<v:double>[i=0:0,1,0],NA)"
   query = sprintf("substitute(%s,%s,%s)",x@name, value, attribute)
-  scidbeval(query, `eval`, depend=list(x))
+  .scidbeval(query, `eval`, depend=list(x))
 }
 
 # SciDB cast wrapper
@@ -31,7 +31,7 @@ cast = function(x, s, eval=FALSE)
 # Default cast strips "Not nullable" array property
   if(missing(s)) s = scidb:::extract_schema(scidb:::scidb_from_schemastring(x@schema))
   query = sprintf("cast(%s,%s)",x@name,s)
-  scidbeval(query,eval,depend=list(x))
+  .scidbeval(query,eval,depend=list(x))
 }
 
 # SciDB redimension wrapper
@@ -46,7 +46,7 @@ redimension = function(x, s, eval)
   sc = scidb_from_schemastring(s)
   query = paste("substitute(",x@name,",build(<___i:int64>[___j=0:0,1,0],0),",paste(sc@D$name,collapse=","),")",sep="")
   query = sprintf("redimension(%s,%s)",query,s)
-  scidbeval(query,eval,depend=list(x))
+  .scidbeval(query,eval,depend=list(x))
 }
 
 # SciDB build wrapper, intended to act something like the R 'array' function.
@@ -81,8 +81,8 @@ build = function(data, dim, names, type="double",
         paste(names[-1],start,sep="="), dim, sep=":"),
         chunksize, overlap, sep=","), collapse=","),"]",sep=""), sep="")
   query = sprintf("build(%s,%s)",schema,data)
-  if(missing(name)) return(scidbeval(query,eval))
-  scidbeval(query,eval,name)
+  if(missing(name)) return(.scidbeval(query,eval))
+  .scidbeval(query,eval,name)
 }
 
 # Count the number of non-empty cells
@@ -102,7 +102,7 @@ build = function(data, dim, names, type="double",
   }
   if(missing(dimension)) dimension = x@D$name[[1]]
   query = sprintf("cumulate(%s, %s, %s)",x@name,expression,dimension)
-  scidbeval(query,eval,depend=list(x))
+  .scidbeval(query,eval,depend=list(x))
 }
 
 # Filter the attributes of the scidb, scidbdf object to contain
@@ -123,7 +123,7 @@ build = function(data, dim, names, type="double",
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   query = sprintf("project(%s,%s)", xname,paste(attributes,collapse=","))
-  scidbeval(query,eval,depend=list(X))
+  .scidbeval(query,eval,depend=list(X))
 }
 
 # This is the SciDB filter operation, not the R timeseries one.
@@ -145,7 +145,7 @@ build = function(data, dim, names, type="double",
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   query = sprintf("filter(%s,%s)", xname,expr)
-  scidbeval(query,eval,depend=list(X))
+  .scidbeval(query,eval,depend=list(X))
 }
 
 # SciDB cross_join wrapper internal function to support merge on various
@@ -221,7 +221,7 @@ build = function(data, dim, names, type="double",
   {
     query  = sprintf("%s)",query)
   }
-  scidbeval(query,eval,depend=list(X,Y))
+  .scidbeval(query,eval,depend=list(X,Y))
 }
 
 
@@ -238,7 +238,7 @@ build = function(data, dim, names, type="double",
   iname = I
   if(class(I) %in% c("scidb","scidbdf")) iname=I@name
   query = sprintf("index_lookup(%s as __cazart__, %s, __cazart__.%s, %s)",xname, iname, attr, new_attr)
-  scidbeval(query,eval,depend=list(X,I))
+  .scidbeval(query,eval,depend=list(X,I))
 }
 
 # Sort of like cbind for data frames.
@@ -254,7 +254,7 @@ build = function(data, dim, names, type="double",
   if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
   expr = paste(paste(name,FUN,sep=","),collapse=",")
   query = sprintf("apply(%s, %s)",aname, expr)
-  scidbeval(query,eval,depend=list(X))
+  .scidbeval(query,eval,depend=list(X))
 }
 
 `unique_scidb` = function(x, incomparables=FALSE, sort=TRUE, ...)
@@ -272,7 +272,7 @@ build = function(data, dim, names, type="double",
   {
     query = sprintf("uniq(%s)",xname)
   }
-  scidbeval(query,eval,depend=list(x))
+  .scidbeval(query,eval,depend=list(x))
 }
 
 `sort_scidb` = function(X, decreasing = FALSE, ...)
@@ -296,7 +296,7 @@ build = function(data, dim, names, type="double",
   if(!is.null(mc$chunk_size)) a = paste(a, mc$chunk_size, sep=",")
 
   query = sprintf("sort(%s,%s)", xname,a)
-  scidbeval(query,eval,depend=list(X))
+  .scidbeval(query,eval,depend=list(X))
 }
 
 # S3 methods

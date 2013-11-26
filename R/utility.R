@@ -30,11 +30,11 @@
 # storing result to a SciDB array when eval=TRUE.
 # name: (character) optional SciDB array name to store to
 # gc: (logical) optional, when TRUE tie result to R garbage collector
-dbeval = function(expr, eval=TRUE, name, gc)
+scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
 {
   ans = eval(expr)
   if(!(inherits(ans,"scidb") || inherits(ans,"scidbdf"))) return(ans)
-  scidbeval(ans@name, `eval`=eval, name=name, gc=gc)
+  .scidbeval(ans@name, `eval`=eval, name=name, gc=gc)
 }
 
 # Create a new scidb reference to an existing SciDB array.
@@ -88,7 +88,7 @@ scidb = function(name, attribute, gc, `data.frame`)
 #
 # NOTE
 # AFL only in SciDB expressions--AQL is not supported.
-`scidbeval` = function(expr,eval,name,gc=TRUE, depend)
+`.scidbeval` = function(expr,eval,name,gc=TRUE, depend)
 {
   ans = c()
   if(missing(depend)) depend=c()
