@@ -10,15 +10,15 @@ The \code{redimension} function is a wrapper to the SciDB `redimension` operator
 redimension = function(x,s,eval)
 }
 \arguments{
-  \item{x}{A SciDB array object of class scidb, scidbdf, or scidbexpr.}
-  \item{s}{A SciDB array object of class scidb, scidbdf, or scidbexpr, or a character string representation of the output array schema.}
-  \item{eval}{A logical value: if TRUE then evaluate the \code{redimension} expression and return a \code{scidb} object, otherwise return a \code{scidbexpr} object that contains a character string representation of the un-evaluated SciDB query. By default, eval is set to FALSE if \code{redimension} is called from another function in the scidb package.}
+  \item{x}{A SciDB array object of class scidb or scidbdf.}
+  \item{s}{A SciDB array object of class scidb, scidbdf, or a character string representation of the output array schema.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
 }
 \value{
-Either a \code{scidb} object or a \code{scidbexpr} object depending on the value of \code{eval}.
+A \code{scidb} object.
 }
 \note{
-Use \code{eval=FALSE} to defer expression evaluation for efficiency. Many functions in the SciDB package accept un-evaluated expresions represented as \code{scidbexpr} objects. One can compose these objects to form complex query expressions that can be evaluated in one transaction.
+Use \code{eval=FALSE} to defer expression evaluation for efficiency. Results can be composed to form complex query expressions that can be evaluated in one transaction.
 }
 \author{
 B. W. Lewis<blewis@paradigm4.com>

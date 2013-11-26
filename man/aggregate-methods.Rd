@@ -3,7 +3,6 @@
 \alias{aggregate}
 \alias{aggregate,scidb-method}
 \alias{aggregate,scidbdf-method}
-\alias{aggregate,scidbexpr-method}
 \title{Methods for Function \code{aggregate} in Package \pkg{scidb}}
 \description{
 Aggregate a SciDB array object grouped by a subset of its dimensions and/or attributes.
@@ -12,21 +11,20 @@ Aggregate a SciDB array object grouped by a subset of its dimensions and/or attr
 \usage{
 \S4method{aggregate}{scidb}(x, by, FUN, eval)
 \S4method{aggregate}{scidbdf}(x, by, FUN, eval)
-\S4method{aggregate}{scidbexpr}(x, by, FUN, eval)
 }
 \arguments{
   \item{x}{A \code{scidb}, \code{scidbdf}, or \code{scidexpr} object.}
   \item{by}{Either a single character string or a list of array dimension and/or attribute names to group by; or a SciDB array reference object to group by.}
   \item{FUN}{A character string representing a SciDB aggregation expression.}
-  \item{eval}{A logical value: if TRUE then evaluate the \code{bind} expression and return a \code{scidb} object, otherwise return a \code{scidbexpr} object that contains a character string representation of the un-evaluated SciDB query. By default, eval is set to FALSE if \code{bind} is called from another function in the scidb package.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
 }
 \details{
-Group the \code{scidbexpr}, \code{scidb}, or \code{scidbexpr} array object \code{x}
-by dimensions and/or attributes in the array.  applying the valid SciDB
-aggregation function \code{FUN} expressed as a character string to the groups. Set
-eval to TRUE to execute the aggregation and return a scidb object; set eval to
-FALSE to return a scidbexpr object, which is essentially a character string
-describing the query.
+Group the \code{scidb}, or \code{scidbdf} array object \code{x} by dimensions
+and/or attributes in the array.  applying the valid SciDB aggregation function
+\code{FUN} expressed as a character string to the groups. Set eval to TRUE to
+execute the aggregation and return a scidb object; set eval to FALSE to return
+an unevaluated SciDB array promise, which is essentially a character string
+describing the query that can be composed with other SciDB package functions.
 
 The \code{by} argument must be a list of dimension names and/or attribute names
 in the array \code{x} to group by, or a SciDB array reference object.
