@@ -130,18 +130,23 @@ scidbmultiply = function(e1,e2)
     x = tmpnam()
     e2 = as.scidb(e2,name=x,gc=TRUE)
   }
+# We evaluate SciDB arguments because binary aritmetic operations require
+# an outer join to handle sparse arrays, and the outer join will end up
+# potentially replicating work unnecessarily.
   if(inherits(e1,"scidb"))
   {
+    e1 = scidbeval(e1,gc=TRUE)
     e1a = e1@attribute
     depend = c(depend, e1)
   }
   if(inherits(e2,"scidb"))
   {
+    e2 = scidbeval(e2,gc=TRUE)
     e2a = e2@attribute
     depend = c(depend, e2)
   }
-# OK, we've got two scidb arrays, op them:
-  v = paste(e1a,e2a,sep="_")
+# OK, we've got two scidb arrays, op them. v holds the new attribute name.
+  v = make.unique_(e1a, "v")
 
 # We use subarray to handle starting index mismatches...
   q1 = q2 = ""
@@ -149,12 +154,16 @@ scidbmultiply = function(e1,e2)
   lb = paste(rep("null",l1),collapse=",")
   ub = paste(rep("null",l1),collapse=",")
   if(inherits(e1,"scidb"))
+  {
     q1 = sprintf("subarray(project(%s,%s),%s,%s)",e1@name,e1@attribute,lb,ub)
+  }
   l = length(dim(e2))
   lb = paste(rep("null",l),collapse=",")
   ub = paste(rep("null",l),collapse=",")
   if(inherits(e2,"scidb"))
+  {
     q2 = sprintf("subarray(project(%s,%s),%s,%s)",e2@name,e2@attribute,lb,ub)
+  }
 # Adjust the 2nd array to be schema-compatible with the 1st:
   if(l==2 && l1==2)
   {
@@ -167,7 +176,7 @@ scidbmultiply = function(e1,e2)
                           e1@D$chunk_interval[[2]], e1@D$chunk_overlap[[2]])
     q2 = sprintf("repart(%s, %s)", q2, schema)
 
-# Handle sparsity by cross-merging data
+# Handle sparsity by cross-merging data (full outer join):
     q1 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q1,q2,e1@type)
     q2 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q2,q1,e2@type)
   }

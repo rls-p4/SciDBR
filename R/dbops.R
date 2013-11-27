@@ -10,13 +10,13 @@
   .scidbeval(query,eval,depend=list(x))
 }
 
-slice = function(x, d, n, `eval`=FALSE)
+`slice` = function(x, d, n, `eval`=FALSE)
 {
   query = sprintf("slice(%s, %s, %d)", x@name, d, n)
   .scidbeval(query, `eval`, depend=list(x))
 }
 
-substitute = function(x, value, `attribute`, `eval`=FALSE)
+`substitute` = function(x, value, `attribute`, `eval`=FALSE)
 {
   if(missing(attribute)) attribute = x@attribute
   if(missing(value)) value = "build(<v:double>[i=0:0,1,0],NA)"
@@ -24,8 +24,7 @@ substitute = function(x, value, `attribute`, `eval`=FALSE)
   .scidbeval(query, `eval`, depend=list(x))
 }
 
-# SciDB cast wrapper
-cast = function(x, s, eval=FALSE)
+`cast` = function(x, s, eval=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
 # Default cast strips "Not nullable" array property
@@ -34,8 +33,7 @@ cast = function(x, s, eval=FALSE)
   .scidbeval(query,eval,depend=list(x))
 }
 
-# SciDB repartition wrapper
-repart = function(x, upper, chunk, overlap, eval=FALSE)
+`repart` = function(x, upper, chunk, overlap, eval=FALSE)
 {
   a = build_attr_schema(x)
   if(missing(upper)) upper = x@D$start + x@D$length - 1
@@ -50,8 +48,7 @@ repart = function(x, upper, chunk, overlap, eval=FALSE)
   .scidbeval(query,eval,depend=list(x))
 }
 
-# SciDB redimension wrapper
-redimension = function(x, s, eval)
+`redimension` = function(x, s, eval)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   if(missing(`eval`))
@@ -67,7 +64,7 @@ redimension = function(x, s, eval)
 }
 
 # SciDB build wrapper, intended to act something like the R 'array' function.
-build = function(data, dim, names, type="double",
+`build` = function(data, dim, names, type="double",
                  start, name, chunksize, overlap, gc=TRUE, eval)
 {
   if(missing(`eval`))
