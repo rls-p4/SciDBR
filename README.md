@@ -80,17 +80,18 @@ frame-like objects. A still growing list of the functions includes:
 * unique
 * sweep
 * apply (the R-style apply, not the SciDB AFL apply--see `bind` for that)
+* cumulate
+* cast, slice, repart, redimension, build (wrappers to SciDB operators)
 
 See for example `help("subset", package="scidb")` for help on the `subset`
 function, or any of the other functions.
 
-Perhaps the coolest new feature associated with the functions listed above
-is that they can be composed in a way that defers computation in SciDB to
-avoid unnecessary creation of intermediate arrays. The new functions all
-accept an argument named `eval` which, when set to FALSE, returns a new
-SciDB expression object in place of evaluating the query and returning an
-array or data frame object. SciDB expression objects have class `scidbexpr`
-and all of the new functions accept them as input.
+Perhaps the coolest new feature associated with the functions listed above is
+that they can be composed in a way that defers computation in SciDB to avoid
+unnecessary creation of intermediate arrays. The new functions all accept an
+argument named `eval` which, when set to FALSE, returns a new SciDB array
+promise object in place of evaluating the query and returning an array or data
+frame object.
 
 The eval argument is automatically set to FALSE when any of the above functions
 are directly composed in R, unless manually overriden by explicitly setting
@@ -114,7 +115,7 @@ a = aggregate(
       by="Species", FUN="avg(PxP)")
 
 a[]
-pecies_index PxP_avg    Species
+Species_index PxP_avg    Species
 0             0  0.3656     setosa
 1             1  5.7204 versicolor
 2             2 11.2962  virginica
@@ -122,7 +123,3 @@ pecies_index PxP_avg    Species
 The composed `aggregate(project(bind(...` functions were carried out in
 the above example within a single SciDB transaction, storing only the result
 of the composed query.
-
-Efficient function compoistion is limited right now to the above functions.
-We'll be rolling out this idea to linear algebra operations in the near
-future.
