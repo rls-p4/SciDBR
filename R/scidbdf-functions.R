@@ -174,7 +174,7 @@ scidbdf_subset = function(x, i)
   }
   else
   {
-    if(!is.numeric(i)) stop("This kind of indexing is not yet supported for NID arrays :<")
+    stop("This kind of indexing is not yet supported.")
   }
   query = sprintf("project(%s, %s)",query, paste(attribute_range,collapse=","))
   N = tmpnam()

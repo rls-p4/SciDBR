@@ -222,23 +222,21 @@ library("scidb")
 scidbconnect()              # Connect to SciDB on localhost
 scidblist()                 # List SciDB arrays (nothing there yet)
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-
 [1] NULL
 \end{lstlisting}\begin{lstlisting}
 
 # Build a 1-D SciDB array named "P:"
 iquery("store(build(<x:double>[i=0:99,100,0],asin(1)*i/25),P)")
 
-# Return to R the result of an apply operator:
-S = iquery("apply(P,y,sin(x))",return=TRUE)
-head(S)
+# Return a query as a data.frame, manually specifying returned column classes:
+S = iquery("apply(P,y,sin(x))",return=TRUE,
+            colClasses=c("integer","double","complex"))
+head(S, n=3)
 \end{lstlisting}\begin{lstlisting}[basicstyle={\ttfamily\footnotesize\color{blue}}]
-  i         x         y
-1 0 0.0000000 0.0000000
-2 1 0.0628319 0.0627905
-3 2 0.1256640 0.1253330
-4 3 0.1884960 0.1873810
-5 4 0.2513270 0.2486900
+  i          x             y
+1 0 0.00000000 0.00000000+0i
+2 1 0.06283185 0.06279052+0i
+3 2 0.12566371 0.12533323+0i
 \end{lstlisting}
 \end{Code}
 
@@ -304,12 +302,14 @@ Matrix package (whose sparse matrix elements are implicitly zero).
 
 The elements of a SciDB array, called {\it cells}, contain one or more {\it
 attributes} (similar to R variables).  The number and data types of attributes
-are uniform across all cells in an array.  Thus, a one-dimensional SciDB array
-is conceptually similar to a data frame in R: the SciDB dimension index
-corresponds to data frame row index, and SciDB attributes to data frame
-columns.  Higher-dimensional arrays in SciDB don't correspond directly to
-objects in R; the {\tt scidb} $n$-dimensional array class described below is
-limited to working with one attribute at a time.
+are uniform across all cells in an array, and SciDB stores data for each
+attribute separately. Thus, a one-dimensional SciDB array is conceptually very
+similar to a data frame in R: the SciDB dimension index corresponds to data
+frame row index, and SciDB attributes to data frame columns.
+Higher-dimensional arrays in SciDB don't correspond directly to objects in R;
+the {\tt scidb} $n$-dimensional array class described below is limited to
+working with one attribute at a time to more closely emulate standard R
+arrays.
 
 %The example shown in Listing
 %\ref{scidbsparse} illustrates a 2-d SciDB sparse array computation identical
@@ -363,18 +363,15 @@ limited to working with one attribute at a time.
 
 The integer coordinate systems used to index SciDB arrays are similar to R,
 except that SciDB integer indices may be zero or negative, and are represented
-by 62-bit signed integers (R indices are unsigned positive 31-bit integer
-or 52-bit integer-valued double values).
+by 63-bit signed integers (R indices use either unsigned positive 31-bit
+integer or positive 52-bit integer-valued double values). This means that
+SciDB arrays can't always be indexed by R--in practice R users should avoid
+creating SciDB arrays with coordinate systems that extend past R's limits.
 
 SciDB attribute values within a cell may be explicitly marked missing,
 indicated by a special SciDB missing code also referred to as a NULL code.
 SciDB internally supports a large number of possible missing codes. All SciDB
-missing code values are mapped to NA values in R.
-
-In addition to available SciDB missing codes, SciDB double-precision floating
-point values also provide a value indicating missingness identically to R,
-and use the identical {\tt NA} representation that R uses. Unlike R however,
-other SciDB data types do not define {\tt NA} (use SciDB NULL instead).
+missing code values are mapped to \verb+NA+ values in R.
  
 The \verb+scidb+ package defines two array classes for R with data backed
 by SciDB arrays.
@@ -387,10 +384,9 @@ one-dimensional SciDB arrays. Like data frames, the columns represent variables
 of distinct types and the rows represent observations. Each attribute in  the
 backing SciDB array represents a column in the \verb+scidbdf+ object. The
 \verb+scidbdf+ object elements are read-only (the backing SciDB array may be
-manually updated, for example using the iquery function).  Non-integer row
-indices are not supported.
+manually updated, for example using the iquery function).
 
-Use either the \verb+df2scidb+ or \verb+as.scidb+ functions to create new SciDB
+Use the \verb+as.scidb+ function to create new SciDB
 arrays and corresponding \verb+scidbdf+ R objects by copying R data frames into
 SciDB. The \verb+types+ and \verb+nullable+ options may be used to explicitly
 specify the SciDB type and nullability values of each data frame column.  See
@@ -627,7 +623,6 @@ head(index_lookup(a, unique(project(a,"Species")), "Species"))
 
 
 
-HOMER
 
 \newpage
 \section{The {\tt scidb} array class}
