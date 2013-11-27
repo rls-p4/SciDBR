@@ -19,8 +19,15 @@ See http://github.com/paradigm4/shim  for source code and installation
 instructions.
 
 
-New and still-developing features
+New features
 ===
+
+## SciDB array promises
+Most functions return objects that represent array promises--unevaluated SciDB
+query expressions with a result schema. Use the new `scidbeval` function or the
+optional `eval` function argument when available to force evaluation to a
+materialized SciDB backing array. Otherwise use the objects normally, deferring
+evaluation until required.
 
 ## R Sparse matrix support
 The package now supports double-precision valued R sparse matrices
@@ -58,7 +65,7 @@ dim(X)
 [1] 100 100
 ```
 
-## Aggregation, merge, and related functions
+## Aggregation, merge, apply, sweep, bind, and related functions
 The package has a completely new implementation of aggregation, merge, and
 related database functions. The new functions apply to SciDB array and data
 frame-like objects. A still growing list of the functions includes:
@@ -71,6 +78,8 @@ frame-like objects. A still growing list of the functions includes:
 * subset (SciDB `filter` operator)
 * sort
 * unique
+* sweep
+* apply (the R-style apply, not the SciDB AFL apply--see `bind` for that)
 
 See for example `help("subset", package="scidb")` for help on the `subset`
 function, or any of the other functions.

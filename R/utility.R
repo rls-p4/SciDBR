@@ -107,7 +107,7 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
 # Assign dependencies
   if(length(depend)>0)
   {
-    for (x in depend) assign(tail(make.names(c(ls(ans@gc),"V"),unique=TRUE),n=1), x, envir=ans@gc)
+    assign("depend",depend,envir=ans@gc)
   }
 
   ans

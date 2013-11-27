@@ -60,6 +60,22 @@ setMethod("%*%",signature(x="scidb", y="scidb"),
   valueClass="scidb"
 )
 
+setMethod("%*%",signature(x="matrix", y="scidb"),
+  function(x,y)
+  {
+    as.scidb(x,gc=TRUE) %*% y
+  },
+  valueClass="character"
+)
+
+setMethod("%*%",signature(x="scidb", y="matrix"),
+  function(x,y)
+  {
+    x %*% as.scidb(y,gc=TRUE)
+  },
+  valueClass="character"
+)
+
 setMethod("%*%",signature(x="scidb", y="numeric"),
   function(x,y)
   {

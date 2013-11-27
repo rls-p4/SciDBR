@@ -45,7 +45,7 @@ scidbmultiply = function(e1,e2)
   SPARSE = FALSE
 
 # XXX Handle this differently. Perhaps a manual flag instead?
-# XXX For now, sparse is disabled.
+# XXX For now, sparse is disabled. XXX FIX ME!
 #  if(P4)
 #  {
 #    e1_count = count(e1)
