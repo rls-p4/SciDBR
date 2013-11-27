@@ -79,7 +79,7 @@ setMethod("%*%",signature(x="scidb", y="matrix"),
 setMethod("%*%",signature(x="scidb", y="numeric"),
   function(x,y)
   {
-    "XXX WRITE ME"
+    x %*% as.scidb(matrix(y,nrow=ncol(x)), gc=TRUE)
   },
   valueClass="character"
 )
@@ -87,7 +87,7 @@ setMethod("%*%",signature(x="scidb", y="numeric"),
 setMethod("%*%",signature(x="numeric", y="scidb"),
   function(x,y)
   {
-    "XXX WRITE ME"
+    as.scidb(matrix(x,ncol=nrow(y)), gc=TRUE) %*% y
   },
   valueClass="character"
 )
