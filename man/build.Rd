@@ -17,7 +17,7 @@ build(data, dim, names, type="double", start, name, chunksize, overlap, gc=TRUE,
   \item{names}{An optional vector of attribute and dimension names. Default attribute name is `val` and the dimension names are labeled i,j,... by default.}
   \item{type}{The SciDB type of the array attribute.}
   \item{start}{An optional vector of starting dimension coordinate indices. Must match the length of the dim vector.}
-  \item{type}{Option name of the SciDB array. An automatically generated name is used by default.}
+  \item{name}{Optional name of the SciDB array. An automatically generated name is used by default.}
   \item{chunksize}{An optional vector of dimension chunk sizes. Must match the length of the dim vector.}
   \item{overlap}{An optional vector of dimension overlap values. Must match the length of the dim vector.}
   \item{gc}{gc=TRUE (the default) removes the array when corresponding R objects are garbage collected. Set gc=FALSE to preserve arrays.}

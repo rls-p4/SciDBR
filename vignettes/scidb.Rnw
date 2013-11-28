@@ -374,12 +374,13 @@ SciDB internally supports a large number of possible missing codes. All SciDB
 missing code values are mapped to \verb+NA+ values in R.
  
 The \verb+scidb+ package defines two array classes for R with data backed
-by SciDB arrays.
+by SciDB arrays: the \verb+scidbdf+ class for data frame-like objects,
+and the \verb+scidb+ class for matrix and general array objects.
 
 
 \section{The {\tt scidbdf} data frame-like class}
 
-The \verb+scidbdf+ class defines a data frame-like class with data backed by
+The \verb+scidbdf+ class defines a data frame-like class backed by
 one-dimensional SciDB arrays. Like data frames, the columns represent variables
 of distinct types and the rows represent observations. Each attribute in  the
 backing SciDB array represents a column in the \verb+scidbdf+ object. The
