@@ -190,23 +190,14 @@ as.scidb = function(X,
     X = as.matrix(X)
     schema = sprintf(
       "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
-<<<<<<< HEAD
-      nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap)
-=======
       nrow(X)-1+start[[1]], min(nrow(X),chunkSize), overlap[[1]])
->>>>>>> laboratory
     load_schema = schema
   } else {
 # X is a matrix
     schema = sprintf(
       "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
-<<<<<<< HEAD
-      nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],
-      min(ncol(X),colChunkSize), colOverlap)
-=======
       nrow(X)-1+start[[1]], chunkSize[[1]], overlap[[1]], start[[2]], ncol(X)-1+start[[2]],
       chunkSize[[2]], overlap[[2]])
->>>>>>> laboratory
     load_schema = sprintf("<val:%s>[row=1:%.0f,1000000,0]",type,length(X))
   }
   if(!is.matrix(X)) stop ("X must be a matrix or a vector")
@@ -235,14 +226,3 @@ as.scidb = function(X,
   ans = scidb(name,gc=gc)
   ans
 }
-<<<<<<< HEAD
-
-
-# Transpose array
-t.scidb = function(x,eval=FALSE)
-{
-  query = sprintf("transpose(%s)",x@name)
-  scidbeval(query,eval=eval,gc=TRUE)
-}
-=======
->>>>>>> laboratory
