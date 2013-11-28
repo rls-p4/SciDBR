@@ -238,9 +238,9 @@ svd_scidb = function(x, nu, ...)
 {
   if(missing(nu))
   {
-    u = sprintf("%s_U",x@name)
-    d = sprintf("%s_S",x@name)
-    v = sprintf("%s_V",x@name)
+    u = tmpnam()
+    d = tmpnam()
+    v = tmpnam()
     schema = sprintf("[%s=0:%d,1000,0,%s=0:%d,1000,0]",
                      x@D$name[1],x@D$length[1]-1,
                      x@D$name[2],x@D$length[2]-1)
