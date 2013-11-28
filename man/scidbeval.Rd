@@ -4,6 +4,7 @@
 scidbeval
 }
 \description{
+Evaluate a SciDB expression.
 }
 \usage{
 scidbeval(expr, eval=TRUE, name, gc)

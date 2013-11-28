@@ -164,7 +164,6 @@ scidb_from_schemastring = function(s,expr=character(), `data.frame`)
     st = grep("string",ctypes)
     if(length(st>0)) cc[st] = "character"
     return(new("scidbdf",
-                call=match.call(),
                 schema=s,
                 name=expr,
                 attributes=attributes,

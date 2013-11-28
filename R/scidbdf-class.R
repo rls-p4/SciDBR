@@ -21,8 +21,7 @@
 #*/
 
 setClass("scidbdf",
-         representation(call="call",
-                        name="character",
+         representation(name="character",
                         schema="character",
                         D="list",
                         dim="numericOrNULL",

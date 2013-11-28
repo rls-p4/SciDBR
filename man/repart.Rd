@@ -7,7 +7,7 @@ repart
 The \code{repart} function is a wrapper to the SciDB `repart` operator.
 }
 \usage{
-repart = function(x, upper, chunk, overlap, eval=FALSE)
+repart(x, upper, chunk, overlap, eval=FALSE)
 }
 \arguments{
   \item{x}{A SciDB array object of class scidb or scidbdf.}
