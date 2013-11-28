@@ -36,6 +36,7 @@
 # types = list of SciDB types of all attributes (character)
 # gc = environment
 #      If gc$remove = TRUE, remove SciDB array when R gc is run on object.
+#      The gc environment also stores dependencies required by array promises.
 
 setClassUnion("numericOrNULL", c("numeric", "NULL")) 
 setClass("scidb",
