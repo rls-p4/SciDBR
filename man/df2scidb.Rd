@@ -5,7 +5,7 @@
 Copy a data frame into a new 1-D SciDB array.
 }
 \usage{
-df2scidb(X, name = tmpnam(), dimlabel = "row", chunkSize, rowOverlap = 0L, types = NULL, nullable = FALSE, schema_only = FALSE, gc)
+df2scidb(X, name = tmpnam(), dimlabel = "row", chunkSize, rowOverlap = 0L, types = NULL, nullable, schema_only = FALSE, gc)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

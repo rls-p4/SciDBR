@@ -1,6 +1,6 @@
 # Nifty aggregation-related functions
 
-`sweep_scidb` = function(x, MARGIN, STATS, FUN="-", check.margin=NULL, `eval`, `name`)
+`sweep_scidb` = function(x, MARGIN, STATS, FUN="-", `eval`, `name`)
 {
   if(!is.scidb(x)) stop("x must be a scidb object")
   if(!is.scidb(STATS) && !is.scidbdf(STATS)) stop("STATS must be a scidb or scidbdf object")

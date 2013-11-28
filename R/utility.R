@@ -51,7 +51,7 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
   if(missing(name)) stop("array name or expression must be specified")
   if(missing(gc)) gc=FALSE
   query = sprintf("show('%s as array','afl')",name)
-  schema = iquery(query,re=1)$schema
+  schema = iquery(query,`return`=1)$schema
   obj = scidb_from_schemastring(schema, name, `data.frame`)
   if(!missing(attribute))
   {

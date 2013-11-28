@@ -44,7 +44,7 @@ y <- unique(sort(project(x,"Species")), eval=FALSE)
 
 # Append a new attribute to the array x called "Species_index" that
 # enumerates the unique values of the "Species" attribute:
-z <- index_lookup(x, y, "Species")
+z <- index_lookup(x, y, "Species", eval=FALSE)
 
 print(head(z))
 }}

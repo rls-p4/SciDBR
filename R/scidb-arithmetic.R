@@ -97,18 +97,6 @@ scidbmultiply = function(e1,e2)
   else
     query = sprintf("gemm(%s, %s, %s)",op1,op2,op3)
 
-# Repartition the output back to conform with inputs
-#  schema = sprintf(
-#           "<gemm:double>[%s=0:%.0f,%.0f,%.0f, %s=0:%.0f,%.0f,%.0f]",
-#            dnames[[1]],
-#            e1@D$length[[1]]-1,
-#            e1@D$chunk_interval[[1]],
-#            e1@D$chunk_overlap[[1]],
-#            dnames[[2]],
-#            e2@D$length[[2]]-1,
-#            e2@D$chunk_interval[[2]],
-#            e2@D$chunk_overlap[[2]])
-#  query = sprintf("cast(repart(%s,%s),%s)",query,schema,schema)
   query = sprintf("cast(%s,%s)",query,osc)
   .scidbeval(query,gc=TRUE,eval=FALSE,depend=list(e1,e2))
 }
@@ -244,4 +232,23 @@ tsvd = function(x,nu)
              d=slice(narray, "matrix", 1,eval=FALSE),
              v=slice(narray, "matrix", 2,eval=FALSE), narray)
   ans
+}
+
+svd_scidb = function(x, nu, ...)
+{
+  if(missing(nu))
+  {
+    u = sprintf("%s_U",x@name)
+    d = sprintf("%s_S",x@name)
+    v = sprintf("%s_V",x@name)
+    schema = sprintf("[%s=0:%d,1000,0,%s=0:%d,1000,0]",
+                     x@D$name[1],x@D$length[1]-1,
+                     x@D$name[2],x@D$length[2]-1)
+    schema = sprintf("%s%s",build_attr_schema(x),schema)
+    iquery(sprintf("store(gesvd(repart(%s,%s),'left'),%s)",x@name,schema,u))
+    iquery(sprintf("store(gesvd(repart(%s,%s),'values'),%s)",x@name,schema,d))
+    iquery(sprintf("store(gesvd(repart(%s,%s),'right'),%s)",x@name,schema,v))
+    return(list(u=scidb(u,gc=TRUE),d=scidb(d,gc=TRUE),v=scidb(v,gc=TRUE)))
+  }
+  return(tsvd(x,nu))
 }

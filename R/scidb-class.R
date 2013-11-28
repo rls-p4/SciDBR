@@ -278,25 +278,18 @@ setOldClass("apply")
 setGeneric("apply")
 setMethod("apply", signature(X = "scidb"), apply_scidb)
 
-svd_scidb = function(x, nu, ...)
-{
-  if(missing(nu))
-  {
-    u = sprintf("%s_U",x@name)
-    d = sprintf("%s_S",x@name)
-    v = sprintf("%s_V",x@name)
-    schema = sprintf("[%s=0:%d,1000,0,%s=0:%d,1000,0]",
-                     x@D$name[1],x@D$length[1]-1,
-                     x@D$name[2],x@D$length[2]-1)
-    schema = sprintf("%s%s",build_attr_schema(x),schema)
-    iquery(sprintf("store(gesvd(repart(%s,%s),'left'),%s)",x@name,schema,u))
-    iquery(sprintf("store(gesvd(repart(%s,%s),'values'),%s)",x@name,schema,d))
-    iquery(sprintf("store(gesvd(repart(%s,%s),'right'),%s)",x@name,schema,v))
-    return(list(u=scidb(u,gc=TRUE),d=scidb(d,gc=TRUE),v=scidb(v,gc=TRUE)))
-  }
-  return(tsvd(x,nu))
-}
-
 setOldClass("svd")
 setGeneric("svd")
 #setMethod("svd", signature(x="scidb",nu="numeric"), svd_scidb)
+
+
+# Transpose a matrix or vector
+setOldClass("t")
+setGeneric("t")
+setMethod("t", signature(x="scidb"), 
+  function(x)
+  {
+    query = sprintf("transpose(%s)",x@name)
+    .scidbeval(query, eval=FALSE, gc=TRUE)
+  }
+)

@@ -4,7 +4,7 @@
 # frames). They can be efficiently nested by explicitly setting eval=FALSE on
 # inner functions, deferring computation until eval=TRUE.
 
-`attribute_rename` = function(x, old, new, eval=FALSE)
+`attribute_rename` = function(x, old, `new`, `eval`=FALSE)
 {
   query = sprintf("attribute_rename(%s,%s,%s)",x@name,old,new)
   .scidbeval(query,eval,depend=list(x))
@@ -24,7 +24,7 @@
   .scidbeval(query, `eval`, depend=list(x))
 }
 
-`cast` = function(x, s, eval=FALSE)
+`cast` = function(x, s, `eval`=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
 # Default cast strips "Not nullable" array property
@@ -318,7 +318,7 @@
 `merge.scidbdf` = function(x,y,...) merge_scidb(x,y,...)
 `sort.scidb` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `sort.scidbdf` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
-`unique.scidb` = function(x,incomparables=FALSE,sort=TRUE,...) unique_scidb(x,incomparables,sort,...)
-`unique.scidbdf` = function(x,incomparables=FALSE,sort=TRUE,...) unique_scidb(x,incomparables,sort,...)
+`unique.scidb` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
+`unique.scidbdf` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
 `subset.scidb` = function(x,subset,...) filter_scidb(x,expr=subset,...)
 `subset.scidbdf` = function(x,subset,...) filter_scidb(x,expr=subset,...)

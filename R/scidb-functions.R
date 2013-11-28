@@ -226,11 +226,3 @@ as.scidb = function(X,
   ans = scidb(name,gc=gc)
   ans
 }
-
-
-# Transpose array
-t.scidb = function(x,eval=FALSE)
-{
-  query = sprintf("transpose(%s)",x@name)
-  .scidbeval(query,eval=eval,gc=TRUE)
-}

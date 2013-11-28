@@ -20,8 +20,8 @@ test("scidblist(); TRUE")
 set.seed(1)
 A = matrix(rnorm(50*40),50)
 B = matrix(rnorm(40*40),40)
-X = as.scidb(A,rowChunkSize=3,colChunkSize=19)
-Y = as.scidb(B)
+test("assign('X',as.scidb(A,rowChunkSize=3,colChunkSize=19),envir=globalenv());TRUE")
+test("assign('Y',as.scidb(B),envir=globalenv());TRUE")
 # Matrix multiplication
 test("isTRUE(all.equal(A %*% B, (X %*% Y)[],check.attributes=FALSE))")
 # Transpose

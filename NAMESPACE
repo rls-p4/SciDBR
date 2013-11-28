@@ -28,7 +28,7 @@ importFrom("Matrix","nnzero", "sparseMatrix")
 
 # S4 methods
 exportClasses("scidb","scidbdf")
-exportMethods("%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,sd,var,min,max,svd)
+exportMethods("%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,sd,var,min,max,svd,t)
 
 # S3 methods
 S3method("Ops",scidb)
@@ -49,7 +49,6 @@ S3method("length",scidb)
 S3method("sort",scidb)
 S3method("unique",scidb)
 S3method("subset",scidb)
-S3method("t",scidb)
 
 S3method("[",scidbdf)
 S3method("names",scidbdf)

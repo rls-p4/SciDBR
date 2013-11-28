@@ -7,7 +7,7 @@ Create a \code{scidb} reference object.
 Create an array-like R object reference to a SciDB array.
 }
 \usage{
-scidb(name, attribute = "", `data.frame`, gc)
+scidb(name, attribute, gc, `data.frame`)
 }
 \arguments{
   \item{name}{Name of the SciDB array to reference. }

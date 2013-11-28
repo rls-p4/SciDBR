@@ -7,7 +7,7 @@ redimension
 The \code{redimension} function is a wrapper to the SciDB `redimension` operator.
 }
 \usage{
-redimension = function(x,s,eval)
+redimension = function(x,s,`eval`)
 }
 \arguments{
   \item{x}{A SciDB array object of class scidb or scidbdf.}
