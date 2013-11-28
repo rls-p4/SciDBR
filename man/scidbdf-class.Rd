@@ -17,13 +17,13 @@ Objects can be created by calls of the form \code{new("scidbdf", ...)},
 }
 \section{Slots}{
   \describe{
-    \item{\code{call}:}{Object of class \code{"call"} How scidb was called. }
     \item{\code{name}:}{Object of class \code{"character"} scidb array name. }
     \item{\code{D}:}{Object of class \code{"list"} List of scidb dimension information. }
     \item{\code{dim}:}{Object of class \code{"numericOrNULL"} Vector of dimension lengths.}
     \item{\code{length}:}{Object of class \code{"numeric"} Length of array object. }
     \item{\code{attributes}:}{Object of class \code{"character"} Vector of all available attributes for the SciDB array. }
     \item{\code{nullable}:}{Object of class \code{"logical"} Is the attribute nullable (TRUE/FALSE)? }
+    \item{\code{schema}:}{Object of class \code{"character"} SciDB array schema.} 
     \item{\code{types}:}{Object of class \code{"character"} Vector of SciDB types for all the array attributes. }
     \item{\code{colClasses}:}{Object of class \code{"character"} Optional vector of read.table-style column classes used to parse messages from SciDB. }
     \item{\code{gc}:}{Object of class \code{"environment"} An environment used to link the SciDB array to the R garbage collector. }

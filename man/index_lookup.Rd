@@ -13,17 +13,17 @@ the \code{index_lookup} with the \code{unique} and \code{sort} functions.
 index_lookup(X, I, attr, new_attr=paste(attr,"index",sep="_"), eval)
 }
 \arguments{
-  \item{X}{A scidb, scidbdf, or scidbexpr object}
-  \item{I}{A scidb, scidbdf, or scidbexpr object}
+  \item{X}{A scidb or scidbdf object}
+  \item{I}{A scidb or scidbdf object}
   \item{attr}{A character string attribute name from the \code{X} array}
   \item{new_attr}{An optional character name for the new attribute, defaults to \code{attr} + "_index"}
-  \item{eval}{A logical value: if TRUE then evaluate the \code{index_lookup} expression and return a \code{scidb} object, otherwise return a \code{scidbexpr} object that contains a character string representation of the un-evaluated SciDB query. By default, eval is set to FALSE if \code{index_lookup} is called from another function in the scidb package.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
 }
 \value{
-Either a \code{scidb} object or a \code{scidbexpr} object depending on the value of \code{eval}.
+A \code{scidb}  or \code{scidbdf} object.
 }
 \note{
-Use \code{eval=FALSE} to defer expression evaluation for efficiency. Many functions in the SciDB package accept un-evaluated expresions represented as \code{scidbexpr} objects. One can compose these objects to form complex query expressions that can be evaluated in one transaction.
+Use \code{eval=FALSE} to defer expression evaluation for efficiency.
 }
 \author{
 B. W. Lewis<blewis@paradigm4.com>
@@ -44,7 +44,7 @@ y <- unique(sort(project(x,"Species")), eval=FALSE)
 
 # Append a new attribute to the array x called "Species_index" that
 # enumerates the unique values of the "Species" attribute:
-z <- index_lookup(x, y, "Species")
+z <- index_lookup(x, y, "Species", eval=FALSE)
 
 print(head(z))
 }}

@@ -20,26 +20,28 @@
 #* END_COPYRIGHT
 #*/
 
-# This file contains class definitions, generics, and methods for the scidb
-# matrix/vector class. It's a hybrid S4 class with some S3 methods. The class
-# contains the slots:
-# call = call that created the object
-# name = SciDB array name
-# D = dimensions data
-# dim = dim vector
-# length = number of elements
+# A general SciDB array class for R. It's a hybrid S4 class with some S3
+# methods. The class can represent SciDB arrays and array promises.
+# slots:
+# name = any SciDB expression that can produce an array 
+# schema = the corresponding SciDB array schema for 'name' above
+# D = dimensions data derived from the schema
+# dim = R dim vector derived from the schema
+# length = number of elements derived from the schema
 # attribute = attribute in use or 0-length string, in which case the 
-#             1st listed attribute is used
-# attributes = table (data frame) of array attributes
+#             1st listed attribute is used specified by user for  objects that
+#             can only work with one attribute at a time (linear algebra)
+# attributes = table (data frame) of array attributes parsed from schema
 # type = SciDB type of the attribute in use (character)
 # types = list of SciDB types of all attributes (character)
 # gc = environment
 #      If gc$remove = TRUE, remove SciDB array when R gc is run on object.
+#      The gc environment also stores dependencies required by array promises.
 
 setClassUnion("numericOrNULL", c("numeric", "NULL")) 
 setClass("scidb",
-         representation(call="call",
-                        name="character",
+         representation(name="character",
+                        schema="character",
                         D="list",
                         dim="numericOrNULL",
                         length="numeric",
@@ -59,68 +61,75 @@ setMethod("%*%",signature(x="scidb", y="scidb"),
   valueClass="scidb"
 )
 
-setMethod("%*%",signature(x="scidb", y="ANY"),
+setMethod("%*%",signature(x="matrix", y="scidb"),
   function(x,y)
   {
-    if(!inherits(y,"scidb"))
-    {
-      on.exit(tryCatch(scidbremove(y@name),error=function(e)invisible()))
-      y = as.scidb(cbind(y),name=basename(tempfile(pattern="array")), rowChunkSize=x@D$chunk_interval[2],start=c(x@D$start[[1]],0L))
-    }
-    scidbmultiply(x,y)
+    as.scidb(x,gc=TRUE) %*% y
+  },
+  valueClass="character"
+)
+
+setMethod("%*%",signature(x="scidb", y="matrix"),
+  function(x,y)
+  {
+    x %*% as.scidb(y,gc=TRUE)
+  },
+  valueClass="character"
+)
+
+setMethod("%*%",signature(x="scidb", y="numeric"),
+  function(x,y)
+  {
+    x %*% as.scidb(matrix(y,nrow=ncol(x)), gc=TRUE)
+  },
+  valueClass="character"
+)
+
+setMethod("%*%",signature(x="numeric", y="scidb"),
+  function(x,y)
+  {
+    as.scidb(matrix(x,ncol=nrow(y)), gc=TRUE) %*% y
+  },
+  valueClass="character"
+)
+
+setOldClass("crossprod")
+setGeneric("crossprod")
+setMethod("crossprod",signature(x="scidb", y="missing"),
+  function(x)
+  {
+    t(x) %*% x
   },
   valueClass="scidb"
 )
 
-setMethod("%*%",signature(x="ANY", y="scidb"),
+setOldClass("crossprod")
+setGeneric("crossprod")
+setMethod("crossprod",signature(x="scidb", y="scidb"),
   function(x,y)
   {
-    if(!inherits(x,"scidb"))
-    { # Lazy evaluation saves the day...
-      on.exit(tryCatch(scidbremove(x@name),error=function(e)invisible()))
-      x = as.scidb(cbind(x),name=basename(tempfile(pattern="array")),colChunkSize=y@D$chunk_interval[1],start=c(0L,y@D$start[[2]]))
-    }
-    scidbmultiply(x,y)
-  },
-  valueClass="scidb"
-)
-
-
-setMethod("crossprod",signature(x="scidb", y="ANY"),
-  function(x,y)
-  {
-    if(is.null(y)) y = x
     t(x) %*% y
   },
   valueClass="scidb"
 )
 
-setMethod("crossprod",signature(x="ANY", y="scidb"),
-  function(x,y)
-  {
-    if(is.null(x)) x = y
-    t(x) %*% y
-  },
-  valueClass="scidb"
-)
 
-setMethod("tcrossprod",signature(x="scidb", y="ANY"),
+setMethod("tcrossprod",signature(x="scidb", y="scidb"),
   function(x,y)
   {
-    if(is.null(y)) y = x
     x %*% t(y)
   },
   valueClass="scidb"
 )
 
-setMethod("tcrossprod",signature(x="ANY", y="scidb"),
-  function(x,y)
+setMethod("tcrossprod",signature(x="scidb", y="missing"),
+  function(x)
   {
-    if(is.null(x)) x = y
-    x %*% t(y)
+    x %*% t(x)
   },
   valueClass="scidb"
 )
+
 
 
 # The remaining functions return data to R:
@@ -218,8 +227,7 @@ setMethod('is.scidb', signature(x='ANY'),
 setGeneric('print', function(x) standardGeneric('print'))
 setMethod('print', signature(x='scidb'),
   function(x) {
-    cat("A reference to a ",paste(nrow(x),ncol(x),sep="x"),
-        "SciDB array\n")
+    show(x)
   })
 
 setMethod('show', 'scidb',
@@ -258,25 +266,30 @@ function(x, grid=c(x@D$chunk_interval[1], x@D$chunk_interval[2]), op=sprintf("su
   B
 })
 
-# x:   A SciDB array
-# by:  A list of dimension and/or attribute names in x to aggregate along
-# FUN: A valid SciDB aggregation expression (string)
 setOldClass("aggregate")
 setGeneric("aggregate")
 setMethod("aggregate", signature(x="scidb"), aggregate_scidb)
 
+setOldClass("sweep")
+setGeneric("sweep")
+setMethod("sweep", signature(x="scidb"), sweep_scidb)
 
-svd_scidb = function(x)
-{
-  u = sprintf("%s_U",x@name)
-  d = sprintf("%s_S",x@name)
-  v = sprintf("%s_V",x@name)
-  iquery(sprintf("store(gesvd(%s,'left'),%s)",x@name,u))
-  iquery(sprintf("store(gesvd(%s,'values'),%s)",x@name,d))
-  iquery(sprintf("store(gesvd(%s,'right'),%s)",x@name,v))
-  list(u=scidb(u,gc=TRUE),d=scidb(d,gc=TRUE),v=scidb(v,gc=TRUE))
-}
+setOldClass("apply")
+setGeneric("apply")
+setMethod("apply", signature(X = "scidb"), apply_scidb)
 
 setOldClass("svd")
 setGeneric("svd")
-setMethod("svd", signature(x="scidb"), svd_scidb)
+#setMethod("svd", signature(x="scidb",nu="numeric"), svd_scidb)
+
+
+# Transpose a matrix or vector
+setOldClass("t")
+setGeneric("t")
+setMethod("t", signature(x="scidb"), 
+  function(x)
+  {
+    query = sprintf("transpose(%s)",x@name)
+    .scidbeval(query, eval=FALSE, gc=TRUE)
+  }
+)

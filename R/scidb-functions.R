@@ -114,8 +114,11 @@ summary.scidb = function(x)
 
 `str.scidb` = function(object, ...)
 {
-  cat("SciDB array name: ",object@name)
-  cat("\tattribute in use: ",object@attribute)
+  name = substr(object@name,1,20)
+  if(nchar(object@name)>20) name = paste(name,"...",sep="")
+  cat("SciDB array name: ",name)
+  cat("\nSciDB array schema: ",object@schema)
+  cat("\nattribute in use: ",object@attribute)
   cat("\nAll attributes: ",object@attributes)
   cat("\nArray dimensions:\n")
   cat(paste(capture.output(print(data.frame(object@D))),collapse="\n"))
@@ -144,31 +147,37 @@ summary.scidb = function(x)
 `length.scidb` = function(x) x@length
 
 # Vector, Matrix, matrix, or data.frame only.
+# XXX Future: Add n-d array support here.
 as.scidb = function(X,
                     name=tmpnam(),
-                    rowChunkSize,
-                    colChunkSize,
-                    start=c(0L,0L),
+                    chunkSize,
+                    overlap,
+                    start,
                     gc=TRUE, ...)
 {
   if(inherits(X,"data.frame"))
-    if(missing(rowChunkSize))
+    if(missing(chunkSize))
       return(df2scidb(X,name=name,gc=gc,...))
     else
-      return(df2scidb(X,name=name,chunkSize=rowChunkSize,gc=gc,...))
+      return(df2scidb(X,name=name,chunkSize=chunkSize[[1]],gc=gc,...))
+  if(missing(chunkSize))
+  {
+# Note nrow, ncol might be NULL here if X is not a matrix. That's OK, we'll
+# deal with that case later.
+    chunkSize=c(min(1000L,nrow(X)),min(1000L,ncol(X)))
+  }
+  if(length(chunkSize)==1) chunkSize = c(chunkSize, chunkSize)
+  if(!missing(overlap)) warning("Sorry, overlap is not yet supported by the as.scidb function. Consider using the reparition function for now.")
+  overlap = c(0,0)
+  if(missing(start)) start=c(0,0)
+  if(length(start)==1) start=c(start,start)
   if(inherits(X,"dgCMatrix"))
   {
-    rowChunkSize = min(1000L,nrow(X))
-    colChunkSize = min(1000L,ncol(X))
-    return(.Matrix2scidb(X,name=name,rowChunkSize=rowChunkSize,colChunkSize=colChunkSize,start=start,gc=gc,...))
+    return(.Matrix2scidb(X,name=name,rowChunkSize=chunkSize[[1]],colChunkSize=chunkSize[[2]],start=start,gc=gc,...))
   }
   D = dim(X)
-  rowOverlap=0L
-  colOverlap=0L
-  if(length(start)<1) stop ("Invalid starting coordinates")
-  if(length(start)>2) start = start[1:2]
-  if(length(start)<2) start = c(start, 0)
   start = as.integer(start)
+  overlap = as.integer(overlap)
   type = .scidbtypes[[typeof(X)]]
   if(is.null(type)) {
     stop(paste("Unupported data type. The package presently supports: ",
@@ -177,20 +186,27 @@ as.scidb = function(X,
   if(is.null(D)) {
 # X is a vector
     if(!is.vector(X)) stop ("X must be a matrix or a vector")
-    if(missing(rowChunkSize)) rowChunkSize = min(1e6, length(X))
+    chunkSize = min(chunkSize[[1]],length(X))
     X = as.matrix(X)
     schema = sprintf(
       "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
+<<<<<<< HEAD
       nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap)
+=======
+      nrow(X)-1+start[[1]], min(nrow(X),chunkSize), overlap[[1]])
+>>>>>>> laboratory
     load_schema = schema
   } else {
 # X is a matrix
-    if(missing(rowChunkSize)) rowChunkSize = min(1000L, nrow(X))
-    if(missing(colChunkSize)) colChunkSize = min(1000L, ncol(X))
     schema = sprintf(
       "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
+<<<<<<< HEAD
       nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],
       min(ncol(X),colChunkSize), colOverlap)
+=======
+      nrow(X)-1+start[[1]], chunkSize[[1]], overlap[[1]], start[[2]], ncol(X)-1+start[[2]],
+      chunkSize[[2]], overlap[[2]])
+>>>>>>> laboratory
     load_schema = sprintf("<val:%s>[row=1:%.0f,1000000,0]",type,length(X))
   }
   if(!is.matrix(X)) stop ("X must be a matrix or a vector")
@@ -202,7 +218,7 @@ as.scidb = function(X,
 # Upload the data
 # XXX I couldn't get RCurl to work using the fileUpload(contents=x), with 'x'
 # a raw vector. But we need RCurl to support SSL. As a work-around, we save
-# the object. This copy sucks and must be fixed.
+# the object. This extra local copy sucks and must be improved !!! XXX
   fn = tempfile()
   bytes = writeBin(as.vector(t(X)),con=fn)
   url = URI("upload_file",list(id=session))
@@ -219,6 +235,7 @@ as.scidb = function(X,
   ans = scidb(name,gc=gc)
   ans
 }
+<<<<<<< HEAD
 
 
 # Transpose array
@@ -227,3 +244,5 @@ t.scidb = function(x,eval=FALSE)
   query = sprintf("transpose(%s)",x@name)
   scidbeval(query,eval=eval,gc=TRUE)
 }
+=======
+>>>>>>> laboratory

@@ -26,29 +26,170 @@
 # An environment to hold connection state
 .scidbenv = new.env()
 
-# An internal convenience function that conditionally evaluates a scidb
-# query string `expr` (eval=TRUE), returning a scidb object,
-# or returns a scidbexpr object (eval=FALSE).
-# Optionally set lastclass to retain class information for evaluated result.
-`scidbeval` = function(expr,eval,lastclass=c("scidb","scidbdf"),name)
+# Force evaluation of an expression that yields a scidb or scidbdf object,
+# storing result to a SciDB array when eval=TRUE.
+# name: (character) optional SciDB array name to store to
+# gc: (logical) optional, when TRUE tie result to R garbage collector
+scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
 {
-  lastclass = match.arg(lastclass)
+  ans = eval(expr)
+  if(!(inherits(ans,"scidb") || inherits(ans,"scidbdf"))) return(ans)
+  .scidbeval(ans@name, `eval`=eval, name=name, gc=gc)
+}
+
+# Create a new scidb reference to an existing SciDB array.
+# name (character): Name of the backing SciDB array
+#    alternatively, a scidb expression object
+# attribute (character): Attribute in the backing SciDB array
+#   (applies to n-d arrays, not data.frame-like 1-d arrays)
+# gc (logical, optional): Remove backing SciDB array when R object is
+#     garbage collected? Default is FALSE.
+# data.frame (logical, optional): If true, return a data.frame-like object.
+#   Otherwise an array.
+`scidb` = function(name, attribute, gc, `data.frame`)
+{
+  if(missing(name)) stop("array name or expression must be specified")
+  if(missing(gc)) gc=FALSE
+  query = sprintf("show('%s as array','afl')",name)
+  schema = iquery(query,`return`=1)$schema
+  obj = scidb_from_schemastring(schema, name, `data.frame`)
+  if(!missing(attribute))
+  {
+    if(!(attribute %in% obj@attributes)) warning("Requested attribute not found")
+    obj@attribute = attribute
+  }
+  if(gc)
+  {
+    obj@gc$name = name
+    obj@gc$remove = TRUE
+    reg.finalizer(obj@gc, function(e) if (e$remove) 
+        tryCatch(scidbremove(e$name), error = function(e) invisible()), 
+            onexit = TRUE)
+  } else obj@gc = new.env()
+  obj
+}
+
+# An important internal convenience function that returns a scidb object.  If
+# eval=TRUE, a new SciDB array is created the returned scidb object refers to
+# that.  Otherwise, the returned scidb object represents a SciDB array promise.
+#
+# INPUT
+# expr: (character) A SciDB expression or array name
+# eval: (logical) If TRUE evaluate expression and assign to new SciDB array.
+#                 If FALSE, infer output schema but don't evaluate.
+# name: (optional character) If supplied, name for stored array when eval=TRUE
+# gc: (optional logical) If TRUE, tie SciDB object to  garbage collector.
+# depend: (optional list) An optional list of other scidb or scidbdf objects
+#         that this expression depends on (preventing their garbage collection
+#         if other references to them go away).
+#
+# OUTPUT
+# A `scidb` or `scidbdf` array object.
+#
+# NOTE
+# AFL only in SciDB expressions--AQL is not supported.
+`.scidbeval` = function(expr,eval,name,gc=TRUE, depend)
+{
+  ans = c()
+  if(missing(depend)) depend=c()
+  if(!is.list(depend)) depend=list(depend)
   if(`eval`)
   {
     if(missing(name)) newarray = tmpnam()
     else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
     scidbquery(query)
-    if(lastclass=="scidb") return(scidb(newarray,gc=TRUE))
-    return(scidb(newarray,gc=TRUE,`data.frame`=TRUE))
+    ans = scidb(newarray,gc=gc)
+  } else
+  {
+    ans = scidb(expr,gc=gc)
   }
-  scidbexpr(expr, lastclass=lastclass)
+# Assign dependencies
+  if(length(depend)>0)
+  {
+    assign("depend",depend,envir=ans@gc)
+  }
+
+  ans
 }
 
-checkclass = function(x)
+
+# Construct a scidb promise from a SciDB schema string.
+scidb_from_schemastring = function(s,expr=character(), `data.frame`)
 {
-  if("scidbexpr" %in% class(x)) return(x@lastclass)
-  class(x)[[1]]
+  a=strsplit(strsplit(strsplit(strsplit(s,">")[[1]][1],"<")[[1]][2],",")[[1]],":")
+  attributes=unlist(lapply(a,function(x)x[[1]]))
+  attribute=attributes[[1]]
+
+  ts = lapply(a,function(x)x[[2]])
+  nullable = rep(FALSE,length(ts))
+  n = grep("null",ts,ignore.case=TRUE)
+  if(any(n)) nullable[n]=TRUE
+
+  types = gsub(" .*","",ts)
+  type = types[1]
+
+  d = gsub("\\]","",strsplit(s,"\\[")[[1]][[2]])
+  d = strsplit(strsplit(d,"=")[[1]],",")
+  dname = unlist(lapply(d[-length(d)],function(x)x[[length(x)]]))
+  dtype = rep("int64",length(dname))
+  chunk_interval = as.numeric(unlist(lapply(d[-1],function(x)x[[2]])))
+  chunk_overlap = as.numeric(unlist(lapply(d[-1],function(x)x[[3]])))
+  d = lapply(d[-1],function(x)x[[1]])
+
+  dlength = unlist(lapply(d,function(x)diff(as.numeric(gsub("\\*",.scidb_DIM_MAX,strsplit(x,":")[[1]])))+1))
+  dstart = unlist(lapply(d,function (x)as.numeric(strsplit(x,":")[[1]][[1]])))
+
+  D = list(name=dname,
+           type=dtype,
+           start=dstart,
+           length=dlength,
+           chunk_interval=chunk_interval,
+           chunk_overlap=chunk_overlap,
+           low=rep(NA,length(dname)),
+           high=rep(NA,length(dname))
+           )
+  if(missing(`data.frame`)) `data.frame` = ( (length(dname)==1) &&  (length(attributes)>1))
+  if(length(dname)>1 && `data.frame`) stop("SciDB data frame objects can only be associated with 1-D SciDB arrays")
+
+  if(`data.frame`)
+  {
+# Set default column types
+    ctypes = c("int64",dtype)
+    cc = rep(NA,length(ctypes))
+    cc[ctypes=="datetime"] = "Date"
+    cc[ctypes=="float"] = "double"
+    cc[ctypes=="double"] = "double"
+    cc[ctypes=="bool"] = "logical"
+    st = grep("string",ctypes)
+    if(length(st>0)) cc[st] = "character"
+    return(new("scidbdf",
+                schema=s,
+                name=expr,
+                attributes=attributes,
+                types=types,
+                nullable=nullable,
+                D=D,
+                dim=c(D$length,length(attributes)),
+                colClasses=cc,
+                gc=new.env(),
+                length=length(attributes)
+             ))
+  }
+
+  new("scidb",
+      name=expr,
+      schema=s,
+      attribute=attribute,
+      type=type,
+      attributes=attributes,
+      types=types,
+      nullable=nullable,
+      D=D,
+      dim=D$length,
+      gc=new.env(),
+      length=prod(D$length)
+  )
 }
 
 # Return TRUE if our parent function lives in the scidb namespace, otherwise
@@ -66,6 +207,8 @@ called_from_scidb = function(nf=1)
   ans = grepl("namespace:scidb",capture.output(environment(f))[[1]])
   ans = ans || grepl("^sort",sys.call(nf-1)[[1]])
   ans = ans || grepl("^unique",sys.call(nf-1)[[1]])
+  ans = ans || grepl("^sweep",sys.call(nf-1)[[1]])
+  ans = ans || grepl("^apply",sys.call(nf-1)[[1]])
   ans = ans || grepl("^subset",sys.call(nf-1)[[1]])
   ans = ans || grepl("^aggregate",sys.call(nf-1)[[1]])
   ans = ans || grepl("^merge",sys.call(nf-1)[[1]])
@@ -305,6 +448,7 @@ scidbremove = function(x, error=warning)
   if(inherits(x,"scidb")) x = x@name
   if(!inherits(x,"character")) stop("Invalid argument. Perhaps you meant to quote the variable name(s)?")
   for(y in x) {
+    if(grepl("\\(",y)) next
     tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=FALSE, release=1),
               error=function(e) error(e))
   }
@@ -469,7 +613,9 @@ iquery = function(query, `return`=FALSE,
         sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
         result = GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE)
         val = textConnection(result)
-        ret = read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)
+        ret = tryCatch(
+                read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...),
+                error=function(e){warning(e);c()})
         close(val)
         GET("/release_session",list(id=sessionid))
         chr = sapply(ret, function(x) "character" %in% class(x))
@@ -603,25 +749,25 @@ iqiter = function (con, n = 1, excludecol, ...)
 }
 
 # Build the attibute part of a SciDB array schema from a scidb,
-# scidbdf, or scidbexpr object.
-`build_attr_schema` = function(A)
+# scidbdf object.
+# Set prefix to add a prefix to all attribute names.
+`build_attr_schema` = function(A, prefix="")
 {
-  if("scidbexpr" %in% class(A)) A = scidb_from_scidbexpr(A)
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   N = rep("",length(A@nullable))
   N[A@nullable] = " NULL"
   N = paste(A@types,N,sep="")
-  S = paste(paste(A@attributes,N,sep=":"),collapse=",")
+  attributes = paste(prefix,A@attributes,sep="")
+  S = paste(paste(attributes,N,sep=":"),collapse=",")
   sprintf("<%s>",S)
 }
 
 `noE` = function(w) sapply(w, function(x) sprintf("%.0f",x))
 
 # Build the dimension part of a SciDB array schema from a scidb,
-# scidbdf, or scidbexpr object.
+# scidbdf object.
 `build_dim_schema` = function(A,bracket=TRUE)
 {
-  if("scidbexpr" %in% class(A)) A = scidb_from_scidbexpr(A)
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   notint = A@D$type != "int64"
   N = rep("",length(A@D$name))
@@ -635,6 +781,11 @@ iqiter = function (con, n = 1, excludecol, ...)
   {
     high = noE(A@D$start + A@D$length - 1)
   }
+  wh = as.numeric(high) >= 4.611686e+18
+  if(any(wh))
+  {
+    high[wh] = .scidb_DIM_MAX
+  }
   R = paste(low,high,sep=":")
   R[notint] = noE(A@D$length)
   S = paste(N,R,sep="=")
@@ -645,6 +796,7 @@ iqiter = function (con, n = 1, excludecol, ...)
   S
 }
 
+# SciDB rename wrapper
 rename = function(A, name=A@name, gc)
 {
   if(!(inherits(A,"scidb") || inherits(A,"scidbdf"))) stop("`A` must be a scidb object.")
@@ -682,7 +834,6 @@ rename = function(A, name=A@name, gc)
   if(any(is.na(x))) x[is.na(x)] = "i"
   list(attributes=x[,2],types=x[,3],nullable=(x[,4]=="true"))
 }
-
 
 # Returns TRUE if x is greater than or equal to than y
 compare_versions = function(x,y)
