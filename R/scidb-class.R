@@ -290,6 +290,6 @@ setMethod("t", signature(x="scidb"),
   function(x)
   {
     query = sprintf("transpose(%s)",x@name)
-    .scidbeval(query, eval=FALSE, gc=TRUE)
+    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
   }
 )
