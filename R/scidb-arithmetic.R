@@ -252,3 +252,64 @@ svd_scidb = function(x, nu, ...)
   }
   return(tsvd(x,nu))
 }
+
+
+# Miscellaneous functions
+log_scidb = function(x, base=exp(1),attr)
+{
+  if(missing(attr))
+  {
+    w = x@types == "double"
+    if(!any(w)) stop("requires at least one double-precision valued attribute")
+    if(class(x) %in% "scidb") attr = x@attribute
+    else attr = x@attributes[which(w)[[1]]]
+  }
+  new_attribute = sprintf("%s_log",attr)
+  if(base==exp(1))
+  {
+    query = sprintf("apply(%s, %s, log(%s))",x@name, new_attribute, attr)
+  } else if(base==10)
+  {
+    query = sprintf("apply(%s, %s, log10(%s))",x@name, new_attribute, attr)
+  }
+  else
+  {
+    query = sprintf("apply(%s, %s, log(%s)/log(%.15f))",x@name, new_attribute, attr, base)
+  }
+  ans = .scidbeval(query,`eval`=FALSE)
+  if(class(x) %in% "scidb") ans@attribute = new_attribute
+  ans
+}
+
+# S4 method conforming to standard generic trig functions. See help for
+# details about attribute selection and naming.
+fn_scidb = function(x,fun,attr)
+{
+  if(missing(attr))
+  {
+    w = x@types == "double"
+    if(!any(w)) stop("requires at least one double-precision valued attribute")
+    if(class(x) %in% "scidb") attr = x@attribute
+    else attr = x@attributes[which(w)[[1]]]
+  }
+  new_attribute = sprintf("%s_%s",attr,fun)
+  query = sprintf("apply(%s, %s, %s(%s))",x@name, new_attribute, fun, attr)
+  ans = .scidbeval(query,`eval`=FALSE,gc=TRUE,depend=list(x))
+  if(class(x) %in% "scidb") ans@attribute = new_attribute
+  ans
+}
+
+# S3 Method conforming to usual diff implementation. The `differences`
+# argument is not supported here.
+diff.scidb = function(x, lag=1, differences, ...)
+{
+  n = nrow(x) # XXX Add bounds check
+  m = x@D$start[[1]]
+  new_attribute = sprintf("%s_diff",x@attribute)
+  nu = paste(rep('null',length(dim(x))-1),collapse=",")
+  s1 = gsub(",)",")",gsub(",,",",",sprintf("subarray(%s,%.0f,%s,%.0f,%s)",x@name,m+lag,nu,n-m,nu)))
+  s2 = gsub(",)",")",gsub(",,",",",sprintf("subarray(%s,%.0f,%s,%.0f,%s)",x@name,m,nu,n-m-lag,nu)))
+  query = sprintf("project(apply(join(%s as _A, %s as _B),%s, _A.%s - _B.%s),%s)",
+          s1, s2, new_attribute, x@attribute, x@attribute, new_attribute)
+  .scidbeval(query,`eval`=FALSE,gc=TRUE,depend=list(x))
+}
