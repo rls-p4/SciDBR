@@ -17,6 +17,12 @@
 \alias{apply,scidb-method}
 \alias{sweep,scidb-method}
 \alias{t,scidb-method}
+\alias{sin,scidb-method}
+\alias{cos,scidb-method}
+\alias{tan,scidb-method}
+\alias{asin,scidb-method}
+\alias{acos,scidb-method}
+\alias{atan,scidb-method}
 
 \alias{is.scidb,ANY-method}
 \alias{print,scidb-method}
@@ -70,6 +76,17 @@ Display a heatmap-like image of the 2-d scidb array reference object \code{x}.
 \code{grid(m,n)} specifies the repartitioned array block sizes and \code{op} is a valid SciDB aggregation function applied to the repartitioned chunks. }
     \item{diag}{\code{signature(x = "scidb")}: Return the diagonal of a SciDB matrix as a new 1d SciDB array (a vector).}
     \item{show}{\code{signature(object = "scidb")}: ... }
+    \item{t}{\code{signature(x = "scidb")}: \code{t(x)}
+      Return the transpose of the matrix \code{x}.
+    }
+    \item{sin}{\code{signature(x = "scidb")}: \code{sin(x)}
+      Return an array with the sine of each element of the array \code{x}. The active attribute is used and should be numeric. The returned array contains a new attibute with "_sin" appended containing the result. The remaining other trig functions (\code{cos, tan, asin, acos, atan}) act similarly.
+    }
+    \item{cos}{\code{signature(x = "scidb")}: \code{cos(x)} See doc. for \code{sin}.}
+    \item{tan}{\code{signature(x = "scidb")}: \code{tan(x)} See doc. for \code{sin}.}
+    \item{asin}{\code{signature(x = "scidb")}: \code{asin(x)} See doc. for \code{sin}.}
+    \item{acos}{\code{signature(x = "scidb")}: \code{acos(x)} See doc. for \code{sin}.}
+    \item{atan}{\code{signature(x = "scidb")}: \code{atan(x)} See doc. for \code{sin}.}
   }
 }
 \section{Notes}{

@@ -293,3 +293,39 @@ setMethod("t", signature(x="scidb"),
     .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
   }
 )
+
+log.scidb = function(x, base=exp(1), attr)
+{
+  log_scidb(x,base,attr) 
+}
+
+setMethod("sin",signature(x="scidb"),
+  function(x)
+  {
+    fn_scidb(x, "sin")
+  })
+setMethod("cos",signature(x="scidb"),
+  function(x)
+  {
+    fn_scidb(x, "cos")
+  })
+setMethod("tan",signature(x="scidb"),
+  function(x)
+  {
+    fn_scidb(x, "tan")
+  })
+setMethod("asin",signature(x="scidb"),
+  function(x)
+  {
+    fn_scidb(x, "asin")
+  })
+setMethod("acos",signature(x="scidb"),
+  function(x)
+  {
+    fn_scidb(x, "acos")
+  })
+setMethod("atan",signature(x="scidb"),
+  function(x)
+  {
+    fn_scidb(x, "atan")
+  })

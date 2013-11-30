@@ -110,3 +110,39 @@ function(x)
 {
   iquery(sprintf("var(%s)",x@name),return=TRUE)[,2]
 })
+
+log.scidbdf = function(x, base=exp(1), attr)
+{
+  log_scidb(x,base,attr) 
+}
+
+setMethod("sin", signature(x="scidbdf"),
+  function(x)
+  {
+    fn_scidb(x, "sin")
+  })
+setMethod("cos", signature(x="scidbdf"),
+  function(x)
+  {
+    fn_scidb(x, "cos")
+  })
+setMethod("tan", signature(x="scidbdf"),
+  function(x)
+  {
+    fn_scidb(x, "tan")
+  })
+setMethod("asin", signature(x="scidbdf"),
+  function(x)
+  {
+    fn_scidb(x, "asin")
+  })
+setMethod("acos", signature(x="scidbdf"),
+  function(x)
+  {
+    fn_scidb(x, "acos")
+  })
+setMethod("atan", signature(x="scidbdf"),
+  function(x)
+  {
+    fn_scidb(x, "atan")
+  })
