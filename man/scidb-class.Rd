@@ -82,6 +82,11 @@ Display a heatmap-like image of the 2-d scidb array reference object \code{x}.
     \item{sin}{\code{signature(x = "scidb")}: \code{sin(x)}
       Return an array with the sine of each element of the array \code{x}. The active attribute is used and should be numeric. The returned array contains a new attibute with "_sin" appended containing the result. The remaining other trig functions (\code{cos, tan, asin, acos, atan}) act similarly.
     }
+    \item{cos}{\code{signature(x = "scidb")}: \code{cos(x)} See doc. for \code{sin}.}
+    \item{tan}{\code{signature(x = "scidb")}: \code{tan(x)} See doc. for \code{sin}.}
+    \item{asin}{\code{signature(x = "scidb")}: \code{asin(x)} See doc. for \code{sin}.}
+    \item{acos}{\code{signature(x = "scidb")}: \code{acos(x)} See doc. for \code{sin}.}
+    \item{atan}{\code{signature(x = "scidb")}: \code{atan(x)} See doc. for \code{sin}.}
   }
 }
 \section{Notes}{
