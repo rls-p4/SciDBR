@@ -301,7 +301,7 @@ fn_scidb = function(x,fun,attr)
 
 # S3 Method conforming to usual diff implementation. The `differences`
 # argument is not supported here.
-diff.scidb = function(x, lag=1, differences, ...)
+diff.scidb = function(x, lag=1, ...)
 {
   n = nrow(x) # XXX Add bounds check
   m = x@D$start[[1]]
