@@ -82,13 +82,18 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
 # depend: (optional list) An optional list of other scidb or scidbdf objects
 #         that this expression depends on (preventing their garbage collection
 #         if other references to them go away).
+# attribute: (optional character) Set the attribute on a scidb object,
+#             requires data.frame=TRUE
+# data.frame: (optional, logical) If TRUE, return a data.frame object, false
+#             return a scidb object. Default is missing, in which case an
+#             automatic decision is made about the object return class.
 #
 # OUTPUT
 # A `scidb` or `scidbdf` array object.
 #
 # NOTE
 # AFL only in SciDB expressions--AQL is not supported.
-`.scidbeval` = function(expr,eval,name,gc=TRUE, depend)
+`.scidbeval` = function(expr,eval,name,gc=TRUE, depend, attribute, `data.frame`)
 {
   ans = c()
   if(missing(depend)) depend=c()
@@ -99,10 +104,10 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
     else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
     scidbquery(query)
-    ans = scidb(newarray,gc=gc)
+    ans = scidb(newarray,gc=gc,attribute=attribute,`data.frame`=`data.frame`)
   } else
   {
-    ans = scidb(expr,gc=gc)
+    ans = scidb(expr,gc=gc,attribute=attribute,`data.frame`=`data.frame`)
   }
 # Assign dependencies
   if(length(depend)>0)
