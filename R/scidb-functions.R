@@ -147,7 +147,7 @@ summary.scidb = function(x)
 `length.scidb` = function(x) x@length
 
 # Vector, Matrix, matrix, or data.frame only.
-# XXX Future: Add n-d array support here.
+# XXX Future: Add n-d array support here (TODO)
 as.scidb = function(X,
                     name=tmpnam(),
                     chunkSize,
@@ -173,6 +173,7 @@ as.scidb = function(X,
   if(length(start)==1) start=c(start,start)
   if(inherits(X,"dgCMatrix"))
   {
+# Sparse matrix case
     return(.Matrix2scidb(X,name=name,rowChunkSize=chunkSize[[1]],colChunkSize=chunkSize[[2]],start=start,gc=gc,...))
   }
   D = dim(X)

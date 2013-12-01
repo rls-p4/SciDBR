@@ -516,7 +516,8 @@ df2scidb = function(X,
       else if("POSIXct" %in% class(X[,j])) 
       {
         warning("Converting R POSIXct to SciDB datetime as UTC time. Subsecond times rounded to seconds.")
-        X[,j] = as.integer(X[,j])
+#        X[,j] = as.integer(X[,j])
+        X[,j] = format(X[,j],tz="UTC")
         typ[j] = paste("datetime",nullable[j])
       }
     }  
