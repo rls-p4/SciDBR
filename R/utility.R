@@ -503,14 +503,22 @@ df2scidb = function(X,
     for(j in 1:ncol(X)) typ[j]=paste(types[j],nullable[j])
   } else {
     for(j in 1:ncol(X)) {
-      if(class(X[,j])=="numeric") 
+      if("numeric" %in% class(X[,j])) 
         typ[j] = paste("double",nullable[j])
-      else if(class(X[,j])=="integer") 
+      else if("integer" %in% class(X[,j])) 
         typ[j] = paste("int32",nullable[j])
-      else if(class(X[,j])=="logical") 
+      else if("logical" %in% class(X[,j])) 
         typ[j] = paste("bool",nullable[j])
-      else if(class(X[,j]) %in% c("character","factor")) 
+      else if("character" %in% class(X[,j])) 
         typ[j] = paste("string",nullable[j])
+      else if("factor" %in% class(X[,j])) 
+        typ[j] = paste("string",nullable[j])
+      else if("POSIXct" %in% class(X[,j])) 
+      {
+        warning("Converting R POSIXct to SciDB datetime as UTC time. Subsecond times rounded to seconds.")
+        X[,j] = as.integer(X[,j])
+        typ[j] = paste("datetime",nullable[j])
+      }
     }  
   }
   for(j in 1:ncol(X)) {
