@@ -108,7 +108,7 @@ dimfilter = function(x, i, eval)
 # Unfortunately not the same as:
 #  sub = paste(rep('null',length(r)),collapse=",")
 #  q = sprintf("subarray(%s,%s)",q,r)
-  .scidbeval(q,eval=eval,gc=TRUE)
+  .scidbeval(q,eval=eval,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
 }
 
 

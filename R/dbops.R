@@ -286,7 +286,7 @@
   {
     query = sprintf("uniq(%s)",xname)
   }
-  .scidbeval(query,eval,depend=list(x))
+  .scidbeval(query,eval,depend=list(x),`data.frame`=TRUE)
 }
 
 `sort_scidb` = function(X, decreasing = FALSE, ...)

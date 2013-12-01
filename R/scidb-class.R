@@ -199,7 +199,7 @@ function(x, n=6L, ...)
   m = x@D$start
   p = m + n - 1
   limits = lapply(1:length(m), function(j) seq(m[j],p[j]))
-  do.call(scidb:::dimfilter,args=list(x=x,i=limits))[]
+  do.call(scidb:::dimfilter,args=list(x=x,i=limits,eval=FALSE))[]
 })
 
 setGeneric("tail")
@@ -210,7 +210,7 @@ function(x, n=6L, ...)
   m = x@D$start + x@D$length - n
   m = unlist(lapply(1:length(m),function(j) max(m[j],x@D$start[j])))
   limits = lapply(1:length(m), function(j) seq(m[j],p[j]))
-  do.call(scidb:::dimfilter,args=list(x=x,i=limits))[]
+  do.call(scidb:::dimfilter,args=list(x=x,i=limits,eval=FALSE))[]
 })
 
 
