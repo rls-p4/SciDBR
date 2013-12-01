@@ -108,11 +108,11 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
   } else
   {
     ans = scidb(expr,gc=gc,attribute=attribute,`data.frame`=`data.frame`)
-  }
 # Assign dependencies
-  if(length(depend)>0)
-  {
-    assign("depend",depend,envir=ans@gc)
+    if(length(depend)>0)
+    {
+      assign("depend",depend,envir=ans@gc)
+    }
   }
 
   ans

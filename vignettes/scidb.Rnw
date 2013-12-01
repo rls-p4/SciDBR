@@ -702,12 +702,14 @@ once it's been evaluated. In such cases, the \verb+name+ slot of a \verb+scidb+
 or \verb+scidbdf+ promise object shows the SciDB query expresion.
 
 Occasionally, promise objects must be explicitly evaluated and stored as an
-intermediate result in the SciDB.  Such dynamically allocated arrays use the
-following naming convention: They all begin with ``R\_array'' and end with a
-unique numeric identifier determined by the current SciDB session.
+intermediate result in SciDB.  Such dynamically allocated arrays use a naming
+convention that begins with ``R\_array'' and end with a unique numeric
+identifier determined by the current SciDB session.
 
 Ephemeral intermediate arrays are connected to R's garbage collector and
 autotically deleted from the SciDB catalog when they are no longer needed by R.
+Users can disconnect SciDB array objects from R's garbage collector (making
+stored arrays persistent in SciDB), by setting \verb+@gc$remove = FALSE+.
 
 Sometimes efficiencies can be gained by explicitly evaluating a promise object
 and storing it to a SciDB array. The package provides the \verb+scidbeval+
@@ -719,13 +721,7 @@ an environment, preventing them from automatic garbage collection so that the
 promise can be evaluated. The environment is slot is named \verb+@gc+ in the
 array objects and the dependency list is \verb+@gc$depend+.
 
-Users can disconnect SciDB array objects from R's garbage collector (making
-stored arrays persistent in SciDB), by setting \verb+@gc$remove = FALSE+.
-
 Here is an example:
-<<eval=TRUE,echo=FALSE>>=
-gc()
-@
 <<>>=
 # Create a 5x4 SciDB matrix named 'test' in the database. We set `gc=TRUE`
 # so that the SciDB array `test` will be deleted by R's garbage collector
@@ -745,8 +741,8 @@ B@gc$depend[[1]]@gc$depend[[1]]@name
 # We can use `scidbeval` to force B's evaluation and storage inside SciDB:
 C <- scidbeval(B)
 # C has the same schema as B, but is now evaluated and stored inside SciDB
-# using an automatically-generated name. Unlike B, C does not depend on A
-# any more.
+# using an automatically-generated name. Unlike B, C does not depend on
+# the `test` array any more.
 C@name
 C@schema
 @
@@ -755,97 +751,13 @@ C@schema
 
 
 
+\section{Examples}
+\subsection{K-means clustering}
+\subsection{Correlations and graphs}
 
 
 
 
-
-
-
-
-
-
-\section{Using SciDB arrays with existing R code}
-
-This section illustrates using SciDB together with R and standard R packages
-from CRAN to compute solutions to large-scale problems.  R functions that rely
-on linear algebra and aggregation operations may be adapted to use SciDB arrays
-in place of native R vectors and matrices in order to benefit from the
-large-scale parallel computing capabilities of SciDB.
-
-The truncated singular value distribution (TSVD) is an important, widely used
-analysis method.  Truncated SVD lies at the heart of principle components and
-other analysis methods.
-
-We use the {\tt irlba} package from CRAN,
-\href{http://cran.r-project.org/web/packages/irlba/index.html}
-{http://cran.r-project.org/web/packages/irlba/index.html} to efficiently
-compute a truncated SVD. The IRLB algorithm used by the package relies on
-mostly matrix--vector products, and is well-suited for use with SciDB.  In
-fact, we can use SciDB matrices with the {\tt irlba} package without modifying
-the package at all.
-
-The {\tt irlba} package includes an option for user-defined matrix-vector
-products between a matrix {\tt A} and a vector {\tt x}, that is the R
-computation \verb+A %*% x+, and for computation of \verb+t(A) %*% x+.  Because
-matrix vector and transpose operations are defined for the {\tt scidb} array
-class, we don't technically need to use the user-defined option in the {\tt
-irlba} package. However, by using the option, we can greatly improve efficiency
-by avoiding explicitly forming the matrix transpose by computing 
-\verb+t( t(x) %*% A )+ instead of \verb+t(A) %*% x+. Listing \ref{matvec}
-illustrates this.
-
-\begin{Code}
-\begin{lstlisting}[caption=Efficient matrix vector product for IRLBA, label=matvec]
-# Let A be a scidb matrix
-# Let x be a numeric vector
-# Compute A %*% x if transpose=FALSE
-# Compute t(A) %*% x if transpose=TRUE
-# Return an R numeric vector.
-matmul = function(A, x, transpose=FALSE)
-{
-  if(transpose)
-  {
-    return(t(crossprod(x,A))[,drop=FALSE]))
-  }
-  (A %*% x)[,drop=FALSE]
-}
-\end{lstlisting}
-\end{Code}
-
-After defining the custom matrix or transpose matrix product in Listing
-\ref{matvec}, we can load and use the {\tt irlba} package with SciDB arrays.
-Listing \ref{irlb} illustrates computation of a few largest singular values and
-associated singular vectors of a $50,000\times 50,000$ matrix with random
-entries (consuming about $18\,$GB).  That problem large enough that it can't
-be computed easily in R--the matrix is too large to even represent in R version
-2 (although that changes soon in R version 3).
-
-
-\begin{Code}
-\begin{lstlisting}[caption=Example large truncated SVD computation, label=irlb]
-library("irlba")
-library("scidb")
-scidbconnect()
-
-# Create a 50,000 x 50,000 matrix filled with random-valued entries:
-iquery(
-  "store(build(<x:double>[i=0:49999,1000,0,j=0:49999,1000,0],double(random())/1000000000),A)"
-)
-a = scidb("A")
-dim(a)
-[1] 50000 50000
-
-# Compute the three largest singular values and corresponding vectors;
-S = irlba(a, nu=3, nv=3, matmul=matmul)
-
-\end{lstlisting}
-\end{Code}
-After a while, the algorithm returns the truncated SVD in the variable S. The
-result obtained is comparable to what the {\tt svd(A, nu=3, nv=3)} command
-would have produced, if it could handle the large matrix. Further optimizations
-are possible, but this simple example shows that it can be easy to get
-large-scale computation working without rewriting R code.
 
 
 
