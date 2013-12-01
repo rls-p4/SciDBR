@@ -675,7 +675,7 @@ example. \verb+project+ presents an alternative syntax to the functionally
 equivalent column subset selection of variables using brackets.
 
 <<>>=
-x <- as.scidb(iris,name="iris")
+x <- as.scidb(iris)
 
 # Sort x by Petal_Width and Species
 a <- sort(x, attributes=c("Petal_Width","Species"))
