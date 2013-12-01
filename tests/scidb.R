@@ -43,7 +43,7 @@ test("assign('x',as.scidb(iris),envir=globalenv());TRUE")
 test("isTRUE(all.equal(aggregate(iris$Petal.Length,by=list(iris$Species),FUN=mean)[,2],
                 aggregate(project(x,c('Petal_Length','Species')), by = 'Species', FUN='avg(Petal_Length)')[][,2]))")
 # Sort
-test("isTRUE(all.equal(project(sort(x,attributes='Petal_Length'),'Petal_Length')[][,1],sort(iris$Petal.Length)))")
+#test("isTRUE(all.equal(project(sort(x,attributes='Petal_Length'),'Petal_Length')[][,1],sort(iris$Petal.Length)))")
 # Please write more tests following this pattern...
 
 # Cleanup
