@@ -60,7 +60,7 @@ between = function(a,b)
 # 'bi' special between index range, that is a function or a list
 #      that returns upper/lower limits
 # 'ui' not specified range (everything, by R convention)
-# 'ci' lookup-style range, for example c(3,3,1,5,3)
+# 'ci' other, for example c(3,1,2,5) or c(1,1)
 #
 dimfilter = function(x, i, eval)
 {
@@ -71,7 +71,7 @@ dimfilter = function(x, i, eval)
   bi = sapply(i, function(x) inherits(x,"function"))
 # Unspecified range
   ui = sapply(i,is.null)
-# Identify lookup-type indices
+# Identify everything else
   ci = !(si | bi | ui)
 
   if(length(x@attribute)<1) x@attribute=x@attributes[1]
@@ -82,14 +82,14 @@ dimfilter = function(x, i, eval)
 # Just use the provided between-style range
         unlist(i[j][[1]]())
       }
-      else if(si[j] || ci[j])
+      else if(si[j])
       {
 # sequential numeric or lookup-type range
         c(min(i[j][[1]]),max(i[j][[1]]))
       }
       else
        {
-# Unspecified range
+# Unspecified range or special index (ci case), which we handle later.
          c(x@D$start[j],x@D$start[j] + x@D$length[j] - 1)
        }
     })
@@ -99,18 +99,22 @@ dimfilter = function(x, i, eval)
   r = paste(c(ro,re),collapse=",")
   q = sprintf("between(%s,%s)",x@name,r)
 
-# Return a new scidb array reference
   if(any(ci)) 
   {
     stop("Not yet supported")
   }
   q = sprintf("subarray(%s,%s)",q,r)
+# Return a new scidb array reference
 # Unfortunately not the same as:
 #  sub = paste(rep('null',length(r)),collapse=",")
 #  q = sprintf("subarray(%s,%s)",q,r)
   .scidbeval(q,eval=eval,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
 }
 
+
+special_index = function(x, query, i, idx, eval)
+{
+}
 
 
 # Materialize the single-attribute scidb array x as an R array.
