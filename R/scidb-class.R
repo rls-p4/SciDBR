@@ -280,7 +280,7 @@ setMethod("apply", signature(X = "scidb"), apply_scidb)
 
 setOldClass("svd")
 setGeneric("svd")
-#setMethod("svd", signature(x="scidb",nu="numeric"), svd_scidb)
+setMethod("svd", signature(x="scidb"), svd_scidb)
 
 
 # Transpose a matrix or vector

@@ -230,14 +230,20 @@ tsvd = function(x,nu)
   narray = scidb:::.scidbeval(query, eval=TRUE, gc=TRUE)
   ans = list(u=slice(narray, "matrix", 0,eval=FALSE),
              d=slice(narray, "matrix", 1,eval=FALSE),
-             v=slice(narray, "matrix", 2,eval=FALSE), narray)
+             v=slice(narray, "matrix", 2,eval=FALSE), narray=narray)
   ans
 }
 
-svd_scidb = function(x, nu, ...)
+svd_scidb = function(x, nu, nv, LINPACK = FALSE)
 {
-  if(missing(nu))
+  if(missing(nu)) nu = min(dim(x))
+  if(!missing(nv))
   {
+    if(nv != nu) warning("The SciDB SVD routines require nu = nv, setting nv to nu.")
+  }
+  if(nu > (min(dim(x))/3))
+  {
+# Compute the full SVD
     u = tmpnam()
     d = tmpnam()
     v = tmpnam()
