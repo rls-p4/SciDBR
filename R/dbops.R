@@ -57,9 +57,9 @@
     `eval` = !called_from_scidb(nf)
   }
   sc = scidb_from_schemastring(s)
-# SciDB NULL is not allowed along a coordinate axis
-  query = paste("substitute(",x@name,",build(<___i:int64>[___j=0:0,1,0],0),",paste(sc@D$name,collapse=","),")",sep="")
-  query = sprintf("redimension(%s,%s)",query,s)
+# NB SciDB NULL is not allowed along a coordinate axis prior to SciDB 12.11,
+# which could lead to a run time error here.
+  query = sprintf("redimension(%s,%s)",x@name,s)
   .scidbeval(query,eval,depend=list(x))
 }
 

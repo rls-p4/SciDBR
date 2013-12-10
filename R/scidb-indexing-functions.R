@@ -101,19 +101,44 @@ dimfilter = function(x, i, eval)
 
   if(any(ci)) 
   {
-    stop("Not yet supported")
+    return(special_index(x, q, i, ci, eval))
   }
   q = sprintf("subarray(%s,%s)",q,r)
 # Return a new scidb array reference
-# Unfortunately not the same as:
-#  sub = paste(rep('null',length(r)),collapse=",")
-#  q = sprintf("subarray(%s,%s)",q,r)
   .scidbeval(q,eval=eval,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
 }
 
 
 special_index = function(x, query, i, idx, eval)
 {
+  LOOKUP = ""
+  for(j in 1:length(idx))
+  {
+    N = x@D$name[[j]]
+    dimlabel = paste(N,"_1",sep="")
+    if(idx[[j]])
+    {
+# Indices specified
+      tmp = data.frame(as.integer(i[[j]]))
+      names(tmp) = N
+      i[[j]] = as.scidb(tmp, types="int64", dimlabel=dimlabel)
+    } else
+    {
+# All indices
+      i[[j]] = build(dimlabel, dim=x@D$length[[j]], names=c(N,dimlabel),
+                     type="int64", start=0,chunksize=x@D$chunk_interval[[j]],
+                     overlap=0,eval=FALSE)
+    }
+    if(j==1)
+    {
+      LOOKUP = i[[j]]@name
+    } else
+    {
+      LOOKUP = sprintf("cross(%s,%s)",LOOKUP, i[[j]]@name)
+    }
+  }
+  query = sprintf("lookup(%s,%s)",LOOKUP, query)
+  .scidbeval(query, eval=FALSE, depend=c(i,x))
 }
 
 

@@ -780,20 +780,32 @@ iqiter = function (con, n = 1, excludecol, ...)
 
 # Build the dimension part of a SciDB array schema from a scidb,
 # scidbdf object.
-`build_dim_schema` = function(A,bracket=TRUE)
+`build_dim_schema` = function(A,bracket=TRUE, I)
 {
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  if(!missing(I))
+  {
+    A@D$type = A@D$type[I]
+    A@D$name = A@D$name[I]
+    A@D$start = A@D$start[I]
+    A@D$length = A@D$length[I]
+    A@D$low = A@D$low[I]
+    A@D$high = A@D$high[I]
+    A@D$chunk_interval = A@D$chunk_interval[I]
+    A@D$chunk_overlap = A@D$chunk_overlap[I]
+  }
+
   notint = A@D$type != "int64"
   N = rep("",length(A@D$name))
   N[notint] = paste("(",A@D$type,")",sep="")
   N = paste(A@D$name, N,sep="")
-  low = noE(A@D$low)
-  high = noE(A@D$high)
+  low = scidb:::noE(A@D$low)
+  high = scidb:::noE(A@D$high)
   if(any(is.na(A@D$low)))
-    low = noE(A@D$start)
+    low = scidb:::noE(A@D$start)
   if(any(is.na(A@D$high)))
   {
-    high = noE(A@D$start + A@D$length - 1)
+    high = scidb:::noE(A@D$start + A@D$length - 1)
   }
   wh = as.numeric(high) >= 4.611686e+18
   if(any(wh))
@@ -801,10 +813,10 @@ iqiter = function (con, n = 1, excludecol, ...)
     high[wh] = .scidb_DIM_MAX
   }
   R = paste(low,high,sep=":")
-  R[notint] = noE(A@D$length)
+  R[notint] = scidb:::noE(A@D$length)
   S = paste(N,R,sep="=")
-  S = paste(S,noE(A@D$chunk_interval),sep=",")
-  S = paste(S,noE(A@D$chunk_overlap),sep=",")
+  S = paste(S,scidb:::noE(A@D$chunk_interval),sep=",")
+  S = paste(S,scidb:::noE(A@D$chunk_overlap),sep=",")
   S = paste(S,collapse=",")
   if(bracket) S = sprintf("[%s]",S)
   S
