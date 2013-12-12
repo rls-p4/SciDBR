@@ -20,6 +20,12 @@
 #* END_COPYRIGHT
 #*/
 
+`cbind.scidbdf` = function(x)
+{
+  newdim=make.unique_(x@attributes, "j")
+  nd = sprintf("%s[%s,%s=0:0,1,0]",scidb:::build_attr_schema(x) , scidb:::build_dim_schema(x,bracket=FALSE),newdim)
+  redimension(bind(x,newdim,0), nd)
+}
 
 colnames.scidbdf = function(x)
 {
@@ -161,24 +167,25 @@ scidbdf_subset = function(x, i)
   else if(scidb:::checkseq(i))
   {
 # Sequential numeric index
-    query = sprintf("between(%s, %.0f, %.0f)", x@name, min(i), max(i))
+    query = betweenbound(x,min(i),max(i))
   }
   else if(inherits(i,"function"))
   {
 # Bounding box
-    r = i()
-    if(is.numeric(r))
-      query = sprintf("between(%s, %.0f, %.0f)", x@name, r[1], r[2])
-    else
-      query = sprintf("between(%s, '%s', '%s')", x@name, r[1], r[2])
+    query = betweenbound(x, r[1], r[2])
   }
   else
   {
     stop("This kind of indexing is not yet supported.")
   }
   query = sprintf("project(%s, %s)",query, paste(attribute_range,collapse=","))
-  N = tmpnam()
-  query = sprintf("store(%s,%s)",query,N)
-  iquery(query)
-  scidb(N, `data.frame`=TRUE, gc=TRUE)
+  .scidbeval(query, `data.frame`=TRUE, gc=TRUE, eval=FALSE, depend=x)
+}
+
+betweenbound = function(x, m, n)
+{
+  ans = sprintf("between(%s, %.0f, %.0f)", x@name, m, n)
+# Reset just the upper dimension index (this redimension is really only a
+# meta data operation)
+  ans = sprintf("redimension(%s,%s[%s=%.0f:%.0f,%.0f,%.0f])", ans, build_attr_schema(x), x@D$name[1], x@D$start[1], n, x@D$chunk_interval[1], x@D$chunk_overlap[1])
 }

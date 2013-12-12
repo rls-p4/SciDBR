@@ -20,7 +20,15 @@
 #* END_COPYRIGHT
 #*/
 
+# Various functions that support S3 methods for the SciDB class
 
+`cbind.scidb` = function(x)
+{
+  if(length(dim(x))!=1) return(x)
+  newdim=make.unique_(x@attributes, "j")
+  nd = sprintf("%s[%s,%s=0:0,1,0]",scidb:::build_attr_schema(x) , scidb:::build_dim_schema(x,bracket=FALSE),newdim)
+  redimension(bind(x,newdim,0), nd)
+}
 
 colnames.scidb = function(x)
 {

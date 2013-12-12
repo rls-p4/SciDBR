@@ -56,7 +56,6 @@
     nf   = sys.nframe()
     `eval` = !called_from_scidb(nf)
   }
-  sc = scidb_from_schemastring(s)
 # NB SciDB NULL is not allowed along a coordinate axis prior to SciDB 12.11,
 # which could lead to a run time error here.
   query = sprintf("redimension(%s,%s)",x@name,s)
@@ -240,13 +239,14 @@
 
 
 
-`index_lookup` = function(X, I, attr, new_attr=paste(attr,"index",sep="_"), eval)
+`index_lookup` = function(X, I, attr, new_attr, eval)
 {
   if(missing(`eval`))
   {
-    nf   = sys.nframe()
-    `eval` = !called_from_scidb(nf)
+    eval = FALSE
   }
+  if(missing(attr)) attr = X@attributes[[1]]
+  if(missing(new_attr)) new_attr=paste(attr,"index",sep="_")
   xname = X
   if(class(X) %in% c("scidb","scidbdf")) xname=X@name
   iname = I

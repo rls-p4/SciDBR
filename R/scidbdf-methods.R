@@ -20,19 +20,6 @@
 #* END_COPYRIGHT
 #*/
 
-setClass("scidbdf",
-         representation(name="character",
-                        schema="character",
-                        D="list",
-                        dim="numericOrNULL",
-                        length="numeric",
-                        attributes="character",
-                        nullable="logical",
-                        types="character",
-                        colClasses="character",
-                        gc="environment"),
-         S3methods=TRUE)
-
 setGeneric("head")
 setMethod("head", signature(x="scidbdf"),
 function(x, n=6L, ...)
