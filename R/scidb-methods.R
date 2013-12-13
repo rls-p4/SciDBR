@@ -218,12 +218,13 @@ setMethod('show', 'scidb',
 
 setGeneric("image", function(x,...) x)
 setMethod("image", signature(x="scidb"),
-function(x, grid=c(x@D$chunk_interval[1], x@D$chunk_interval[2]), op=sprintf("sum(%s)",x@attribute), na=0, ...)
+function(x, grid=c(500,500), op=sprintf("sum(%s)", x@attribute), na=0, ...)
 {
   if(length(dim(x))!=2) stop("Sorry, array must be two-dimensional")
   if(length(grid)!=2) stop("The grid parameter must contain two values")
-  blocks = c(x@D$high[1] - x@D$low[1] + 1, x@D$high[2] - x@D$low[2] + 1)
+  blocks = x@D$length
   blocks = blocks/grid
+  if(any(blocks<1)) blocks[which(blocks<1)] = 1
   query = sprintf("regrid(project(%s,%s),%.0f,%.0f,%s)",x@name,x@attribute,blocks[1],blocks[2],op)
   A = iquery(query,return=TRUE,n=Inf)
   A[is.na(A[,3]),3] = na
