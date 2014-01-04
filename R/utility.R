@@ -471,9 +471,10 @@ df2scidb = function(X,
                     types=NULL,
                     nullable,
                     schema_only=FALSE,
-                    gc)
+                    gc, start)
 {
   if(!is.data.frame(X)) stop("X must be a data frame")
+  if(missing(start)) start=1
   if(missing(gc)) gc=FALSE
   if(missing(nullable)) nullable = as.vector(unlist(lapply(X,function(x) any(is.na(x)))))
   if(length(nullable)==1) nullable = rep(nullable, ncol(X))
@@ -528,7 +529,7 @@ df2scidb = function(X,
     else args=paste(args,">")
   }
 
-  SCHEMA = paste(args,"[",dimlabel,"=1:",sprintf("%.0f",nrow(X)),",",sprintf("%.0f",chunkSize),",", rowOverlap,"]",sep="")
+  SCHEMA = paste(args,"[",dimlabel,"=",sprintf("%.0f",start),":",sprintf("%.0f",(nrow(X)+start-1)),",",sprintf("%.0f",chunkSize),",", rowOverlap,"]",sep="")
 
   if(schema_only) return(SCHEMA)
 
@@ -537,7 +538,7 @@ df2scidb = function(X,
   on.exit(GET("/release_session",list(id=session)) ,add=TRUE)
 
 # Create SciDB input string from the data frame
-  scidbInput = .df2scidb(X,chunkSize)
+  scidbInput = .df2scidb(X,chunkSize,start)
 
 # Post the input string to the SciDB http service
   uri = URI("upload_file",list(id=session))
@@ -780,7 +781,14 @@ iqiter = function (con, n = 1, excludecol, ...)
 
 # Build the dimension part of a SciDB array schema from a scidb,
 # scidbdf object.
-`build_dim_schema` = function(A,bracket=TRUE, I)
+# A: A scidb or scidbdf object
+# bracket: if TRUE, enclose dimension expression in square brackets
+# I: optional vector of dimension indices to use, if missing use all
+# newnames: optional vector of new dimension names, must be the same length
+#    as I.
+# newlen: optional vector of new dimension lengths, must be the same length
+#    as I.
+`build_dim_schema` = function(A,bracket=TRUE, I, newnames, newlen)
 {
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   if(!missing(I))
@@ -793,6 +801,14 @@ iqiter = function (con, n = 1, excludecol, ...)
     A@D$high = A@D$high[I]
     A@D$chunk_interval = A@D$chunk_interval[I]
     A@D$chunk_overlap = A@D$chunk_overlap[I]
+  }
+  if(!missing(newnames))
+  {
+    A@D$name = newnames
+  }
+  if(!missing(newlen))
+  {
+    A@D$length = newlen 
   }
 
   notint = A@D$type != "int64"

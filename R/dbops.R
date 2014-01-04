@@ -19,7 +19,7 @@
 `substitute` = function(x, value, `attribute`, `eval`=FALSE)
 {
   if(missing(attribute)) attribute = x@attribute
-  if(missing(value)) value = "build(<v:double>[i=0:0,1,0],NA)"
+  if(missing(value)) value = "build(<v:double>[i=0:0,1,0],nan)"
   query = sprintf("substitute(%s,%s,%s)",x@name, value, attribute)
   .scidbeval(query, `eval`, depend=list(x))
 }

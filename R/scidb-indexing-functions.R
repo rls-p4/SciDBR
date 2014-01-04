@@ -111,33 +111,49 @@ dimfilter = function(x, i, eval)
 
 special_index = function(x, query, i, idx, eval)
 {
-  LOOKUP = ""
+  swap = NULL
   for(j in 1:length(idx))
   {
     N = x@D$name[[j]]
     dimlabel = paste(N,"_1",sep="")
+# XXX lapply here swap=lapply(idx, ... ?
     if(idx[[j]])
     {
 # Indices specified
-      tmp = data.frame(as.integer(i[[j]]))
+      tmp = data.frame(as.integer(unique(i[[j]])))
+      if(nrow(tmp)!=length(i[[j]]))
+      {
+        warning("The scidb package doesn't yet support repeated indices in subarray selection")
+      }
       names(tmp) = N
-      i[[j]] = as.scidb(tmp, types="int64", dimlabel=dimlabel)
+      i[[j]] = as.scidb(tmp, types="int64", dimlabel=dimlabel,
+                        start=x@D$start[[j]],
+                        chunkSize=x@D$chunk_interval[[j]],
+                        rowOverlap=x@D$chunk_overlap[[j]])
+      if(is.null(swap))
+        swap = list(old=N, new=dimlabel, length=length(tmp[,1]))
+      else
+        swap = list(swap, list(old=N, new=dimlabel, length=length(tmp[,1])))
+      Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newname=N))
+      query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
     } else
     {
-# All indices
-      i[[j]] = build(dimlabel, dim=x@D$length[[j]], names=c(N,dimlabel),
-                     type="int64", start=0,chunksize=x@D$chunk_interval[[j]],
-                     overlap=0,eval=FALSE)
-    }
-    if(j==1)
-    {
-      LOOKUP = i[[j]]@name
-    } else
-    {
-      LOOKUP = sprintf("cross(%s,%s)",LOOKUP, i[[j]]@name)
+      if(is.null(swap))
+        swap = list(old=N, new=N, length=x@D$length[[j]])
+      else
+        swap = list(swap,list(old=N, new=N, length=x@D$length[[j]]))
     }
   }
-  query = sprintf("lookup(%s,%s)",LOOKUP, query)
+  if(length(x@D$name)==1)
+  {
+    nn = swap[[2]]
+    nl = swap[[3]]
+  } else
+  {
+    nn = sapply(swap, function(x) x[[2]])
+    nl = sapply(swap, function(x) x[[3]])
+  }
+  query = sprintf("redimension(%s, %s%s)",query, build_attr_schema(x), build_dim_schema(x,newnames=nn,newlen=nl))
   .scidbeval(query, eval=FALSE, depend=c(i,x))
 }
 

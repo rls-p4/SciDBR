@@ -165,9 +165,9 @@ as.scidb = function(X,
 {
   if(inherits(X,"data.frame"))
     if(missing(chunkSize))
-      return(df2scidb(X,name=name,gc=gc,...))
+      return(df2scidb(X,name=name,gc=gc,start=start,...))
     else
-      return(df2scidb(X,name=name,chunkSize=chunkSize[[1]],gc=gc,...))
+      return(df2scidb(X,name=name,chunkSize=chunkSize[[1]],gc=gc,start=start,...))
   if(missing(chunkSize))
   {
 # Note nrow, ncol might be NULL here if X is not a matrix. That's OK, we'll
