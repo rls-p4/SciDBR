@@ -5,7 +5,7 @@ directly from GitHub using the devtools package as follows:
 
 ```
 library('devtools')
-install_github("SciDBR","paradigm4")
+install_github("SciDBR","paradigm4",quick=TRUE)
 ```
 
 The SciDB R package requires installation of a simple open-source HTTP network
