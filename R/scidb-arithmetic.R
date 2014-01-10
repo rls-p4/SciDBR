@@ -199,12 +199,15 @@ scidbmultiply = function(e1,e2)
 # Can throw a query error.
 .compare = function(e1,e2,op)
 {
-  if(!inherits(e1,"scidb")) stop("Sorry, not yet implemented.")
+  if(!(inherits(e1,"scidb") || inherits(e1,"scidbdf"))) stop("Sorry, not yet implemented.")
   if(inherits(e2,"scidb")) return(.joincompare(e1,e2,op))
 #  type = names(.scidbtypes[.scidbtypes==e1@type])
 #  if(length(type)<1) stop("Unsupported data type.")
   op = gsub("==","=",op,perl=TRUE)
-  query = sprintf("filter(%s, %s %s %s)",e1@name, e1@attribute, op, e2)
+  if(is.scidb(e1))
+    query = sprintf("filter(%s, %s %s %s)",e1@name, e1@attribute, op, e2)
+  else
+    query = sprintf("filter(%s, %s %s %s)",e1@name, e1@attributes[[1]], op, e2)
   .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(e1))
 }
 

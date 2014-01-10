@@ -19,6 +19,18 @@
 #*
 #* END_COPYRIGHT
 #*/
+# Element-wise operations
+Ops.scidbdf = function(e1,e2) {
+  switch(.Generic,
+    '<' = .compare(e1,e2,"<"),
+    '<=' = .compare(e1,e2,"<="),
+    '>' = .compare(e1,e2,">"),
+    '>=' = .compare(e1,e2,">="),
+    '==' = .compare(e1,e2,"="),
+    '!=' = .compare(e1,e2,"<>"),
+    default = stop("Unsupported binary operation.")
+  )
+}
 
 `cbind.scidbdf` = function(x)
 {
