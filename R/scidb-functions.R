@@ -32,12 +32,39 @@
 
 colnames.scidb = function(x)
 {
-  NULL
+  if(is.null(x@gc$dimnames)) return(NULL)
+  if(length(x@gc$dimnames)<2) return(NULL)
+  x@gc$dimnames[[2]]
+}
+
+`colnames<-.scidb` = function(x, value)
+{
+  if(is.null(x@gc$dimnames)) x@gc$dimnames = vector("list",length(dim(x)))
+  if(length(dim(x))<2)
+    stop("attempt to set 'colnames' on an object with less than two dimensions")
+  if(!(is.scidb(value) || is.scidbdf(value)))
+    stop("Labels must be in a SciDB array")
+  if(length(value) != dim(x)[2])
+    stop("Label array length does not match number of columns")
+  x@gc$dimnames[[2]] = value
+  x
 }
 
 rownames.scidb = function(x)
 {
-  NULL
+  if(is.null(x@gc$dimnames)) return(NULL)
+  x@gc$dimnames[[1]]
+}
+
+`rownames<-.scidb` = function(x, value)
+{
+  if(is.null(x@gc$dimnames)) x@gc$dimnames = vector("list",length(dim(x)))
+  if(!(is.scidb(value) || is.scidbdf(value)))
+    stop("Labels must be in a SciDB array")
+  if(length(value) != dim(x)[1])
+    stop("Label array length does not match number of rows")
+  x@gc$dimnames[[1]] = value
+  x
 }
 
 names.scidb = function(x)
@@ -48,28 +75,19 @@ names.scidb = function(x)
 
 `names<-.scidb` = function(x, value)
 {
-  old = x@attributes
-  if(length(value)!=length(old)) stop(paste("Incorrect number of names (should be",length(old),")"))
-  arg = paste(paste(old,value,sep=","),collapse=",")
-  query = sprintf("attribute_rename(%s,%s)",x@name,arg)
-  iquery(query)
+  colnames(x) <- value
 }
 
 dimnames.scidb = function(x)
 {
-  lapply(1:length(x@D$name), function(j)
-  {
-    if(x@D$type[j] != "string") return(c(x@D$start[j],x@D$start[j]+x@D$length[j]-1))
-    if(x@D$length[j] > options("scidb.max.array.elements"))
-      stop("Result will be too big. Perhaps try a manual query with an iterative result.")
-    Q = sprintf("scan(%s:%s)",x@name,x@D$name[j])
-    iquery(Q,return=TRUE,n=Inf)[,2]
-  })
+  x@gc$dimnames
 }
 
 `dimnames<-.scidb` = function(x, value)
 {
-  stop("unsupported")
+# XXX Add many checks here. See rownames,colnames
+  x@gc$dimnames = value
+  x
 }
 
 summary.scidb = function(x)

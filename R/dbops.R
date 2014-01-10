@@ -281,7 +281,10 @@
   xname = x@name
   if(sort)
   {
-    query = sprintf("uniq(sort(project(%s,%s),%s))",xname,x@attributes[[1]],x@attributes[[1]])
+    if(length(x@attributes)>1)
+      query = sprintf("uniq(sort(project(%s,%s)))",xname,x@attributes[[1]])
+    else
+      query = sprintf("uniq(sort(%s))",xname,x@attributes[[1]])
   } else
   {
     query = sprintf("uniq(%s)",xname)

@@ -50,7 +50,7 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
 {
   if(missing(name)) stop("array name or expression must be specified")
   if(missing(gc)) gc=FALSE
-  query = sprintf("show('%s as array','afl')",name)
+  query = sprintf("show('%s as array','afl')",gsub("'","\\\\'",name,perl=TRUE))
   schema = iquery(query,`return`=1)$schema
   obj = scidb_from_schemastring(schema, name, `data.frame`)
   if(!missing(attribute))
@@ -808,29 +808,15 @@ iqiter = function (con, n = 1, excludecol, ...)
   }
   if(!missing(newlen))
   {
-    A@D$length = newlen 
+    A@D$length = newlen - 1 + A@D$start
   }
 
-  notint = A@D$type != "int64"
-  N = rep("",length(A@D$name))
-  N[notint] = paste("(",A@D$type,")",sep="")
-  N = paste(A@D$name, N,sep="")
-  low = scidb:::noE(A@D$low)
-  high = scidb:::noE(A@D$high)
-  if(any(is.na(A@D$low)))
-    low = scidb:::noE(A@D$start)
-  if(any(is.na(A@D$high)))
-  {
-    high = scidb:::noE(A@D$start + A@D$length - 1)
-  }
-  wh = as.numeric(high) >= 4.611686e+18
-  if(any(wh))
-  {
-    high[wh] = .scidb_DIM_MAX
-  }
-  R = paste(low,high,sep=":")
-  R[notint] = scidb:::noE(A@D$length)
-  S = paste(N,R,sep="=")
+  low = scidb:::noE(A@D$start)
+  hi = scidb:::noE(A@D$length)
+  hi[as.numeric(hi)>=as.numeric(.scidb_DIM_MAX)] = "*"
+  hi[is.na(hi)] = "*"
+  R = paste(low,hi,sep=":")
+  S = paste(A@D$name,R,sep="=")
   S = paste(S,scidb:::noE(A@D$chunk_interval),sep=",")
   S = paste(S,scidb:::noE(A@D$chunk_overlap),sep=",")
   S = paste(S,collapse=",")

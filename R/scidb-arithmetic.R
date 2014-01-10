@@ -27,12 +27,12 @@ Ops.scidb = function(e1,e2) {
     '-' = .binop(e1,e2,"-"),
     '*' = .binop(e1,e2,"*"),
     '/' = .binop(e1,e2,"/"),
-    '<' = .binop(e1,e2,"<"),
-    '<=' = .binop(e1,e2,"<="),
-    '>' = .binop(e1,e2,">"),
-    '>=' = .binop(e1,e2,">="),
-    '==' = .binop(e1,e2,"="),
-    '!=' = .binop(e1,e2,"<>"),
+    '<' = .compare(e1,e2,"<"),
+    '<=' = .compare(e1,e2,"<="),
+    '>' = .compare(e1,e2,">"),
+    '>=' = .compare(e1,e2,">="),
+    '==' = .compare(e1,e2,"="),
+    '!=' = .compare(e1,e2,"<>"),
     default = stop("Unsupported binary operation.")
   )
 }
@@ -201,10 +201,9 @@ scidbmultiply = function(e1,e2)
 {
   if(!inherits(e1,"scidb")) stop("Sorry, not yet implemented.")
   if(inherits(e2,"scidb")) return(.joincompare(e1,e2,op))
-  type = names(.scidbtypes[.scidbtypes==e1@type])
-  if(length(type)<1) stop("Unsupported data type.")
+#  type = names(.scidbtypes[.scidbtypes==e1@type])
+#  if(length(type)<1) stop("Unsupported data type.")
   op = gsub("==","=",op,perl=TRUE)
-  tval = vector(mode=type,length=1)
   query = sprintf("filter(%s, %s %s %s)",e1@name, e1@attribute, op, e2)
   .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(e1))
 }

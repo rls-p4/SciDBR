@@ -108,35 +108,70 @@ dimfilter = function(x, i, eval)
   .scidbeval(q,eval=eval,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
 }
 
-
+# XXX Lots of cleanup required in this function...
 special_index = function(x, query, i, idx, eval)
 {
   swap = NULL
+  dependencies = c(i,x)
   for(j in 1:length(idx))
   {
     N = x@D$name[[j]]
-    dimlabel = paste(N,"_1",sep="")
+    dimlabel = paste(N,"_1",sep="") # XXX check unique
 # XXX lapply here swap=lapply(idx, ... ?
     if(idx[[j]])
     {
-# Indices specified
-      tmp = data.frame(as.integer(unique(i[[j]])))
-      if(nrow(tmp)!=length(i[[j]]))
+      if(is.numeric(i[[j]]))
       {
-        warning("The scidb package doesn't yet support repeated indices in subarray selection")
-      }
-      names(tmp) = N
-      i[[j]] = as.scidb(tmp, types="int64", dimlabel=dimlabel,
+# Special index case 1: non-contiguous numeric indices
+        tmp = data.frame(as.integer(unique(i[[j]])))
+        if(nrow(tmp)!=length(i[[j]]))
+        {
+          warning("The scidb package doesn't yet support repeated indices in subarray selection")
+        }
+        names(tmp) = N
+        i[[j]] = as.scidb(tmp, types="int64", dimlabel=dimlabel,
                         start=x@D$start[[j]],
                         chunkSize=x@D$chunk_interval[[j]],
                         rowOverlap=x@D$chunk_overlap[[j]])
-      if(is.null(swap))
-        swap = list(old=N, new=dimlabel, length=length(tmp[,1]))
-      else
-        swap = list(swap, list(old=N, new=dimlabel, length=length(tmp[,1])))
-      Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newname=N))
-      query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
-    } else
+        if(is.null(swap))
+          swap = list(old=N, new=dimlabel, length=length(tmp[,1]))
+        else
+          swap = list(swap, list(old=N, new=dimlabel, length=length(tmp[,1])))
+        Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newname=N))
+        query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
+      } else if(is.character(i[[j]]))
+      {
+# Case 2: character labels, consult a lookup array if possible
+         lkup = x@gc$dimnames[[j]]
+         tmp = data.frame(i[[j]], stringsAsFactors=FALSE)
+         names(tmp) = N
+         tmp_1 = as.scidb(tmp, types="string", dimlabel=dimlabel,
+                        start=x@D$start[[j]],
+                        chunkSize=x@D$chunk_interval[[j]],
+                        rowOverlap=x@D$chunk_overlap[[j]])
+         i[[j]] = attribute_rename(project(index_lookup(tmp_1, lkup, new_attr='_cazart'),"_cazart"),"_cazart",N)
+        if(is.null(swap))
+          swap = list(old=N, new=dimlabel, length=length(tmp[,1]))
+        else
+          swap = list(swap, list(old=N, new=dimlabel, length=length(tmp[,1])))
+        Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newname=N))
+        query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
+      } else if(is.scidb(i[[j]]))
+      {
+# Case 3. A SciDB array, really just a densified cross_join selector.
+        tmp = sort(project(bind(i[[j]],N,i[[j]]@D$name[[1]],eval=0),N,eval=0),eval=0)
+        cst = paste(build_attr_schema(tmp),build_dim_schema(tmp,newname=dimlabel))
+        tmp = cast(tmp,cst,eval=1)
+        cnt = count(tmp)
+        dependencies = c(dependencies, tmp)
+        Q1 = sprintf("redimension(%s,<%s:int64>%s)", tmp@name,dimlabel,build_dim_schema(x,I=j,newname=N))
+        query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
+        if(is.null(swap))
+          swap = list(old=N, new=dimlabel, length=cnt)
+        else
+          swap = list(swap, list(old=N, new=dimlabel, length=cnt))
+      }
+    } else # No special index in this coordinate
     {
       if(is.null(swap))
         swap = list(old=N, new=N, length=x@D$length[[j]])
@@ -154,7 +189,7 @@ special_index = function(x, query, i, idx, eval)
     nl = sapply(swap, function(x) x[[3]])
   }
   query = sprintf("redimension(%s, %s%s)",query, build_attr_schema(x), build_dim_schema(x,newnames=nn,newlen=nl))
-  .scidbeval(query, eval=FALSE, depend=c(i,x))
+  .scidbeval(query, eval=FALSE, depend=dependencies)
 }
 
 
@@ -162,7 +197,10 @@ special_index = function(x, query, i, idx, eval)
 materialize = function(x, drop=FALSE)
 {
   type = names(.scidbtypes[.scidbtypes==x@type])
-  if(length(type)<1) stop("Unsupported data type. Try using the iquery function instead.")
+  if(length(type)<1)
+  {
+    stop("Unsupported data type. Try using the iquery function.")
+  }
   tval = vector(mode=type,length=1)
 
 # Set origin to zero and project.

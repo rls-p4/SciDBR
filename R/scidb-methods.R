@@ -174,7 +174,13 @@ function(x, n=6L, ...)
   m = x@D$start
   p = m + n - 1
   limits = lapply(1:length(m), function(j) seq(m[j],p[j]))
-  do.call(scidb:::dimfilter,args=list(x=x,i=limits,eval=FALSE))[]
+  tryCatch(
+    do.call(scidb:::dimfilter,args=list(x=x,i=limits,eval=FALSE))[],
+    error = function(e)
+    {
+      warning("Unsupported data type. Using iquery to display array data.")
+      iquery(x@name, return=TRUE, n=n)
+    })
 })
 
 setGeneric("tail")
