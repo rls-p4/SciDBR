@@ -134,7 +134,7 @@ scidbmultiply = function(e1,e2)
     depend = c(depend, e2)
   }
 # OK, we've got two scidb arrays, op them. v holds the new attribute name.
-  v = make.unique_(e1a, "v")
+  v = make.unique_(c(e1a,e2a), "v")
 
 # We use subarray to handle starting index mismatches...
   q1 = q2 = ""

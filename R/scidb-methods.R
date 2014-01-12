@@ -154,17 +154,26 @@ setGeneric("diag")
 setMethod("diag", signature(x="scidb"),
 function(x)
 {
-  if(length(dim(x))!=2) stop("diag requires a matrix argument")
-  ans = tmpnam()
-  name = make.names_(c(x@attribute,"diag"))[2]
-  schema = extract_schema(x,x@attribute,x@type,x@nullable[x@attributes %in% x@attribute])
-  query  = sprintf("build_sparse(%s,1,%s=%s)",schema,x@D$name[1],x@D$name[2])
-  query  = sprintf("join(%s as _A1,%s as _A2)",x@name,query)
-  query  = sprintf("project(unpack(%s,%s),_A1.%s)",query,name,x@attribute)
-  query  = sprintf("subarray(%s,0,%.0f)",query, min(x@D$length)-1)
-  query  = sprintf("store(%s,%s)",query,ans)
-  iquery(query)
-  scidb(ans)
+  D = dim(x)
+  if(length(D)>2) stop("diag requires a matrix or vector")
+# Two cases
+# Case 2: Given a vector or a single row or column, return a square
+#         diagonal matrix.
+
+# Case 1: Given a matrix, return its diagonal as a vector.
+  if(length(D)==2 && D[1]==D[2])
+  {
+    ans = tmpnam()
+    name = make.names_(c(x@attribute,"diag"))[2]
+    schema = extract_schema(x,x@attribute,x@type,x@nullable[x@attributes %in% x@attribute])
+    query  = sprintf("build_sparse(%s,1,%s=%s)",schema,x@D$name[1],x@D$name[2])
+    query  = sprintf("join(%s as _A1,%s as _A2)",x@name,query)
+    query  = sprintf("project(unpack(%s,%s),_A1.%s)",query,name,x@attribute)
+    query  = sprintf("subarray(%s,0,%.0f)",query, min(x@D$length)-1)
+    query  = sprintf("store(%s,%s)",query,ans)
+    iquery(query)
+    return(scidb(ans))
+  }
 })
 
 setGeneric("head")
