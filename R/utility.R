@@ -261,11 +261,9 @@ scidbconnect = function(host='localhost', port=8080L, username, password)
   assign("ops",iquery("list('operators')",return=TRUE),envir=.scidbenv)
 # Update the scidb.version option
   v = scidbls(type="libraries")[1,]
-  options(scidb.version=paste(v$major,v$minor,sep="."))
-# Set GEMM chunk size option for version 13.6
-  if(options("scidb.version")[[1]] == "13.6")
+  if("major" %in% names(v))
   {
-    options(scidb.gemm_chunk_size=32)
+    options(scidb.version=paste(v$major,v$minor,sep="."))
   }
   invisible()
 }
