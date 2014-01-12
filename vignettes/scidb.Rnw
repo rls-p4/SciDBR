@@ -751,10 +751,6 @@ C@schema
 
 
 
-\section{Examples}
-\subsection{K-means clustering}
-\subsection{Correlations and graphs}
-
 
 
 
