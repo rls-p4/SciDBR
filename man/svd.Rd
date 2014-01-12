@@ -23,8 +23,8 @@ for compatibility with the base \code{svd} function.
 }
 \value{
 A list of three \code{scidb} objects corresponding to a matrix of left
-singular vectors, a vector of singular values, and a matrix of right
-singular vectors, respectively.
+singular vectors, a vector of singular values, and a matrix of transposed
+right singular vectors, respectively.
 }
 \author{
 B. W. Lewis<blewis@paradigm4.com>

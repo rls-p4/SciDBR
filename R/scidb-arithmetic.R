@@ -216,7 +216,7 @@ scidbmultiply = function(e1,e2)
   stop("Yikes! Not implemented yet...")
 }
 
-tsvd = function(x,nu)
+tsvd = function(x,nu,tol=0.0001,maxit=20)
 {
   m = ceiling(nrow(x)/1e6)
   n = ceiling(ncol(x)/1e6)
@@ -228,22 +228,25 @@ tsvd = function(x,nu)
                      x@D$name[1], nrow(x)-1, nrow(x))
   schema = sprintf("%s%s",scidb:::build_attr_schema(x), schema)
   tschema = sprintf("%s%s",scidb:::build_attr_schema(x), tschema)
-  query  = sprintf("tsvd(redimension(unpack(%s,row),%s), redimension(unpack(transpose(%s),row),%s), %d, 0.001, 20)", x@name, schema, x@name, tschema, nu)
+  query  = sprintf("tsvd(redimension(unpack(%s,row),%s), redimension(unpack(transpose(%s),row),%s), %d, %f, %d)", x@name, schema, x@name, tschema, nu,tol,maxit)
   narray = scidb:::.scidbeval(query, eval=TRUE, gc=TRUE)
-  ans = list(u=slice(narray, "matrix", 0,eval=FALSE),
-             d=slice(narray, "matrix", 1,eval=FALSE),
-             v=slice(narray, "matrix", 2,eval=FALSE), narray=narray)
+  ans = list(u=slice(narray, "matrix", 0,eval=FALSE)[,between(0,nu-1)],
+             d=slice(narray, "matrix", 1,eval=FALSE)[between(0,nu-1),between(0,nu-1)],
+             v=slice(narray, "matrix", 2,eval=FALSE)[between(0,nu-1),],
+             narray=narray)
   ans
 }
 
 svd_scidb = function(x, nu, nv, LINPACK = FALSE)
 {
+  got_tsvd = length(grep("tsvd",scidb:::.scidbenv$ops[,2]))>0
+  is_sparse = !is.null(attr(x,"sparse")) && attr(x,"sparse")
   if(missing(nu)) nu = min(dim(x))
   if(!missing(nv))
   {
     if(nv != nu) warning("The SciDB SVD routines require nu = nv, setting nv to nu.")
   }
-  if(nu > (min(dim(x))/3))
+  if(!is_sparse && (nu > (min(dim(x))/3)) || !got_tsvd)
   {
 # Compute the full SVD
     u = tmpnam()
@@ -258,6 +261,7 @@ svd_scidb = function(x, nu, nv, LINPACK = FALSE)
     iquery(sprintf("store(transpose(gesvd(repart(%s,%s),'right')),%s)",x@name,schema,v))
     return(list(u=scidb(u,gc=TRUE),d=scidb(d,gc=TRUE),v=scidb(v,gc=TRUE)))
   }
+  warning("Using the IRLBA truncated SVD algorithm")
   return(tsvd(x,nu))
 }
 
