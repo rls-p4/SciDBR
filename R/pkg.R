@@ -26,9 +26,9 @@
   options(scidb.index.sequence.limit=1000000)
 # Maximum allowed elements in an array return result
   options(scidb.max.array.elements=100000000)
-# change this to enable certain bug fixes specific to old versions of SciDB
-# In a future version, this will be automatically set (there is not presently
-# a SciDB query that returns the version).
+# The scidb.version option is set during scidbconnect(). However, users
+# may carefully override it to enable certain bug fixes specific to older
+# versions of SciDB.
   options(scidb.version=13.9)
 # Set this to 32 for SciDB version 13.6
   options(scidb.gemm_chunk_size=1000)

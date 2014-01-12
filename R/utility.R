@@ -259,6 +259,14 @@ scidbconnect = function(host='localhost', port=8080L, username, password)
     error=invisible)
 # Save available operators
   assign("ops",iquery("list('operators')",return=TRUE),envir=.scidbenv)
+# Update the scidb.version option
+  v = scidbls(type="libraries")[1,]
+  options(scidb.version=paste(v$major,v$minor,sep="."))
+# Set GEMM chunk size option for version 13.6
+  if(options("scidb.version")[[1]] == "13.6")
+  {
+    options(scidb.gemm_chunk_size=32)
+  }
   invisible()
 }
 
@@ -863,7 +871,7 @@ rename = function(A, name=A@name, gc)
   list(attributes=x[,2],types=x[,3],nullable=(x[,4]=="true"))
 }
 
-# Returns TRUE if x is greater than or equal to than y
+# Returns TRUE if version string x is greater than or equal to than version y
 compare_versions = function(x,y)
 {
  as.logical(prod(as.numeric(strsplit(as.character(x),"\\.")[[1]]) >= as.numeric(strsplit(as.character(y),"\\.")[[1]])))
