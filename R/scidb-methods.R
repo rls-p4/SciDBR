@@ -184,7 +184,9 @@ function(x)
            dim2, x@D$length[1] - 1 , x@D$chunk_interval[1], x@D$chunk_overlap[1])
   query = sprintf("cross_join(%s as __X,%s as __Y,__X.%s,__Y.%s)",query,x@name,x@D$name[1],x@D$name[1])
   query = sprintf("project(%s,%s)",query,x@attribute)
-  return(.scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x)))
+  ans = .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
+  attr(ans, "sparse") = TRUE
+  return(ans)
 })
 
 setGeneric("head")

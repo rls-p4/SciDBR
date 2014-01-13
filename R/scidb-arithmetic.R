@@ -66,19 +66,21 @@ scidbmultiply = function(e1,e2)
   ub = paste(rep("null",l2),collapse=",")
   op2 = sprintf("subarray(%s,%s,%s)",op2,lb,ub)
 
-#  e1@D$chunk_interval[[2]], e1@D$chunk_overlap[[2]],
-
-  dnames = make.names_(c(e1@D$name[[1]],e2@D$name[[2]]))
-
-  CHUNK_SIZE = options("scidb.gemm_chunk_size")[[1]]
-
   if(!SPARSE)
   {
 # Adjust the arrays to conform to GEMM requirements
+    dnames = make.names_(c(e1@D$name[[1]],e2@D$name[[2]]))
+    CHUNK_SIZE = options("scidb.gemm_chunk_size")[[1]]
     op1 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0])",op1,a1,e1@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,e1@D$name[[2]],e1@D$length[[2]]-1,CHUNK_SIZE)
     op2 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0])",op2,a2,e2@type[1],e2@D$name[[1]],e2@D$length[[1]]-1,CHUNK_SIZE,e2@D$name[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
     osc = sprintf("<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0]",a1,e1@type[1],dnames[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,dnames[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
     op3 = sprintf("build(%s,0)",osc)
+  } else
+  {
+# Adjust array partitions as required by spgemm
+    op2 = sprintf("repart(%s, <%s:%s>[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0])",
+            op2, a2, e2@type[1], e2@D$name[[1]], e2@D$length[[1]]-1, e1@D$chunk_interval[[2]],
+            e2@D$name[[2]], e2@D$length[[2]]-1, e2@D$chunk_interval[[2]])
   }
 
 # Decide which multiplication algorithm to use
@@ -91,8 +93,9 @@ scidbmultiply = function(e1,e2)
   else
     query = sprintf("gemm(%s, %s, %s)",op1,op2,op3)
 
-  query = sprintf("cast(%s,%s)",query,osc)
-  .scidbeval(query,gc=TRUE,eval=FALSE,depend=list(e1,e2))
+  ans = .scidbeval(query,gc=TRUE,eval=FALSE,depend=list(e1,e2))
+  if(SPARSE) attr(ans, "sparse") = TRUE
+  ans
 }
 
 # Element-wise binary operations
@@ -228,6 +231,9 @@ tsvd = function(x,nu,tol=0.0001,maxit=20)
              d=slice(narray, "matrix", 1,eval=FALSE)[between(0,nu-1),between(0,nu-1)],
              v=slice(narray, "matrix", 2,eval=FALSE)[between(0,nu-1),],
              narray=narray)
+  attr(ans$u,"sparse") = TRUE
+  attr(ans$d,"sparse") = TRUE
+  attr(ans$v,"sparse") = TRUE
   ans
 }
 
