@@ -882,7 +882,7 @@ is.sparse = function(x)
   ans = attr(x,"sparse")
   if(is.null(ans))
   {
-    ans = count(x) == prod(dim(x))
+    return(count(x) < prod(dim(x)))
   }
   ans
 }

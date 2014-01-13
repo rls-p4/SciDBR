@@ -94,7 +94,6 @@ scidbmultiply = function(e1,e2)
     query = sprintf("gemm(%s, %s, %s)",op1,op2,op3)
 
   ans = .scidbeval(query,gc=TRUE,eval=FALSE,depend=list(e1,e2))
-  if(SPARSE) attr(ans, "sparse") = TRUE
   ans
 }
 
