@@ -4,6 +4,13 @@
 # frames). They can be efficiently nested by explicitly setting eval=FALSE on
 # inner functions, deferring computation until eval=TRUE.
 
+`unpack_scidb` = function(x, `eval`=FALSE)
+{
+  dimname = make.unique_(c(x@D$name,x@attributes), "i")
+  query = sprintf("unpack(%s, %s)",x@name, dimname)
+  .scidbeval(query,eval,depend=list(x))
+}
+
 `attribute_rename` = function(x, old, `new`, `eval`=FALSE)
 {
   query = sprintf("attribute_rename(%s,%s,%s)",x@name,old,new)

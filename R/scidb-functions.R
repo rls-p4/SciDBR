@@ -107,11 +107,11 @@ summary.scidb = function(x)
 # ...: list of dimensions
 # 
 # Returns a materialized R array if length(list(...))==0.
-# Or, a scidb subrray promise.
+# Or, a scidb subarray promise.
 `[.scidb` = function(x, ...)
 {
   M = match.call()
-  drop = ifelse(is.null(M$drop),TRUE,M$drop)
+  drop = ifelse(is.null(M$drop),FALSE,M$drop)
   eval = ifelse(is.null(M$eval),FALSE,M$eval)
   M = M[3:length(M)]
   if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","eval"))]
@@ -123,7 +123,7 @@ summary.scidb = function(x)
     return(materialize(x,drop=drop))
 # Not materializing, return a SciDB array
   if(length(i)!=length(dim(x))) stop("Dimension mismatch")
-  dimfilter(x,i,eval)
+  dimfilter(x,i,eval,drop=drop)
 }
 
 `dim.scidb` = function(x)

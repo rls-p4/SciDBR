@@ -157,23 +157,34 @@ function(x)
   D = dim(x)
   if(length(D)>2) stop("diag requires a matrix or vector")
 # Two cases
-# Case 2: Given a vector or a single row or column, return a square
-#         diagonal matrix.
-
 # Case 1: Given a matrix, return its diagonal as a vector.
-  if(length(D)==2 && D[1]==D[2])
+  if(length(D)==2)
   {
-    ans = tmpnam()
-    name = make.names_(c(x@attribute,"diag"))[2]
-    schema = extract_schema(x,x@attribute,x@type,x@nullable[x@attributes %in% x@attribute])
-    query  = sprintf("build_sparse(%s,1,%s=%s)",schema,x@D$name[1],x@D$name[2])
-    query  = sprintf("join(%s as _A1,%s as _A2)",x@name,query)
-    query  = sprintf("project(unpack(%s,%s),_A1.%s)",query,name,x@attribute)
-    query  = sprintf("subarray(%s,0,%.0f)",query, min(x@D$length)-1)
-    query  = sprintf("store(%s,%s)",query,ans)
-    iquery(query)
-    return(scidb(ans))
+    bschema = sprintf("<%s:double>",x@attribute)
+    bschema = sprintf("%s%s",bschema,build_dim_schema(x,newstart=c(0,0)))
+    mask = sprintf("build(<%s:double>[%s=%.0f:%.0f,1000000,0],1)",x@attribute,x@D$name[1],0,min(x@D$length)-1)
+    mask = sprintf("apply(%s,%s,%s)",mask,x@D$name[2],x@D$name[1])
+    mask = sprintf("redimension(%s,%s)",mask, bschema)
+    mask = sprintf("attribute_rename(%s,%s,%s)",mask,x@attribute,make.unique_(x@attribute,"v"))
+    query = sprintf("project(join(subarray(%s,null,null,null,null),%s),%s)",x@name,mask,x@attribute)
+    query = sprintf("unpack(%s,%s)",query, make.unique_(x@D$name, "i"))
+    query = sprintf("project(%s,%s)",query,x@attribute)
+    query = sprintf("subarray(%s,0,%.0f)",query,min(x@D$length)-1)
+    return(.scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x)))
   }
+# Case 2: Given a vector return  diagonal matrix.
+  dim2 = make.unique_(x@D$name, "j")
+  query = sprintf("build(<%s:%s>[%s=0:%.0f,%.0f,%.0f],nan)",
+           make.unique_(x@attributes,"v"), x@type,
+           x@D$name[1], x@D$length[1] - 1 , x@D$chunk_interval[1], x@D$chunk_overlap[1])
+  query = sprintf("apply(%s,%s,%s)",query,dim2,x@D$name[1])
+  query = sprintf("redimension(%s,<%s:%s>[%s=0:%.0f,%.0f,%.0f,%s=0:%.0f,%.0f,%.0f])",
+           query, make.unique_(x@attributes,"v"), x@type,
+           x@D$name[1], x@D$length[1] - 1 , x@D$chunk_interval[1], x@D$chunk_overlap[1],
+           dim2, x@D$length[1] - 1 , x@D$chunk_interval[1], x@D$chunk_overlap[1])
+  query = sprintf("cross_join(%s as __X,%s as __Y,__X.%s,__Y.%s)",query,x@name,x@D$name[1],x@D$name[1])
+  query = sprintf("project(%s,%s)",query,x@attribute)
+  return(.scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x)))
 })
 
 setGeneric("head")
@@ -272,6 +283,8 @@ setMethod("apply", signature(X = "scidb"), apply_scidb)
 setOldClass("svd")
 setGeneric("svd")
 setMethod("svd", signature(x="scidb"), svd_scidb)
+
+setMethod("unpack",signature(x="scidb"),unpack_scidb)
 
 
 # Transpose a matrix or vector

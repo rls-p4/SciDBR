@@ -52,6 +52,7 @@ between = function(a,b)
 # x: A scidb object
 # i: a list of index expressions
 # eval: (logical) if TRUE, return a new SciDB array, otherwise just a promise
+# drop: (logical) if TRUE, delete dimensions of an array with only one level
 # OUTPUT
 # a scidb object
 #
@@ -62,7 +63,7 @@ between = function(a,b)
 # 'ui' not specified range (everything, by R convention)
 # 'ci' other, for example c(3,1,2,5) or c(1,1)
 #
-dimfilter = function(x, i, eval)
+dimfilter = function(x, i, eval, drop)
 {
 # Partition the indices into class:
 # Identify sequential, numeric indices
@@ -105,7 +106,20 @@ dimfilter = function(x, i, eval)
   }
   q = sprintf("subarray(%s,%s)",q,r)
 # Return a new scidb array reference
-  .scidbeval(q,eval=eval,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
+  ans = .scidbeval(q,eval=eval,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
+# Drop singleton dimensiosn if instructed to
+  if(drop)
+  {
+    i = ans@D$length==1
+    if(!any(i)) break
+    i = which(i)
+    for(j in i)
+    {
+      ans = slice(ans,ans@D$name[j],0,eval=FALSE)
+    }
+    if(eval) ans = scidbeval(ans)
+  }
+  return(ans)
 }
 
 # XXX Lots of cleanup required in this function...

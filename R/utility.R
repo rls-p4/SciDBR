@@ -794,7 +794,9 @@ iqiter = function (con, n = 1, excludecol, ...)
 #    as I.
 # newlen: optional vector of new dimension lengths, must be the same length
 #    as I.
-`build_dim_schema` = function(A,bracket=TRUE, I, newnames, newlen)
+# newstart: optional vector of new start values, must be the same length
+#    as I.
+`build_dim_schema` = function(A,bracket=TRUE, I, newnames, newlen, newstart)
 {
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   if(!missing(I))
@@ -811,6 +813,10 @@ iqiter = function (con, n = 1, excludecol, ...)
   if(!missing(newnames))
   {
     A@D$name = newnames
+  }
+  if(!missing(newstart))
+  {
+    A@D$start = newstart
   }
   if(!missing(newlen))
   {
