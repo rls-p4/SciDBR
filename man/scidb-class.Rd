@@ -16,6 +16,7 @@
 \alias{diag,scidb-method}
 \alias{apply,scidb-method}
 \alias{sweep,scidb-method}
+\alias{unpack,scidb-method}
 \alias{t,scidb-method}
 \alias{sin,scidb-method}
 \alias{cos,scidb-method}
@@ -78,6 +79,9 @@ Display a heatmap-like image of the 2-d scidb array reference object \code{x}.
     \item{show}{\code{signature(object = "scidb")}: ... }
     \item{t}{\code{signature(x = "scidb")}: \code{t(x)}
       Return the transpose of the matrix \code{x}.
+    }
+    \item{unpack}{\code{unpack(x = "scidb")}: \code{unpack(x)}
+      Return a 1-D representation of an array using the SciDB array unpack operator.
     }
     \item{sin}{\code{signature(x = "scidb")}: \code{sin(x)}
       Return an array with the sine of each element of the array \code{x}. The active attribute is used and should be numeric. The returned array contains a new attibute with "_sin" appended containing the result. The remaining other trig functions (\code{cos, tan, asin, acos, atan}) act similarly.

@@ -875,6 +875,18 @@ rename = function(A, name=A@name, gc)
   list(attributes=x[,2],types=x[,3],nullable=(x[,4]=="true"))
 }
 
+# If a scidb object has the "sparse" attribute set, return that. Otherwise
+# interrogate the backing array to determine if it's sparse or not.
+is.sparse = function(x)
+{
+  ans = attr(x,"sparse")
+  if(is.null(ans))
+  {
+    ans = count(x) == prod(dim(x))
+  }
+  ans
+}
+
 # Returns TRUE if version string x is greater than or equal to than version y
 compare_versions = function(x,y)
 {

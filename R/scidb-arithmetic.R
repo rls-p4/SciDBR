@@ -42,17 +42,9 @@ scidbmultiply = function(e1,e2)
 {
 # Check for availability of spgemm
   P4 = length(grep("spgemm",scidb:::.scidbenv$ops[,2]))>0
-  SPARSE = FALSE
-
-# XXX Handle this differently. Perhaps a manual flag instead?
-# XXX For now, sparse is disabled. XXX FIX ME!
-#  if(P4)
-#  {
-#    e1_count = count(e1)
-#    e2_count = count(e2)
-#    if(e1_count < prod(dim(e1)) || e2_count < prod(dim(e2)))
-#      SPARSE = TRUE
-#  }
+  e1.sparse = is.sparse(e1)
+  e2.sparse = is.sparse(e2)
+  SPARSE = e1.sparse || e2.sparse
 
   a1 = e1@attribute
   a2 = e2@attribute
@@ -91,7 +83,9 @@ scidbmultiply = function(e1,e2)
 
 # Decide which multiplication algorithm to use
   if(SPARSE && !P4)
-    query = sprintf("multiply(%s, %s)", op1, op2)
+  {
+    stop("Sparse matrix multiplication not supported")
+  }
   else if (SPARSE && P4)
     query = sprintf("spgemm(%s, %s)", op1, op2)
   else
@@ -240,13 +234,12 @@ tsvd = function(x,nu,tol=0.0001,maxit=20)
 svd_scidb = function(x, nu, nv, LINPACK = FALSE)
 {
   got_tsvd = length(grep("tsvd",scidb:::.scidbenv$ops[,2]))>0
-  is_sparse = !is.null(attr(x,"sparse")) && attr(x,"sparse")
   if(missing(nu)) nu = min(dim(x))
   if(!missing(nv))
   {
     if(nv != nu) warning("The SciDB SVD routines require nu = nv, setting nv to nu.")
   }
-  if(!is_sparse && (nu > (min(dim(x))/3)) || !got_tsvd)
+  if(!is.sparse(x) && (nu > (min(dim(x))/3)) || !got_tsvd)
   {
 # Compute the full SVD
     u = tmpnam()
