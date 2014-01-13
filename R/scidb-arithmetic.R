@@ -55,6 +55,38 @@ scidbmultiply = function(e1,e2)
   if(length(e2@attributes)>1)
     op2 = sprintf("project(%s,%s)",e2@name,a2)
 
+# Promote vectors to row- or column-vectors as required.
+  if(length(dim(e1))<2)
+  {
+    dimname = make.unique_(e1@D$name, "i")
+    op1 = sprintf("apply(%s,%s,0)",op1,dimname)
+    op1 = sprintf("redimension(%s, <%s:%s>[%s=0:0,1000,0,%s=0:%.0f,%.0f,0])",
+            op1,a1,e1@type[1],dimname,e1@D$name[[1]],e1@D$length[[1]]-1,
+            e2@D$chunk_interval[[1]])
+    e1@D$name = c(dimname, e1@D$name[[1]])
+    e1@D$type = c("int64","int64")
+    e1@D$start = c(0,e1@D$start[[1]])
+    e1@D$length = c(1,e1@D$length[[1]])
+    e1@D$chunk_interval = c(1000,e1@D$chunk_interval[[1]])
+    e1@D$chunk_overlap = c(0,0)
+    e1@dim = c(1,e1@dim[1])
+  }
+  if(length(dim(e2))<2)
+  {
+    dimname = make.unique_(e2@D$name, "j")
+    op2 = sprintf("apply(%s,%s,0)",op2,dimname)
+    op2 = sprintf("redimension(%s, <%s:%s>[%s=0:%.0f,%.0f,0,%s=0:0,1000,0])",
+            op2,a2,e2@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,
+            e2@D$chunk_interval[[1]],dimname)
+    e2@D$name = c(e2@D$name[[1]],dimname)
+    e2@D$type = c("int64","int64")
+    e2@D$start = c(e2@D$start[[1]],0)
+    e2@D$length = c(e2@D$length[[1]],1)
+    e2@D$chunk_interval = c(e1@D$chunk_interval[[2]],1000)
+    e2@D$chunk_overlap = c(0,0)
+    e2@dim = c(e2@dim[1],1)
+  }
+
 # We use subarray to handle starting index mismatches (subarray
 # returns an array with dimension indices starting at zero).
   l1 = length(dim(e1))
