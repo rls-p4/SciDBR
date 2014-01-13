@@ -103,9 +103,9 @@ scidbmultiply = function(e1,e2)
 # Adjust the arrays to conform to GEMM requirements
     dnames = make.names_(c(e1@D$name[[1]],e2@D$name[[2]]))
     CHUNK_SIZE = options("scidb.gemm_chunk_size")[[1]]
-    op1 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0])",op1,a1,e1@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,e1@D$name[[2]],e1@D$length[[2]]-1,CHUNK_SIZE)
-    op2 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0])",op2,a2,e2@type[1],e2@D$name[[1]],e2@D$length[[1]]-1,CHUNK_SIZE,e2@D$name[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
-    osc = sprintf("<%s:%s>[%s=0:%.0f,%d,0,%s=0:%.0f,%d,0]",a1,e1@type[1],dnames[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,dnames[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
+    op1 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0])",op1,a1,e1@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,e1@D$name[[2]],e1@D$length[[2]]-1,CHUNK_SIZE)
+    op2 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0])",op2,a2,e2@type[1],e2@D$name[[1]],e2@D$length[[1]]-1,CHUNK_SIZE,e2@D$name[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
+    osc = sprintf("<%s:%s>[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0]",a1,e1@type[1],dnames[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,dnames[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
     op3 = sprintf("build(%s,0)",osc)
   } else
   {
@@ -256,7 +256,7 @@ tsvd = function(x,nu,tol=0.0001,maxit=20)
                      x@D$name[1], nrow(x)-1, nrow(x))
   schema = sprintf("%s%s",scidb:::build_attr_schema(x), schema)
   tschema = sprintf("%s%s",scidb:::build_attr_schema(x), tschema)
-  query  = sprintf("tsvd(redimension(unpack(%s,row),%s), redimension(unpack(transpose(%s),row),%s), %d, %f, %d)", x@name, schema, x@name, tschema, nu,tol,maxit)
+  query  = sprintf("tsvd(redimension(unpack(%s,row),%s), redimension(unpack(transpose(%s),row),%s), %.0f, %f, %.0f)", x@name, schema, x@name, tschema, nu,tol,maxit)
   narray = scidb:::.scidbeval(query, eval=TRUE, gc=TRUE)
   ans = list(u=slice(narray, "matrix", 0,eval=FALSE)[,between(0,nu-1)],
              d=slice(narray, "matrix", 1,eval=FALSE)[between(0,nu-1),between(0,nu-1)],
@@ -282,7 +282,7 @@ svd_scidb = function(x, nu, nv, LINPACK = FALSE)
     u = tmpnam()
     d = tmpnam()
     v = tmpnam()
-    schema = sprintf("[%s=0:%d,1000,0,%s=0:%d,1000,0]",
+    schema = sprintf("[%s=0:%.0f,1000,0,%s=0:%.0f,1000,0]",
                      x@D$name[1],x@D$length[1]-1,
                      x@D$name[2],x@D$length[2]-1)
     schema = sprintf("%s%s",build_attr_schema(x),schema)
