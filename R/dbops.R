@@ -110,7 +110,10 @@
         chunksize, overlap, sep=","), collapse=","),"]",sep=""), sep="")
   query = sprintf("build(%s,%s)",schema,data)
   if(missing(name)) return(.scidbeval(query,eval))
-  .scidbeval(query,eval,name)
+  ans = .scidbeval(query,eval,name)
+# We know that the output of build is not sparse
+  attr(ans,"sparse") = FALSE
+  ans
 }
 
 # Count the number of non-empty cells

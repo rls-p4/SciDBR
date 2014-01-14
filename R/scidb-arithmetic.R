@@ -38,8 +38,9 @@ Ops.scidb = function(e1,e2) {
 }
 
 # e1 and e2 must each already be SciDB arrays.
-scidbmultiply = function(e1,e2)
+scidbmultiply = function(e1,e2,)
 {
+  `eval` = FALSE
 # Check for availability of spgemm
   P4 = length(grep("spgemm",scidb:::.scidbenv$ops[,2]))>0
   if(length(e1@attributes)>1)
@@ -108,6 +109,10 @@ scidbmultiply = function(e1,e2)
 
   if(!SPARSE)
   {
+# As of SciDB version 13.12, SciDB exhibits nasty bugs when gemm is nested
+# within other SciDB operators, in particular subarray. We force evaluation
+# to prevent this. XXX
+    `eval` = TRUE
 # Adjust the arrays to conform to GEMM requirements
     dnames = make.names_(c(e1@D$name[[1]],e2@D$name[[2]]))
     CHUNK_SIZE = options("scidb.gemm_chunk_size")[[1]]
@@ -133,7 +138,7 @@ scidbmultiply = function(e1,e2)
   else
     query = sprintf("gemm(%s, %s, %s)",op1,op2,op3)
 
-  ans = .scidbeval(query,gc=TRUE,eval=FALSE,depend=list(e1,e2))
+  ans = .scidbeval(query,gc=TRUE,eval=eval,depend=list(e1,e2))
   ans
 }
 
@@ -154,18 +159,15 @@ scidbmultiply = function(e1,e2)
     x = tmpnam()
     e2 = as.scidb(e2,name=x,gc=TRUE)
   }
-# We evaluate SciDB arguments because binary aritmetic operations require
-# an outer join to handle sparse arrays, and the outer join will end up
-# potentially replicating work unnecessarily.
   if(inherits(e1,"scidb"))
   {
-    e1 = scidbeval(e1,gc=TRUE)
+#    e1 = scidbeval(e1,gc=TRUE)
     e1a = e1@attribute
     depend = c(depend, e1)
   }
   if(inherits(e2,"scidb"))
   {
-    e2 = scidbeval(e2,gc=TRUE)
+#    e2 = scidbeval(e2,gc=TRUE)
     e2a = e2@attribute
     depend = c(depend, e2)
   }
