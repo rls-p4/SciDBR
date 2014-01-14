@@ -4,6 +4,24 @@
 # frames). They can be efficiently nested by explicitly setting eval=FALSE on
 # inner functions, deferring computation until eval=TRUE.
 
+`reshape_scidb` = function(data, shape, dimnames, chunks, `eval`=FALSE)
+{
+  if(missing(shape)) stop("Missing dimension shape")
+  N = length(shape)
+  if(missing(dimnames))
+  {
+    dimnames=letters[9:(9+N)]
+  }
+  if(missing(chunks))
+  {
+    chunks = rep(1000,N)
+  }
+  D = paste(paste(dimnames,"=",0,":",shape-1,",",chunks,",0",sep=""),collapse=",")
+  D = sprintf("[%s]",D)
+  query = sprintf("reshape(%s,%s%s)",data@name,build_attr_schema(data),D)
+  .scidbeval(query,eval,depend=list(data))
+}
+
 `unpack_scidb` = function(x, `eval`=FALSE)
 {
   dimname = make.unique_(c(x@D$name,x@attributes), "i")

@@ -288,6 +288,10 @@ setMethod("svd", signature(x="scidb"), svd_scidb)
 
 setMethod("unpack",signature(x="scidb"),unpack_scidb)
 
+setOldClass("reshape")
+setGeneric("reshape", function(data,...) data)
+setMethod("reshape", signature(data="scidb"), reshape_scidb)
+
 
 # Transpose a matrix or vector
 setOldClass("t")
@@ -299,11 +303,6 @@ setMethod("t", signature(x="scidb"),
     .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
   }
 )
-
-log.scidb = function(x, base=exp(1), attr)
-{
-  log_scidb(x,base,attr) 
-}
 
 setMethod("sin",signature(x="scidb"),
   function(x)

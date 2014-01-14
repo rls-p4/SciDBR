@@ -22,29 +22,17 @@
 
 # Various functions that support S3 methods for the SciDB class
 
-`reshape.scidb` = function(x, shape, dimnames, chunks, `eval`=FALSE)
-{
-  if(missing(shape)) stop("Missing dimension shape")
-  N = length(shape)
-  if(missing(dimnames))
-  {
-    dimnames=letters[9:(9+N)]
-  }
-  if(missing(chunks))
-  {
-    chunks = rep(1000,N)
-  }
-  D = paste(paste(dimnames,"=",0,":",shape-1,",",chunks,",0",sep=""),collapse=",")
-  query = sprintf("reshape(%s,%s%s)",x@name,build_attr_schema(x),D)
-  .scidbeval(query,eval,depend=list(x))
-}
-
-`cbind.scidb` = function(x)
+cbind.scidb = function(x)
 {
   if(length(dim(x))!=1) return(x)
   newdim=make.unique_(x@attributes, "j")
   nd = sprintf("%s[%s,%s=0:0,1,0]",scidb:::build_attr_schema(x) , scidb:::build_dim_schema(x,bracket=FALSE),newdim)
   redimension(x, nd)
+}
+
+log.scidb = function(x, base=exp(1), attr)
+{
+  log_scidb(x,base,attr) 
 }
 
 colnames.scidb = function(x)
