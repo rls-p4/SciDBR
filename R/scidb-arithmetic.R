@@ -40,7 +40,10 @@ Ops.scidb = function(e1,e2) {
 # e1 and e2 must each already be SciDB arrays.
 scidbmultiply = function(e1,e2)
 {
-  `eval` = FALSE
+# As of SciDB version 13.12, SciDB exhibits nasty bugs when gemm is nested
+# within other SciDB operators, in particular subarray. We force evaluation
+# to prevent this. XXX
+  `eval` = TRUE
 # Check for availability of spgemm
   P4 = length(grep("spgemm",scidb:::.scidbenv$ops[,2]))>0
   if(length(e1@attributes)>1)
@@ -109,10 +112,6 @@ scidbmultiply = function(e1,e2)
 
   if(!SPARSE)
   {
-# As of SciDB version 13.12, SciDB exhibits nasty bugs when gemm is nested
-# within other SciDB operators, in particular subarray. We force evaluation
-# to prevent this. XXX
-    `eval` = TRUE
 # Adjust the arrays to conform to GEMM requirements
     dnames = make.names_(c(e1@D$name[[1]],e2@D$name[[2]]))
     CHUNK_SIZE = options("scidb.gemm_chunk_size")[[1]]
