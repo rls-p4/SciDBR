@@ -824,7 +824,7 @@ iqiter = function (con, n = 1, excludecol, ...)
   }
 
   low = scidb:::noE(A@D$start)
-  hi = scidb:::noE(A@D$length)
+  hi = scidb:::noE(A@D$length - 1 + A@D$start)
   hi[as.numeric(hi)>=as.numeric(.scidb_DIM_MAX)] = "*"
   hi[is.na(hi)] = "*"
   R = paste(low,hi,sep=":")

@@ -54,6 +54,7 @@ S3method("subset",scidb)
 S3method("log",scidb)
 S3method("diff",scidb)
 S3method("cbind",scidb)
+S3method("reshape",scidb)
 
 S3method("Ops",scidbdf)
 S3method("[",scidbdf)
