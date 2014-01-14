@@ -42,6 +42,10 @@ scidbmultiply = function(e1,e2)
 {
 # Check for availability of spgemm
   P4 = length(grep("spgemm",scidb:::.scidbenv$ops[,2]))>0
+  if(length(e1@attributes)>1)
+    e1 = project(e1,e1@attribute)
+  if(length(e2@attributes)>1)
+    e2 = project(e2,e2@attribute)
   e1.sparse = is.sparse(e1)
   e2.sparse = is.sparse(e2)
   SPARSE = e1.sparse || e2.sparse
@@ -50,41 +54,45 @@ scidbmultiply = function(e1,e2)
   a2 = e2@attribute
   op1 = e1@name
   op2 = e2@name
-  if(length(e1@attributes)>1)
-    op1 = sprintf("project(%s,%s)",e1@name,a1)
-  if(length(e2@attributes)>1)
-    op2 = sprintf("project(%s,%s)",e2@name,a2)
 
 # Promote vectors to row- or column-vectors as required.
   if(length(dim(e1))<2)
   {
-    dimname = make.unique_(e1@D$name, "i")
-    op1 = sprintf("apply(%s,%s,0)",op1,dimname)
-    op1 = sprintf("redimension(%s, <%s:%s>[%s=0:0,1000,0,%s=0:%.0f,%.0f,0])",
-            op1,a1,e1@type[1],dimname,e1@D$name[[1]],e1@D$length[[1]]-1,
-            e2@D$chunk_interval[[1]])
-    e1@D$name = c(dimname, e1@D$name[[1]])
+    L = dim(e1)
+    M = L/e2@D$length[1]
+    if(M != floor(M)) stop("Non-conformable dimensions")
+
+    as = build_attr_schema(e1)
+    op1 = sprintf("reshape(%s,%s[i=0:%.0f,%.0f,0,j=0:%.0f,%.0f,0])",
+            op1, as, M-1, e1@D$chunk_interval[1],
+              e2@D$length[1]-1, e2@D$chunk_interval[1])
+    
+    e1@D$name = c("i","j")
     e1@D$type = c("int64","int64")
-    e1@D$start = c(0,e1@D$start[[1]])
-    e1@D$length = c(1,e1@D$length[[1]])
-    e1@D$chunk_interval = c(1000,e1@D$chunk_interval[[1]])
+    e1@D$start = c(0,0)
+    e1@D$length = c(M,e2@D$length[1])
+    e1@D$chunk_interval = c(e1@D$chunk_interval[1],e2@D$chunk_interval[1])
     e1@D$chunk_overlap = c(0,0)
-    e1@dim = c(1,e1@dim[1])
+    e1@dim = e1@D$length
   }
   if(length(dim(e2))<2)
   {
-    dimname = make.unique_(e2@D$name, "j")
-    op2 = sprintf("apply(%s,%s,0)",op2,dimname)
-    op2 = sprintf("redimension(%s, <%s:%s>[%s=0:%.0f,%.0f,0,%s=0:0,1000,0])",
-            op2,a2,e2@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,
-            e2@D$chunk_interval[[1]],dimname)
-    e2@D$name = c(e2@D$name[[1]],dimname)
+    L = dim(e2)
+    N = L/e1@D$length[2]
+    if(N != floor(N)) stop("Non-conformable dimensions")
+
+    as = build_attr_schema(e2)
+    op2 = sprintf("reshape(%s,%s[i=0:%.0f,%.0f,0,j=0:%.0f,%.0f,0])",
+            op2, as, e1@D$length[2]-1, e1@D$chunk_interval[2],
+                     N-1, e2@D$chunk_interval[1])
+    
+    e2@D$name = c("i","j")
     e2@D$type = c("int64","int64")
-    e2@D$start = c(e2@D$start[[1]],0)
-    e2@D$length = c(e2@D$length[[1]],1)
-    e2@D$chunk_interval = c(e1@D$chunk_interval[[2]],1000)
+    e2@D$start = c(0,0)
+    e2@D$length = c(e1@D$length[2],N)
+    e2@D$chunk_interval = c(e1@D$chunk_interval[2],e2@D$chunk_interval[1])
     e2@D$chunk_overlap = c(0,0)
-    e2@dim = c(e2@dim[1],1)
+    e2@dim = e2@D$length
   }
 
 # We use subarray to handle starting index mismatches (subarray
