@@ -1,6 +1,6 @@
 # Nifty aggregation-related functions
 
-`sweep_scidb` = function(x, MARGIN, STATS, FUN="-", `eval`, `name`)
+`sweep_scidb` = function(x, MARGIN, STATS, FUN="-", `eval`=FALSE, `name`)
 {
   if(!is.scidb(x)) stop("x must be a scidb object")
   if(!is.scidb(STATS) && !is.scidbdf(STATS)) stop("STATS must be a scidb or scidbdf object")
@@ -8,11 +8,6 @@
   if(length(STATS@D$name)>1) stop("STATS must be a one-dimensional SciDB array")
   if(is.numeric(MARGIN)) MARGIN = x@D$name[MARGIN]
   if(missing(`name`)) `name` = x@attribute
-  if(missing(`eval`))
-  {
-    nf   = sys.nframe() - 2  # Note! this is a method and is on a deeper stack.
-    `eval` = !called_from_scidb(nf)
-  }
   if(!(MARGIN %in% STATS@D$name))
   {
 # Make sure coordinate axis along MARGIN are named the same in each array
@@ -25,7 +20,7 @@
 # Check for potential attribute name conflicts and adjust.
   if(length(intersect(x@attributes, STATS@attributes))>0)
   {
-    STATS = cast(STATS,paste(build_attr_schema(STATS,"V_"),build_dim_schema(STATS)),eval=FALSE)
+    STATS = cast(STATS,paste(build_attr_schema(STATS,"V_"),build_dim_schema(STATS)),`eval`=FALSE)
   }
   if(nchar(FUN)==1)
   {
@@ -40,17 +35,12 @@
     "_sweep", `name`, eval=FALSE), eval=`eval`)
 }
 
-`apply_scidb` = function(X,MARGIN,FUN,`eval`,`name`,...)
+`apply_scidb` = function(X,MARGIN,FUN,`eval`=FALSE,`name`,...)
 {
   if(!is.scidb(X)) stop("X must be a scidb object")
   if(length(MARGIN)!=1) stop("MARGIN must indicate a single dimension")
   if(is.numeric(MARGIN)) MARGIN = X@D$name[MARGIN]
   if(missing(`name`)) `name` = X@attribute
-  if(missing(`eval`))
-  {
-    nf   = sys.nframe() - 1  # Note! this is a method and is on a deeper stack?
-    `eval` = !called_from_scidb(nf)
-  }
   Y = aggregate(X,MARGIN,FUN,eval=FALSE)
   a = Y@attributes[length(Y@attributes)]
   attribute_rename(project(Y,a,eval=FALSE),a, `name`, eval=`eval`)
@@ -61,7 +51,7 @@
 #      a scidb or scidbdf object that will be cross_joined to x and then
 #      grouped by attribues of by.
 # FUN: A SciDB aggregation expresion
-`aggregate_scidb` = function(x,by,FUN,eval)
+`aggregate_scidb` = function(x,by,FUN,`eval`=FALSE)
 {
   unpack = FALSE
   b = `by`
@@ -74,12 +64,6 @@
     x = merge(x,b,by=list(j,j),eval=FALSE,depend=list(x,b))
     n = by@attributes
     by = list(n)
-  }
-
-  if(missing(`eval`))
-  {
-    nf   = sys.nframe() - 2  # Note! this is a method and is on a deeper stack.
-    `eval` = !called_from_scidb(nf)
   }
 # A bug up to SciDB 13.6 unpack prevents us from using eval=FALSE
   if(!eval && !compare_versions(options("scidb.version")[[1]],13.9)) stop("eval=FALSE not supported by aggregate due to a bug in SciDB <= 13.6")

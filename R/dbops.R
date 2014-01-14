@@ -58,7 +58,7 @@
   .scidbeval(query,eval,depend=list(x))
 }
 
-`repart` = function(x, upper, chunk, overlap, eval=FALSE)
+`repart` = function(x, upper, chunk, overlap, `eval`=FALSE)
 {
   a = build_attr_schema(x)
   if(missing(upper)) upper = x@D$start + x@D$length - 1
@@ -73,14 +73,9 @@
   .scidbeval(query,eval,depend=list(x))
 }
 
-`redimension` = function(x, s, eval)
+`redimension` = function(x, s, `eval`=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-  if(missing(`eval`))
-  {
-    nf   = sys.nframe()
-    `eval` = !called_from_scidb(nf)
-  }
 # NB SciDB NULL is not allowed along a coordinate axis prior to SciDB 12.11,
 # which could lead to a run time error here.
   query = sprintf("redimension(%s,%s)",x@name,s)
@@ -89,13 +84,8 @@
 
 # SciDB build wrapper, intended to act something like the R 'array' function.
 `build` = function(data, dim, names, type="double",
-                 start, name, chunksize, overlap, gc=TRUE, eval)
+                 start, name, chunksize, overlap, gc=TRUE, `eval`=FALSE)
 {
-  if(missing(`eval`))
-  {
-    nf   = sys.nframe()
-    `eval` = !called_from_scidb(nf)
-  }
   if(missing(start)) start = rep(0,length(dim))
   if(missing(overlap)) overlap = rep(0,length(dim))
   if(missing(chunksize))
@@ -131,13 +121,8 @@
 }
 
 # The new (SciDB 13.9) cumulate
-`cumulate` = function(x, expression, dimension, eval)
+`cumulate` = function(x, expression, dimension, `eval`=FALSE)
 {
-  if(missing(`eval`))
-  {
-    nf   = sys.nframe()
-    `eval` = !called_from_scidb(nf)
-  }
   if(missing(dimension)) dimension = x@D$name[[1]]
   query = sprintf("cumulate(%s, %s, %s)",x@name,expression,dimension)
   .scidbeval(query,eval,depend=list(x))
@@ -149,15 +134,8 @@
 # attributes: a character vector describing the list of attributes to project onto
 # eval: a boolean value. If TRUE, the query is executed returning a scidb array.
 #       If FALSE, a promise object describing the query is returned.
-`project` = function(X,attributes,eval)
+`project` = function(X,attributes,`eval`=FALSE)
 {
-  if(missing(`eval`))
-  {
-# Note: project is implemented as a function in the package. It occupies
-# a sole position on the stack reported by sys.nframe.
-    nf   = sys.nframe()
-    `eval` = !called_from_scidb(nf)
-  }
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   query = sprintf("project(%s,%s)", xname,paste(attributes,collapse=","))
@@ -169,17 +147,8 @@
 # expr is a valid SciDB expression (character)
 # eval=TRUE means run the query and return a scidb object.
 # eval=FALSE means return a promise object representing the query.
-`filter_scidb` = function(X,expr,eval)
+`filter_scidb` = function(X,expr,`eval`=FALSE)
 {
-  if(missing(`eval`))
-  {
-# Note the difference here with project above. filter_scidb is implemented
-# as a method ('subset') and its position on the stack is in this case three
-# levels deep. So we subtract 2 from sys.nframe to get to the first position
-# that represents this function.
-    nf   = sys.nframe() - 2
-    `eval` = !called_from_scidb(nf)
-  }
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   query = sprintf("filter(%s,%s)", xname,expr)
@@ -204,11 +173,7 @@
   mc = list(...)
   if(is.null(mc$by)) `by`=list()
   else `by`=mc$by
-  if(is.null(mc$eval))
-  {
-    nf   = sys.nframe() - 2
-    `eval` = !called_from_scidb(nf)
-  } else `eval`=mc$eval
+  `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
   xname = X@name
   yname = Y@name
 
@@ -223,8 +188,8 @@
     {
 # Special case, join on attributes. Right now limited to one attribute per
 # array cause I am lazy and this is incredibly complicated.
-      XI = index_lookup(X,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE),sort=FALSE),`by`[[1]], eval=FALSE)
-      YI = index_lookup(Y,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE),sort=FALSE),`by`[[2]], eval=FALSE)
+      XI = index_lookup(X,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE),sort=FALSE),`by`[[1]], `eval`=FALSE)
+      YI = index_lookup(Y,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE),sort=FALSE),`by`[[2]], `eval`=FALSE)
 
 # Note! Limited to inner-join for now.
       new_dim_name = make.names_(c(X@D$name,Y@D$name,"row"))
@@ -264,12 +229,8 @@
 
 
 
-`index_lookup` = function(X, I, attr, new_attr, eval)
+`index_lookup` = function(X, I, attr, new_attr, `eval`=FALSE)
 {
-  if(missing(`eval`))
-  {
-    eval = FALSE
-  }
   if(missing(attr)) attr = X@attributes[[1]]
   if(missing(new_attr)) new_attr=paste(attr,"index",sep="_")
   xname = X
@@ -281,13 +242,8 @@
 }
 
 # Sort of like cbind for data frames.
-`bind` = function(X, name, FUN, eval)
+`bind` = function(X, name, FUN, `eval`=FALSE)
 {
-  if(missing(`eval`))
-  {
-    nf   = sys.nframe()
-    `eval` = !called_from_scidb(nf)
-  }
   aname = X
   if(class(X) %in% c("scidb","scidbdf")) aname=X@name
   if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
@@ -298,10 +254,8 @@
 
 `unique_scidb` = function(x, incomparables=FALSE, sort=TRUE, ...)
 {
-  nf   = sys.nframe()  - 2
-  `eval` = !called_from_scidb(nf)
   mc = list(...)
-  `eval` = ifelse(is.null(mc$eval), `eval`, mc$eval)
+  `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
   if(incomparables!=FALSE) warning("The incomparables option is not available yet.")
   xname = x@name
   if(sort)
@@ -320,7 +274,6 @@
 `sort_scidb` = function(X, decreasing = FALSE, ...)
 {
   nf   = sys.nframe() - 2  # XXX Note! sort is a method and is on a deeper stack.
-  `eval` = !called_from_scidb(nf)
   mc = list(...)
   if(!is.null(mc$na.last))
     warning("na.last option not supported by SciDB sort. Missing values are treated as less than other values by SciDB sort.")
@@ -333,7 +286,7 @@
     if(length(EX@attributes)>1) stop("Array contains more than one attribute. Specify one or more attributes to sort on with the attributes= function argument")
     mc$attributes=EX@attributes
   }
-  `eval` = ifelse(is.null(mc$eval), `eval`, mc$eval)
+  `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
   a = paste(paste(mc$attributes, dflag, sep=" "),collapse=",")
   if(!is.null(mc$chunk_size)) a = paste(a, mc$chunk_size, sep=",")
 

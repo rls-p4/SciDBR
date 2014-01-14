@@ -197,29 +197,6 @@ scidb_from_schemastring = function(s,expr=character(), `data.frame`)
   )
 }
 
-# Return TRUE if our parent function lives in the scidb namespace, otherwise
-# FALSE. This function is used to automatically control deferred evaluation
-# of SciDB query expressions. If not nested, return FALSE.
-# nf is the number of the frame of the calling function, we use it to locate
-# our position on the frame stack. This is very substantially complicated
-# by methods, for which I don't yet have a great solution.
-called_from_scidb = function(nf=1)
-{
-  if(sys.nframe()<3 || nf==1) return(FALSE)
-  f = sys.function(nf-1)
-# We look for a scidb namespace, and handle a few special methods with a hack.
-# XXX Is there a better way to do this? (There must be!)
-  ans = grepl("namespace:scidb",capture.output(environment(f))[[1]])
-  ans = ans || grepl("^sort",sys.call(nf-1)[[1]])
-  ans = ans || grepl("^unique",sys.call(nf-1)[[1]])
-  ans = ans || grepl("^sweep",sys.call(nf-1)[[1]])
-  ans = ans || grepl("^apply",sys.call(nf-1)[[1]])
-  ans = ans || grepl("^subset",sys.call(nf-1)[[1]])
-  ans = ans || grepl("^aggregate",sys.call(nf-1)[[1]])
-  ans = ans || grepl("^merge",sys.call(nf-1)[[1]])
-  ans
-}
-
 # store the connection information and obtain a unique ID
 scidbconnect = function(host='localhost', port=8080L, username, password)
 {
