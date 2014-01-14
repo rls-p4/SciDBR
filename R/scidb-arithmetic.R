@@ -38,7 +38,7 @@ Ops.scidb = function(e1,e2) {
 }
 
 # e1 and e2 must each already be SciDB arrays.
-scidbmultiply = function(e1,e2,)
+scidbmultiply = function(e1,e2)
 {
   `eval` = FALSE
 # Check for availability of spgemm
