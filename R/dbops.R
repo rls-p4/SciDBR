@@ -221,6 +221,22 @@
       b = as.list(unlist(lapply(1:length(`by`[[1]]), function(j) unlist(lapply(`by`, function(x) x[[j]])))))
       cterms = paste(c("__X","__Y"), b, sep=".")
       cterms = paste(cterms,collapse=",")
+# Redimension as required along matching dimensions.
+      bs = ""
+      s = c()
+      for(i in seq(1,length(b),by=2))
+      {
+        idx = which(X@D$name %in% b[[i]])
+        if(i>1) bs = paste(bs,",")
+        bs = paste(bs,build_dim_schema(X,I=idx,bracket=FALSE,newname=b[[i+1]]))
+        s = c(s,which(Y@D$name %in% b[[i+1]]))
+      }
+      for(i in setdiff(1:length(Y@D$name),s))
+      {
+        bs = paste(",",bs,build_dim_schema(X,I=i,bracket=FALSE))
+      }
+      bs = sprintf("%s[%s]",build_attr_schema(Y),bs)
+      query = sprintf("cross_join(%s as __X, redimension(%s,%s) as __Y", xname, yname,bs)
       query  = paste(query,",",cterms,")",sep="")
     }
   } else
