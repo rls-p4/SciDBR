@@ -798,7 +798,7 @@ iqiter = function (con, n = 1, excludecol, ...)
   }
   if(!missing(newlen))
   {
-    A@D$length = newlen - 1 + A@D$start
+    A@D$length = newlen
   }
 
   low = scidb:::noE(A@D$start)
