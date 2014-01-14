@@ -10,7 +10,7 @@
   N = length(shape)
   if(missing(dimnames))
   {
-    dimnames=letters[9:(9+N)]
+    dimnames=letters[9:(9+N-1)]
   }
   if(missing(chunks))
   {
