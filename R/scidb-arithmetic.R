@@ -201,8 +201,14 @@ scidbmultiply = function(e1,e2)
     q2 = sprintf("repart(%s, %s)", q2, schema)
 
 # Handle sparsity by cross-merging data (full outer join):
-    q1 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q1,q2,e1@type)
-    q2 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q2,q1,e2@type)
+    if(is.sparse(e1))
+    {
+      q1 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q1,q2,e1@type)
+    }
+    if(is.sparse(e2))
+    {
+      q2 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q2,q1,e2@type)
+    }
   }
   p1 = p2 = ""
 # Syntax sugar for exponetiation (map the ^ infix operator to pow):

@@ -272,6 +272,7 @@ make.names_ = function(x)
 # returns a set the same size as y with non-conflicting value names
 make.unique_ = function(x,y)
 {
+  x = make.names_(x)
   z = scidb:::make.names_(c(x,y))
   setdiff(union(x,z),x)
 }
