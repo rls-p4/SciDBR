@@ -47,6 +47,11 @@ This method is presently limited to SQL-like `natural joins`, a special
 case of inner joins corresponding to the \code{all=FALSE} case in
 the standard R \code{merge} function. A future version of this package
 will include additional join cases.
+
+The various SciDB \code{join} operators generally require that the arrays have
+identical partitioning (coordinate system bounds, chunk size, etc.) in the
+common dimensions.  The \code{merge} method attempts to rectify SciDB
+arrays along the specified dimensions as required before joining.
 }
 \value{A \code{scidb} or \code{scidbdf} reference object. }
 \author{
