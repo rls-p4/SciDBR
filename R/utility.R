@@ -434,6 +434,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
 # null
 scidbremove = function(x, error=warning)
 {
+  if(is.null(x)) return(invisible())
   if(inherits(x,"scidb")) x = x@name
   if(!inherits(x,"character")) stop("Invalid argument. Perhaps you meant to quote the variable name(s)?")
   for(y in x) {
