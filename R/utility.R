@@ -272,9 +272,9 @@ make.names_ = function(x)
 # returns a set the same size as y with non-conflicting value names
 make.unique_ = function(x,y)
 {
-  x = make.names_(x)
-  z = scidb:::make.names_(c(x,y))
-  setdiff(union(x,z),x)
+  x = make.names(x,unique=TRUE)
+  z = make.names(c(x,y),unique=TRUE)
+  gsub("\\.","_",setdiff(union(x,z),x))
 }
 
 # Make a name from a prefix and a unique SciDB identifier.
@@ -750,14 +750,19 @@ iqiter = function (con, n = 1, excludecol, ...)
 # Build the attibute part of a SciDB array schema from a scidb,
 # scidbdf object.
 # Set prefix to add a prefix to all attribute names.
-`build_attr_schema` = function(A, prefix="")
+# I: optional vector of dimension indices to use, if missing use all
+# newnames: optional vector of new dimension names, must be the same length
+#    as I.
+`build_attr_schema` = function(A, prefix="", I, newnames)
 {
+  if(missing(I)) I = rep(TRUE,length(A@attributes))
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   N = rep("",length(A@nullable))
   N[A@nullable] = " NULL"
   N = paste(A@types,N,sep="")
   attributes = paste(prefix,A@attributes,sep="")
-  S = paste(paste(attributes,N,sep=":"),collapse=",")
+  if(!missing(newnames)) attributes = newnames
+  S = paste(paste(attributes,N,sep=":")[I],collapse=",")
   sprintf("<%s>",S)
 }
 

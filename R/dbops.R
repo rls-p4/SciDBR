@@ -168,82 +168,112 @@
 # eval=TRUE means run the query and return a scidb object.
 # eval=FALSE means return a promise object representing the query.
 # Examples:
-# merge(X,Y,by='i')
-# merge(X,Y,by=list('i','i'))  # equivalent to last expression
-# merge(X,Y,by=list(X=c('i','j'), Y=c('k','l')))
-`merge_scidb` = function(X,Y,...)
+# merge(x,y)        # Cross-product of x and y
+# merge(x,y,by='i') # Natural join on common dimension i
+# merge(x,y,by.x='i',by.y='i') # equiv. to the last expression
+`merge_scidb` = function(x,y,...)
 {
   mc = list(...)
-  if(is.null(mc$by)) `by`=list()
-  else `by`=mc$by
+  `by` = by.x = by.y = NULL
+  if(!is.null(mc$by)) `by` = mc$by
+  if(!is.null(mc$by.x)) by.x = mc$by.x
+  if(!is.null(mc$by.y)) by.y = mc$by.y
   `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
-  xname = X@name
-  yname = Y@name
+  xname = x@name
+  yname = y@name
 
-
-  query = sprintf("cross_join(%s as __X, %s as __Y", xname, yname)
-  if(length(`by`)>1 && !is.list(`by`))
-    stop("by must be either a single string describing a dimension to join on, or a list of attributes or dimensions in the form list(c('arrayX_dim1','arrayX_dim2',...),c('arrayY_dim1','arrayY_dim2',...))")
-  if(length(`by`)>0)
+# Check input
+  if(!is.null(`by`) && (!is.null(by.x) || !is.null(by.y)))
   {
-    b = unlist(lapply(1:length(`by`[[1]]), function(j) unlist(lapply(`by`, function(x) x[[j]]))))
-    if(any(X@attributes %in% b) && length(b)==2)
-    {
-# Special case, join on attributes. Right now limited to one attribute per
-# array cause I am lazy and this is incredibly complicated.
-      XI = index_lookup(X,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE),sort=FALSE),`by`[[1]], `eval`=FALSE)
-      YI = index_lookup(Y,unique(sort(project(X,`by`[[1]]),attributes=`by`[[1]],decreasing=FALSE),sort=FALSE),`by`[[2]], `eval`=FALSE)
-
-# Note! Limited to inner-join for now.
-      new_dim_name = make.names_(c(X@D$name,Y@D$name,"row"))
-      new_dim_name = new_dim_name[length(new_dim_name)]
-      a = XI@attributes %in% paste(b,"index",sep="_")
-      n = XI@attributes[a]
-      redim = paste(paste(n,"=-1:*,100000,0",sep=""), collapse=",")
-      S = scidb:::build_attr_schema(X)
-      D = sprintf("[%s,%s]",redim,scidb:::build_dim_schema(X,bracket=FALSE))
-      q1 = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s)",XI@name,n,S,D)
-
-      a = YI@attributes %in% paste(b,"index",sep="_")
-      n = YI@attributes[a]
-      redim = paste(paste(n,"=-1:*,100000,0",sep=""), collapse=",")
-      S = scidb:::build_attr_schema(Y)
-      D = sprintf("[%s,%s]",redim,scidb:::build_dim_schema(Y,bracket=FALSE))
-      D2 = sprintf("[%s,_%s]",redim,scidb:::build_dim_schema(Y,bracket=FALSE))
-      q2 = sprintf("cast(redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s),%s%s)",YI@name,n,S,D,S,D2)
-
-      query = sprintf("unpack(cross_join(%s as _cazart, %s as _yikes, _cazart.%s_index, _yikes.%s_index),%s)",q1,q2,by[[1]],by[[2]],new_dim_name)
-
-    } else
-    {
-# Join on dimensions.
-# Re-order list terms
-      b = as.list(unlist(lapply(1:length(`by`[[1]]), function(j) unlist(lapply(`by`, function(x) x[[j]])))))
-      cterms = paste(c("__X","__Y"), b, sep=".")
-      cterms = paste(cterms,collapse=",")
-# Redimension as required along matching dimensions.
-#     bs = ""
-#     s = c()
-#     for(i in seq(1,length(b),by=2))
-#     {
-#       idx = which(X@D$name %in% b[[i]])
-#       if(i>1) bs = paste(bs,",")
-#       bs = paste(bs,build_dim_schema(X,I=idx,bracket=FALSE,newname=b[[i+1]]))
-#       s = c(s,which(Y@D$name %in% b[[i+1]]))
-#     }
-#     for(i in setdiff(1:length(Y@D$name),s))
-#     {
-#       bs = paste(",",bs,build_dim_schema(X,I=i,bracket=FALSE))
-#     }
-#     bs = sprintf("%s[%s]",build_attr_schema(Y),bs)
-#     query = sprintf("cross_join(%s as __X, redimension(%s,%s) as __Y", xname, yname,bs)
-      query  = paste(query,",",cterms,")",sep="")
-    }
-  } else
-  {
-    query  = sprintf("%s)",query)
+    stop("`by` may not also be specified with `by.x` or `by.y`")
   }
-  .scidbeval(query,eval,depend=list(X,Y))
+
+# Check for simple cross case
+  if(is.null(`by`) && is.null(by.x) && is.null(by.y))
+  {
+    query = sprintf("cross(%s, %s)",xname,yname)
+    return(.scidbeval(query,eval,depend=list(x,y)))
+  }
+
+# Convert identically specified by int separate by.x by.y
+  if(length(by)>0)
+  {
+    by.x = `by`
+    by.y = `by`
+  }
+# Check for special join on attributes case (limited applicability)
+# In particular:
+# - join on only one attribute per array
+# - only inner join
+  if(all(by.x %in% x@attributes) && all(by.y %in% y@attributes))
+  {
+    by.x = by.x[[1]]  # Limitation: only one attribute for now
+    by.y = by.y[[1]]  # Ditto
+    query = sprintf("cross_join(%s as __X, %s as __Y", xname, yname)
+    XI = index_lookup(x,unique(project(x,by.x),attributes=by.x),by.x,`eval`=FALSE)
+    YI = index_lookup(y,unique(project(y,by.y),attributes=by.y),by.y,`eval`=FALSE)
+
+    new_dim_name = make.unique_(c(x@D$name,y@D$name),"row")
+    a = XI@attributes %in% paste(by.x,"index",sep="_")
+    n = XI@attributes[a]
+    redim = paste(paste(n,"=-1:*,100000,0",sep=""), collapse=",")
+    S = build_attr_schema(x, I=!(x@attributes %in% by.x))
+    D = sprintf("[%s,%s]",redim,build_dim_schema(x,bracket=FALSE))
+    q1 = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s)",XI@name,n,S,D)
+
+    a = YI@attributes %in% paste(by.y,"index",sep="_")
+    n = YI@attributes[a]
+    redim = paste(paste(n,"=-1:*,100000,0",sep=""), collapse=",")
+    S = scidb:::build_attr_schema(y)
+    D = sprintf("[%s,%s]",redim,build_dim_schema(y,bracket=FALSE))
+    D2 = sprintf("[%s,_%s]",redim,build_dim_schema(y,bracket=FALSE))
+    q2 = sprintf("cast(redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s),%s%s)",YI@name,n,S,D,S,D2)
+    query = sprintf("unpack(cross_join(%s as _cazart, %s as _yikes, _cazart.%s_index, _yikes.%s_index),%s)",q1,q2,by.x,by.y,new_dim_name)
+    return(.scidbeval(query,eval,depend=list(x,y)))
+  }
+
+# New attribute schema for y that won't conflict with x:
+  newas = build_attr_schema(y,newnames=make.unique_(x@attributes,y@attributes))
+# Check for join case
+  if((length(by.x) == length(by.y)) && all(x@D$name %in% by.x) && all(y@D$name %in% by.y))
+  {
+    newds = build_dim_schema(y,newnames=x@D$name)
+    castschema = sprintf("%s%s", newas, newds)
+    reschema = sprintf("%s%s", newas,build_dim_schema(x))
+# Cast and redimension y conformably with x:
+    z = redimension(cast(y,castschema),reschema)
+    query = sprintf("join(%s,%s)",x@name,z@name)
+    return(.scidbeval(query,eval,depend=list(x,y)))
+  }
+
+# Cross-join case (trickiest)
+# Cast and redimension y conformably with x along join dimensions:
+  idx.x = which(x@D$name %in% by.x)
+  msk.y = y@D$name %in% by.y
+  newds = lapply(1:length(y@D$name),
+    function(j) {
+      if(!msk.y[j])
+      {
+        d = build_dim_schema(y,I=j,bracket=FALSE)
+      } else
+      {
+        k = sum(msk.y[1:j])
+        d = build_dim_schema(x,I=idx.x[k],newnames=y@D$name[j],bracket=FALSE)
+      }
+    })
+  newds = sprintf("[%s]",paste(newds,collapse=","))
+  reschema = sprintf("%s%s", build_attr_schema(y),newds)
+  castschema = sprintf("%s%s",newas,newds)
+  z = cast(redimension(y,reschema),castschema)
+
+# Join on dimensions.
+  query = sprintf("cross_join(%s as __X, %s as __Y", xname, z@name)
+  cterms = paste(c("__X","__Y"), as.vector(rbind(by.x,by.y)), sep=".")
+  cterms = paste(cterms,collapse=",")
+  query  = paste(query,",",cterms,")",sep="")
+  ans = .scidbeval(query,eval,depend=list(x,y))
+# Fix up bogus dimension names ... todo XXX
+  ans 
 }
 
 
