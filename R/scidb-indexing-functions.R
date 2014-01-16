@@ -131,7 +131,14 @@ special_index = function(x, query, i, idx, eval)
   {
     N = x@D$name[[j]]
     dimlabel = make.unique_(x@D$name,paste(N,"_1",sep=""))
-# XXX lapply here swap=lapply(idx, ... ?
+    if(is.list(swap[[1]]))
+    {
+      slabels = unlist(lapply(swap,function(x)x[[2]]))
+      dimlabel = make.unique_(slabels, dimlabel)
+    } else if(!is.null(swap))
+    {
+      dimlabel = make.unique_(swap[[2]], dimlabel)
+    }
     if(idx[[j]])
     {
       if(is.numeric(i[[j]]))
@@ -193,7 +200,6 @@ special_index = function(x, query, i, idx, eval)
         swap = list(swap,list(old=N, new=N, length=x@D$length[[j]]))
     }
   }
-browser()
   if(length(x@D$name)==1)
   {
     nn = swap[[2]]
