@@ -130,7 +130,7 @@ special_index = function(x, query, i, idx, eval)
   for(j in 1:length(idx))
   {
     N = x@D$name[[j]]
-    dimlabel = paste(N,"_1",sep="") # XXX check unique
+    dimlabel = make.unique_(x@D$name,paste(N,"_1",sep=""))
 # XXX lapply here swap=lapply(idx, ... ?
     if(idx[[j]])
     {
@@ -193,6 +193,7 @@ special_index = function(x, query, i, idx, eval)
         swap = list(swap,list(old=N, new=N, length=x@D$length[[j]]))
     }
   }
+browser()
   if(length(x@D$name)==1)
   {
     nn = swap[[2]]

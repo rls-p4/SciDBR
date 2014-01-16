@@ -318,12 +318,17 @@ URI = function(resource="", args=list())
 }
 
 # Send an HTTP GET message
-GET = function(resource, args=list(), header=TRUE)
+GET = function(resource, args=list(), header=TRUE, async=FALSE)
 {
   if(!(substr(resource,1,1)=="/")) resource = paste("/",resource,sep="")
   uri = URI(resource, args)
   uri = URLencode(uri)
   uri = gsub("\\+","%2B",uri,perl=TRUE)
+  if(async)
+  {
+    getURI(url=uri,.opts=list(header=header,'ssl.verifypeer'=0),async=TRUE,perform=0)
+    return(NULL)
+  }
   getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0))
 }
 
@@ -361,7 +366,7 @@ type= c("arrays","operators","functions","types","aggregates","instances","queri
 }
 scidbls = function(...) scidblist(...)
 
-# Basic low-level query. Returns query id.
+# Basic low-level query. Returns query id. This is an internal function.
 # query: a character query string
 # afl: TRUE indicates use AFL, FALSE AQL
 # async: TRUE=Ignore return value and return immediately, FALSE=wait for return
@@ -372,6 +377,7 @@ scidbls = function(...) scidblist(...)
 # Example values of save:
 # save="dcsv"
 # save="lcsv+"
+# save="(double NULL, int32)"
 #
 # Returns the HTTP session in each case
 scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, session=NULL, resp=FALSE)
@@ -393,7 +399,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
   if(async)
   {
     ans =tryCatch(
-      GET("/execute_query",list(id=sessionid,release=release,query=query)),
+      GET("/execute_query",list(id=sessionid,release=release,query=query,afl=as.integer(afl)),async=TRUE),
       error=function(e) {
         GET("release_session", list(id=sessionid))
         stop("HTTP/1.0 500 ERROR")
@@ -612,10 +618,13 @@ iquery = function(query, `return`=FALSE,
        {
         sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
         result = GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE)
+# Handle escaped quotes
+        result = gsub("\\\\'","''",result)
+        result = gsub("\\\\\"","''",result)
         val = textConnection(result)
-        ret = tryCatch(
-                read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...),
-                error=function(e){warning(e);c()})
+        ret = tryCatch({
+                read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)},
+                error=function(e){ warning(e);c()})
         close(val)
         GET("/release_session",list(id=sessionid))
         chr = sapply(ret, function(x) "character" %in% class(x))
