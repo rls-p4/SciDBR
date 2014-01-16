@@ -326,7 +326,7 @@ GET = function(resource, args=list(), header=TRUE, async=FALSE)
   uri = gsub("\\+","%2B",uri,perl=TRUE)
   if(async)
   {
-    getURI(url=uri,.opts=list(header=header,'ssl.verifypeer'=0),async=TRUE,perform=0)
+    getURI(url=uri,.opts=list(header=header,'ssl.verifypeer'=0),async=TRUE)
     return(NULL)
   }
   getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0))
