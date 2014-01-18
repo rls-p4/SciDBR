@@ -63,7 +63,7 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
     obj@gc$name = name
     obj@gc$remove = TRUE
     reg.finalizer(obj@gc, function(e) if (e$remove) 
-        tryCatch(scidbremove(e$name), error = function(e) invisible(), async=TRUE), 
+        tryCatch(scidbremove(e$name,async=TRUE), error = function(e) invisible()), 
             onexit = TRUE)
   } else obj@gc = new.env()
   obj
@@ -844,7 +844,7 @@ rename = function(A, name=A@name, gc)
     A@gc$name = name
     A@gc$remove = TRUE
     reg.finalizer(A@gc, function(e) if (e$remove) 
-        tryCatch(scidbremove(e$name), error = function(e) invisible()), 
+        tryCatch(scidbremove(e$name, async=TRUE), error=function(e){invisible()}), 
             onexit = TRUE)
   } else A@gc = new.env()
   A
