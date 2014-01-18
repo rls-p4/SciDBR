@@ -12,8 +12,8 @@ SciDB \code{cross}, \code{cross_join}, and \code{join} operations.
 \S4method{merge}{scidbdf}(x,y, by, by.x, by.y, eval)
 }
 \arguments{
-  \item{x}{A \code{scidb}, \code{scidbdf}, or \code{scidexpr} object.}
-  \item{y}{A \code{scidb}, \code{scidbdf}, or \code{scidexpr} object.}
+  \item{x}{A \code{scidb} or \code{scidbdf}}
+  \item{y}{A \code{scidb} or \code{scidbdf}}
   \item{by}{An optional vector of common dimension or attribute names to join on. See details below.}
   \item{by.x}{An optional vector of dimension or attribute names of array \code{x} to join on. See deails.}
   \item{by.y}{An optional vector of dimension or attribute names of array \code{y} to join on. See deails.}

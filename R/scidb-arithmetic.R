@@ -283,14 +283,10 @@ tsvd = function(x,nu,tol=0.0001,maxit=20)
   ans
 }
 
-svd_scidb = function(x, nu, nv, LINPACK = FALSE)
+svd_scidb = function(x, nu=min(dim(x)), nv=nu)
 {
   got_tsvd = length(grep("tsvd",scidb:::.scidbenv$ops[,2]))>0
   if(missing(nu)) nu = min(dim(x))
-  if(!missing(nv))
-  {
-    if(nv != nu) warning("The SciDB SVD routines require nu = nv, setting nv to nu.")
-  }
   if(!is.sparse(x) && (nu > (min(dim(x))/3)) || !got_tsvd)
   {
 # Compute the full SVD
@@ -312,15 +308,12 @@ svd_scidb = function(x, nu, nv, LINPACK = FALSE)
 
 
 # Miscellaneous functions
-log_scidb = function(x, base=exp(1),attr)
+log_scidb = function(x, base=exp(1))
 {
-  if(missing(attr))
-  {
-    w = x@types == "double"
-    if(!any(w)) stop("requires at least one double-precision valued attribute")
-    if(class(x) %in% "scidb") attr = x@attribute
-    else attr = x@attributes[which(w)[[1]]]
-  }
+  w = x@types == "double"
+  if(!any(w)) stop("requires at least one double-precision valued attribute")
+  if(class(x) %in% "scidb") attr = x@attribute
+  else attr = x@attributes[which(w)[[1]]]
   new_attribute = sprintf("%s_log",attr)
   if(base==exp(1))
   {

@@ -1,5 +1,7 @@
 \name{svd}
+\docType{methods}
 \alias{svd}
+\alias{svd,scidb-method}
 \title{
 svd
 }
@@ -7,13 +9,12 @@ svd
 Compute the singular value decomposition of a dense SciDB matrix.
 }
 \usage{
-svd(x, nu = min(n, p), nv = min(n, p), LINPACK = FALSE)
+\S4method{svd}{scidb}(x, nu, nv)
 }
 \arguments{
   \item{x}{A scidb object representing a dense matrix.}
   \item{nu}{Optional number of singular values/vectors to compute. See notes below.}
   \item{nv}{Not used.}
-  \item{LINPACK}{Not used.}
 }
 \note{
 If the \code{nu} argument is specified, the SciDB \code{tsvd} function will be

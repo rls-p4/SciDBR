@@ -282,15 +282,15 @@ setOldClass("apply")
 setGeneric("apply")
 setMethod("apply", signature(X = "scidb"), apply_scidb)
 
-setOldClass("svd")
-setGeneric("svd")
-setMethod("svd", signature(x="scidb"), svd_scidb)
-
 setMethod("unpack",signature(x="scidb"),unpack_scidb)
 
 setOldClass("reshape")
 setGeneric("reshape", function(data,...) data)
 setMethod("reshape", signature(data="scidb"), reshape_scidb)
+
+setOldClass("svd")
+setGeneric("svd")
+setMethod("svd", signature(x="scidb"), svd_scidb)
 
 
 # Transpose a matrix or vector

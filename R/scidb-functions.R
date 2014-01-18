@@ -30,9 +30,9 @@ cbind.scidb = function(x)
   redimension(x, nd)
 }
 
-log.scidb = function(x, base=exp(1), attr)
+log.scidb = function(x, base=exp(1))
 {
-  log_scidb(x,base,attr) 
+  log_scidb(x,base) 
 }
 
 colnames.scidb = function(x)

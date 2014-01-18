@@ -14,7 +14,7 @@ cumulate(x, expression, dimension, eval)
   \item{x}{A scidb or scidbdf object}
   \item{expression}{Any valid SciDB aggregate expression, expressed as a character string}
   \item{dimension}{An optional array dimension name (character) to run along. The default is to use the first dimension.}
-  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \value{
 A \code{scidb} object.

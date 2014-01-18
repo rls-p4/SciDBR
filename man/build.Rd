@@ -21,7 +21,7 @@ build(data, dim, names, type="double", start, name, chunksize, overlap, gc=TRUE,
   \item{chunksize}{An optional vector of dimension chunk sizes. Must match the length of the dim vector.}
   \item{overlap}{An optional vector of dimension overlap values. Must match the length of the dim vector.}
   \item{gc}{gc=TRUE (the default) removes the array when corresponding R objects are garbage collected. Set gc=FALSE to preserve arrays.}
-  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \value{
 A \code{scidb} object.

@@ -18,7 +18,7 @@ bind(X, name, FUN, eval)
   \item{X}{A scidb or scidbdf object}
   \item{name}{A character name for the new attribute}
   \item{FUN}{A SciDB function or expression that defines the values for the new attribute (character)}
-  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \value{
 A \code{scidbdf} object.

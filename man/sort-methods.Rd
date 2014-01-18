@@ -13,7 +13,7 @@ Aggregate a SciDB array object grouped by a subset of its dimensions and/or attr
 \S4method{sort}{scidbdf}(x, decreasing=FALSE, attributes, eval)
 }
 \arguments{
-  \item{x}{A \code{scidb}, \code{scidbdf}, or \code{scidexpr} object.}
+  \item{x}{A \code{scidb} or \code{scidbdf} object.}
   \item{decreasing}{A logical value: TRUE means sort in decreasing order.}
   \item{attributes}{(Required) A character vector of attribute names from array \code{x} to sort on}
   \item{eval}{(Optional) If true, execute the query and store the result array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}

@@ -5,7 +5,7 @@
 Copy a data frame into a new 1-D SciDB array.
 }
 \usage{
-df2scidb(X, name = tmpnam(), dimlabel = "row", chunkSize, rowOverlap = 0L, types = NULL, nullable, schema_only = FALSE, gc)
+df2scidb(X, name = tmpnam(), dimlabel = "row", chunkSize, rowOverlap = 0L, types = NULL, nullable, schema_only = FALSE, gc, start)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -18,6 +18,7 @@ df2scidb(X, name = tmpnam(), dimlabel = "row", chunkSize, rowOverlap = 0L, types
   \item{nullable}{An optional vector indicating the SciDB nullable property of each attribute. Length must match the number of columns of the data frame.}
   \item{schema_only}{If TRUE, return a string that would represent the SciDB array schema without uploading data to SciDB.}
   \item{gc}{Optional logical value. If TRUE, then resulting SciDB array will be garbage-collected when the R variable referencing it is. The default value is FALSE.}
+  \item{start}{Optional integer starting index value. Defaults to 1.}
 }
 \details{
 \code{df2scidb} is a workhorse utility function that transfers an R data frame

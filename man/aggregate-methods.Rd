@@ -13,10 +13,10 @@ Aggregate a SciDB array object grouped by a subset of its dimensions and/or attr
 \S4method{aggregate}{scidbdf}(x, by, FUN, eval)
 }
 \arguments{
-  \item{x}{A \code{scidb}, \code{scidbdf}, or \code{scidexpr} object.}
+  \item{x}{A \code{scidb} or \code{scidbdf} object.}
   \item{by}{Either a single character string or a list of array dimension and/or attribute names to group by; or a SciDB array reference object to group by.}
   \item{FUN}{A character string representing a SciDB aggregation expression.}
-  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \details{
 Group the \code{scidb}, or \code{scidbdf} array object \code{x} by dimensions
@@ -41,11 +41,6 @@ attributes in the \code{by} array. This is similar to the usual R data.frame
 aggregate method.
 }
 \value{A \code{scidbdf} reference object. }
-\note{
-The \code{aggregate} function always produces a \code{scidbdf} object. In particular,
-evaluation of \code{aggregate} cannot be deferred; this will likely be possible
-after the 13.9 release of SciDB.
-}
 \author{
 B. W. Lewis <blewis@paradigm4.com>
 }

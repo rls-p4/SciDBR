@@ -8,6 +8,12 @@
 \alias{head,scidbdf-method}
 \alias{tail,scidbdf-method}
 \alias{show,scidbdf-method}
+\alias{sin,scidbdf-method}
+\alias{cos,scidbdf-method}
+\alias{tan,scidbdf-method}
+\alias{asin,scidbdf-method}
+\alias{acos,scidbdf-method}
+\alias{atan,scidbdf-method}
 
 \title{Class \code{"scidbdf"}}
 \description{A class that represents 1D SciDB arrays similarly to R data.frames.}
@@ -38,6 +44,14 @@ Objects can be created by calls of the form \code{new("scidbdf", ...)},
     \item{head}{\code{signature(x = "scidbdf")}: ... }
     \item{tail}{\code{signature(x = "scidbdf")}: ... }
     \item{show}{\code{signature(object = "scidbdf")}: ... }
+    \item{sin}{\code{signature(x = "scidbdf")}: \code{sin(x)}
+      Return an array with the sine of each element of the array \code{x}. The first listed attribute is used and should be numeric. The returned array contains a new attibute with "_sin" appended containing the result. Additional trig functions (\code{cos, tan, asin, acos, atan}) act similarly.
+    }
+    \item{cos}{\code{signature(x = "scidbdf")}: \code{cos(x)} See doc. for \code{sin}.}
+    \item{tan}{\code{signature(x = "scidbdf")}: \code{tan(x)} See doc. for \code{sin}.}
+    \item{asin}{\code{signature(x = "scidbdf")}: \code{asin(x)} See doc. for \code{sin}.}
+    \item{acos}{\code{signature(x = "scidbdf")}: \code{acos(x)} See doc. for \code{sin}.}
+    \item{atan}{\code{signature(x = "scidbdf")}: \code{atan(x)} See doc. for \code{sin}.}
    }
 }
 \section{Notes}{

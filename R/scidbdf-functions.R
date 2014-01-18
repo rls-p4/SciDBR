@@ -184,6 +184,7 @@ scidbdf_subset = function(x, i)
   else if(inherits(i,"function"))
   {
 # Bounding box
+    r = i()
     query = betweenbound(x, r[1], r[2])
   }
   else

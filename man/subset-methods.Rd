@@ -12,7 +12,7 @@ SciDB \code{filter} operations.
 \S4method{subset}{scidbdf}(X,subset,eval)
 }
 \arguments{
-  \item{X}{A \code{scidb}, \code{scidbdf}, or \code{scidexpr} object.}
+  \item{X}{A \code{scidb} or \code{scidbdf} object.}
   \item{subset}{A character string representing a SciDB filter expression.}
   \item{eval}{(Optional) If true, execute the query. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
 }

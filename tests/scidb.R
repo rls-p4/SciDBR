@@ -3,49 +3,37 @@
 # are passed.
 
 library("scidb")
-OK = tryCatch(is.null(scidbconnect()), error=function(e) FALSE)
-
-# expr must be a character string representing an expression that returns
-# true upon success. If the expression throws an error, FALSE is returned.
-test = function(expr)
+host = Sys.getenv("SCIDB_TEST_HOST")
+if(nchar(host)>0)
 {
-  if(!OK) return(TRUE)  # SciDB is not available, pass.
-  tryCatch(eval(parse(text=expr)), error=function(e) stop(e))
-}
-
-options(scidb.debug=TRUE)
-test("scidblist(); TRUE")
-
+  scidbconnect(host)
+  options(scidb.debug=TRUE)
+  scidblist()
 # Dense matrix tests
-set.seed(1)
-A = matrix(rnorm(50*40),50)
-B = matrix(rnorm(40*40),40)
-test("assign('X',as.scidb(A,rowChunkSize=3,colChunkSize=19),envir=globalenv());TRUE")
-test("assign('Y',as.scidb(B),envir=globalenv());TRUE")
+  set.seed(1)
+  A = matrix(rnorm(50*40),50)
+  B = matrix(rnorm(40*40),40)
+  X = as.scidb(A, chunkSize=c(30,40))
+  Y = as.scidb(B, chunkSize=c(17,20))
 # Matrix multiplication
-test("isTRUE(all.equal(A %*% B, (X %*% Y)[],check.attributes=FALSE))")
+  stopifnot(all.equal(A%*%B, (X %*% Y)[],check.attributes=FALSE))
 # Transpose
-test("isTRUE(all.equal(crossprod(A),(t(X) %*% X)[], check.attributes=FALSE))")
+  stopifnot(all.equal(crossprod(A),(t(X) %*% X)[], check.attributes=FALSE))
 # Crossprod
-test("isTRUE(all.equal(crossprod(A),(crossprod(X))[], check.attributes=FALSE))")
-# Mixed arithmetic
-test("x=rnorm(40);isTRUE(all.equal((X %*% x)[,drop=FALSE], A %*% x, check.attributes=FALSE))")
+  stopifnot(all.equal(crossprod(A),(crossprod(X))[], check.attributes=FALSE))
+# Arithmetic on mixed R/SciDB objects
+  x = rnorm(40);
+  stopifnot(all.equal((X %*% x)[,drop=FALSE], A %*% x, check.attributes=FALSE))
 # Scalar multiplication
-test("isTRUE(all.equal(2*A, (2*X)[],check.attributes=FALSE))")
-# Please write more tests following this pattern...
+  stopifnot(all.equal(2*A, (2*X)[],check.attributes=FALSE))
 
 
-
-# dbops
-data("iris")
-test("assign('x',as.scidb(iris),envir=globalenv());TRUE")
+# Databasey ops
+  data("iris")
+  x = as.scidb(iris)
 # Aggregation by a non-integer attribute
-test("isTRUE(all.equal(aggregate(iris$Petal.Length,by=list(iris$Species),FUN=mean)[,2],
-                aggregate(project(x,c('Petal_Length','Species')), by = 'Species', FUN='avg(Petal_Length)')[][,2]))")
-# Sort
-#test("isTRUE(all.equal(project(sort(x,attributes='Petal_Length'),'Petal_Length')[][,1],sort(iris$Petal.Length)))")
-# Please write more tests following this pattern...
+  stopifnot(all.equal(aggregate(iris$Petal.Length,by=list(iris$Species),FUN=mean)[,2],
+                aggregate(project(x,c('Petal_Length','Species')), by = 'Species', FUN='avg(Petal_Length)')[][,2]))
 
-# Cleanup
-rm(list=ls())
-gc()
+# Please write more tests following this pattern...
+}

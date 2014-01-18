@@ -7,6 +7,7 @@
 \alias{\%*\%,scidb,matrix-method}
 \alias{\%*\%,numeric,scidb-method}
 \alias{\%*\%,scidb,numeric-method}
+\alias{\%*\%,scidb,scidbdf-method}
 
 \alias{crossprod,scidb,scidb-method}
 \alias{tcrossprod,scidb,missing-method}
@@ -62,6 +63,7 @@ Objects can be created by calls of the form \code{new("scidb", ...)},
     \item{\%*\%}{\code{signature(x = "matrix", y = "scidb")}: ... }
     \item{\%*\%}{\code{signature(x = "scidb", y = "numeric")}: ... }
     \item{\%*\%}{\code{signature(x = "numeric", y = "scidb")}: ... }
+    \item{\%*\%}{\code{signature(x = "scidb", y = "scidbdf")}: ... }
     \item{crossprod}{\code{signature(x = "scidb", y = "scidb")}: ... }
     \item{tcrossprod}{\code{signature(x = "scidb", y = "scidb")}: ... }
     \item{crossprod}{\code{signature(x = "scidb", y = "missing")}: ... }
@@ -83,8 +85,9 @@ Display a heatmap-like image of the 2-d scidb array reference object \code{x}.
     \item{unpack}{\code{unpack(x = "scidb")}: \code{unpack(x)}
       Return a 1-D representation of an array using the SciDB array unpack operator.
     }
+    \item{diag}{\code{signature(x = "scidb")}: Return the diagonal of a SciDB matrix as a new 1d SciDB array (a vector).}
     \item{sin}{\code{signature(x = "scidb")}: \code{sin(x)}
-      Return an array with the sine of each element of the array \code{x}. The active attribute is used and should be numeric. The returned array contains a new attibute with "_sin" appended containing the result. The remaining other trig functions (\code{cos, tan, asin, acos, atan}) act similarly.
+      Return an array with the sine of each element of the array \code{x}. The active attribute is used and should be numeric. The returned array contains a new attibute with "_sin" appended containing the result. Other trig functions (\code{cos, tan, asin, acos, atan}) act similarly.
     }
     \item{cos}{\code{signature(x = "scidb")}: \code{cos(x)} See doc. for \code{sin}.}
     \item{tan}{\code{signature(x = "scidb")}: \code{tan(x)} See doc. for \code{sin}.}

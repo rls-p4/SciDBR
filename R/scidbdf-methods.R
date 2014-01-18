@@ -98,9 +98,9 @@ function(x)
   iquery(sprintf("var(%s)",x@name),return=TRUE)[,2]
 })
 
-log.scidbdf = function(x, base=exp(1), attr)
+log.scidbdf = function(x, base=exp(1))
 {
-  log_scidb(x,base,attr) 
+  log_scidb(x,base) 
 }
 
 setMethod("sin", signature(x="scidbdf"),

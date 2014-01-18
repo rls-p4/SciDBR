@@ -39,7 +39,7 @@ SciDB array object and return a scalar value to R.
 \S4method{var}{scidbdf}(x)
 }
 \arguments{
-  \item{x}{A \code{scidb}, \code{scidbdf}, or \code{scidexpr} object.}
+  \item{x}{A \code{scidb} or \code{scidbdf} object.}
 }
 \details{
 {\code{sum}} computes the global sum of the SciDB array elements (applies only to numeric types);

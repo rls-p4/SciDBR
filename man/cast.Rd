@@ -12,7 +12,7 @@ cast(x, s, `eval`=FALSE)
 \arguments{
   \item{x}{A \code{scidb}  or \code{scidbdf} object.}
   \item{s}{A character string representation of a SciDB array schema.}
-  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \note{
 The low-level SciDB cast operator can be used to change attribute and dimension names of an arary.
