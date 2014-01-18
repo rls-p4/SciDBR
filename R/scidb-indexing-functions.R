@@ -104,7 +104,7 @@ dimfilter = function(x, i, eval, drop)
   {
     return(special_index(x, q, i, ci, eval))
   }
-  q = sprintf("subarray(%s,%s)",q,r)
+  q = sprintf("sg(subarray(%s,%s),1,-1)",q,r)
 # Return a new scidb array reference
   ans = .scidbeval(q,eval=eval,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
 # Drop singleton dimensiosn if instructed to
@@ -228,7 +228,7 @@ materialize = function(x, drop=FALSE)
   l1 = length(dim(x))
   lb = paste(rep("null",l1),collapse=",")
   ub = paste(rep("null",l1),collapse=",")
-  query = sprintf("subarray(project(%s,%s),%s,%s)",x@name,x@attribute,lb,ub)
+  query = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",x@name,x@attribute,lb,ub)
 
 # Unpack
   query = sprintf("unpack(%s,%s)",query,"__row")

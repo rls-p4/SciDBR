@@ -166,10 +166,10 @@ function(x)
     mask = sprintf("apply(%s,%s,%s)",mask,x@D$name[2],x@D$name[1])
     mask = sprintf("redimension(%s,%s)",mask, bschema)
     mask = sprintf("attribute_rename(%s,%s,%s)",mask,x@attribute,make.unique_(x@attribute,"v"))
-    query = sprintf("project(join(subarray(%s,null,null,null,null),%s),%s)",x@name,mask,x@attribute)
+    query = sprintf("project(join(sg(subarray(%s,null,null,null,null),1,-1),%s),%s)",x@name,mask,x@attribute)
     query = sprintf("unpack(%s,%s)",query, make.unique_(x@D$name, "i"))
     query = sprintf("project(%s,%s)",query,x@attribute)
-    query = sprintf("subarray(%s,0,%.0f)",query,min(x@D$length)-1)
+    query = sprintf("sg(subarray(%s,0,%.0f),1,-1)",query,min(x@D$length)-1)
     return(.scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x)))
   }
 # Case 2: Given a vector return  diagonal matrix.

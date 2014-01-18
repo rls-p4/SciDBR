@@ -63,7 +63,7 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
     obj@gc$name = name
     obj@gc$remove = TRUE
     reg.finalizer(obj@gc, function(e) if (e$remove) 
-        tryCatch(scidbremove(e$name), error = function(e) invisible()), 
+        tryCatch(scidbremove(e$name), error = function(e) invisible(), async=TRUE), 
             onexit = TRUE)
   } else obj@gc = new.env()
   obj
@@ -370,7 +370,7 @@ scidbls = function(...) scidblist(...)
 # query: a character query string
 # afl: TRUE indicates use AFL, FALSE AQL
 # async: TRUE=Ignore return value and return immediately, FALSE=wait for return
-# save: Save format query string or NULL. If async=FALSE, save is ignored.
+# save: Save format query string or NULL. If async=TRUE, save is ignored.
 # release: Set to zero preserve web session until manually calling release_session
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
 # resp(logical): return http response
@@ -399,7 +399,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
   if(async)
   {
     ans =tryCatch(
-      GET("/execute_query",list(id=sessionid,release=release,query=query,afl=as.integer(afl)),async=TRUE),
+      GET("/execute_query",list(id=sessionid,release=release,query=query,async='1',afl=as.integer(afl)),async=TRUE),
       error=function(e) {
         GET("release_session", list(id=sessionid))
         stop("HTTP/1.0 500 ERROR")
@@ -436,21 +436,23 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
 # Input:
 # x (character): a vector or single character string listing array names
 # error (function): error handler. Use stop or warn, for example.
+# async (optional boolean): If TRUE use expermental shim async option for speed
 # Output:
 # null
-scidbremove = function(x, error=warning)
+scidbremove = function(x, error=warning, async)
 {
   if(is.null(x)) return(invisible())
+  if(missing(async)) async=FALSE
   if(inherits(x,"scidb")) x = x@name
   if(!inherits(x,"character")) stop("Invalid argument. Perhaps you meant to quote the variable name(s)?")
   for(y in x) {
     if(grepl("\\(",y)) next
-    tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=FALSE, release=1),
+    tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=async, release=1),
               error=function(e) error(e))
   }
   invisible()
 }
-scidbrm = function(x,error=warning) scidbremove(x,error)
+scidbrm = function(x,error=warning,...) scidbremove(x,error,...)
 
 # df2scidb: User function to send a data frame to SciDB
 # Returns a scidbdf object

@@ -41,9 +41,9 @@ Ops.scidb = function(e1,e2) {
 scidbmultiply = function(e1,e2)
 {
 # As of SciDB version 13.12, SciDB exhibits nasty bugs when gemm is nested
-# within other SciDB operators, in particular subarray. We force evaluation
-# to prevent this. XXX
-  `eval` = TRUE
+# within other SciDB operators, in particular subarray. We use sg to avoid
+# this problem. XXX
+  `eval` = FALSE
 # Check for availability of spgemm
   P4 = length(grep("spgemm",scidb:::.scidbenv$ops[,2]))>0
   if(length(e1@attributes)>1)
@@ -104,11 +104,11 @@ scidbmultiply = function(e1,e2)
   l1 = length(dim(e1))
   lb = paste(rep("null",l1),collapse=",")
   ub = paste(rep("null",l1),collapse=",")
-  op1 = sprintf("subarray(%s,%s,%s)",op1,lb,ub)
+  op1 = sprintf("sg(subarray(%s,%s,%s),1,-1)",op1,lb,ub)
   l2 = length(dim(e2))
   lb = paste(rep("null",l2),collapse=",")
   ub = paste(rep("null",l2),collapse=",")
-  op2 = sprintf("subarray(%s,%s,%s)",op2,lb,ub)
+  op2 = sprintf("sg(subarray(%s,%s,%s),1,-1)",op2,lb,ub)
 
   if(!SPARSE)
   {
@@ -180,14 +180,14 @@ scidbmultiply = function(e1,e2)
   ub = paste(rep("null",l1),collapse=",")
   if(inherits(e1,"scidb"))
   {
-    q1 = sprintf("subarray(project(%s,%s),%s,%s)",e1@name,e1@attribute,lb,ub)
+    q1 = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",e1@name,e1@attribute,lb,ub)
   }
   l = length(dim(e2))
   lb = paste(rep("null",l),collapse=",")
   ub = paste(rep("null",l),collapse=",")
   if(inherits(e2,"scidb"))
   {
-    q2 = sprintf("subarray(project(%s,%s),%s,%s)",e2@name,e2@attribute,lb,ub)
+    q2 = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",e2@name,e2@attribute,lb,ub)
   }
 # Adjust the 2nd array to be schema-compatible with the 1st:
   if(l==2 && l1==2)
@@ -364,8 +364,8 @@ diff.scidb = function(x, lag=1, ...)
   m = x@D$start[[1]]
   new_attribute = sprintf("%s_diff",x@attribute)
   nu = paste(rep('null',length(dim(x))-1),collapse=",")
-  s1 = gsub(",)",")",gsub(",,",",",sprintf("subarray(%s,%.0f,%s,%.0f,%s)",x@name,m+lag,nu,n-m,nu)))
-  s2 = gsub(",)",")",gsub(",,",",",sprintf("subarray(%s,%.0f,%s,%.0f,%s)",x@name,m,nu,n-m-lag,nu)))
+  s1 = gsub(",)",")",gsub(",,",",",sprintf("sg(subarray(%s,%.0f,%s,%.0f,%s),1,-1)",x@name,m+lag,nu,n-m,nu)))
+  s2 = gsub(",)",")",gsub(",,",",",sprintf("sg(subarray(%s,%.0f,%s,%.0f,%s),1,-1)",x@name,m,nu,n-m-lag,nu)))
   query = sprintf("project(apply(join(%s as _A, %s as _B),%s, _A.%s - _B.%s),%s)",
           s1, s2, new_attribute, x@attribute, x@attribute, new_attribute)
   .scidbeval(query,`eval`=FALSE,gc=TRUE,depend=list(x))
