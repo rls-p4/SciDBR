@@ -39,7 +39,6 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
 
 # Create a new scidb reference to an existing SciDB array.
 # name (character): Name of the backing SciDB array
-#    alternatively, a scidb expression object
 # attribute (character): Attribute in the backing SciDB array
 #   (applies to n-d arrays, not data.frame-like 1-d arrays)
 # gc (logical, optional): Remove backing SciDB array when R object is
@@ -48,8 +47,12 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
 #   Otherwise an array.
 `scidb` = function(name, attribute, gc, `data.frame`)
 {
-  if(missing(name)) stop("array name or expression must be specified")
+  if(missing(name)) stop("array or expression must be specified")
   if(missing(gc)) gc=FALSE
+  if(is.scidb(name) || is.scidbdf(name))
+  {
+    return(.scidbeval(name@name, eval=FALSE, attribute=attribute, gc=gc, `data.frame`=`data.frame`, depend=list(name)))
+  }
   query = sprintf("show('%s as array','afl')",gsub("'","\\\\'",name,perl=TRUE))
   schema = iquery(query,`return`=1)$schema
   obj = scidb_from_schemastring(schema, name, `data.frame`)

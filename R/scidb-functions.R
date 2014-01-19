@@ -186,12 +186,6 @@ as.scidb = function(X,
                     start,
                     gc=TRUE, ...)
 {
-  if(inherits(X,"scidbdf"))
-  {
-    class(X) = "scidb"
-    X@attribute = X@attributes[[1]]
-    return(X)
-  }
   if(inherits(X,"data.frame"))
     if(missing(chunkSize))
       return(df2scidb(X,name=name,gc=gc,start=start,...))
