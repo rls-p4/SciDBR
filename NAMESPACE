@@ -57,6 +57,7 @@ S3method("cbind",scidb)
 
 S3method("Ops",scidbdf)
 S3method("[",scidbdf)
+S3method("$",scidbdf)
 S3method("names",scidbdf)
 S3method("names<-",scidbdf)
 S3method("rownames",scidbdf)

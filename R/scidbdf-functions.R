@@ -72,6 +72,15 @@ dimnames.scidbdf = function(x)
   list(rownames.scidbdf(x), x@attributes)
 }
 
+`$.scidbdf` = function(x, ...)
+{
+  M = match.call()
+  M[1] = call("[.scidbdf")
+  M[4] = as.character(M[3])
+  M[3] = expression(NULL)
+  eval(M)
+}
+
 # Flexible array subsetting wrapper.
 # x: A Scidbdf array object
 # ...: list of dimensions
