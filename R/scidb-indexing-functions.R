@@ -182,7 +182,7 @@ special_index = function(x, query, i, idx, eval)
 # Case 3. A SciDB array, really just a densified cross_join selector.
         tmp = sort(project(bind(i[[j]],N,i[[j]]@D$name[[1]],eval=0),N,eval=0),eval=0)
         cst = paste(build_attr_schema(tmp),build_dim_schema(tmp,newnames=dimlabel))
-        tmp = cast(tmp,cst,eval=1)
+        tmp = cast(tmp,cst,eval=0)
         cnt = count(tmp)
         dependencies = c(dependencies, tmp)
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", tmp@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
@@ -209,7 +209,7 @@ special_index = function(x, query, i, idx, eval)
     nn = sapply(swap, function(x) x[[2]])
     nl = sapply(swap, function(x) x[[3]])
   }
-  query = sprintf("redimension(%s, %s%s)",query, build_attr_schema(x), build_dim_schema(x,newnames=nn,newlen=nl))
+  query = sprintf("redimension(%s, %s%s)",query, build_attr_schema(x), build_dim_schema(x,newstart=rep(0,length(x@D$name)),newnames=nn,newlen=nl))
   .scidbeval(query, eval=FALSE, depend=dependencies)
 }
 
