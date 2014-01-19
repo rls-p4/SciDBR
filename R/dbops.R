@@ -3,7 +3,6 @@
 # defined below work with objects of class scidb (arrays), scidbdf (data
 # frames). They can be efficiently nested by explicitly setting eval=FALSE on
 # inner functions, deferring computation until eval=TRUE.
-
 `reshape_scidb` = function(data, shape, dimnames, chunks, `eval`=FALSE)
 {
   if(missing(shape)) stop("Missing dimension shape")
@@ -209,9 +208,9 @@
   {
     by.x = by.x[[1]]  # Limitation: only one attribute for now
     by.y = by.y[[1]]  # Ditto
-    query = sprintf("cross_join(%s as __X, %s as __Y", xname, yname)
-    XI = index_lookup(x,unique(project(x,by.x),attributes=by.x),by.x,`eval`=FALSE)
-    YI = index_lookup(y,unique(project(y,by.y),attributes=by.y),by.y,`eval`=FALSE)
+    lkup = unique(project(x,by.x),attributes=by.x)
+    XI = index_lookup(x,lkup,by.x,`eval`=FALSE)
+    YI = index_lookup(y,lkup,by.y,`eval`=FALSE)
 
     new_dim_name = make.unique_(c(x@D$name,y@D$name),"row")
     a = XI@attributes %in% paste(by.x,"index",sep="_")
@@ -306,40 +305,48 @@
   mc = list(...)
   `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
   if(incomparables!=FALSE) warning("The incomparables option is not available yet.")
-  xname = x@name
+  if(any(x@attributes %in% "i"))
+  {
+    new_attrs = x@attributes
+    new_attrs = new_attrs[x@attributes %in% "i"] = make.unique_(x@attributes,"i")
+    x = attibute_rename(x,x@attributes,new_attrs)
+  }
   if(sort)
   {
     if(length(x@attributes)>1)
-      query = sprintf("uniq(sort(project(%s,%s)))",xname,x@attributes[[1]])
+      query = sprintf("uniq(sort(project(%s,%s)))",x@name,x@attributes[[1]])
     else
-      query = sprintf("uniq(sort(%s))",xname,x@attributes[[1]])
+      query = sprintf("uniq(sort(%s))",x@name,x@attributes[[1]])
   } else
   {
-    query = sprintf("uniq(%s)",xname)
+    query = sprintf("uniq(%s)",x@name)
   }
   .scidbeval(query,eval,depend=list(x),`data.frame`=TRUE)
 }
 
 `sort_scidb` = function(X, decreasing = FALSE, ...)
 {
-  nf   = sys.nframe() - 2  # XXX Note! sort is a method and is on a deeper stack.
   mc = list(...)
   if(!is.null(mc$na.last))
     warning("na.last option not supported by SciDB sort. Missing values are treated as less than other values by SciDB sort.")
   dflag = ifelse(decreasing, 'desc', 'asc')
-  xname = X
-  if(class(X) %in% c("scidbdf","scidb")) xname = X@name
-  EX = X
+# Check for ridiculous SciDB name conflict problem
+  if(any(X@attributes %in% "n"))
+  {
+    new_attrs = X@attributes
+    new_attrs = new_attrs[X@attributes %in% "n"] = make.unique_(X@attributes,"n")
+    X = attibute_rename(X,X@attributes,new_attrs)
+  }
   if(is.null(mc$attributes))
   {
-    if(length(EX@attributes)>1) stop("Array contains more than one attribute. Specify one or more attributes to sort on with the attributes= function argument")
-    mc$attributes=EX@attributes
+    if(length(X@attributes)>1) stop("Array contains more than one attribute. Specify one or more attributes to sort on with the attributes= function argument")
+    mc$attributes=X@attributes
   }
   `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
   a = paste(paste(mc$attributes, dflag, sep=" "),collapse=",")
   if(!is.null(mc$chunk_size)) a = paste(a, mc$chunk_size, sep=",")
 
-  query = sprintf("sort(%s,%s)", xname,a)
+  query = sprintf("sort(%s,%s)", X@name,a)
   .scidbeval(query,eval,depend=list(X))
 }
 

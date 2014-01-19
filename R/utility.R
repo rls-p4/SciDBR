@@ -887,3 +887,11 @@ compare_versions = function(x,y)
 {
  as.logical(prod(as.numeric(strsplit(as.character(x),"\\.")[[1]]) >= as.numeric(strsplit(as.character(y),"\\.")[[1]])))
 }
+
+# Reset array coordinate system to zero-indexed origin
+origin = function(x)
+{
+  N = paste(rep("null",2*length(x@D$name)),collapse=",")
+  query = sprintf("sg(subarray(%s,%s),1,-1)",x@name,N)
+  .scidbeval(query,`eval`=FALSE,depend=list(x),gc=TRUE)
+}
