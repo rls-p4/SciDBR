@@ -5,6 +5,7 @@
 
 check = function(a,b)
 {
+  print(match.call())
   stopifnot(all.equal(a,b,check.attributes=FALSE))
 }
 
@@ -39,13 +40,15 @@ if(nchar(host)>0)
   check((X%*%x)[,drop=FALSE], A%*%x)
 # Scalar multiplication
   check(2*A, (2*X)[])
+# Elementwise addition
+  check(A+A, (X+X)[])
 # SVD
   check(svd(A)$d, as.vector(svd(X)$d[]))
 
 # Numeric array subsetting
   check((X %*% X[0,,drop=TRUE])[,drop=FALSE], A %*% A[1,])
   check(X[c(5,15,1),c(25,12,11)][], A[c(6,16,2),c(26,13,12)])
-  check(diag(Y)[], diag(B))
+  check(as.vector(diag(Y)[]), diag(B))
 
 # Aggregation
   check( sweep(B,MARGIN=2,apply(B,2,mean)),
@@ -73,5 +76,5 @@ if(nchar(host)>0)
   rownames(A) = L[1:nrow(A)]
   colnames(A) = L[1:ncol(A)]
   check(X[c("F","v","f"),c("N","a","A")][], A[c("F","v","f"),c("N","a","A")])
-
 }
+gc()

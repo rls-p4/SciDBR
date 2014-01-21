@@ -11,13 +11,12 @@ install_github("SciDBR","paradigm4",quick=TRUE)
 The SciDB R package requires installation of a simple open-source HTTP network
 service called on the computer that SciDB is installed on. This service only
 needs to be installed on the SciDB machine, not on client computers that
-connect to SciDB from R.  It's available in packaged binary form for supported
-SciDB operating systems, and as source code which can be compiled and deployed
-on any SciDB installation.
+connect to SciDB from R.  See http://github.com/paradigm4/shim  for source code
+and installation instructions.
 
-See http://github.com/paradigm4/shim  for source code and installation
-instructions.
-
+Developers please note that R CMD check-style unit tests are skipped unless a
+system environment variable named SCIDB_TEST_HOST is set to the host name or
+I.P. address of SciDB. See the tests directory for test code.
 
 New features
 ===
@@ -150,7 +149,7 @@ a = aggregate(
       by="Species", FUN="avg(PxP)")
 
 a[]
-Species_index PxP_avg    Species
+  Species_index PxP_avg    Species
 0             0  0.3656     setosa
 1             1  5.7204 versicolor
 2             2 11.2962  virginica

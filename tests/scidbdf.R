@@ -5,6 +5,7 @@
 
 check = function(a,b)
 {
+  print(match.call())
   stopifnot(all.equal(a,b,check.attributes=FALSE))
 }
 
@@ -32,5 +33,5 @@ if(nchar(host)>0)
 # Aggregation by a non-integer attribute with a project thrown in
   check(aggregate(iris$Petal.Length,by=list(iris$Species),FUN=mean)[,2],
         aggregate(project(x,c('Petal_Length','Species')), by = 'Species', FUN='avg(Petal_Length)')[][,2])
-
 }
+gc()
