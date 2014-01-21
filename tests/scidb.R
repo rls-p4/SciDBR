@@ -50,6 +50,14 @@ if(nchar(host)>0)
   check(X[c(5,15,1),c(25,12,11)][], A[c(6,16,2),c(26,13,12)])
   check(as.vector(diag(Y)[]), diag(B))
 
+# Filtering
+  W = subset(X,"val>0")
+# Sparse elementwise addition and scalar multiplication
+  D = (W + 2*W)[]
+  w = W[]
+  w = w + 2*w
+  check(sum(D-w), 0)
+
 # Aggregation
   check( sweep(B,MARGIN=2,apply(B,2,mean)),
          sweep(Y,MARGIN=2,apply(Y,2,"avg(val)"))[])
