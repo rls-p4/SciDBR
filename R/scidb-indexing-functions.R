@@ -233,6 +233,7 @@ materialize = function(x, drop=FALSE)
 # Unpack
   query = sprintf("unpack(%s,%s)",query,"__row")
 
+# We're always assuming missing values may exist
   i = paste(rep("int64",length(x@dim)),collapse=",")
 #  nl = x@nullable[x@attribute==x@attributes][[1]]
   nl = TRUE
@@ -275,8 +276,9 @@ materialize = function(x, drop=FALSE)
     names(A)=c("values","coordinates")
     return(A)
   }
-  if(ndim==2)
-    return(matrix(data=A[[1]], nrow=x@D$length[[1]],byrow=TRUE))
-  aperm(array(data=A[[1]], dim=x@D$length, dimnames=x@D$name),
-        perm=seq(from=length(x@D$length),to=1,by=-1))
+#  aperm(array(data=A[[1]], dim=x@D$length, dimnames=x@D$name),
+#        perm=seq(from=length(x@D$length),to=1,by=-1))
+  ans = array(NA, dim=x@dim)
+  ans[A[[2]]+1] = A[[1]]
+  return(ans)
 }
