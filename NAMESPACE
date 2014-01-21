@@ -28,7 +28,7 @@ importFrom("Matrix","nnzero", "sparseMatrix", "unpack")
 
 # S4 methods
 exportClasses("scidb","scidbdf")
-exportMethods("%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,sd,var,min,max,t,abs,sin,cos,tan,asin,acos,atan,unpack,reshape,regrid,svd,xgrid)
+exportMethods("%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,sd,var,min,max,t,abs,sin,cos,tan,asin,acos,atan,unpack,reshape,regrid,svd,xgrid,glm.fit)
 
 # S3 methods
 S3method("Ops",scidb)

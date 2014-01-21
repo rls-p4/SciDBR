@@ -292,6 +292,9 @@ setOldClass("svd")
 setGeneric("svd")
 setMethod("svd", signature(x="scidb"), svd_scidb)
 
+setOldClass("glm.fit")
+setGeneric("glm.fit")
+setMethod("glm.fit", signature(x="scidb"), glm_scidb)
 
 # Transpose a matrix or vector
 setOldClass("t")
