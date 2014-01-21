@@ -22,6 +22,41 @@ instructions.
 New features
 ===
 
+## Labeled coordinates
+
+SciDB arrays now support labeled coordinate indices using the standard R
+rownames, colnames, or dimnames settings. Assigned labels are provided by 1-d
+SciDB arrays that map the integer coordinate to a string label. Here is a
+simple example:
+
+``
+# Upload a test matrix to SciDB:
+X <- as.scidb( matrix(rnorm(20),nrow=5) )
+
+# Assign rownames to the SciDB matrix X.  SciDB matrix objects like X default
+# to zero-based indexing.  It's important that the label array have the same
+# starting index:
+rownames(X) <- as.scidb( data.frame(letters[1:5]), start=0)
+
+# We can now use strings to select subarrays and otherwise index X:
+X[c("b","a","d"), ]
+```
+
+## More indexing goodness
+
+Indexing SciDB array objects by other SciDB array objects to achieve the effect
+of filtering by boolean expressions and similar operations is now supported.
+Here is a simple example:
+
+```
+# Create a five-element SciDB vector:
+y <- as.scidb(runif(5))
+
+# Pick out rows of the SciDB matrix X fromt the last example that correspond
+# to entries of y that are positive:
+X[y > 0, ]
+```
+
 ## SciDB array promises
 Most functions return objects that represent array promises--unevaluated SciDB
 query expressions with a result schema. Use the new `scidbeval` function or the
