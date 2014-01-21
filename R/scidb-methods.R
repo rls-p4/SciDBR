@@ -304,6 +304,24 @@ setMethod("t", signature(x="scidb"),
   }
 )
 
+# SciDB's regrid and xgrid operators (simple wrappers)
+setGeneric("regrid", def=function(x,grid,expr){NULL})
+setMethod("regrid", signature(x="scidb"),
+  function(x, grid, expr)
+  {
+    if(missing(expr)) expr = sprintf("avg(%s)",x@attribute)
+    query = sprintf("regrid(%s, %s, %s)",
+               x@name, paste(noE(grid),collapse=","), expr)
+    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
+  })
+setGeneric("xgrid", def=function(x,grid){NULL})
+setMethod("xgrid", signature(x="scidb"),
+  function(x, grid)
+  {
+    query = sprintf("xgrid(%s, %s)", x@name, paste(noE(grid),collapse=","))
+    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
+  })
+
 setMethod("sin",signature(x="scidb"),
   function(x)
   {

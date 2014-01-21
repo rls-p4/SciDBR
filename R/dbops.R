@@ -309,7 +309,7 @@
   {
     new_attrs = x@attributes
     new_attrs = new_attrs[x@attributes %in% "i"] = make.unique_(x@attributes,"i")
-    x = attibute_rename(x,x@attributes,new_attrs)
+    x = attribute_rename(x,x@attributes,new_attrs)
   }
   if(sort)
   {
@@ -335,7 +335,7 @@
   {
     new_attrs = X@attributes
     new_attrs = new_attrs[X@attributes %in% "n"] = make.unique_(X@attributes,"n")
-    X = attibute_rename(X,X@attributes,new_attrs)
+    X = attribute_rename(X,X@attributes,new_attrs)
   }
   if(is.null(mc$attributes))
   {

@@ -14,7 +14,7 @@ project(X, attributes, eval)
 \arguments{
   \item{X}{A scidb or scidbdf object}
   \item{attributes}{A character vector of attributes to project on to}
-  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \value{
 A \code{scidb} object.

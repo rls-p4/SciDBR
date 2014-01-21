@@ -762,8 +762,7 @@ iqiter = function (con, n = 1, excludecol, ...)
   paste(attr,dims,sep="")
 }
 
-# Build the attibute part of a SciDB array schema from a scidb,
-# scidbdf object.
+# Build the attribute part of a SciDB array schema from a scidb, scidbdf object.
 # Set prefix to add a prefix to all attribute names.
 # I: optional vector of dimension indices to use, if missing use all
 # newnames: optional vector of new dimension names, must be the same length

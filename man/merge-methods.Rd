@@ -17,7 +17,7 @@ SciDB \code{cross}, \code{cross_join}, and \code{join} operations.
   \item{by}{An optional vector of common dimension or attribute names to join on. See details below.}
   \item{by.x}{An optional vector of dimension or attribute names of array \code{x} to join on. See deails.}
   \item{by.y}{An optional vector of dimension or attribute names of array \code{y} to join on. See deails.}
-  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \details{
 Only one of either \code{by} or both \code{by.x} and \code{by.y} may be

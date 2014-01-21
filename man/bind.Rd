@@ -6,7 +6,7 @@ bind
 \description{
 The \code{bind} function is a wrapper to the SciDB `apply` operator.
 We chose the name `bind` as this function most closely matches the
-concept of the R \code{cbind} function.
+concept of the R \code{cbind} function in data frame contexts.
 
 Similarly to \code{cbind}, the \code{bind} function adds a new
 variable (a.k.a. SciDB `attribute`) to a SciDB array.

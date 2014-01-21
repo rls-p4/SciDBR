@@ -7,7 +7,7 @@ index_lookup
 The \code{index_lookup} function is a wrapper to the SciDB `index_lookup` operator.
 It produces a new SciDB array that joins the unqiue indices defined in the array
 \code{I} with values looked up in array \code{X} for attribute \code{attr}. Use
-the \code{index_lookup} with the \code{unique} and (optionally) \code{sort} functions.
+the \code{index_lookup} with the \code{unique} and \code{sort} functions.
 }
 \usage{
 index_lookup(X, I, attr, new_attr, eval=FALSE)
@@ -17,7 +17,7 @@ index_lookup(X, I, attr, new_attr, eval=FALSE)
   \item{I}{A scidb or scidbdf object}
   \item{attr}{A character string attribute name from the \code{X} array}
   \item{new_attr}{An optional character name for the new attribute, defaults to \code{attr} + "_index"}
-  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \value{
 A \code{scidb}  or \code{scidbdf} object.

@@ -14,7 +14,7 @@ SciDB \code{filter} operations.
 \arguments{
   \item{X}{A \code{scidb} or \code{scidbdf} object.}
   \item{subset}{A character string representing a SciDB filter expression.}
-  \item{eval}{(Optional) If true, execute the query. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
+  \item{eval}{(Optional) If true, execute the query. Otherwise defer evaluation.}
 }
 \details{
 Perform a SciDB \code{filter} operation on a SciDB array. The \code{subset} filter expression argument can be any valid SciDB filter operation.

@@ -14,7 +14,7 @@ repart(x, upper, chunk, overlap, eval=FALSE)
   \item{upper}{An optional vector of new array upper bounds.}
   \item{chunk}{An optional vector of new array chunk sizes.}
   \item{overlap}{An optional vector of new array overlap values.}
-  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \value{
 A \code{scidb} object.

@@ -12,7 +12,7 @@ redimension(x,s,`eval`)
 \arguments{
   \item{x}{A SciDB array object of class scidb or scidbdf.}
   \item{s}{A SciDB array object of class scidb, scidbdf, or a character string representation of the output array schema.}
-  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation. By default, \code{eval} is set to defer evaluation only when called from functions in the \pkg{scidb} package.}
+  \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \value{
 A \code{scidb} object.
