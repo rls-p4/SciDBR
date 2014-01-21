@@ -3,6 +3,11 @@
 # address of SciDB to run these tests. If SCIDB_TEST_HOST is not set the tests
 # are not run.
 
+check = function(a,b)
+{
+  stopifnot(all.equal(a,b,check.attributes=FALSE))
+}
+
 library("scidb")
 host = Sys.getenv("SCIDB_TEST_HOST")
 if(nchar(host)>0)
@@ -15,40 +20,58 @@ if(nchar(host)>0)
   B = matrix(rnorm(40*40),40)
   X = as.scidb(A, chunkSize=c(30,40))
   Y = as.scidb(B, chunkSize=c(17,20))
-  stopifnot(all.equal(X[],A,check.attributes=FALSE))
-  stopifnot(all.equal(Y[],B,check.attributes=FALSE))
+  check(X[],A)
+  check(Y[],B)
+
+# n-d array
+  x = build("k",dim=c(3,3,3),names=c("x","i","j","k"))
+  check(x[][,,2] , matrix(1,3,3))
 
 # Dense matrix multiplication
-  stopifnot(all.equal(A%*%B, (X %*% Y)[],check.attributes=FALSE))
+  check(A%*%B, (X%*%Y)[])
 # Transpose
-  stopifnot(all.equal(crossprod(A),(t(X) %*% X)[], check.attributes=FALSE))
-# Crossprod
-  stopifnot(all.equal(crossprod(A),(crossprod(X))[], check.attributes=FALSE))
+  check(crossprod(A), (t(X)%*%X)[])
+# Crossprod, tcrossprod
+  check(crossprod(A), crossprod(X)[])
+  check(tcrossprod(B), tcrossprod(B)[])
 # Arithmetic on mixed R/SciDB objects
   x = rnorm(40);
-  stopifnot(all.equal((X %*% x)[,drop=FALSE], A %*% x, check.attributes=FALSE))
+  check((X%*%x)[,drop=FALSE], A%*%x)
 # Scalar multiplication
-  stopifnot(all.equal(2*A, (2*X)[],check.attributes=FALSE))
+  check(2*A, (2*X)[])
+# SVD
+  check(svd(A)$d, as.vector(svd(X)$d[]))
 
 # Numeric array subsetting
-  stopifnot(all.equal((X %*% X[0,,drop=TRUE])[,drop=FALSE], A %*% A[1,], check.attributes=FALSE))
-  stopifnot(all.equal(X[c(5,15,1),c(25,12,11)][], A[c(6,16,2),c(26,13,12)],check.attributes=FALSE))
-  stopifnot(all.equal(diag(Y)[], diag(B),check.attributes=FALSE))
+  check((X %*% X[0,,drop=TRUE])[,drop=FALSE], A %*% A[1,])
+  check(X[c(5,15,1),c(25,12,11)][], A[c(6,16,2),c(26,13,12)])
+  check(diag(Y)[], diag(B))
 
 # Aggregation
-  stopifnot(all.equal(
-            sweep(B,MARGIN=2,apply(B,2,mean)),
-            sweep(Y,MARGIN=2,apply(Y,2,"avg(val)"))[], check.attributes=FALSE))
+  check( sweep(B,MARGIN=2,apply(B,2,mean)),
+         sweep(Y,MARGIN=2,apply(Y,2,"avg(val)"))[])
 
+# Join
+  check(project(bind(merge(Y,diag(Y),by.x="i",by.y="i_1"),"v","val*val_1"),"v")[], diag(B)*B)
 
+# Sparse, count
+  S = sparseMatrix(sample(100,200,replace=TRUE),sample(100,200,replace=TRUE),x=runif(200))
+  Z = as.scidb(S)
+  check(count(Z), nnzero(S))
 
+# Misc
+  z = atan(tan(abs(acos(cos(asin(sin(Z)))))))
+  s = atan(tan(abs(acos(cos(asin(sin(S)))))))
+  check(sum(s-z[]), 0)
 
-# Databasey ops
-  data("iris")
-  x = as.scidb(iris)
-# Aggregation by a non-integer attribute
-  stopifnot(all.equal(aggregate(iris$Petal.Length,by=list(iris$Species),FUN=mean)[,2],
-                aggregate(project(x,c('Petal_Length','Species')), by = 'Species', FUN='avg(Petal_Length)')[][,2]))
+# Labeled indices
+  L = c(letters,LETTERS)
+  i = as.scidb(data.frame(L[1:nrow(X)]), start=0)
+  j = as.scidb(data.frame(L[1:ncol(X)]), start=0)
+  rownames(X) = i
+  colnames(X) = j
+  rownames(A) = L[1:nrow(A)]
+  colnames(A) = L[1:ncol(A)]
+  check(X[c("F","v","f"),c("N","a","A")][], A[c("F","v","f"),c("N","a","A")])
 
-# Please write more tests following this pattern...
 }

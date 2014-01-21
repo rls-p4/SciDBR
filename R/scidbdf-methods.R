@@ -133,3 +133,8 @@ setMethod("atan", signature(x="scidbdf"),
   {
     fn_scidb(x, "atan")
   })
+setMethod("abs", signature(x="scidbdf"),
+  function(x)
+  {
+    fn_scidb(x, "abs")
+  })
