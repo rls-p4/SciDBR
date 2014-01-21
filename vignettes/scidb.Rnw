@@ -3,7 +3,7 @@
 % \VignettePackage{scidb}
 \documentclass[12pt]{article}
 \usepackage{amsmath}
-\usepackage[font=sl]{caption}
+\usepackage{caption}
 \usepackage[pdftex]{graphicx}
 \usepackage{color}
 \usepackage{xspace}
@@ -215,7 +215,7 @@ supported by the other.  Thus, conversion errors may arise. The \verb+iquery+
 function is designed to reasonably minimize such issues and simplify basic data
 transfer between the systems.  Data types common to R and SciDB include
 double-precision numeric, character string, logical, and 32-bit
-integers. They \verb+iquery+ function supports
+integers. The \verb+iquery+ function supports
 standard R \verb+read.table+ parameter options to facilitate type conversion.
 
 The following code example illustrates basic use of \verb+iquery+.
@@ -223,6 +223,7 @@ The following code example illustrates basic use of \verb+iquery+.
 \begin{Sinput}
 > # Manually build a 1-d SciDB array named "P:"
 > iquery("store(build(<x:double>[i=0:99,100,0],asin(1)*i/25),P)")
+>
 > # Return a query as a data.frame, manually specifying returned column classes:
 > S <- iquery("apply(P,y,sin(x))",return=TRUE,
 +             colClasses=c("integer","double","complex"))
@@ -253,8 +254,9 @@ documentation of their use.
 \begin{Sinput}
 > # Build a small 1-d SciDB test array:
 > iquery("store(build(<x:double>[i=1:10,10,0],i/10.0),A)")
+>
 > # Return the result of a SciDB apply operator in an R iterator with a
-> # chunk size of at most 7 rows at a time:
+> # block size of at most 7 rows at a time:
 > it <- iquery("apply(A,y,sqrt(x))", return=TRUE, iterative=TRUE, n=7)
 > nextElem(it)
 \end{Sinput}
@@ -303,9 +305,9 @@ arrays.
 The integer coordinate systems used to index SciDB arrays are similar to R,
 except that SciDB integer indices may be zero or negative, and are represented
 by 62-bit signed integers (R indices use either unsigned positive 31-bit
-integer or positive 52-bit integer-valued double values). This means that
-SciDB arrays can't always be indexed by R--in practice R users should avoid
-creating SciDB arrays with coordinate systems that extend past R's limits.
+integer or positive 52-bit integer-valued double values). This means that SciDB
+arrays can't always be indexed by R In practice, R users should avoid creating
+SciDB arrays with coordinate systems that extend past R's limits.
 
 SciDB attribute values within a cell may be explicitly marked missing,
 indicated by a special SciDB missing code also referred to as a NULL code.
@@ -460,7 +462,7 @@ bulk data load utility as outlined in the SciDB documentation instead.
 > str(v)
 \end{Sinput}
 \begin{Soutput}
-SciDB array name:  R_array12d2294c4ea11...
+SciDB array name:  R_array3ec3b08cf9a11...
 SciDB array schema:  array<val:double> [i=0:4,5,0,j=0:4,5,0]
 attribute in use:  val
 All attributes:  val
@@ -473,24 +475,24 @@ Array dimensions:
 > crossprod( v[] )              # Compute t(v) %*% v using R
 \end{Sinput}
 \begin{Soutput}
-          [,1]       [,2]      [,3]       [,4]       [,5]
-[1,]  0.911127  1.5061277 -2.283951  1.4920661  1.8914260
-[2,]  1.506128  5.5490733 -2.239149 -0.3499472  5.3392332
-[3,] -2.283951 -2.2391485 11.306166 -6.5804626 -6.3501484
-[4,]  1.492066 -0.3499472 -6.580463  6.4701121  0.9116092
-[5,]  1.891426  5.3392332 -6.350148  0.9116092  8.5179997
+          [,1]        [,2]       [,3]        [,4]      [,5]
+[1,] 10.438874  2.27018567 -7.1883979  1.04113352  4.274616
+[2,]  2.270186  5.49588733 -0.6948195  0.05329931 -5.851780
+[3,] -7.188398 -0.69481952  7.5489252 -2.70527379 -4.764550
+[4,]  1.041134  0.05329931 -2.7052738  2.58124882  2.002071
+[5,]  4.274616 -5.85177991 -4.7645497  2.00207129 12.071290
 \end{Soutput}
 \begin{Sinput}
 > # Now compute using SciDB, and materialize the result to R:
 > crossprod(v)[]
 \end{Sinput}
 \begin{Soutput}
-          [,1]       [,2]      [,3]       [,4]       [,5]
-[1,]  0.911127  1.5061277 -2.283951  1.4920661  1.8914260
-[2,]  1.506128  5.5490733 -2.239149 -0.3499472  5.3392332
-[3,] -2.283951 -2.2391485 11.306166 -6.5804626 -6.3501484
-[4,]  1.492066 -0.3499472 -6.580463  6.4701121  0.9116092
-[5,]  1.891426  5.3392332 -6.350148  0.9116092  8.5179997
+          [,1]        [,2]       [,3]        [,4]      [,5]
+[1,] 10.438874  2.27018567 -7.1883979  1.04113352  4.274616
+[2,]  2.270186  5.49588733 -0.6948195  0.05329931 -5.851780
+[3,] -7.188398 -0.69481952  7.5489252 -2.70527379 -4.764550
+[4,]  1.041134  0.05329931 -2.7052738  2.58124882  2.002071
+[5,]  4.274616 -5.85177991 -4.7645497  2.00207129 12.071290
 \end{Soutput}
 \end{Schunk}
 
@@ -598,7 +600,6 @@ A reference to a  3x4 SciDB array
 \begin{Sinput}
 > # Determine a subset of the rownames of X (another SciDB array):
 > idx <- rownames(X) > "'b'"
->
 > # Subset X by the condition on its rows:
 > X[idx, ]
 \end{Sinput}
@@ -661,11 +662,11 @@ aggregation function expressed as a character string. Here is a simple example:
 > print(head(y, n=4))
 \end{Sinput}
 \begin{Soutput}
-   row Petal_Width_sum
-1    1             0.2
-2    2             0.4
-3    3             0.6
-4    4             0.8
+  row Petal_Width_sum
+1   1             0.2
+2   2             0.4
+3   3             0.6
+4   4             0.8
 \end{Soutput}
 \end{Schunk}
 
@@ -932,6 +933,7 @@ Here is an example:
 \begin{Sinput}
 > # Assign the third row of the transpose to a scidb object B:
 > B <- t(A)[3,]
+>
 > # B is a promise object--it's name is an (unevaluated) SciDB query expression
 > # that depends on A. But it has a valid output schema, and we also see that
 > # it depends ultimately on the SciDB array `test`:
@@ -961,7 +963,7 @@ Here is an example:
 > C@name
 \end{Sinput}
 \begin{Soutput}
-[1] "R_array12d251f651691101035427920"
+[1] "R_array3ec360a6e1cc1101127319914"
 \end{Soutput}
 \begin{Sinput}
 > C@schema
