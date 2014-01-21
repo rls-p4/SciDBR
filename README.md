@@ -29,7 +29,7 @@ rownames, colnames, or dimnames settings. Assigned labels are provided by 1-d
 SciDB arrays that map the integer coordinate to a string label. Here is a
 simple example:
 
-``
+```
 # Upload a test matrix to SciDB:
 X <- as.scidb( matrix(rnorm(20),nrow=5) )
 
