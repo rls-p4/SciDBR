@@ -768,16 +768,23 @@ iqiter = function (con, n = 1, excludecol, ...)
 # I: optional vector of dimension indices to use, if missing use all
 # newnames: optional vector of new dimension names, must be the same length
 #    as I.
-`build_attr_schema` = function(A, prefix="", I, newnames)
+# nullable: optional vector of new nullability expressed as FALSE or TRUE,
+#    must be the same length as I.
+`build_attr_schema` = function(A, prefix="", I, newnames, nullable)
 {
   if(missing(I)) I = rep(TRUE,length(A@attributes))
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-  N = rep("",length(A@nullable))
-  N[A@nullable] = " NULL"
-  N = paste(A@types,N,sep="")
-  attributes = paste(prefix,A@attributes,sep="")
+  N = rep("", length(I))
+  N[A@nullable[I]] = " NULL"
+  if(!missing(nullable))
+  {
+    N = rep("", length(I))
+    N[nullable] = " NULL"
+  }
+  N = paste(A@types[I],N,sep="")
+  attributes = paste(prefix,A@attributes[I],sep="")
   if(!missing(newnames)) attributes = newnames
-  S = paste(paste(attributes,N,sep=":")[I],collapse=",")
+  S = paste(paste(attributes,N,sep=":"),collapse=",")
   sprintf("<%s>",S)
 }
 

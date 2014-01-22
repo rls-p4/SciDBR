@@ -174,7 +174,9 @@
 {
   mc = list(...)
   `by` = by.x = by.y = NULL
+  `all` = FALSE;
   if(!is.null(mc$by)) `by` = mc$by
+  if(!is.null(mc$all)) `all` = mc$all
   if(!is.null(mc$by.x)) by.x = mc$by.x
   if(!is.null(mc$by.y)) by.y = mc$by.y
   `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
@@ -233,7 +235,7 @@
 
 # New attribute schema for y that won't conflict with x:
   newas = build_attr_schema(y,newnames=make.unique_(x@attributes,y@attributes))
-# Check for join case
+# Check for join case (easy case)
   if((length(by.x) == length(by.y)) && all(x@D$name %in% by.x) && all(y@D$name %in% by.y))
   {
     newds = build_dim_schema(y,newnames=x@D$name)
@@ -241,7 +243,13 @@
     reschema = sprintf("%s%s", newas,build_dim_schema(x))
 # Cast and redimension y conformably with x:
     z = redimension(cast(y,castschema),reschema)
-    query = sprintf("join(%s,%s)",x@name,z@name)
+    if(all)
+    {
+# Outer join
+      query = sprintf("join(%s,%s)",x@name,z@name)
+    }
+    else
+      query = sprintf("join(%s,%s)",x@name,z@name)
     return(.scidbeval(query,eval,depend=list(x,y)))
   }
 
