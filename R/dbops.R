@@ -102,7 +102,7 @@
 # No scientific notation please
   chunksize = noE(chunksize)
   overlap = noE(overlap)
-  dim = noE(dim - (start - 1))
+  dim = noE(dim + (start - 1))
   start = noE(start)
   schema = paste("<",names[1],":",type,">",sep="")
   schema = paste(schema, paste("[",paste(paste(paste(
