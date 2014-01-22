@@ -116,7 +116,7 @@ summary.scidb = function(x)
 `[.scidb` = function(x, ...)
 {
   M = match.call()
-  drop = ifelse(is.null(M$drop),FALSE,M$drop)
+  drop = ifelse(is.null(M$drop),TRUE,M$drop)
   eval = ifelse(is.null(M$eval),FALSE,M$eval)
   M = M[3:length(M)]
   if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","eval"))]

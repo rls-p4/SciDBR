@@ -154,7 +154,7 @@ scidbmultiply = function(e1,e2)
     x = tmpnam()
     e1 = as.scidb(e1,name=x,gc=TRUE)
   }
-  if(!inherits(e2,"scidb") && length(2)>1) {
+  if(!inherits(e2,"scidb") && length(e2)>1) {
     x = tmpnam()
     e2 = as.scidb(e2,name=x,gc=TRUE)
   }
@@ -202,13 +202,16 @@ scidbmultiply = function(e1,e2)
     q2 = sprintf("repart(%s, %s)", q2, schema)
 
 # Handle sparsity by cross-merging data (full outer join):
-    if(is.sparse(e1))
+    if(l==l1)
     {
-      q1 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q1,q2,e1@type)
-    }
-    if(is.sparse(e2))
-    {
-      q2 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q2,q1,e2@type)
+      if(is.sparse(e1))
+      {
+        q1 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q1,q2,e1@type)
+      }
+      if(is.sparse(e2))
+      {
+        q2 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q2,q1,e2@type)
+      }
     }
   }
   p1 = p2 = ""
@@ -224,6 +227,17 @@ scidbmultiply = function(e1,e2)
     Q = sprintf("apply(%s,%s, %s %.15f %s %s %s)",q2,v,p1,e1s,op,e2a,p2)
   else if(length(e2s)==1)
     Q = sprintf("apply(%s,%s,%s %s %s %.15f %s)",q1,v,p1,e1a,op,e2s,p2)
+  else if(l1==1 && l==2)
+  {
+# Handle special case similar to, but a bit different than vector recylcing.
+# This case requires a dimensional match along the 1st dimensions, and it's
+# useful for matrix row scaling.
+# First, conformably redimension e1.
+    newschema = build_dim_schema(e2,I=1,newnames=e1@D$name[1])
+    re1 = sprintf("redimension(%s,%s%s)",q1,build_attr_schema(e1),newschema)
+    Q = sprintf("cross_join(%s as e1, %s as e2, e1.%s, e2.%s)", re1, q2, e1@D$name[1], e2@D$name[1])
+    Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
+  }
   else
   {
     Q = sprintf("join(%s as e1, %s as e2)", q1, q2)

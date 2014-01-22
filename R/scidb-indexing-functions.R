@@ -280,5 +280,9 @@ materialize = function(x, drop=FALSE)
 #        perm=seq(from=length(x@D$length),to=1,by=-1))
   ans = array(NA, dim=x@dim)
   ans[A[[2]]+1] = A[[1]]
+  if(length(dim(ans))==1)
+  {
+    ans=as.vector(ans)
+  }
   return(ans)
 }
