@@ -30,7 +30,8 @@
 
 `attribute_rename` = function(x, old, `new`, `eval`=FALSE)
 {
-  query = sprintf("attribute_rename(%s,%s,%s)",x@name,old,new)
+  query = sprintf("attribute_rename(%s,%s)",x@name,
+    paste(paste(old,new,sep=","),collapse=","))
   .scidbeval(query,eval,depend=list(x))
 }
 
