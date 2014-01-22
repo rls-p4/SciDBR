@@ -251,11 +251,12 @@
       z = make_nullable(z)
 # Form a null-valued version of each array
       xnames = make.unique_(x@attributes,x@attributes)
-      x = attribute_rename(project(bind(x,xnames,rep("null",length(xnames))),xnames),xnames,x@attributes)
+      vals = paste(x@types, rep("(null)",length(x@types)))
+      xnull = attribute_rename(project(bind(x,xnames,vals),xnames),xnames,x@attributes)
       znames = make.unique_(z@attributes,z@attributes)
-      z = attribute_rename(project(bind(z,znames,rep("null",length(znames))),znames),znames,z@attributes)
-
-      query = sprintf("join(%s,%s)",x@name,z@name)
+      vals = paste(z@types, rep("(null)",length(z@types)))
+      znull = attribute_rename(project(bind(z,znames,vals),znames),znames,z@attributes)
+      query = sprintf("join(merge(%s,%s),merge(%s,%s))",x@name,znull@name,z@name,xnull@name)
     }
     else
       query = sprintf("join(%s,%s)",x@name,z@name)

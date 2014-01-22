@@ -37,6 +37,7 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
   .scidbeval(ans@name, `eval`=eval, name=name, gc=gc)
 }
 
+
 # Create a new scidb reference to an existing SciDB array.
 # name (character): Name of the backing SciDB array
 # attribute (character): Attribute in the backing SciDB array
@@ -766,7 +767,7 @@ iqiter = function (con, n = 1, excludecol, ...)
 # Internal utility function, make every attribute of an array nullable
 `make_nullable` = function(x)
 {
-  cast(sprintf("%s%s",build_attr_schema(x,nullable=TRUE),build_dim_schema(x)))
+  cast(x,sprintf("%s%s",build_attr_schema(x,nullable=TRUE),build_dim_schema(x)))
 }
 
 # Build the attribute part of a SciDB array schema from a scidb, scidbdf object.
@@ -910,4 +911,11 @@ origin = function(x)
   N = paste(rep("null",2*length(x@D$name)),collapse=",")
   query = sprintf("sg(subarray(%s,%s),1,-1)",x@name,N)
   .scidbeval(query,`eval`=FALSE,depend=list(x),gc=TRUE)
+}
+
+# Silly function to return schema string from object
+schema = function(x)
+{
+  if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
+  gsub("^array","",x@schema)
 }
