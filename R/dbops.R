@@ -99,10 +99,10 @@
     names = c("val", letters[9:(8+length(dim))])
   }
 # No scientific notation please
-  start = sprintf("%.0f",start)
-  chunksize = sprintf("%.0f",chunksize)
-  overlap = sprintf("%.0f",overlap)
-  dim = sprintf("%.0f", dim-1)
+  chunksize = noE(chunksize)
+  overlap = noE(overlap)
+  dim = noE(dim - (start - 1))
+  start = noE(start)
   schema = paste("<",names[1],":",type,">",sep="")
   schema = paste(schema, paste("[",paste(paste(paste(
         paste(names[-1],start,sep="="), dim, sep=":"),

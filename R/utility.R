@@ -602,10 +602,11 @@ df2scidb = function(X,
 
 iquery = function(query, `return`=FALSE,
                   afl=TRUE, iterative=FALSE,
-                  n=1000, excludecol, ...)
+                  n=Inf, excludecol, ...)
 {
   if(!afl && `return`) stop("return=TRUE may only be used with AFL statements")
   if(iterative && !`return`) stop("Iterative result requires return=TRUE")
+  if(is.scidb(query) || is.scidbdf(query))  query=query@name
   if(missing(excludecol)) excludecol=NA
   if(iterative)
   {

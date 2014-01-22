@@ -307,6 +307,32 @@ setMethod("t", signature(x="scidb"),
   }
 )
 
+# Lead or lag a time series
+setOldClass("lag")
+setGeneric("lag")
+setMethod("lag",signature(x="scidb"),
+  function(x,k=1,dim=1,eval=FALSE)
+  {
+    n = make.unique_(c(x@attributes, x@D$name), "n")
+    expr = sprintf("%s - %s", x@D$name[dim], k)
+    y = bind(x,n,expr)
+    start = x@D$start
+    start[dim] = start[dim] - k
+    names = x@D$name
+    names[dim] = n
+    schema = sprintf("%s%s", build_attr_schema(x),
+      build_dim_schema(x,newstart=start,newnames=names))
+    y = redimension(y,schema)
+    cschema = sprintf("%s%s",build_attr_schema(x),
+                build_dim_schema(y,newnames=x@D$name))
+    y = cast(y,cschema)
+    b = paste(paste(noE(x@D$start),collapse=","),
+        paste(noE(x@D$length-1),collapse=","),sep=",")
+    query = sprintf("between(%s,%s)",y@name,b)
+    query = sprintf("redimension(%s,%s%s)",query, build_attr_schema(x),build_dim_schema(x))
+    .scidbeval(query,eval=FALSE,gc=TRUE,depend=list(x))
+  })
+
 # SciDB's regrid and xgrid operators (simple wrappers)
 setGeneric("regrid", def=function(x,grid,expr){NULL})
 setMethod("regrid", signature(x="scidb"),
