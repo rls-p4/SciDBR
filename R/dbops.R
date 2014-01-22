@@ -245,7 +245,15 @@
     z = redimension(cast(y,castschema),reschema)
     if(all)
     {
-# Outer join
+# Experimental outer join XXX XXX
+      x = make_nullable(x)
+      z = make_nullable(z)
+# Form a null-valued version of each array
+      xnames = make.unique_(x@attributes,x@attributes)
+      x = attribute_rename(project(bind(x,xnames,rep("null",length(xnames))),xnames),xnames,x@attributes)
+      znames = make.unique_(z@attributes,z@attributes)
+      z = attribute_rename(project(bind(z,znames,rep("null",length(znames))),znames),znames,z@attributes)
+
       query = sprintf("join(%s,%s)",x@name,z@name)
     }
     else

@@ -763,6 +763,12 @@ iqiter = function (con, n = 1, excludecol, ...)
   paste(attr,dims,sep="")
 }
 
+# Internal utility function, make every attribute of an array nullable
+`make_nullable` = function(x)
+{
+  cast(sprintf("%s%s",build_attr_schema(x,nullable=TRUE),build_dim_schema(x)))
+}
+
 # Build the attribute part of a SciDB array schema from a scidb, scidbdf object.
 # Set prefix to add a prefix to all attribute names.
 # I: optional vector of dimension indices to use, if missing use all
