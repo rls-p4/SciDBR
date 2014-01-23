@@ -30,5 +30,5 @@ B. W. Lewis<blewis@paradigm4.com>
 \dontrun{
 x <- build("i",dim=10,names=c("x","i"),start=1)
 y <- lag(x)
-merge(x,y,all=TRUE)
+merge(x,y,by="i",all=TRUE)
 }}

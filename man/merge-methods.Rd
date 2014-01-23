@@ -23,7 +23,8 @@ SciDB \code{cross}, \code{cross_join}, and \code{join} operations.
 Only one of either \code{by} or both \code{by.x} and \code{by.y} may be
 specified.  If none of the \code{by*} arguments are specified, the result is
 the Cartesian product of \code{x} and \code{y} computed with the SciDB
-\code{cross} operator.
+\code{cross} operator. (Note that this differs from the usual R \code{merge}
+behavior!)
 
 If only \code{by} is specified, the dimension names or attribute name in
 \code{by} are assumed to be common across \code{x} and \code{y}.  Otherwise

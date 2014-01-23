@@ -357,7 +357,7 @@ bulk data load utility as outlined in the SciDB documentation instead.
 > str(v)
 \end{Sinput}
 \begin{Soutput}
-SciDB array name:  R_array57ea8f07d1101...
+SciDB array name:  R_array68d7d22acbb11...
 SciDB array schema:  array<val:double> [i=0:4,5,0,j=0:4,5,0]
 attribute in use:  val
 All attributes:  val
@@ -370,24 +370,24 @@ Array dimensions:
 > crossprod( v[] )              # Compute t(v) %*% v using R
 \end{Sinput}
 \begin{Soutput}
-           [,1]       [,2]       [,3]       [,4]       [,5]
-[1,]  4.2067456 -5.3364171 -0.3546871 -0.1000854 -1.3752601
-[2,] -5.3364171  8.4978738  0.7810463 -0.7032141  0.4461022
-[3,] -0.3546871  0.7810463  7.9591385  0.9317910 -0.6357548
-[4,] -0.1000854 -0.7032141  0.9317910  0.7078048  0.7758997
-[5,] -1.3752601  0.4461022 -0.6357548  0.7758997  2.5575912
+          [,1]       [,2]       [,3]       [,4]      [,5]
+[1,]  6.339506  2.8477255 -2.2914920 -1.4103559  2.023596
+[2,]  2.847726  1.6441307 -1.0672088  0.2178896  2.145741
+[3,] -2.291492 -1.0672088  4.0646740  0.7985097 -4.507573
+[4,] -1.410356  0.2178896  0.7985097  2.5383997  2.119747
+[5,]  2.023596  2.1457414 -4.5075730  2.1197469  9.078277
 \end{Soutput}
 \begin{Sinput}
 > # Now compute using SciDB, and materialize the result to R:
 > crossprod(v)[]
 \end{Sinput}
 \begin{Soutput}
-           [,1]       [,2]       [,3]       [,4]       [,5]
-[1,]  4.2067456 -5.3364171 -0.3546871 -0.1000854 -1.3752601
-[2,] -5.3364171  8.4978738  0.7810463 -0.7032141  0.4461022
-[3,] -0.3546871  0.7810463  7.9591385  0.9317910 -0.6357548
-[4,] -0.1000854 -0.7032141  0.9317910  0.7078048  0.7758997
-[5,] -1.3752601  0.4461022 -0.6357548  0.7758997  2.5575912
+          [,1]       [,2]       [,3]       [,4]      [,5]
+[1,]  6.339506  2.8477255 -2.2914920 -1.4103559  2.023596
+[2,]  2.847726  1.6441307 -1.0672088  0.2178896  2.145741
+[3,] -2.291492 -1.0672088  4.0646740  0.7985097 -4.507573
+[4,] -1.410356  0.2178896  0.7985097  2.5383997  2.119747
+[5,]  2.023596  2.1457414 -4.5075730  2.1197469  9.078277
 \end{Soutput}
 \end{Schunk}
 
@@ -474,6 +474,7 @@ Examples of indexing operations follow.
 
 \begin{Schunk}
 \begin{Sinput}
+> # Example of labeling indices with a label array.
 > set.seed(1)
 > X <- as.scidb( matrix(rnorm(20),nrow=5) )
 > # SciDB matrix objects like X default to zero-based indexing.
@@ -485,10 +486,10 @@ Examples of indexing operations follow.
 A reference to a  3x4 SciDB array
 \end{Soutput}
 \end{Schunk}
-%%\caption*{Labeled indices}
 
 \begin{Schunk}
 \begin{Sinput}
+> # Example of indexing by a condition on an auxiliary array.
 > # Determine a subset of the rownames of X (another SciDB array):
 > idx <- rownames(X) > "'b'"
 > # Subset X by the condition on its rows:
@@ -498,7 +499,6 @@ A reference to a  3x4 SciDB array
 A reference to a  3x4 SciDB array
 \end{Soutput}
 \end{Schunk}
-%%\caption*{Indexing by a condition on an auxiliary array}
 
 
 \section{Data manipulation functions}
@@ -520,9 +520,9 @@ to center the columns of a matrix.
 > # attribute will be called "val" be default.
 > A <- as.scidb( matrix(rnorm(100), nrow=10) )
 > # Create a centered version of the matrix by computing its column means
-> # with # apply and subtracting them with sweep. Note that apply uses a
-> # SciDB # expression. We specify `eval=TRUE` below to compute and cache
-> # the result of # sweep, improving the efficiency of the subsequent
+> # with apply and subtracting them with sweep. Note that apply uses a
+> # SciDB expression. We specify `eval=TRUE` below to compute and cache
+> # the result of  sweep, improving the efficiency of the subsequent
 > # crossprod operation.
 > 
 > A0 <- sweep(A, 2, apply(A, 2, "avg(val)"), eval=TRUE)
@@ -867,7 +867,7 @@ Here is an example:
 > C@name
 \end{Sinput}
 \begin{Soutput}
-[1] "R_array57e17d9d1a41101267322006"
+[1] "R_array68d12f9eb1c1101280754580"
 \end{Soutput}
 \begin{Sinput}
 > C@schema

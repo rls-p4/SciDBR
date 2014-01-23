@@ -249,14 +249,15 @@
 # Experimental outer join XXX XXX
       x = make_nullable(x)
       z = make_nullable(z)
-# Form a null-valued version of each array
-      xnames = make.unique_(x@attributes,x@attributes)
+# Form a null-valued version of each array in the alternate array coordinate system
+      xnames = make.unique_(z@attributes,x@attributes)
       vals = paste(x@types, rep("(null)",length(x@types)))
-      xnull = attribute_rename(project(bind(x,xnames,vals),xnames),xnames,x@attributes)
-      znames = make.unique_(z@attributes,z@attributes)
+      xnull = attribute_rename(project(bind(z,xnames,vals),xnames),xnames,x@attributes)
+      znames = make.unique_(x@attributes,z@attributes)
       vals = paste(z@types, rep("(null)",length(z@types)))
-      znull = attribute_rename(project(bind(z,znames,vals),znames),znames,z@attributes)
-      query = sprintf("join(merge(%s,%s),merge(%s,%s))",x@name,znull@name,z@name,xnull@name)
+      znull = attribute_rename(project(bind(x,znames,vals),znames),znames,z@attributes)
+# Merge each array with its nullified counterpart, then join:
+      query = sprintf("join(merge(%s,%s),merge(%s,%s))",x@name,xnull@name,z@name,znull@name)
     }
     else
       query = sprintf("join(%s,%s)",x@name,z@name)
