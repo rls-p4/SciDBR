@@ -781,6 +781,7 @@ iqiter = function (con, n = 1, excludecol, ...)
 {
   if(missing(I)) I = rep(TRUE,length(A@attributes))
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  if(is.logical(I)) I = which(I)
   N = rep("", length(I))
   N[A@nullable[I]] = " NULL"
   if(!missing(nullable))
