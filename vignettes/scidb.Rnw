@@ -131,12 +131,12 @@ SciDB features include ACID transactions, parallel processing, distributed
 storage, efficient sparse array storage, and native linear algebra operations.
 The \verb+scidb+ package for R provides two ways to interact with SciDB from R:
 \begin{enumerate}
-\item By running SciDB queries from R, optionally transferring data through
-data frames or data frame iterators.
 \item Through SciDB array classes for R.
 The arrays mimic standard R arrays and data frames, but operations on them
 are performed by the SciDB engine.  Data are materialized to R only
 when requested.
+\item By running SciDB queries from R, optionally transferring data through
+data frames or data frame iterators.
 \end{enumerate}
 The SciDB array classes facilitate programming large-scale SciDB computation in
 R using natural R syntax.  This vignette illustrates using SciDB from R by
@@ -144,13 +144,7 @@ example. For more detailed information on the functions described in this
 vignette, see the manual pages in the package.
 
 
-\section{Connecting to SciDB and Running Queries}
-
-This section outlines the most basic interaction between R and SciDB: running
-queries and transferring one-dimensional SciDB arrays between R and SciDB
-through R data frames.
-
-\subsection{Connecting to SciDB}
+\section{Connecting to SciDB}
 
 The \verb+scidbconnect+ function establishes a connection to a simple HTTP
 network service called shim running on a SciDB coordinator instance (see
@@ -196,91 +190,6 @@ output of \verb+scidblist+ to remove sets of arrays matching the filter.
 
 
 
-\subsection{Running SciDB queries}
-
-The \verb+iquery+ function executes SciDB queries using either the SciDB array
-functional language (AFL) or declarative array query language (AQL) syntax.
-When AFL is used, the \verb+iquery+ function optionally returns query results
-in an R data frame if the argument \verb+return=TRUE+ is specified.  Returned
-output is similar to output obtained by the SciDB \verb+iquery+ command-line
-program with the \verb$-olcsv+$ option.  The \verb+iquery+ function does not
-return anything by default.
-
-Query results returned by the \verb+iquery+ function are internally presented
-to R using a generic CSV format, providing very flexible support for many data
-types.  (The $n$-dimensional array class described in the next section uses a
-binary data exchange method between R and SciDB.) Note that, although R and
-SciDB have a number of common data types, each system contains types not
-supported by the other.  Thus, conversion errors may arise. The \verb+iquery+
-function is designed to reasonably minimize such issues and simplify basic data
-transfer between the systems.  Data types common to R and SciDB include
-double-precision numeric, character string, logical, and 32-bit
-integers. The \verb+iquery+ function supports
-standard R \verb+read.table+ parameter options to facilitate type conversion.
-
-The following code example illustrates basic use of \verb+iquery+.
-\begin{Schunk}
-\begin{Sinput}
-> # Manually build a 1-d SciDB array named "P:"
-> iquery("store(build(<x:double>[i=0:99,100,0],asin(1)*i/25),P)")
->
-> # Return a query as a data.frame, manually specifying returned column classes:
-> S <- iquery("apply(P,y,sin(x))",return=TRUE,
-+             colClasses=c("integer","double","complex"))
-> head(S, n=3)
-\end{Sinput}
-\begin{Soutput}
-  i          x             y
-1 0 0.00000000 0.00000000+0i
-2 1 0.06283185 0.06279052+0i
-3 2 0.12566371 0.12533323+0i
-\end{Soutput}
-\end{Schunk}
-
-
-\subsection{Iterating over query results}
-
-The \verb+iquery+ function returns query results into a single R data frame by
-default. Large results expected to contain lots of rows may be iterated over
-by setting the \verb+iterative=TRUE+ argument. When \verb+iquery+ is
-used with the \verb+iterative=TRUE+ setting, it returns an iterator that
-iterates over chunks of rows of the result data frame.  Iterators are defined
-by the \verb+iterators+ package. Their data may be directly accessed with the
-\verb+nextElem+ method, or indirectly with \verb+foreach+. See the
-\verb+iterators+ and \verb+foreach+ packages for many examples and further
-documentation of their use. 
-
-\begin{Schunk}
-\begin{Sinput}
-> # Build a small 1-d SciDB test array:
-> iquery("store(build(<x:double>[i=1:10,10,0],i/10.0),A)")
->
-> # Return the result of a SciDB apply operator in an R iterator with a
-> # block size of at most 7 rows at a time:
-> it <- iquery("apply(A,y,sqrt(x))", return=TRUE, iterative=TRUE, n=7)
-> nextElem(it)
-\end{Sinput}
-\begin{Soutput}
-  i   x         y
-1 1 0.1 0.3162278
-2 2 0.2 0.4472136
-3 3 0.3 0.5477226
-4 4 0.4 0.6324555
-5 5 0.5 0.7071068
-6 6 0.6 0.7745967
-\end{Soutput}
-\begin{Sinput}
-> nextElem(it)
-\end{Sinput}
-\begin{Soutput}
-   i   x         y
-1  7 0.7 0.8366600
-2  8 0.8 0.8944272
-3  9 0.9 0.9486833
-4 10 1.0 1.0000000
-\end{Soutput}
-\end{Schunk}
-
 
 \section{SciDB Arrays for R users}\label{arrays}
 
@@ -302,18 +211,6 @@ the {\tt scidb} $n$-dimensional array class described below is limited to
 working with one attribute at a time to more closely emulate standard R
 arrays.
 
-The integer coordinate systems used to index SciDB arrays are similar to R,
-except that SciDB integer indices may be zero or negative, and are represented
-by 62-bit signed integers (R indices use either unsigned positive 31-bit
-integer or positive 52-bit integer-valued double values). This means that SciDB
-arrays can't always be indexed by R In practice, R users should avoid creating
-SciDB arrays with coordinate systems that extend past R's limits.
-
-SciDB attribute values within a cell may be explicitly marked missing,
-indicated by a special SciDB missing code also referred to as a NULL code.
-SciDB internally supports a large number of possible missing codes. All SciDB
-missing code values are mapped to \verb+NA+ values in R.
- 
 The \verb+scidb+ package defines two array classes for R with data backed
 by SciDB arrays: the \verb+scidbdf+ class for data frame-like objects,
 and the \verb+scidb+ class for matrix and general array objects.
@@ -349,7 +246,6 @@ uses the special empty-bracket notation, \verb+[]+, to indicate that data
 should be materialized to R as an R data frame. Illustrations are provided in
 the examples.
 
-\begin{rcode}
 \begin{Schunk}
 \begin{Sinput}
 > # Copy the Michelson-Morley experiment data to SciDB,
@@ -382,8 +278,7 @@ Row dimension:
 4   4  1070
 \end{Soutput}
 \end{Schunk}
-\caption*{Example of a scidbdf object}
-\end{rcode}
+%%\caption*{Example of a scidbdf object}
 
 
 
@@ -411,16 +306,16 @@ Additional notes and examples about indexing appear in the next section.
 \begin{Sinput}
 > # Upload the iris data to SciDB storing it in an array named `iris`
 > # and create a data frame-like object `df` that refers to it:
-> df <- as.scidb(iris,name="iris")
+> df <- as.scidb(iris)
 > dim(df)
 \end{Sinput}
 \begin{Soutput}
 [1] 150   5
 \end{Soutput}
 \begin{Sinput}
-> # Now create a vector-like object using the same data in SciDB, but
+> # Now create a vector-like object from the same SciDB array, but
 > # referring to only one of the available variables (Petal_Width):
-> x <- scidb("iris", attribute="Petal_Width", data.frame=FALSE)
+> x <- scidb(df, attribute="Petal_Width", data.frame=FALSE)
 > length(x)
 \end{Sinput}
 \begin{Soutput}
@@ -462,7 +357,7 @@ bulk data load utility as outlined in the SciDB documentation instead.
 > str(v)
 \end{Sinput}
 \begin{Soutput}
-SciDB array name:  R_array3ec3b08cf9a11...
+SciDB array name:  R_arrayb8923e9f64411...
 SciDB array schema:  array<val:double> [i=0:4,5,0,j=0:4,5,0]
 attribute in use:  val
 All attributes:  val
@@ -475,24 +370,24 @@ Array dimensions:
 > crossprod( v[] )              # Compute t(v) %*% v using R
 \end{Sinput}
 \begin{Soutput}
-          [,1]        [,2]       [,3]        [,4]      [,5]
-[1,] 10.438874  2.27018567 -7.1883979  1.04113352  4.274616
-[2,]  2.270186  5.49588733 -0.6948195  0.05329931 -5.851780
-[3,] -7.188398 -0.69481952  7.5489252 -2.70527379 -4.764550
-[4,]  1.041134  0.05329931 -2.7052738  2.58124882  2.002071
-[5,]  4.274616 -5.85177991 -4.7645497  2.00207129 12.071290
+            [,1]       [,2]       [,3]        [,4]       [,5]
+[1,]  0.99435309 -1.6141523  0.8892604 -0.04641526 -1.1639437
+[2,] -1.61415233  3.4992042  1.1145039 -0.83391353 -0.2002475
+[3,]  0.88926036  1.1145039 20.4775322 -5.46976848 -5.7176497
+[4,] -0.04641526 -0.8339135 -5.4697685  1.67923502  2.4183109
+[5,] -1.16394368 -0.2002475 -5.7176497  2.41831086  9.1087383
 \end{Soutput}
 \begin{Sinput}
 > # Now compute using SciDB, and materialize the result to R:
 > crossprod(v)[]
 \end{Sinput}
 \begin{Soutput}
-          [,1]        [,2]       [,3]        [,4]      [,5]
-[1,] 10.438874  2.27018567 -7.1883979  1.04113352  4.274616
-[2,]  2.270186  5.49588733 -0.6948195  0.05329931 -5.851780
-[3,] -7.188398 -0.69481952  7.5489252 -2.70527379 -4.764550
-[4,]  1.041134  0.05329931 -2.7052738  2.58124882  2.002071
-[5,]  4.274616 -5.85177991 -4.7645497  2.00207129 12.071290
+            [,1]       [,2]       [,3]        [,4]       [,5]
+[1,]  0.99435309 -1.6141523  0.8892604 -0.04641526 -1.1639437
+[2,] -1.61415233  3.4992042  1.1145039 -0.83391353 -0.2002475
+[3,]  0.88926036  1.1145039 20.4775322 -5.46976848 -5.7176497
+[4,] -0.04641526 -0.8339135 -5.4697685  1.67923502  2.4183109
+[5,] -1.16394368 -0.2002475 -5.7176497  2.41831086  9.1087383
 \end{Soutput}
 \end{Schunk}
 
@@ -577,14 +472,12 @@ sparse diagonal matrix from a vector.
 }
 Examples of indexing operations follow.
 
-\begin{rcode}
 \begin{Schunk}
 \begin{Sinput}
 > set.seed(1)
 > X <- as.scidb( matrix(rnorm(20),nrow=5) )
->
-> # SciDB matrix objects like X default to zero-based indexing. It's important
-> # that the label array have the same starting index:
+> # SciDB matrix objects like X default to zero-based indexing.
+> # It's important that the label array have the same starting index:
 > rownames(X) <- as.scidb( data.frame(letters[1:5]), start=0)
 > X[c("b","a","d"), ]
 \end{Sinput}
@@ -592,10 +485,8 @@ Examples of indexing operations follow.
 A reference to a  3x4 SciDB array
 \end{Soutput}
 \end{Schunk}
-\caption*{Labeled indices}
-\end{rcode}
+%%\caption*{Labeled indices}
 
-\begin{rcode}
 \begin{Schunk}
 \begin{Sinput}
 > # Determine a subset of the rownames of X (another SciDB array):
@@ -607,8 +498,7 @@ A reference to a  3x4 SciDB array
 A reference to a  3x4 SciDB array
 \end{Soutput}
 \end{Schunk}
-\caption*{Indexing by a condition on an auxiliary array}
-\end{rcode}
+%%\caption*{Indexing by a condition on an auxiliary array}
 
 
 \section{Data manipulation functions}
@@ -624,19 +514,18 @@ available for \verb+scidb+ and \verb+scidbdf+ objects. The SciDB
 aggregation function is supplied as a string and references the array
 attributes. The next example uses \verb+apply+ together with \verb+sweep+
 to center the columns of a matrix.
-\begin{rcode}
 \begin{Schunk}
 \begin{Sinput}
 > # Create an example matrix and upload to SciDB. Its single numeric array
 > # attribute will be called "val" be default.
 > A <- as.scidb( matrix(rnorm(100), nrow=10) )
->
-> # Create a centered version of the matrix by computing its column means with
-> # apply and subtracting them with sweep. Note that apply uses a SciDB
-> # expression. We specify `eval=TRUE` below to compute and cache the result of
-> # sweep, improving the efficiency of the subsequent crossprod operation.
+> # Create a centered version of the matrix by computing its column means
+> # with # apply and subtracting them with sweep. Note that apply uses a
+> # SciDB # expression. We specify `eval=TRUE` below to compute and cache
+> # the result of # sweep, improving the efficiency of the subsequent
+> # crossprod operation.
+> 
 > A0 <- sweep(A, 2, apply(A, 2, "avg(val)"), eval=TRUE)
->
 > # The covariance matrix of A:
 > crossprod(A0)/(nrow(A) - 1)
 \end{Sinput}
@@ -644,8 +533,8 @@ to center the columns of a matrix.
 A reference to a  10x10 SciDB array
 \end{Soutput}
 \end{Schunk}
-\caption*{Compute a covariance matrix}
-\end{rcode}
+%%\caption*{Compute a covariance matrix}
+
 More general aggregation and data manipulation functions are outlined
 in the next section.
 
@@ -711,11 +600,10 @@ the standard R \verb+subset+ function, which can only operate on rows and
 columns.  The \verb+scidb+ class also supports a short-hand notation for
 \verb+subset+ for infix comparison operations.
 
-\begin{rcode}
 \begin{Schunk}
 \begin{Sinput}
-> # Upload a 5x5 matrix to SciDB. Its single numeric attribute name defaults to
-> # 'val' (see help for as.scidb):
+> # Upload a 5x5 matrix to SciDB. Its single numeric attribute name
+> # defaults to 'val' (see help for as.scidb):
 > set.seed(1)
 > A <- as.scidb( matrix(rnorm(9),nrow=3) )
 > # Apply a filter to the SciDB array and return the results to R:
@@ -740,8 +628,7 @@ columns.  The \verb+scidb+ class also supports a short-hand notation for
 [3,] .         .         0.5757814
 \end{Soutput}
 \end{Schunk}
-\caption*{Example of array value filtering with subset}
-\end{rcode}
+%%\caption*{Example of array value filtering with subset}
 
 
 
@@ -753,20 +640,22 @@ number of database join-like operations on SciDB array objects. See
 example that performs an inner join on array attributes:
 \begin{Schunk}
 \begin{Sinput}
-> authors <- data.frame(
-+             surname = c("Tukey", "Venables", "Tierney", "Ripley", "McNeil"),
-+             nationality = c("US", "Australia", "US", "UK", "Australia"),
-+             deceased = c("yes", rep("no", 4)),
-+             stringsAsFactors=FALSE)
-> books <- data.frame(
-+           name = c("Tukey", "Venables", "Tierney",
-+                    "Ripley", "Ripley", "McNeil", "R Core"),
-+           title = c("Exploratory Data Analysis",
-+                     "Modern Applied Statistics ...",
-+                     "LISP-STAT", "Spatial Statistics", "Stochastic Simulation",
-+                     "Interactive Data Analysis", "An Introduction to R"),
-+           other.author = c(NA, "Ripley", NA, NA, NA, NA, "Venables & Smith"),
-+           stringsAsFactors=FALSE)
+> authors <-
++   data.frame(
++     surname = c("Tukey", "Venables", "Tierney", "Ripley", "McNeil"),
++     nationality = c("US", "Australia", "US", "UK", "Australia"),
++     deceased = c("yes", rep("no", 4)),
++     stringsAsFactors=FALSE)
+> books <-
++   data.frame(
++     name = c("Tukey", "Venables", "Tierney",
++              "Ripley", "Ripley", "McNeil", "R Core"),
++     title = c("Exploratory Data Analysis",
++               "Modern Applied Statistics ...",
++               "LISP-STAT", "Spatial Statistics", "Stochastic Simulation",
++               "Interactive Data Analysis", "An Introduction to R"),
++     other.author = c(NA, "Ripley", NA, NA, NA, NA, "Venables & Smith"),
++     stringsAsFactors=FALSE)
 > a <- as.scidb(authors)
 > b <- as.scidb(books)
 > merge(a,b,by.x="surname",by.y="name")[,4:8][]
@@ -890,6 +779,22 @@ equivalent column subset selection of variables using brackets.
 \end{Schunk}
 
 
+\subsection{Indexing details and missing values}
+
+The integer coordinate systems used to index SciDB arrays are similar to R,
+except that SciDB integer indices may be zero or negative, and are represented
+by 62-bit signed integers (R indices use either unsigned positive 31-bit
+integer or positive 52-bit integer-valued double values). This means that SciDB
+arrays can't always be indexed by R In practice, R users should avoid creating
+SciDB arrays with coordinate systems that extend past R's limits.
+
+SciDB attribute values within a cell may be explicitly marked missing,
+indicated by a special SciDB missing code also referred to as a NULL code.
+SciDB internally supports a large number of possible missing codes. All SciDB
+missing code values are mapped to \verb+NA+ values in R.
+ 
+
+
 \section{Lazy evaluation, array promises, and garbage collection}
 
 Most operations on SciDB array objects return array promises--new SciDB array
@@ -933,26 +838,25 @@ Here is an example:
 \begin{Sinput}
 > # Assign the third row of the transpose to a scidb object B:
 > B <- t(A)[3,]
->
 > # B is a promise object--it's name is an (unevaluated) SciDB query expression
 > # that depends on A. But it has a valid output schema, and we also see that
 > # it depends ultimately on the SciDB array `test`:
 > B@name
 \end{Sinput}
 \begin{Soutput}
-[1] "sg(subarray(between(transpose(test),3,0,3,4),3,0,3,4),1,-1)"
+[1] "slice(sg(subarray(between(transpose(test),3,0,3,4),3,0,3,4),1,-1), j, 0)"
 \end{Soutput}
 \begin{Sinput}
 > B@schema
 \end{Sinput}
 \begin{Soutput}
-[1] "array<val:double> [j=0:0,4,0,i=0:4,5,0]"
+[1] "array<val:double> [i=0:4,5,0]"
 \end{Soutput}
 \begin{Sinput}
 > B@gc$depend[[1]]@gc$depend[[1]]@name
 \end{Sinput}
 \begin{Soutput}
-[1] "test"
+[1] "transpose(test)"
 \end{Soutput}
 \begin{Sinput}
 > # We can use `scidbeval` to force B's evaluation and storage inside SciDB:
@@ -963,13 +867,13 @@ Here is an example:
 > C@name
 \end{Sinput}
 \begin{Soutput}
-[1] "R_array3ec360a6e1cc1101127319914"
+[1] "R_arrayb894bb3dc3d1101244561819"
 \end{Soutput}
 \begin{Sinput}
 > C@schema
 \end{Sinput}
 \begin{Soutput}
-[1] "array<val:double> [j=0:0,4,0,i=0:4,5,0]"
+[1] "array<val:double> [i=0:4,5,0]"
 \end{Soutput}
 \end{Schunk}
 
@@ -1005,6 +909,94 @@ objects.
 \end{itemize}
 See the online manual pages for more details and examples.
 
+
+
+
+
+\section{Running SciDB queries}
+
+The \verb+iquery+ function executes SciDB queries using either the SciDB array
+functional language (AFL) or declarative array query language (AQL) syntax.
+When AFL is used, the \verb+iquery+ function optionally returns query results
+in an R data frame if the argument \verb+return=TRUE+ is specified.  Returned
+output is similar to output obtained by the SciDB \verb+iquery+ command-line
+program with the \verb$-olcsv+$ option.  The \verb+iquery+ function does not
+return anything by default.
+
+Query results returned by the \verb+iquery+ function are internally presented
+to R using a generic CSV format, providing very flexible support for many data
+types.  (The $n$-dimensional array class described in the next section uses a
+binary data exchange method between R and SciDB.) Note that, although R and
+SciDB have a number of common data types, each system contains types not
+supported by the other.  Thus, conversion errors may arise. The \verb+iquery+
+function is designed to reasonably minimize such issues and simplify basic data
+transfer between the systems.  Data types common to R and SciDB include
+double-precision numeric, character string, logical, and 32-bit
+integers. The \verb+iquery+ function supports
+standard R \verb+read.table+ parameter options to facilitate type conversion.
+
+The following code example illustrates basic use of \verb+iquery+.
+\begin{Schunk}
+\begin{Sinput}
+> # Manually build a 1-d SciDB array named "P:"
+> iquery("store(build(<x:double>[i=0:99,100,0],asin(1)*i/25),P)")
+> # Return a query as a data.frame, manually specifying returned column classes:
+> S <- iquery("apply(P,y,sin(x))",return=TRUE,
++             colClasses=c("integer","double","complex"))
+> head(S, n=3)
+\end{Sinput}
+\begin{Soutput}
+  i          x             y
+1 0 0.00000000 0.00000000+0i
+2 1 0.06283185 0.06279052+0i
+3 2 0.12566371 0.12533323+0i
+\end{Soutput}
+\end{Schunk}
+
+
+\subsection{Iterating over query results}
+
+The \verb+iquery+ function returns query results into a single R data frame by
+default. Large results expected to contain lots of rows may be iterated over
+by setting the \verb+iterative=TRUE+ argument. When \verb+iquery+ is
+used with the \verb+iterative=TRUE+ setting, it returns an iterator that
+iterates over chunks of rows of the result data frame.  Iterators are defined
+by the \verb+iterators+ package. Their data may be directly accessed with the
+\verb+nextElem+ method, or indirectly with \verb+foreach+. See the
+\verb+iterators+ and \verb+foreach+ packages for many examples and further
+documentation of their use. 
+
+\begin{Schunk}
+\begin{Sinput}
+> # Build a small 1-d SciDB test array:
+> iquery("store(build(<x:double>[i=1:10,10,0],i/10.0),A)")
+> # Return the result of a SciDB apply operator in an R iterator with a
+> # block size of at most 7 rows at a time:
+> it <- iquery("apply(A,y,sqrt(x))", return=TRUE, iterative=TRUE, n=7)
+> nextElem(it)
+\end{Sinput}
+\begin{Soutput}
+  i   x         y
+1 1 0.1 0.3162278
+2 2 0.2 0.4472136
+3 3 0.3 0.5477226
+4 4 0.4 0.6324555
+5 5 0.5 0.7071068
+6 6 0.6 0.7745967
+\end{Soutput}
+\begin{Sinput}
+> nextElem(it)
+\end{Sinput}
+\begin{Soutput}
+   i   x         y
+1  7 0.7 0.8366600
+2  8 0.8 0.8944272
+3  9 0.9 0.9486833
+4 10 1.0 1.0000000
+\end{Soutput}
+\end{Schunk}
+
+
 \section{Error handling}
 
 SciDB errors are trapped and converted to R errors that can be handled by
@@ -1013,32 +1005,33 @@ exceeding R's indexing limitations, system memory, or both. The package tries
 to avoid this kind of error using package options that limit returned data size
 shown in the package options section below.
 
-
 \section{Function and method list}
 
 Here is a summary list of functions and methods defined by  the package.  See
 online help for examples and more information on each one.
 
 \begin{verbatim}
-$                  crossprod      names          scidbrm
-%*%                cumulate       names<-        sd
-[                  df2scidb       ncol           show
-acos               diag           nrow           sin
-aggregate          diff           print          slice
-apply              dim            project        sort
-as.scidb           dimnames       redimension    str
-asin               dimnames<-     regrid         subset
-atan               head           rename         sum
-attribute_rename   image          repart         svd
-between            index_lookup   reshape        sweep
-bind               iquery         rownames       t
-build              is.scidb       rownames<-     tail
-cast               is.scidbdf     scidb          tan
-cbind              length         scidbconnect   tcrossprod
-colnames           log            scidbeval      unique
-colnames<-         max            scidblist      unpack
-cos                merge          scidbls        var
-count              min            scidbremove    xgrid
+$                 %*%               Ops               [
+abs               acos              aggregate         apply
+as.scidb          asin              atan              attribute_rename
+between           bind              build             cast
+cbind             colnames          colnames<-        cos
+count             crossprod         cumulate          df2scidb
+diag              diff              dim               dimnames
+dimnames<-        glm.fit           head              image
+index_lookup      iquery            is.scidb          is.scidbdf
+lag               length            log               max
+merge             min               names             names<-
+ncol              nrow              print             project
+redimension       regrid            rename            repart
+reshape           rownames          rownames<-        scidb
+scidbconnect      scidbdf           scidbeval         scidblist
+scidbls           scidbremove       scidbrm           sd
+show              sin               slice             sort
+str               subset            sum               svd
+sweep             t                 tail              tan
+tcrossprod        unique            unpack            var
+xgrid
 \end{verbatim}
 
 
