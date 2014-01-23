@@ -4,7 +4,7 @@
 Upload an R matrix or data.frame to a SciDB array.
 }
 \description{
-Cast an R matrix or data.frame to a SciDB array, returning a reference scidb object.
+Upload an R matrix or data.frame into SciDB, returning a reference scidb object.
 }
 \usage{
 as.scidb(X, name = tmpnam(), chunkSize, overlap, start, gc=TRUE, ...)
@@ -28,11 +28,16 @@ vector, and 2-D if \code{X} is a matrix.
 
 If \code{X} is a data.frame, then \code{as.scidb} creates a one-dimensional
 multi-attribute SciDB array, with SciDB attributes representing each column
-of the data.frame. The functions \code{as.scidb} and {df2scidb} are equivalent
+of the data.frame. A utitlity function called \code{df2scidb} is used for
+data.frame uploads--the functions \code{as.scidb} and {df2scidb} are equivalent
 in this use case.
 
 This function supports double-precision, integer (32-bit), logical, and single-character
 array attribute types.
+}
+\note{
+The \code{as.scidb} function is not a very efficient way to upload lots of data
+to SciDB. Consider using the SciDB parallel bulk loader tools for that.
 }
 \value{A \code{scidb} reference object. }
 \author{

@@ -229,7 +229,7 @@ Use the \verb+as.scidb+ function to create new SciDB arrays and corresponding
 \verb+scidbdf+ R objects by copying R data frames into SciDB. The \verb+types+
 and \verb+nullable+ options may be used to explicitly specify the SciDB type
 and nullability values of each data frame column.  See the R help page for
-\verb+df2scidb+ for more information.
+\verb+as.scidb+ and related \verb+df2scidb+ functions for more information.
 
 The \verb+scidb+ function returns an R \verb+scidbdf+ or \verb+scidb+ object
 representation of an existing SciDB array.
@@ -248,8 +248,8 @@ the examples.
 
 \begin{Schunk}
 \begin{Sinput}
-> # Copy the Michelson-Morley experiment data to SciDB,
-> # returning a scidbdf object
+> # Upload the Michelson-Morley experiment data to SciDB,
+> # returning a scidbdf data frame-like object:
 > X <- as.scidb(morley, name="morely")
 > str(X)
 \end{Sinput}
@@ -357,7 +357,7 @@ bulk data load utility as outlined in the SciDB documentation instead.
 > str(v)
 \end{Sinput}
 \begin{Soutput}
-SciDB array name:  R_arrayb8923e9f64411...
+SciDB array name:  R_array57ea8f07d1101...
 SciDB array schema:  array<val:double> [i=0:4,5,0,j=0:4,5,0]
 attribute in use:  val
 All attributes:  val
@@ -370,24 +370,24 @@ Array dimensions:
 > crossprod( v[] )              # Compute t(v) %*% v using R
 \end{Sinput}
 \begin{Soutput}
-            [,1]       [,2]       [,3]        [,4]       [,5]
-[1,]  0.99435309 -1.6141523  0.8892604 -0.04641526 -1.1639437
-[2,] -1.61415233  3.4992042  1.1145039 -0.83391353 -0.2002475
-[3,]  0.88926036  1.1145039 20.4775322 -5.46976848 -5.7176497
-[4,] -0.04641526 -0.8339135 -5.4697685  1.67923502  2.4183109
-[5,] -1.16394368 -0.2002475 -5.7176497  2.41831086  9.1087383
+           [,1]       [,2]       [,3]       [,4]       [,5]
+[1,]  4.2067456 -5.3364171 -0.3546871 -0.1000854 -1.3752601
+[2,] -5.3364171  8.4978738  0.7810463 -0.7032141  0.4461022
+[3,] -0.3546871  0.7810463  7.9591385  0.9317910 -0.6357548
+[4,] -0.1000854 -0.7032141  0.9317910  0.7078048  0.7758997
+[5,] -1.3752601  0.4461022 -0.6357548  0.7758997  2.5575912
 \end{Soutput}
 \begin{Sinput}
 > # Now compute using SciDB, and materialize the result to R:
 > crossprod(v)[]
 \end{Sinput}
 \begin{Soutput}
-            [,1]       [,2]       [,3]        [,4]       [,5]
-[1,]  0.99435309 -1.6141523  0.8892604 -0.04641526 -1.1639437
-[2,] -1.61415233  3.4992042  1.1145039 -0.83391353 -0.2002475
-[3,]  0.88926036  1.1145039 20.4775322 -5.46976848 -5.7176497
-[4,] -0.04641526 -0.8339135 -5.4697685  1.67923502  2.4183109
-[5,] -1.16394368 -0.2002475 -5.7176497  2.41831086  9.1087383
+           [,1]       [,2]       [,3]       [,4]       [,5]
+[1,]  4.2067456 -5.3364171 -0.3546871 -0.1000854 -1.3752601
+[2,] -5.3364171  8.4978738  0.7810463 -0.7032141  0.4461022
+[3,] -0.3546871  0.7810463  7.9591385  0.9317910 -0.6357548
+[4,] -0.1000854 -0.7032141  0.9317910  0.7078048  0.7758997
+[5,] -1.3752601  0.4461022 -0.6357548  0.7758997  2.5575912
 \end{Soutput}
 \end{Schunk}
 
@@ -867,7 +867,7 @@ Here is an example:
 > C@name
 \end{Sinput}
 \begin{Soutput}
-[1] "R_arrayb894bb3dc3d1101244561819"
+[1] "R_array57e17d9d1a41101267322006"
 \end{Soutput}
 \begin{Sinput}
 > C@schema
