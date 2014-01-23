@@ -111,11 +111,13 @@ dimfilter = function(x, i, eval, drop)
   if(drop)
   {
     i = ans@D$length==1
-    if(!any(i)) break
-    i = which(i)
-    for(j in i)
+    if(any(i))
     {
-      ans = slice(ans,ans@D$name[j],0,eval=FALSE)
+      i = which(i)
+      for(j in i)
+      {
+        ans = slice(ans,ans@D$name[j],0,eval=FALSE)
+      }
     }
     if(eval) ans = scidbeval(ans)
   }
