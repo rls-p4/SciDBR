@@ -554,7 +554,7 @@ df2scidb = function(X,
 .Matrix2scidb = function(X,name,rowChunkSize=1000,colChunkSize=1000,start=c(0,0),gc=TRUE,...)
 {
   D = dim(X)
-  N = nnzero(X)
+  N = Matrix::nnzero(X)
   rowOverlap=0L
   colOverlap=0L
   if(length(start)<1) stop ("Invalid starting coordinates")

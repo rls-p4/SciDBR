@@ -8,7 +8,7 @@ Maintainer: B. W. Lewis <blewis@illposed.net>
 Copyright: Paradigm4, Inc.
 Description: SciDB is an open-source array database (http://scidb.org). The scidb package provides an R interface to SciDB.
 BugReports: https://github.com/Paradigm4/SciDBR/issues
-Depends: methods, iterators, RCurl
-Imports: Matrix, utils, stats, methods, iterators, RCurl
+Depends: R (>= 2.15.0), methods
+Imports: Matrix, utils, stats, iterators, RCurl
 License: AGPL-3
 LazyLoad: yes

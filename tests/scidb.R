@@ -66,7 +66,7 @@ if(nchar(host)>0)
   check(project(bind(merge(Y,diag(Y),by.x="i",by.y="i_1"),"v","val*val_1"),"v")[], diag(B)*B)
 
 # Sparse, count
-  S = sparseMatrix(sample(100,200,replace=TRUE),sample(100,200,replace=TRUE),x=runif(200))
+  S = Matrix::sparseMatrix(sample(100,200,replace=TRUE),sample(100,200,replace=TRUE),x=runif(200))
   Z = as.scidb(S)
   check(count(Z), nnzero(S))
 

@@ -1,4 +1,11 @@
 useDynLib(scidb)
+import("methods")
+importFrom("Matrix",nnzero, sparseMatrix, unpack, sparseVector)
+importFrom("utils", head, tail)
+importFrom("stats", aggregate, sd, var, reshape)
+import("RCurl", iterators)
+
+# Functions
 export("scidb")
 export("df2scidb")
 export("scidbeval")
@@ -22,9 +29,6 @@ export("rename")
 export("count")
 export("attribute_rename")
 export("index_lookup")
-importFrom("utils", "head", "tail")
-importFrom("stats", "aggregate", "sd", "var", "reshape")
-importFrom("Matrix","nnzero", "sparseMatrix", "unpack", "sparseVector")
 
 # S4 methods
 exportClasses("scidb","scidbdf")
