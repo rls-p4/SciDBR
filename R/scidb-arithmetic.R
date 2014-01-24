@@ -367,14 +367,9 @@ fn_scidb = function(x,fun,attr)
 # argument is not supported here.
 diff.scidb = function(x, lag=1, ...)
 {
-#HOMER
-  n = nrow(x) # XXX Add bounds check
-  m = x@D$start[[1]]
-  new_attribute = sprintf("%s_diff",x@attribute)
-  nu = paste(rep('null',length(dim(x))-1),collapse=",")
-  s1 = gsub(",)",")",gsub(",,",",",sprintf("sg(subarray(%s,%.0f,%s,%.0f,%s),1,-1)",x@name,m+lag,nu,n-m,nu)))
-  s2 = gsub(",)",")",gsub(",,",",",sprintf("sg(subarray(%s,%.0f,%s,%.0f,%s),1,-1)",x@name,m,nu,n-m-lag,nu)))
-  query = sprintf("project(apply(join(%s as _A, %s as _B),%s, _A.%s - _B.%s),%s)",
-          s1, s2, new_attribute, x@attribute, x@attribute, new_attribute)
-  .scidbeval(query,`eval`=FALSE,gc=TRUE,depend=list(x))
+  y = lag(x,lag)
+  n = scidb:::make.unique_(c(x@attributes,y@attributes),"diff")
+  z = merge(y,x,by=x@D$name[1],all=FALSE)
+  expr = paste(z@attributes,collapse=" - ")
+  project(bind(z, n, expr), n)
 }

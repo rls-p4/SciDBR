@@ -272,6 +272,9 @@ materialize = function(x, drop=FALSE)
   if(ndim==2 && nelem<p)
   {
     return(sparseMatrix(i=A[[2]][,1]+1,j=A[[2]][,2]+1,x=A[[1]],dims=x@D$length))
+  } else if(ndim==1 && nelem <p)
+  {
+    return(sparseVector(x=A[[1]],i=A[[2]][,1]+1,length=p))
   } else if(nelem<p)
   {
 # Don't know how to represent this in R!
