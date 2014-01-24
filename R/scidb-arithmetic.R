@@ -367,6 +367,7 @@ fn_scidb = function(x,fun,attr)
 # argument is not supported here.
 diff.scidb = function(x, lag=1, ...)
 {
+#HOMER
   n = nrow(x) # XXX Add bounds check
   m = x@D$start[[1]]
   new_attribute = sprintf("%s_diff",x@attribute)

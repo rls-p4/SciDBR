@@ -35,6 +35,7 @@
     "_sweep", `name`, eval=FALSE), eval=`eval`)
 }
 
+# A very limited version of R's apply.
 `apply_scidb` = function(X,MARGIN,FUN,`eval`=FALSE,`name`,...)
 {
   if(!is.scidb(X)) stop("X must be a scidb object")
@@ -51,9 +52,13 @@
 #      a scidb or scidbdf object that will be cross_joined to x and then
 #      grouped by attribues of by.
 # FUN: A SciDB aggregation expresion
-`aggregate_scidb` = function(x,by,FUN,`eval`=FALSE)
+`aggregate_scidb` = function(x,by,FUN,`eval`=FALSE,window,variable_window)
 {
   unpack = FALSE
+  if(missing(`by`))
+  {
+    `by` = x@D$name[1]
+  }
   b = `by`
   if(is.list(b)) b = b[[1]]
   if(class(b) %in% c("scidb","scidbdf"))
@@ -140,6 +145,15 @@
 # We use unpack to always return a data frame (a 1D scidb array). EXCEPT when
 # aggregating along a single integer coordinate axis (not along attributes or
 # multiple axes).
+  if(!missing(window))
+  {
+    unpack = FALSE
+    query = sprintf("window(%s, %s, %s)",query,paste(window,collapse=","),FUN)
+  } else if(!missing(variable_window))
+  {
+    unpack = FALSE
+    query = sprintf("variable_window(%s, %s, %s, %s)",query,along,paste(variable_window,collapse=","),FUN)
+  } else
   query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
   if(unpack) query = sprintf("unpack(%s,%s)",query,new_dim_name)
   .scidbeval(query,eval,gc=TRUE,depend=list(x))
