@@ -45,7 +45,7 @@ scidbmultiply = function(e1,e2)
 # this problem. XXX
   `eval` = FALSE
 # Check for availability of spgemm
-  P4 = length(grep("spgemm",scidb:::.scidbenv$ops[,2]))>0
+  P4 = length(grep("spgemm",.scidbenv$ops[,2]))>0
   if(length(e1@attributes)>1)
     e1 = project(e1,e1@attribute)
   if(length(e2@attributes)>1)
@@ -283,10 +283,10 @@ tsvd = function(x,nu,tol=0.0001,maxit=20)
   tschema = sprintf("[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0]",
                      x@D$name[2], ncol(x)-1, n,
                      x@D$name[1], nrow(x)-1, nrow(x))
-  schema = sprintf("%s%s",scidb:::build_attr_schema(x), schema)
-  tschema = sprintf("%s%s",scidb:::build_attr_schema(x), tschema)
+  schema = sprintf("%s%s",build_attr_schema(x), schema)
+  tschema = sprintf("%s%s",build_attr_schema(x), tschema)
   query  = sprintf("tsvd(redimension(unpack(%s,row),%s), redimension(unpack(transpose(%s),row),%s), %.0f, %f, %.0f)", x@name, schema, x@name, tschema, nu,tol,maxit)
-  narray = scidb:::.scidbeval(query, eval=TRUE, gc=TRUE)
+  narray = .scidbeval(query, eval=TRUE, gc=TRUE)
   ans = list(u=slice(narray, "matrix", 0,eval=FALSE)[,between(0,nu-1)],
              d=slice(narray, "matrix", 1,eval=FALSE)[between(0,nu-1),between(0,nu-1)],
              v=slice(narray, "matrix", 2,eval=FALSE)[between(0,nu-1),],
@@ -299,7 +299,7 @@ tsvd = function(x,nu,tol=0.0001,maxit=20)
 
 svd_scidb = function(x, nu=min(dim(x)), nv=nu)
 {
-  got_tsvd = length(grep("tsvd",scidb:::.scidbenv$ops[,2]))>0
+  got_tsvd = length(grep("tsvd",.scidbenv$ops[,2]))>0
   if(missing(nu)) nu = min(dim(x))
   if(!is.sparse(x) && (nu > (min(dim(x))/3)) || !got_tsvd)
   {
@@ -368,7 +368,7 @@ fn_scidb = function(x,fun,attr)
 diff.scidb = function(x, lag=1, ...)
 {
   y = lag(x,lag)
-  n = scidb:::make.unique_(c(x@attributes,y@attributes),"diff")
+  n = make.unique_(c(x@attributes,y@attributes),"diff")
   z = merge(y,x,by=x@D$name[1],all=FALSE)
   expr = paste(z@attributes,collapse=" - ")
   project(bind(z, n, expr), n)

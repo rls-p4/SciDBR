@@ -67,7 +67,7 @@ dimfilter = function(x, i, eval, drop)
 {
 # Partition the indices into class:
 # Identify sequential, numeric indices
-  si = sapply(i, scidb:::checkseq)
+  si = sapply(i, checkseq)
 # Identify explicit between-type indices (functions, lists)
   bi = sapply(i, function(x) inherits(x,"function"))
 # Unspecified range

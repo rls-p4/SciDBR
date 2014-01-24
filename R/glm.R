@@ -1,7 +1,7 @@
 # cf glm.fit
 glm_scidb = function(x,y,weights=NULL,family=gaussian())
 {
-  got_glm = length(grep("glm",scidb:::.scidbenv$ops[,2]))>0
+  got_glm = length(grep("glm",.scidbenv$ops[,2]))>0
   if(is.null(weights))
   {
     weights = build(1.0,nrow(x),start=x@D$start[1],chunksize=x@D$chunk_interval[1])

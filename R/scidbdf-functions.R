@@ -35,7 +35,7 @@ Ops.scidbdf = function(e1,e2) {
 `cbind.scidbdf` = function(x)
 {
   newdim=make.unique_(x@attributes, "j")
-  nd = sprintf("%s[%s,%s=0:0,1,0]",scidb:::build_attr_schema(x) , scidb:::build_dim_schema(x,bracket=FALSE),newdim)
+  nd = sprintf("%s[%s,%s=0:0,1,0]",build_attr_schema(x) , build_dim_schema(x,bracket=FALSE),newdim)
   redimension(bind(x,newdim,0), nd)
 }
 
@@ -120,7 +120,7 @@ dimnames.scidbdf = function(x)
   if(length(x@dim)==0) return(NULL)
   d = x@dim
 # Try to make arrays with '*' upper bounds seem more reasonable
-    if(d[1] - as.numeric(scidb:::.scidb_DIM_MAX) == 0)
+    if(d[1] - as.numeric(.scidb_DIM_MAX) == 0)
     {
       d[1] = x@D$high - x@D$low + 1
     }
@@ -151,7 +151,7 @@ dimnames.scidbdf = function(x)
   {
     n = x@dim[1]
 # Try to make arrays with '*' upper bounds seem more reasonable
-    if(n - as.numeric(scidb:::.scidb_DIM_MAX) == 0)
+    if(n - as.numeric(.scidb_DIM_MAX) == 0)
     {
       n = x@D$high - x@D$low + 1
     }
@@ -185,7 +185,7 @@ scidbdf_subset = function(x, i)
 # Unspecified, return all rows:
     query = x@name
   }
-  else if(scidb:::checkseq(i))
+  else if(checkseq(i))
   {
 # Sequential numeric index
     query = betweenbound(x,min(i),max(i))

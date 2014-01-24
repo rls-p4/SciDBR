@@ -24,7 +24,8 @@ export("attribute_rename")
 export("index_lookup")
 importFrom("utils", "head", "tail")
 importFrom("stats", "aggregate", "sd", "var", "reshape")
-importFrom("Matrix","nnzero", "sparseMatrix", "unpack")
+importFrom("Matrix","nnzero", "sparseMatrix", "unpack", "sparseVector")
+import("methods", "iterators", "RCurl")
 
 # S4 methods
 exportClasses("scidb","scidbdf")

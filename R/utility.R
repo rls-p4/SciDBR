@@ -836,14 +836,14 @@ iqiter = function (con, n = 1, excludecol, ...)
     A@D$length = newlen
   }
 
-  low = scidb:::noE(A@D$start)
-  hi = scidb:::noE(A@D$length - 1 + A@D$start)
+  low = noE(A@D$start)
+  hi = noE(A@D$length - 1 + A@D$start)
   hi[as.numeric(hi)>=as.numeric(.scidb_DIM_MAX)] = "*"
   hi[is.na(hi)] = "*"
   R = paste(low,hi,sep=":")
   S = paste(A@D$name,R,sep="=")
-  S = paste(S,scidb:::noE(A@D$chunk_interval),sep=",")
-  S = paste(S,scidb:::noE(A@D$chunk_overlap),sep=",")
+  S = paste(S,noE(A@D$chunk_interval),sep=",")
+  S = paste(S,noE(A@D$chunk_overlap),sep=",")
   S = paste(S,collapse=",")
   if(bracket) S = sprintf("[%s]",S)
   S

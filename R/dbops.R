@@ -53,7 +53,7 @@
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
 # Default cast strips "Not nullable" array property
-  if(missing(s)) s = scidb:::extract_schema(scidb:::scidb_from_schemastring(x@schema))
+  if(missing(s)) s = extract_schema(scidb_from_schemastring(x@schema))
   query = sprintf("cast(%s,%s)",x@name,s)
   .scidbeval(query,eval,depend=list(x))
 }
@@ -226,7 +226,7 @@
     a = YI@attributes %in% paste(by.y,"index",sep="_")
     n = YI@attributes[a]
     redim = paste(paste(n,"=-1:*,100000,0",sep=""), collapse=",")
-    S = scidb:::build_attr_schema(y)
+    S = build_attr_schema(y)
     D = sprintf("[%s,%s]",redim,build_dim_schema(y,bracket=FALSE))
     D2 = sprintf("[%s,_%s]",redim,build_dim_schema(y,bracket=FALSE))
     q2 = sprintf("cast(redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s),%s%s)",YI@name,n,S,D,S,D2)
