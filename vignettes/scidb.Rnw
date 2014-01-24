@@ -357,7 +357,7 @@ bulk data load utility as outlined in the SciDB documentation instead.
 > str(v)
 \end{Sinput}
 \begin{Soutput}
-SciDB array name:  R_array68d7d22acbb11...
+SciDB array name:  R_array1bf86deb2f8f1...
 SciDB array schema:  array<val:double> [i=0:4,5,0,j=0:4,5,0]
 attribute in use:  val
 All attributes:  val
@@ -370,24 +370,24 @@ Array dimensions:
 > crossprod( v[] )              # Compute t(v) %*% v using R
 \end{Sinput}
 \begin{Soutput}
-          [,1]       [,2]       [,3]       [,4]      [,5]
-[1,]  6.339506  2.8477255 -2.2914920 -1.4103559  2.023596
-[2,]  2.847726  1.6441307 -1.0672088  0.2178896  2.145741
-[3,] -2.291492 -1.0672088  4.0646740  0.7985097 -4.507573
-[4,] -1.410356  0.2178896  0.7985097  2.5383997  2.119747
-[5,]  2.023596  2.1457414 -4.5075730  2.1197469  9.078277
+            [,1]       [,2]       [,3]       [,4]        [,5]
+[1,]  2.47046437 -1.0030087  0.7832996 -1.5295930  0.05655859
+[2,] -1.00300867  1.2919084 -0.1458189  0.7238348  0.42550451
+[3,]  0.78329962 -0.1458189  2.7015238 -0.5126487 -1.99601629
+[4,] -1.52959303  0.7238348 -0.5126487  2.4374719  2.00676768
+[5,]  0.05655859  0.4255045 -1.9960163  2.0067677  4.62245579
 \end{Soutput}
 \begin{Sinput}
 > # Now compute using SciDB, and materialize the result to R:
 > crossprod(v)[]
 \end{Sinput}
 \begin{Soutput}
-          [,1]       [,2]       [,3]       [,4]      [,5]
-[1,]  6.339506  2.8477255 -2.2914920 -1.4103559  2.023596
-[2,]  2.847726  1.6441307 -1.0672088  0.2178896  2.145741
-[3,] -2.291492 -1.0672088  4.0646740  0.7985097 -4.507573
-[4,] -1.410356  0.2178896  0.7985097  2.5383997  2.119747
-[5,]  2.023596  2.1457414 -4.5075730  2.1197469  9.078277
+            [,1]       [,2]       [,3]       [,4]        [,5]
+[1,]  2.47046437 -1.0030087  0.7832996 -1.5295930  0.05655859
+[2,] -1.00300867  1.2919084 -0.1458189  0.7238348  0.42550451
+[3,]  0.78329962 -0.1458189  2.7015238 -0.5126487 -1.99601629
+[4,] -1.52959303  0.7238348 -0.5126487  2.4374719  2.00676768
+[5,]  0.05655859  0.4255045 -1.9960163  2.0067677  4.62245579
 \end{Soutput}
 \end{Schunk}
 
@@ -681,7 +681,7 @@ limited cases, and most joins are limited to inner joins at the moment.
 
 
 \subsection{Aggregation}
-The \verb+aggregate+ function is overloaded to perform aggregation operations
+The \verb+aggregate+ function performs various aggregation operations
 on SciDB array objects.  Aggregation may be defined over array dimensions
 and/or array attributes very similarly to standard R aggregation syntax, except
 that aggregation functions must be valid SciDB aggregate expressions,
@@ -689,8 +689,7 @@ represented as strings.
 
 \begin{Schunk}
 \begin{Sinput}
-> # Upload the iris data to SciDB and create a data frame-like object
-> # that refers to it:
+> # Aggregation example
 > df <- as.scidb(iris)
 > aggregate(df, by="Species", FUN="avg(Petal_Length), stdev(Petal_Width)")[]
 \end{Sinput}
@@ -702,9 +701,14 @@ represented as strings.
 \end{Soutput}
 \end{Schunk}
 
+Although limited support for aggregation by data frame column is available (see
+the example in this section), the \verb+aggregate+ function performs best along
+SciDB array dimensions. The \verb+aggregate+ function also supports single- and
+multi-dimensional moving window aggregation along array coordinate systems, and
+1-d aggregation along consecutive data values in sparse arrays.  See the on-line
+man page for additional details and examples.
 
 \subsection{Binding new variables to an array}
-
 The SciDB package defines the \verb+bind+ function to add variables to arrays
 similar to the R \verb+cbind+ function for data frames.  However, \verb+bind+
 can also operate on higher-dimensional arrays. The example below adds a
@@ -867,7 +871,7 @@ Here is an example:
 > C@name
 \end{Sinput}
 \begin{Soutput}
-[1] "R_array68d12f9eb1c1101280754580"
+[1] "R_array1bf8789d35011100920301679"
 \end{Soutput}
 \begin{Sinput}
 > C@schema
