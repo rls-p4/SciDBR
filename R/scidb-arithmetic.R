@@ -234,11 +234,14 @@ scidbmultiply = function(e1,e2)
   {
 # Handle special case similar to, but a bit different than vector recylcing.
 # This case requires a dimensional match along the 1st dimensions, and it's
-# useful for matrix row scaling. This is very limited.
-# First, conformably redimension e1.
+# useful for matrix row scaling. This is limited to vectors that match the
+# number of rows of the array.
+# First, conformably redimension e1
     newschema = build_dim_schema(e2,I=1,newnames=e1@D$name[1])
     re1 = sprintf("redimension(%s,%s%s)",q1,build_attr_schema(e1),newschema)
-    Q = sprintf("cross_join(%s as e1, %s as e2, e1.%s, e2.%s)", re1, q2, e1@D$name[1], e2@D$name[1])
+#    Q = sprintf("cross_join(%s as e1, %s as e2, e1.%s, e2.%s)", re1, q2, e1@D$name[1], e2@D$name[1])
+#    Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
+    Q = sprintf("cross_join(%s as e2, %s as e1, e2.%s, e1.%s)", q2, re1, e2@D$name[1], e1@D$name[1])
     Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
   }
   else if(l1==2 && l==1)
