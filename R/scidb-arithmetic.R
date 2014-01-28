@@ -148,6 +148,7 @@ scidbmultiply = function(e1,e2)
   e2s = e2
   e1a = "scalar"
   e2a = "scalar"
+  dnames = c()
   depend = c()
 # Check for non-scidb object arguments and convert to scidb
   if(!inherits(e1,"scidb") && length(e1)>1) {
@@ -163,15 +164,17 @@ scidbmultiply = function(e1,e2)
 #    e1 = scidbeval(e1,gc=TRUE)
     e1a = e1@attribute
     depend = c(depend, e1)
+    dnames = c(dnames, e1@D$name)
   }
   if(inherits(e2,"scidb"))
   {
 #    e2 = scidbeval(e2,gc=TRUE)
     e2a = e2@attribute
     depend = c(depend, e2)
+    dnames = c(dnames, e2@D$name)
   }
 # OK, we've got two scidb arrays, op them. v holds the new attribute name.
-  v = make.unique_(c(e1@attributes,e2@attributes,e1@D$name,e2@D$name),"v")
+  v = make.unique_(c(e1a,e2a,dnames),"v")
 
 # We use subarray to handle starting index mismatches...
   q1 = q2 = ""
