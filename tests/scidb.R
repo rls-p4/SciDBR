@@ -68,7 +68,7 @@ if(nchar(host)>0)
 # Sparse, count
   S = Matrix::sparseMatrix(sample(100,200,replace=TRUE),sample(100,200,replace=TRUE),x=runif(200))
   Z = as.scidb(S)
-  check(count(Z), nnzero(S))
+  check(count(Z), Matrix::nnzero(S))
 
 # Misc
   z = atan(tan(abs(acos(cos(asin(sin(Z)))))))
