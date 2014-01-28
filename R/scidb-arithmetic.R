@@ -171,7 +171,7 @@ scidbmultiply = function(e1,e2)
     depend = c(depend, e2)
   }
 # OK, we've got two scidb arrays, op them. v holds the new attribute name.
-  v = make.unique_(c(e1a,e2a), "v")
+  v = make.unique_(c(e1@attributes,e2@attributes,e1@D$name,e2@D$name),"v")
 
 # We use subarray to handle starting index mismatches...
   q1 = q2 = ""
@@ -231,7 +231,7 @@ scidbmultiply = function(e1,e2)
   {
 # Handle special case similar to, but a bit different than vector recylcing.
 # This case requires a dimensional match along the 1st dimensions, and it's
-# useful for matrix row scaling.
+# useful for matrix row scaling. This is very limited.
 # First, conformably redimension e1.
     newschema = build_dim_schema(e2,I=1,newnames=e1@D$name[1])
     re1 = sprintf("redimension(%s,%s%s)",q1,build_attr_schema(e1),newschema)

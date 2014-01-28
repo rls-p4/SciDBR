@@ -276,9 +276,8 @@ make.names_ = function(x)
 # returns a set the same size as y with non-conflicting value names
 make.unique_ = function(x,y)
 {
-  x = make.names(x,unique=TRUE)
-  z = make.names(c(x,y),unique=TRUE)
-  gsub("\\.","_",setdiff(union(x,z),x))
+  z = make.names(gsub("_",".",c(x,y)),unique=TRUE)
+  gsub("\\.","_",tail(z,length(y)))
 }
 
 # Make a name from a prefix and a unique SciDB identifier.
