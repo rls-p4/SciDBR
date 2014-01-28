@@ -112,7 +112,7 @@ dimnames.scidbdf = function(x)
     }
 # Not materializing, return a SciDB array
   if(length(i)!=length(dim(x))) stop("Dimension mismatch")
-  scidbdf_subset(x,i)
+  scidbdf_subset(x,i,drop)
 }
 
 `dim.scidbdf` = function(x)
@@ -168,7 +168,7 @@ dimnames.scidbdf = function(x)
 # 'ui' not specified range (everything, by R convention)
 # 'ci' lookup-style range, a non-sequential numeric or labeled set, for example
 #      c(3,3,1,5,3)   or  c('a1','a3')
-scidbdf_subset = function(x, i)
+scidbdf_subset = function(x, i, drop=FALSE)
 {
   attribute_range = i[[2]]
   if(is.null(attribute_range)) attribute_range = x@attributes
@@ -201,6 +201,10 @@ scidbdf_subset = function(x, i)
     stop("This kind of indexing is not yet supported.")
   }
   query = sprintf("project(%s, %s)",query, paste(attribute_range,collapse=","))
+  if(drop && length(attribute_range)==1)
+  {
+    return(.scidbeval(query, `data.frame`=FALSE, gc=TRUE, eval=FALSE, depend=x))
+  }
   .scidbeval(query, `data.frame`=TRUE, gc=TRUE, eval=FALSE, depend=x)
 }
 
