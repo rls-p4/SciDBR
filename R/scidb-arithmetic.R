@@ -135,7 +135,8 @@ scidbmultiply = function(e1,e2)
   else if (SPARSE && P4)
     query = sprintf("spgemm(%s, %s)", op1, op2)
   else
-    query = sprintf("gemm(%s, %s, %s)",op1,op2,op3)
+    query = sprintf("sg(gemm(%s, %s, %s),1,-1)",op1,op2,op3)
+# XXX Note: sg required as of SciDB v 13.12 to handle serious bugs when gemm is composed with other operators.
 
   ans = .scidbeval(query,gc=TRUE,eval=eval,depend=list(e1,e2))
   ans
