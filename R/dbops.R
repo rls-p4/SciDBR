@@ -37,8 +37,27 @@
 
 `slice` = function(x, d, n, `eval`=FALSE)
 {
-  query = sprintf("slice(%s, %s, %d)", x@name, d, n)
-  .scidbeval(query, `eval`, depend=list(x))
+# As of SciDB 13.12, slice turns out to have atrocious performance problems.
+# And, it is redundant. We re-implement it with between and redimension here.
+#  query = sprintf("slice(%s, %s, %d)", x@name, d, n)
+#  .scidbeval(query, `eval`, depend=list(x))
+  N = length(x@D$name)
+  limits = rep("null",N)
+  i = d
+  if(is.character(d))
+  {
+    i = which(x@D$name %in% d)
+  }
+  if(length(i)==0 || i>N)
+  {
+    stop("Invalid dimension specified")
+  }
+  limits[i] = noE(n)
+  query = sprintf("between(%s, %s)",x@name,paste(c(limits,limits),collapse=","))
+  A = build_attr_schema(x)
+  D = build_dim_schema(x,I=-i)
+  query = sprintf("redimension(%s, %s%s)",query,A,D)
+  .scidbeval(query,eval,depend=list(x))
 }
 
 `substitute` = function(x, value, `attribute`, `eval`=FALSE)
