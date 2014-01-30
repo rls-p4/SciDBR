@@ -93,6 +93,7 @@ dimnames.scidb = function(x)
     {
       is.null(value[[j]]) || (nrow(value[[j]]) == dim(x)[j])
     }))
+  check[is.na(check)] = FALSE
   if(!all(check))
     warning("Label lengths might not match array dimensions")
   x@gc$dimnames = value
