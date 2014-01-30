@@ -85,7 +85,7 @@ dimnames.scidb = function(x)
     stop("Labels must be SciDB arrays")
   check = unlist(lapply(1:length(value), function(j)
     {
-      is.null(value[[j]]) || (value[[j]]@D$start[j] == x@D$start[j])
+      is.null(value[[j]]) || (value[[j]]@D$start[1] == x@D$start[j])
     }))
   if(!all(check))
     stop("Label array starting indices don't match data array--please check")
