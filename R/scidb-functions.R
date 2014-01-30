@@ -74,6 +74,7 @@ dimnames.scidb = function(x)
   x@gc$dimnames
 }
 
+# SciDB labeled coordinates assignment
 # Improve this:
 # 1. Accept non-scidb array indices by making SciDB arrays out of them
 # 2. Automatically adjust the origin of the label arrays to match x
@@ -100,6 +101,7 @@ dimnames.scidb = function(x)
   if(!all(check))
     warning("Label lengths might not match array dimensions")
   x@gc$dimnames = value
+  x@gc$depend =c (x@gc$depend, unlist(value))
   x
 }
 

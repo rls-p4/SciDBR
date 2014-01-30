@@ -743,7 +743,7 @@ iqiter = function (con, n = 1, excludecol, ...)
 #  x = paste(x,collapse="")
 #  ans = paste(x,collapse="")
 
-  ans = .Call("df2scidb",X,as.integer(chunksize), as.double(round(start)), "%.15f")
+  ans = .Call("df2scidb",X,as.integer(chunksize), as.double(round(start)), "%.15f",PACKAGE="scidb")
   ans
 }
 

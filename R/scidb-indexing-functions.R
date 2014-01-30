@@ -99,14 +99,14 @@ dimfilter = function(x, i, eval, drop)
   re = r[seq(from=2,to=length(r),by=2)]
   r = paste(c(ro,re),collapse=",")
   q = sprintf("between(%s,%s)",x@name,r)
-
-  if(any(ci)) 
-  {
-    return(special_index(x, q, i, ci, eval, drop))
-  }
   q = sprintf("sg(subarray(%s,%s),1,-1)",q,r)
 # Return a new scidb array reference
   ans = .scidbeval(q,eval=FALSE,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
+  if(any(ci)) 
+  {
+    assign("dimnames",dimnames(x),envir=ans@gc)
+    return(special_index(ans, ans@name, i, ci, eval, drop))
+  }
 # Drop singleton dimensions if instructed to
   if(drop)
   {
@@ -275,7 +275,7 @@ materialize = function(x, drop=FALSE)
   stopifnot(nelem==as.integer(nelem))
   A = tryCatch(
     {
-      .Call("scidbparse",BUF,ndim,as.integer(nelem),type,N)
+      .Call("scidbparse",BUF,ndim,as.integer(nelem),type,N,PACKAGE="scidb")
     },
     error = function(e){stop(e)})
 
