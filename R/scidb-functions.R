@@ -78,7 +78,7 @@ dimnames.scidb = function(x)
 {
   if(!is.list(value))
     stop("dimnames requires a list")
-  if(length(value)!=length(dim(X)))
+  if(length(value)!=length(dim(x)))
     stop("incorrect number of dimensions specified")
   check = unlist(lapply(value, function(x) is.scidb(x) || is.scidbdf(x) || is.null(x)))
   if(!all(check))
