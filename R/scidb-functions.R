@@ -44,14 +44,6 @@ colnames.scidb = function(x)
 
 `colnames<-.scidb` = function(x, value)
 {
-  if(is.null(x@gc$dimnames)) x@gc$dimnames = vector("list",length(dim(x)))
-  if(length(dim(x))<2)
-    stop("attempt to set 'colnames' on an object with less than two dimensions")
-  if(!(is.scidb(value) || is.scidbdf(value)))
-    stop("Labels must be in a SciDB array")
-  if(length(value) != dim(x)[2])
-    stop("Label array length does not match number of columns")
-  x@gc$dimnames[[2]] = value
   x
 }
 
@@ -63,12 +55,6 @@ rownames.scidb = function(x)
 
 `rownames<-.scidb` = function(x, value)
 {
-  if(is.null(x@gc$dimnames)) x@gc$dimnames = vector("list",length(dim(x)))
-  if(!(is.scidb(value) || is.scidbdf(value)))
-    stop("Labels must be in a SciDB array")
-  if(length(value) != dim(x)[1])
-    stop("Label array length does not match number of rows")
-  x@gc$dimnames[[1]] = value
   x
 }
 
@@ -90,7 +76,25 @@ dimnames.scidb = function(x)
 
 `dimnames<-.scidb` = function(x, value)
 {
-# XXX Add many checks here. See rownames,colnames
+  if(!is.list(value))
+    stop("dimnames requires a list")
+  if(length(value)!=length(dim(X)))
+    stop("incorrect number of dimensions specified")
+  check = unlist(lapply(value, function(x) is.scidb(x) || is.scidbdf(x) || is.null(x)))
+  if(!all(check))
+    stop("Labels must be SciDB arrays")
+  check = unlist(lapply(1:length(value), function(j)
+    {
+      is.null(value[[j]]) || (value[[j]]@D$start[j] == x@D$start[j])
+    }))
+  if(!all(check))
+    stop("Label array starting indices don't match data array--please check")
+  check = unlist(lapply(1:length(value), function(j)
+    {
+      is.null(value[[j]]) || (nrow(value[[j]]) == dim(x)[j])
+    }))
+  if(!all(check))
+    warning("Label lengths might not match array dimensions")
   x@gc$dimnames = value
   x
 }

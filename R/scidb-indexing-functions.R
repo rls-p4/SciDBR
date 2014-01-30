@@ -107,16 +107,21 @@ dimfilter = function(x, i, eval, drop)
   q = sprintf("sg(subarray(%s,%s),1,-1)",q,r)
 # Return a new scidb array reference
   ans = .scidbeval(q,eval=eval,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
-# Drop singleton dimensiosn if instructed to
+# Drop singleton dimensions if instructed to
   if(drop)
   {
     i = ans@D$length==1
+    if(all(i))
+    {
+      i[1] = FALSE
+    }
     if(any(i))
     {
       i = which(i)
+      dims = ans@D$name
       for(j in i)
       {
-        ans = slice(ans,ans@D$name[j],0,eval=FALSE)
+        ans = slice(ans,dims[j],0,eval=FALSE)
       }
     }
     if(eval) ans = scidbeval(ans)
@@ -156,10 +161,8 @@ special_index = function(x, query, i, idx, eval)
                         start=x@D$start[[j]],
                         chunkSize=x@D$chunk_interval[[j]],
                         rowOverlap=x@D$chunk_overlap[[j]])
-        if(is.null(swap))
-          swap = list(old=N, new=dimlabel, length=length(tmp[,1]))
-        else
-          swap = list(swap, list(old=N, new=dimlabel, length=length(tmp[,1])))
+        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]))))
+
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
       } else if(is.character(i[[j]]))
@@ -173,10 +176,7 @@ special_index = function(x, query, i, idx, eval)
                         chunkSize=x@D$chunk_interval[[j]],
                         rowOverlap=x@D$chunk_overlap[[j]])
          i[[j]] = attribute_rename(project(index_lookup(tmp_1, lkup, new_attr='_cazart'),"_cazart"),"_cazart",N)
-        if(is.null(swap))
-          swap = list(old=N, new=dimlabel, length=length(tmp[,1]))
-        else
-          swap = list(swap, list(old=N, new=dimlabel, length=length(tmp[,1])))
+        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]))))
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
       } else if(is.scidb(i[[j]]))
@@ -189,17 +189,11 @@ special_index = function(x, query, i, idx, eval)
         dependencies = c(dependencies, tmp)
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", tmp@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
-        if(is.null(swap))
-          swap = list(old=N, new=dimlabel, length=cnt)
-        else
-          swap = list(swap, list(old=N, new=dimlabel, length=cnt))
+        swap = c(swap, list(list(old=N, new=dimlabel, length=cnt)))
       }
     } else # No special index in this coordinate
     {
-      if(is.null(swap))
-        swap = list(old=N, new=N, length=x@D$length[[j]])
-      else
-        swap = list(swap,list(old=N, new=N, length=x@D$length[[j]]))
+      swap = c(swap,list(list(old=N, new=N, length=x@D$length[[j]])))
     }
   }
   if(length(x@D$name)==1)
