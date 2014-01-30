@@ -74,6 +74,9 @@ dimnames.scidb = function(x)
   x@gc$dimnames
 }
 
+# Improve this:
+# 1. Accept non-scidb array indices by making SciDB arrays out of them
+# 2. Automatically adjust the origin of the label arrays to match x
 `dimnames<-.scidb` = function(x, value)
 {
   if(!is.list(value))

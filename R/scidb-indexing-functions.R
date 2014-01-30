@@ -102,35 +102,45 @@ dimfilter = function(x, i, eval, drop)
 
   if(any(ci)) 
   {
-    return(special_index(x, q, i, ci, eval))
+    return(special_index(x, q, i, ci, eval, drop))
   }
   q = sprintf("sg(subarray(%s,%s),1,-1)",q,r)
 # Return a new scidb array reference
-  ans = .scidbeval(q,eval=eval,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
+  ans = .scidbeval(q,eval=FALSE,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
 # Drop singleton dimensions if instructed to
   if(drop)
   {
-    i = ans@D$length==1
-    if(all(i))
-    {
-      i[1] = FALSE
-    }
-    if(any(i))
-    {
-      i = which(i)
-      dims = ans@D$name
-      for(j in i)
-      {
-        ans = slice(ans,dims[j],0,eval=FALSE)
-      }
-    }
-    if(eval) ans = scidbeval(ans)
+    ans = drop_dim(ans)
   }
-  return(ans)
+  if(`eval`)
+  {
+    ans = scidbeval(ans)
+  }
+  ans
+}
+
+# Helper function to drop dimensions of any scidb object
+drop_dim = function(ans)
+{
+  i = ans@D$length==1
+  if(all(i))
+  {
+    i[1] = FALSE
+  }
+  if(any(i))
+  {
+    i = which(i)
+    dims = ans@D$name
+    for(j in i)
+    {
+      ans = slice(ans,dims[j],0,eval=FALSE)
+    }
+  }
+  ans
 }
 
 # XXX Lots of cleanup required in this function...
-special_index = function(x, query, i, idx, eval)
+special_index = function(x, query, i, idx, eval, drop=FALSE)
 {
   swap = NULL
   dependencies = c(i,x)
@@ -206,7 +216,16 @@ special_index = function(x, query, i, idx, eval)
     nl = sapply(swap, function(x) x[[3]])
   }
   query = sprintf("redimension(%s, %s%s)",query, build_attr_schema(x), build_dim_schema(x,newstart=rep(0,length(x@D$name)),newnames=nn,newlen=nl))
-  .scidbeval(query, eval=FALSE, depend=dependencies)
+  ans = .scidbeval(query, eval=FALSE, depend=dependencies)
+  if(drop)
+  {
+    ans = drop_dim(ans)
+  }
+  if(`eval`)
+  {
+    ans = scidbeval(ans)
+  }
+  ans
 }
 
 
