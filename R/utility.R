@@ -795,7 +795,12 @@ iqiter = function (con, n = 1, excludecol, ...)
   sprintf("<%s>",S)
 }
 
-`noE` = function(w) sapply(w, function(x) sprintf("%.0f",x))
+`noE` = function(w) sapply(w,
+  function(x)
+  {
+    if(is.character(x)) return(x)
+    sprintf("%.0f",x)
+  })
 
 # Build the dimension part of a SciDB array schema from a scidb,
 # scidbdf object.

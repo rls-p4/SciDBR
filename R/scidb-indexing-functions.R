@@ -91,15 +91,26 @@ dimfilter = function(x, i, eval, drop)
       else
        {
 # Unspecified range or special index (ci case), which we handle later.
-         c(x@D$start[j],x@D$start[j] + x@D$length[j] - 1)
+#         c(x@D$start[j],x@D$start[j] + x@D$length[j] - 1)
+          c('null','null')
        }
     })
-  r = unlist(lapply(r,function(x)sprintf("%.0f",x)))
+  r = unlist(lapply(r,noE))
   ro = r[seq(from=1,to=length(r),by=2)]
   re = r[seq(from=2,to=length(r),by=2)]
   r = paste(c(ro,re),collapse=",")
-  q = sprintf("between(%s,%s)",x@name,r)
-  q = sprintf("sg(subarray(%s,%s),1,-1)",q,r)
+  q = x@name
+  if(!all(r %in% "null"))
+  {
+    q = sprintf("between(%s,%s)",x@name,r)
+    q = sprintf("subarray(%s,%s)",q,r)
+# XXX XXX  XXX XXX
+# This is painfully slow, especially w/sg. Replace this with redimension?
+# We use subarray to limit the dimension size appropriately for subsequent
+# 'drop' to work. We don't really care so much about resetting the origin.
+# XXX  q = sprintf("sg(subarray(%s,%s),1,-1)",q,r)
+# NOTE: sg is only required here anyway to make gemm/gesvd work! Arghhh!
+  }
 # Return a new scidb array reference
   ans = .scidbeval(q,eval=FALSE,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
   if(any(ci)) 
@@ -143,7 +154,7 @@ drop_dim = function(ans)
 special_index = function(x, query, i, idx, eval, drop=FALSE)
 {
   swap = NULL
-  dependencies = c(i,x)
+  dependencies = x
   for(j in 1:length(idx))
   {
     N = x@D$name[[j]]
@@ -185,7 +196,8 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
                         start=x@D$start[[j]],
                         chunkSize=x@D$chunk_interval[[j]],
                         rowOverlap=x@D$chunk_overlap[[j]])
-         i[[j]] = attribute_rename(project(index_lookup(tmp_1, lkup, new_attr='_cazart'),"_cazart"),"_cazart",N)
+        i[[j]] = attribute_rename(project(index_lookup(tmp_1, lkup, new_attr='_cazart'),"_cazart"),"_cazart",N)
+        dependencies = c(dependencies, tmp_1)
         swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]))))
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
