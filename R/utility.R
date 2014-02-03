@@ -64,11 +64,15 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
   }
   if(gc)
   {
-    obj@gc$name = name
+#    obj@gc$name = name # XXX use lexical scope?
     obj@gc$remove = TRUE
-    reg.finalizer(obj@gc, function(e) if (e$remove) 
-        tryCatch(scidbremove(e$name,async=TRUE), error = function(e) invisible()), 
-            onexit = TRUE)
+    reg.finalizer(obj@gc, function(e)
+        {
+          if (e$remove)
+            {
+              tryCatch(scidbremove(e$name,async=TRUE), error = function(e) invisible())
+            }
+        }, onexit = TRUE)
   } else obj@gc = new.env()
   obj
 }
@@ -602,7 +606,7 @@ df2scidb = function(X,
 
 iquery = function(query, `return`=FALSE,
                   afl=TRUE, iterative=FALSE,
-                  n=Inf, excludecol, ...)
+                  n=10000, excludecol, ...)
 {
   if(!afl && `return`) stop("return=TRUE may only be used with AFL statements")
   if(iterative && !`return`) stop("Iterative result requires return=TRUE")
@@ -863,7 +867,7 @@ rename = function(A, name=A@name, gc)
   A@name = name
   if(gc)
   {
-    A@gc$name = name
+#    A@gc$name = name XXX
     A@gc$remove = TRUE
     reg.finalizer(A@gc, function(e) if (e$remove) 
         tryCatch(scidbremove(e$name, async=TRUE), error=function(e){invisible()}), 

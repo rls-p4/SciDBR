@@ -96,11 +96,12 @@ dimfilter = function(x, i, eval, drop)
        }
     })
   r = unlist(lapply(r,noE))
+  everything = all(r %in% "null")
   ro = r[seq(from=1,to=length(r),by=2)]
   re = r[seq(from=2,to=length(r),by=2)]
   r = paste(c(ro,re),collapse=",")
   q = x@name
-  if(!all(r %in% "null"))
+  if(!everything)
   {
     q = sprintf("between(%s,%s)",x@name,r)
     q = sprintf("subarray(%s,%s)",q,r)
