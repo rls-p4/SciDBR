@@ -122,7 +122,6 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
       assign("depend",depend,envir=ans@gc)
     }
   }
-
   ans
 }
 
@@ -862,17 +861,16 @@ rename = function(A, name=A@name, gc)
 {
   if(!(inherits(A,"scidb") || inherits(A,"scidbdf"))) stop("`A` must be a scidb object.")
   if(missing(gc)) gc = FALSE
-  if(exists("remove",envir=A@gc)) A@gc$remove=FALSE
+  A@gc$remove=gc
   if(A@name != name) scidbquery(sprintf("rename(%s,%s)",A@name, name))
   A@name = name
   if(gc)
   {
-#    A@gc$name = name XXX
     A@gc$remove = TRUE
     reg.finalizer(A@gc, function(e) if (e$remove) 
         tryCatch(scidbremove(e$name, async=TRUE), error=function(e){invisible()}), 
             onexit = TRUE)
-  } else A@gc = new.env()
+  }
   A
 }
 
