@@ -84,9 +84,19 @@ dimnames.scidb = function(x)
     stop("dimnames requires a list")
   if(length(value)!=length(dim(x)))
     stop("incorrect number of dimensions specified")
-  check = unlist(lapply(value, function(x) is.scidb(x) || is.scidbdf(x) || is.null(x)))
-  if(!all(check))
-    stop("Labels must be SciDB arrays")
+# Make sure that specified indices are all SciDB arrays.
+# If not, try to make them so.
+  value = lapply(1:length(value), function(j)
+    {
+      v = value[[j]]
+      if(is.scidb(v) || is.scidbdf(v) || is.null(v))
+      {
+        return(v);
+      }
+      as.scidb(data.frame(label=v)[,1,drop=FALSE],
+               start=x@D$start[j], chunkSize=x@D$chunk_interval[j])
+    })
+
   check = unlist(lapply(1:length(value), function(j)
     {
       is.null(value[[j]]) || (value[[j]]@D$start[1] == x@D$start[j])
