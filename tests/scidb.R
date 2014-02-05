@@ -84,5 +84,16 @@ if(nchar(host)>0)
   rownames(A) = L[1:nrow(A)]
   colnames(A) = L[1:ncol(A)]
   check(X[c("F","v","f"),c("N","a","A")][], A[c("F","v","f"),c("N","a","A")])
+
+# 4d labels and auto promotion of labels to SciDB arrays
+  X = build(0,dim=c(3,4,5,6))
+  rownames(X) = letters[1:3]
+  dimnames(X)[[2]] = letters[1:4]
+  dimnames(X)[[3]] = letters[1:5]
+  dimnames(X)[[4]] = letters[1:6]
+  i = count(X[c("a","b"),"a",c("d","e"),"a"])
+  check(i,4)
+
+
 }
 gc()
