@@ -132,7 +132,7 @@ summary.scidb = function(x)
 # ...: list of dimensions
 # 
 # Returns a materialized R array if length(list(...))==0.
-# Or, a scidb subarray promise.
+# Or, a scidb array promise.
 `[.scidb` = function(x, ...)
 {
   M = match.call()

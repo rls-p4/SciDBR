@@ -55,7 +55,7 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
     return(.scidbeval(name@name, eval=FALSE, attribute=attribute, gc=gc, `data.frame`=`data.frame`, depend=list(name)))
   }
   query = sprintf("show('%s as array','afl')",gsub("'","\\\\'",name,perl=TRUE))
-  schema = iquery(query,`return`=1)$schema
+  schema = gsub("^.*<","<",iquery(query,`return`=1)$schema)
   obj = scidb_from_schemastring(schema, name, `data.frame`)
   if(!missing(attribute))
   {
@@ -64,11 +64,14 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
   }
   if(gc)
   {
-#    obj@gc$name = name # XXX use lexical scope?
+    if(length(grep("\\(",name))==0)
+    {
+      obj@gc$name = name
+    }
     obj@gc$remove = TRUE
     reg.finalizer(obj@gc, function(e)
         {
-          if (e$remove)
+          if (e$remove && exists("name",envir=e))
             {
               tryCatch(scidbremove(e$name,async=TRUE), error = function(e) invisible())
             }
@@ -176,7 +179,7 @@ scidb_from_schemastring = function(s,expr=character(), `data.frame`)
     st = grep("string",ctypes)
     if(length(st>0)) cc[st] = "character"
     return(new("scidbdf",
-                schema=s,
+                schema=gsub("^.*<","<",s),
                 name=expr,
                 attributes=attributes,
                 types=types,
@@ -191,7 +194,7 @@ scidb_from_schemastring = function(s,expr=character(), `data.frame`)
 
   new("scidb",
       name=expr,
-      schema=s,
+      schema=gsub("^.*<","<",s),
       attribute=attribute,
       type=type,
       attributes=attributes,
@@ -857,13 +860,15 @@ iqiter = function (con, n = 1, excludecol, ...)
 }
 
 # SciDB rename wrapper
+# Note! that the default garbage collection option here is to *not* remove.
 rename = function(A, name=A@name, gc)
 {
   if(!(inherits(A,"scidb") || inherits(A,"scidbdf"))) stop("`A` must be a scidb object.")
   if(missing(gc)) gc = FALSE
-  A@gc$remove=gc
   if(A@name != name) scidbquery(sprintf("rename(%s,%s)",A@name, name))
+  A@gc$remove=gc
   A@name = name
+  A@gc$name = name
   if(gc)
   {
     A@gc$remove = TRUE
