@@ -869,13 +869,6 @@ rename = function(A, name=A@name, gc)
   A@gc$remove=gc
   A@name = name
   A@gc$name = name
-  if(gc)
-  {
-    A@gc$remove = TRUE
-    reg.finalizer(A@gc, function(e) if (e$remove) 
-        tryCatch(scidbremove(e$name, async=TRUE), error=function(e){invisible()}), 
-            onexit = TRUE)
-  }
   A
 }
 

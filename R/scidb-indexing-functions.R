@@ -100,10 +100,10 @@ dimfilter = function(x, i, eval, drop)
   ro = r[seq(from=1,to=length(r),by=2)]
   re = r[seq(from=2,to=length(r),by=2)]
   r = paste(c(ro,re),collapse=",")
-  q = x@name
+  q = sprintf("between(%s,%s)",x@name,r)
+# XXXX XXX XXX XXX
   if(!everything)
   {
-    q = sprintf("between(%s,%s)",x@name,r)
     q = sprintf("subarray(%s,%s)",q,r)
 # XXX XXX  XXX XXX
 # This is painfully slow, especially w/sg. Replace this with redimension?
