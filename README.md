@@ -21,6 +21,12 @@ I.P. address of SciDB. See the tests directory for test code.
 New features
 ===
 
+## Windowed and moving-window aggregates
+
+Multidimensional windowed and moving-window aggregates are now supported with
+simple syntax in the `aggregate` function. Windows can be defined along
+coordinate axes or number of (sparse) data values.
+
 ## Labeled coordinates
 
 SciDB arrays now support labeled coordinate indices using the standard R
