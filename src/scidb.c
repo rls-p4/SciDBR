@@ -195,6 +195,7 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
  * LEN: The number of cells (INTEGER)
  * TYPE: The data type
  * NULLABLE: Is the data SciDB-NULLABLE (INTEGER)?
+ * INT64: 1 if SciDB data are int64 (INTEGER).
  *
  * Returns a two-element list:
  * 1. A length-LEN vector of cell values (TYPE)
@@ -202,7 +203,7 @@ df2scidb (SEXP A, SEXP chunk, SEXP start, SEXP REALFORMAT)
  *
  */
 SEXP
-scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE)
+scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE, SEXP INT64)
 {
   int j, k, l, ndim;
   long long i;
@@ -213,7 +214,11 @@ scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE)
   char a;
   char nx;
   int nullable = INTEGER(NULLABLE)[0];
+  int i64  = INTEGER(INT64)[0];
   char *raw = (char *)RAW(DATA);
+
+  long long *xi64 = (long long *)&x;
+  unsigned long long *xui64 = (unsigned long long *)&x;
 
   l = (long long)INTEGER(LEN)[0];
   ndim = INTEGER(NDIM)[0];
@@ -236,7 +241,17 @@ scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE)
             memcpy(&nx, raw, sizeof(char));  raw++;
           }
           memcpy(&x, raw, sizeof(double)); raw+=sizeof(double);
-          if((int)nx != 0) REAL (A)[j] = x;
+          if((int)nx != 0)
+          {
+            if(i64==1)
+            {
+              REAL (A)[j] = (double)(*xi64);
+            } else if(i64==2)
+            {
+              REAL (A)[j] = (double)(*xui64);
+            }
+            else REAL (A)[j] = x;
+          }
         }
       break;
     case STRSXP:

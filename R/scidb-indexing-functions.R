@@ -291,12 +291,24 @@ materialize = function(x, drop=FALSE)
   type = eval(parse(text=paste(names(.scidbtypes[.scidbtypes==x@type]),"()")))
   len  = as.integer(.typelen[names(.scidbtypes[.scidbtypes==x@type])])
   len  = len + nl # Type length
+  i64 = 0L;
+# Special int64 cases:
+  if(x@type=="int64")
+  {
+    i64 = 1L;
+    warning("Coercing SciDB int64 values to R double precision real numeric values.")
+  }
+  if(x@type=="uint64")
+  {
+    i64 = 2L;
+    warning("Coercing SciDB uint64 values to R double precision real numeric values.")
+  }
 
   nelem = length(BUF) / (ndim*8 + len)
   stopifnot(nelem==as.integer(nelem))
   A = tryCatch(
     {
-      .Call("scidbparse",BUF,ndim,as.integer(nelem),type,N,PACKAGE="scidb")
+      .Call("scidbparse",BUF,ndim,as.integer(nelem),type,N,i64,PACKAGE="scidb")
     },
     error = function(e){stop(e)})
 

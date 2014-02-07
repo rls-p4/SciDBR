@@ -54,6 +54,8 @@
 # R type = SciDB type
 .scidbtypes = list(
   double="double",
+  double="int64",
+  double="uint64",
   integer="int32",
   logical="bool",
   character="char"
@@ -75,9 +77,10 @@
   sd="stdev",
   var="var",
   sum="sum",
+  prod="prod",
   length="count",
   count="count")
-  i = unlist(lapply(list(mean,sd,var,sum,length,count),
+  i = unlist(lapply(list(mean,sd,var,sum,prod,length,count),
                function(x) identical(x,FUN)))
   if(!any(i)) return(NULL)
   fns[i][[1]]
