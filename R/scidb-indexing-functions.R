@@ -150,11 +150,10 @@ drop_dim = function(ans)
   if(any(i))
   {
     i = which(i)
-    dims = ans@D$name
-    for(j in i)
-    {
-      ans = slice(ans,dims[j],0,eval=FALSE)
-    }
+    A = build_attr_schema(ans)
+    D = build_dim_schema(ans,I=-i)
+    query = sprintf("redimension(%s, %s%s)",ans@name,A,D)
+    ans = .scidbeval(query,`eval`=FALSE,depend=list(ans))
   }
   ans
 }

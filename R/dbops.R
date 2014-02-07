@@ -37,10 +37,6 @@
 
 `slice` = function(x, d, n, `eval`=FALSE)
 {
-# As of SciDB 13.12, slice turns out to have atrocious performance problems.
-# And, it is redundant. We re-implement it with between and redimension here.
-#  query = sprintf("slice(%s, %s, %d)", x@name, d, n)
-#  .scidbeval(query, `eval`, depend=list(x))
   N = length(x@D$name)
   limits = rep("null",N)
   i = d
