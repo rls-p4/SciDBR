@@ -1,5 +1,9 @@
 CHANGES IN scidb 1.1-1:
 
+  WINDOWED AGGREGATES
+
+    o The aggregate function now supports moving and fixed window aggregates.
+
   TLS/SSL ENCRYPTION AND AUTHENTICATION
 
     o The package now supports TLS/SSL encrypted communication with the
@@ -7,12 +11,11 @@ CHANGES IN scidb 1.1-1:
       by this is `scidbconnect` -- simply supply an SSL port number and
       username and password arguments.
 
-  NEW `scidbexpr` CLASS:
+  LAZY EVALUATION
 
-    o The `scidbexpr` class represents a potential SciDB array not yet
-      evaluated or stored in SciDB. The array is defined by a query and has a
-      basic schema.  Many operators now accept `scidbexpr` objects as input.
-      This class may replace the `scidbdf` and `scidb` objects in the future.
+    o Most scidb and scidbdf object can now represent array promises,
+      un-evaluated SciDB queries equipped with a result schema and a
+      context environment.
 
   NEW COMPOSABLE OPERATORS
 
