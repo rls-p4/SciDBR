@@ -160,9 +160,7 @@ scidb_from_schemastring = function(s,expr=character(), `data.frame`)
            start=dstart,
            length=dlength,
            chunk_interval=chunk_interval,
-           chunk_overlap=chunk_overlap,
-           low=rep(NA,length(dname)),
-           high=rep(NA,length(dname))
+           chunk_overlap=chunk_overlap
            )
   if(missing(`data.frame`)) `data.frame` = ( (length(dname)==1) &&  (length(attributes)>1))
   if(length(dname)>1 && `data.frame`) stop("SciDB data frame objects can only be associated with 1-D SciDB arrays")
@@ -828,8 +826,6 @@ iqiter = function (con, n = 1, excludecol, ...)
     A@D$name = A@D$name[I]
     A@D$start = A@D$start[I]
     A@D$length = A@D$length[I]
-    A@D$low = A@D$low[I]
-    A@D$high = A@D$high[I]
     A@D$chunk_interval = A@D$chunk_interval[I]
     A@D$chunk_overlap = A@D$chunk_overlap[I]
   }
@@ -847,7 +843,7 @@ iqiter = function (con, n = 1, excludecol, ...)
   }
 
   low = noE(A@D$start)
-  hi = noE(A@D$length - 1 + A@D$start)
+  hi = noE(as.numeric(A@D$length) - 1 + as.numeric(A@D$start))
   hi[as.numeric(hi)>=as.numeric(.scidb_DIM_MAX)] = "*"
   hi[is.na(hi)] = "*"
   R = paste(low,hi,sep=":")
