@@ -20,10 +20,6 @@
 #* END_COPYRIGHT
 #*/
 
-# This file contains functions that map R indexing operations to SciDB queries.
-# Examples include subarray and cross_join wrappers.  They are a bit
-# complicated in order to support empty-able and NID arrays.
-
 # A utility function that returns TRUE if entries in the numeric vector j
 # are sequential and in increasing order.
 checkseq = function(j)
@@ -95,6 +91,7 @@ dimfilter = function(x, i, eval, drop)
           c('null','null')
        }
     })
+  ranges = r
   r = unlist(lapply(r,noE))
   everything = all(r %in% "null")
   ro = r[seq(from=1,to=length(r),by=2)]
@@ -104,13 +101,24 @@ dimfilter = function(x, i, eval, drop)
 # XXXX XXX XXX XXX
   if(!everything)
   {
-    q = sprintf("subarray(%s,%s)",q,r)
-# XXX XXX  XXX XXX
-# This is painfully slow, especially w/sg. Replace this with redimension?
-# We use subarray to limit the dimension size appropriately for subsequent
-# 'drop' to work. We don't really care so much about resetting the origin.
-# XXX  q = sprintf("sg(subarray(%s,%s),1,-1)",q,r)
-# NOTE: sg is only required here anyway to make gemm/gesvd work! Arghhh!
+    newstart = unlist(lapply(ranges,function(z)z[1]))
+    newstart[newstart=="null"] = NA
+    newstart = as.numeric(newstart)
+    ina = is.na(newstart)
+    if(any(ina))
+    {
+      newstart[ina] = x@D$start[ina]
+    }
+    newlen = unlist(lapply(ranges,function(z)z[1]))
+    newlen[newlen=="null"] = NA
+    newlen = as.numeric(newlen) - newstart + 1
+    ina = is.na(newlen)
+    if(any(ina))
+    {
+      newlen[ina] = x@D$length[ina]
+    }
+    q = sprintf("redimension(%s, %s%s)", q, build_attr_schema(x),
+          build_dim_schema(x,newlen=newlen,newstart=newstart))
   }
 # Return a new scidb array reference
   ans = .scidbeval(q,eval=FALSE,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
@@ -252,11 +260,11 @@ materialize = function(x, drop=FALSE)
   }
   tval = vector(mode=type,length=1)
 
-# Set origin to zero and project.
-  l1 = length(dim(x))
-  lb = paste(rep("null",l1),collapse=",")
-  ub = paste(rep("null",l1),collapse=",")
-  query = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",x@name,x@attribute,lb,ub)
+# Set origin to zero and project. We need the zero origin here to reconstruct
+# array indices in R. We don't wrap subarray in sg here because there is no
+# chance that this will be involved in a gemm query later.
+  N = paste(rep("null",2*length(x@D$name)),collapse=",")
+  query = sprintf("subarray(project(%s,%s),%s)",x@name,x@attribute,N)
 
 # Unpack
   query = sprintf("unpack(%s,%s)",query,"__row")
