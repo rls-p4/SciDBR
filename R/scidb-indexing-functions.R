@@ -235,7 +235,8 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
     nn = sapply(swap, function(x) x[[2]])
     nl = sapply(swap, function(x) x[[3]])
   }
-  query = sprintf("redimension(%s, %s%s)",query, build_attr_schema(x), build_dim_schema(x,newstart=rep(0,length(x@D$name)),newnames=nn,newlen=nl))
+  newstart = x@D$start
+  query = sprintf("redimension(%s, %s%s)",query, build_attr_schema(x), build_dim_schema(x,newstart=newstart,newnames=nn,newlen=nl))
   ans = .scidbeval(query, eval=FALSE, depend=dependencies)
   if(drop)
   {

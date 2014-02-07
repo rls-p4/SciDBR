@@ -122,7 +122,7 @@ dimnames.scidbdf = function(x)
 # Try to make arrays with '*' upper bounds seem more reasonable
     if(d[1] - as.numeric(.scidb_DIM_MAX) == 0)
     {
-      d[1] = "*"
+      d[1] = NA
     }
   d
 }
@@ -153,7 +153,7 @@ dimnames.scidbdf = function(x)
 # Try to make arrays with '*' upper bounds seem more reasonable
     if(n - as.numeric(.scidb_DIM_MAX) == 0)
     {
-      n = "*"
+      n = NA
     }
     n
   }
