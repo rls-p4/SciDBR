@@ -66,6 +66,23 @@
   character=1
 )
 
+# A convenience mapper for a few common apply-style aggregate
+# functions.
+.scidbfun = function(FUN)
+{
+  fns = list(
+  mean="average",
+  sd="stdev",
+  var="var",
+  sum="sum",
+  length="count",
+  count="count")
+  i = unlist(lapply(list(mean,sd,var,sum,length,count),
+               function(x) identical(x,FUN)))
+  if(!any(i)) return(NULL)
+  fns[i][[1]]
+}
+
 # SciDB Integer dimension minimum, maximum
 .scidb_DIM_MIN = "-4611686018427387902"
 .scidb_DIM_MAX = "4611686018427387902"

@@ -42,6 +42,15 @@
   if(length(MARGIN)!=1) stop("MARGIN must indicate a single dimension")
   if(is.numeric(MARGIN)) MARGIN = X@D$name[MARGIN]
   if(missing(`name`)) `name` = X@attribute
+# Check for common function names and map to SciDB expressions
+  if(is.function(FUN))
+  {
+    M = match.call()
+    fn = .scidbfun(FUN)
+    if(is.null(fn))
+      stop("Apply requires a valid SciDB aggregate function")
+    FUN = sprintf("%s(%s)",fn,X@attribute)
+  }
   Y = aggregate(X,MARGIN,FUN,eval=FALSE)
   a = Y@attributes[length(Y@attributes)]
   attribute_rename(project(Y,a,eval=FALSE),a, `name`, eval=`eval`)
@@ -55,6 +64,17 @@
 `aggregate_scidb` = function(x,by,FUN,`eval`=FALSE,window,variable_window)
 {
   unpack = FALSE
+# Check for common function names and map to SciDB expressions
+  if(is.function(FUN))
+  {
+    M = match.call()
+    fn = .scidbfun(FUN)
+    if(is.null(fn))
+      stop("Apply requires a valid SciDB aggregate function")
+    if(is.scidb(x)) a = x@attribute
+    else a = x@attributes[1]
+    FUN = sprintf("%s(%s)",fn,a)
+  }
   if(missing(`by`))
   {
     `by` = x@D$name[1]
