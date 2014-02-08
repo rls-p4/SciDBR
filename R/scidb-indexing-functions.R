@@ -109,7 +109,7 @@ dimfilter = function(x, i, eval, drop)
     {
       newstart[ina] = x@D$start[ina]
     }
-    newlen = unlist(lapply(ranges,function(z)z[1]))
+    newlen = unlist(lapply(ranges,function(z)z[2]))
     newlen[newlen=="null"] = NA
     newlen = as.numeric(newlen) - newstart + 1
     ina = is.na(newlen)

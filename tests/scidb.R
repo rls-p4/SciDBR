@@ -94,6 +94,10 @@ if(nchar(host)>0)
   i = count(X[c("a","b"),"a",c("d","e"),"a"])
   check(i,4)
 
+# Indices not at the origin
+  a = build("random()",c(5,5),start=c(-3,-2), eval=TRUE)
+  
+
 
 }
 gc()
