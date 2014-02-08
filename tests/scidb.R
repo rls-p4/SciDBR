@@ -94,10 +94,12 @@ if(nchar(host)>0)
   i = count(X[c("a","b"),"a",c("d","e"),"a"])
   check(i,4)
 
-# Indices not at the origin
+# Indices not at the origin, and general ranged index check
   a = build("random()",c(5,5),start=c(-3,-2), eval=TRUE)
-  
+  check(count(a[-3:-2,0:2]),6)
 
-
+# Pseudo-uint64 support! And also simplified aggregation function syntax
+# for apply.
+  check(sum(apply(a,2,count)[]),25)
 }
 gc()
