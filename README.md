@@ -163,13 +163,3 @@ a[]
 The composed `aggregate(project(bind(...` functions were carried out in
 the above example within a single SciDB transaction, storing only the result
 of the composed query.
-
-``
-    _____      _ ____  ____
-   / ___/_____(_) __ \/ __ )
-   \__ \/ ___/ / / / / __  |
-  ___/ / /__/ / /_/ / /_/ / 
- /____/\___/_/_____/_____/  
-
-
-``
