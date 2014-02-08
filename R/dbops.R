@@ -58,9 +58,17 @@
 
 `substitute` = function(x, value, `attribute`, `eval`=FALSE)
 {
-  if(missing(attribute)) attribute = x@attribute
-  if(missing(value)) value = "build(<v:double>[i=0:0,1,0],nan)"
-  query = sprintf("substitute(%s,%s,%s)",x@name, value, attribute)
+  if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
+  if(missing(attribute))
+  {
+    attribute = ""
+  }
+  if(missing(value))
+    value = sprintf("build(%s[i=0:0,1,0],i)",build_attr_schema(x,I=1))
+  if(nchar(attribute)<1)
+    query = sprintf("substitute(%s,%s)",x@name, value)
+  else
+    query = sprintf("substitute(%s,%s,%s)",x@name, value, attribute)
   .scidbeval(query, `eval`, depend=list(x))
 }
 

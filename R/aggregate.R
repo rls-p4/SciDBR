@@ -77,7 +77,7 @@
   }
   if(missing(`by`))
   {
-    `by` = x@D$name[1]
+    `by`=""
   }
   b = `by`
   if(is.list(b)) b = b[[1]]
@@ -97,7 +97,7 @@
   if(length(b)>1) unpack = TRUE
   new_dim_name = make.names_(c(unlist(b),"row"))
   new_dim_name = new_dim_name[length(new_dim_name)]
-  if(!all(b %in% c(x@attributes, x@D$name)))
+  if(!all(b %in% c(x@attributes, x@D$name, "")))
   {
 # Check for numerically-specified coordinate axes and replace with dimension
 # labels.
@@ -108,8 +108,8 @@
         b[[k]] = x@D$name[b[[k]]]
       }
     }
-  } 
-  if(!all(b %in% c(x@attributes, x@D$name))) stop("Invalid attribute or dimension name in by")
+  }
+  if(!all(b %in% c(x@attributes, x@D$name, ""))) stop("Invalid attribute or dimension name in by")
   a = x@attributes %in% b
   query = x@name
 # Handle group by attributes with redimension. We don't use a redimension
@@ -174,7 +174,10 @@
     unpack = FALSE
     query = sprintf("variable_window(%s, %s, %s, %s)",query,along,paste(variable_window,collapse=","),FUN)
   } else
-  query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
+  if(nchar(along)<1)
+    query = sprintf("aggregate(%s, %s)", query, FUN)
+  else
+    query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
   if(unpack) query = sprintf("unpack(%s,%s)",query,new_dim_name)
   .scidbeval(query,eval,gc=TRUE,depend=list(x))
 }

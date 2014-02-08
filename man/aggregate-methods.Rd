@@ -30,6 +30,8 @@ describing the query that can be composed with other SciDB package functions.
 
 The \code{by} argument must be a list of dimension names and/or attribute names
 in the array \code{x} to group by, or a SciDB array reference object.
+If \code{by} is not specified, then a grand aggregate is performed over all
+values in the array.
 
 The argument \code{by} may be a list of dimension names and/or attributes of the
 array \code{x}. Attributes that are not of type int64 will be `factorized` first
