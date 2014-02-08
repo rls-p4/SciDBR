@@ -78,9 +78,12 @@
   var="var",
   sum="sum",
   prod="prod",
+  max="max",
+  min="min",
+  median="median",
   length="count",
   count="count")
-  i = unlist(lapply(list(mean,sd,var,sum,prod,length,count),
+  i = unlist(lapply(list(mean,sd,var,sum,prod,max,min,median,length,count),
                function(x) identical(x,FUN)))
   if(!any(i)) return(NULL)
   fns[i][[1]]
