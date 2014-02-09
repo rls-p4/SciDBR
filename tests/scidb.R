@@ -108,5 +108,11 @@ if(nchar(host)>0)
   aggregate(A,by=p,mean) # Aggregate by another array
   aggregate(A,by=2,mean) # Positional dimension index
   aggregate(A,FUN=mean)  # Grand aggregate
+
+# More special index tests, sort, apply, densify giant sparse sort result.
+  a = build("i+j",c(5,5))
+  s = sort(a)
+  i = apply(s,1,count)
+  check(s[i][], sort(a[]))
 }
 gc()
