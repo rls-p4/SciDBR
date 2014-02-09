@@ -262,8 +262,8 @@ Attributes:
 2       Run int32    FALSE
 3     Speed int32    FALSE
 Row dimension:
-  name  type start length chunk_interval chunk_overlap low high
-1  row int64     1    100            100             0  NA   NA
+  name  type start length chunk_interval chunk_overlap
+1  row int64     1    100            100             0
 \end{Soutput}
 \begin{Sinput}
 > # Materialize the first four rows of X and the "Run" and "Speed"
@@ -357,37 +357,37 @@ bulk data load utility as outlined in the SciDB documentation instead.
 > str(v)
 \end{Sinput}
 \begin{Soutput}
-SciDB array name:  R_array1bf86deb2f8f1...
+SciDB array name:  R_array2a744958edbd1...
 SciDB array schema:  array<val:double> [i=0:4,5,0,j=0:4,5,0]
 attribute in use:  val
 All attributes:  val
 Array dimensions:
-  name  type start length chunk_interval chunk_overlap low high
-1    i int64     0      5              5             0  NA   NA
-2    j int64     0      5              5             0  NA   NA
+  name  type start length chunk_interval chunk_overlap
+1    i int64     0      5              5             0
+2    j int64     0      5              5             0
 \end{Soutput}
 \begin{Sinput}
 > crossprod( v[] )              # Compute t(v) %*% v using R
 \end{Sinput}
 \begin{Soutput}
-            [,1]       [,2]       [,3]       [,4]        [,5]
-[1,]  2.47046437 -1.0030087  0.7832996 -1.5295930  0.05655859
-[2,] -1.00300867  1.2919084 -0.1458189  0.7238348  0.42550451
-[3,]  0.78329962 -0.1458189  2.7015238 -0.5126487 -1.99601629
-[4,] -1.52959303  0.7238348 -0.5126487  2.4374719  2.00676768
-[5,]  0.05655859  0.4255045 -1.9960163  2.0067677  4.62245579
+           [,1]       [,2]       [,3]       [,4]      [,5]
+[1,]  8.4151708  0.1499719 -2.8462983 -0.2295290 -3.253944
+[2,]  0.1499719  6.7479528 -0.3039991 -0.6215236 -4.002421
+[3,] -2.8462983 -0.3039991  2.4557626  0.6185673  2.741907
+[4,] -0.2295290 -0.6215236  0.6185673  0.8387504  1.786353
+[5,] -3.2539438 -4.0024207  2.7419065  1.7863531  6.231967
 \end{Soutput}
 \begin{Sinput}
 > # Now compute using SciDB, and materialize the result to R:
 > crossprod(v)[]
 \end{Sinput}
 \begin{Soutput}
-            [,1]       [,2]       [,3]       [,4]        [,5]
-[1,]  2.47046437 -1.0030087  0.7832996 -1.5295930  0.05655859
-[2,] -1.00300867  1.2919084 -0.1458189  0.7238348  0.42550451
-[3,]  0.78329962 -0.1458189  2.7015238 -0.5126487 -1.99601629
-[4,] -1.52959303  0.7238348 -0.5126487  2.4374719  2.00676768
-[5,]  0.05655859  0.4255045 -1.9960163  2.0067677  4.62245579
+           [,1]       [,2]       [,3]       [,4]      [,5]
+[1,]  8.4151708  0.1499719 -2.8462983 -0.2295290 -3.253944
+[2,]  0.1499719  6.7479528 -0.3039991 -0.6215236 -4.002421
+[3,] -2.8462983 -0.3039991  2.4557626  0.6185673  2.741907
+[4,] -0.2295290 -0.6215236  0.6185673  0.8387504  1.786353
+[5,] -3.2539438 -4.0024207  2.7419065  1.7863531  6.231967
 \end{Soutput}
 \end{Schunk}
 
@@ -848,7 +848,7 @@ Here is an example:
 > B@name
 \end{Sinput}
 \begin{Soutput}
-[1] "slice(sg(subarray(between(transpose(test),3,0,3,4),3,0,3,4),1,-1), j, 0)"
+[1] "redimension(redimension(between(transpose(test),3,null,3,null), <val:double>[j=3:3,4,0,i=0:4,5,0]), <val:double>[i=0:4,5,0])"
 \end{Soutput}
 \begin{Sinput}
 > B@schema
@@ -871,7 +871,7 @@ Here is an example:
 > C@name
 \end{Sinput}
 \begin{Soutput}
-[1] "R_array1bf8789d35011100920301679"
+[1] "R_array2a74f85fd1a1101055313670"
 \end{Soutput}
 \begin{Sinput}
 > C@schema
@@ -976,6 +976,7 @@ documentation of their use.
 > iquery("store(build(<x:double>[i=1:10,10,0],i/10.0),A)")
 > # Return the result of a SciDB apply operator in an R iterator with a
 > # block size of at most 7 rows at a time:
+> library("iterators")
 > it <- iquery("apply(A,y,sqrt(x))", return=TRUE, iterative=TRUE, n=7)
 > nextElem(it)
 \end{Sinput}
@@ -1015,27 +1016,27 @@ Here is a summary list of functions and methods defined by  the package.  See
 online help for examples and more information on each one.
 
 \begin{verbatim}
-$                 %*%               Ops               [
-abs               acos              aggregate         apply
-as.scidb          asin              atan              attribute_rename
-between           bind              build             cast
-cbind             colnames          colnames<-        cos
-count             crossprod         cumulate          df2scidb
-diag              diff              dim               dimnames
-dimnames<-        glm.fit           head              image
-index_lookup      iquery            is.scidb          is.scidbdf
-lag               length            log               max
-merge             min               names             names<-
-ncol              nrow              print             project
-redimension       regrid            rename            repart
-reshape           rownames          rownames<-        scidb
-scidbconnect      scidbdf           scidbeval         scidblist
-scidbls           scidbremove       scidbrm           sd
-show              sin               slice             sort
-str               subset            sum               svd
-sweep             t                 tail              tan
-tcrossprod        unique            unpack            var
-xgrid
+$                 %*%               Filter            Ops
+[                 abs               acos              aggregate
+apply             as.scidb          asin              atan
+attribute_rename  between           bind              build
+cast              cbind             colnames          colnames<-
+cos               count             crossprod         cumulate
+df2scidb          diag              diff              dim
+dimnames          dimnames<-        glm.fit           head
+image             index_lookup      iquery            is.scidb
+is.scidbdf        lag               length            log
+max               mean              merge             min
+names             names<-           ncol              nrow
+print             project           redimension       regrid
+rename            repart            reshape           rownames
+rownames<-        scidb             scidbconnect      scidbdf
+scidbeval         scidblist         scidbls           scidbremove
+scidbrm           sd                show              sin
+slice             sort              str               subset
+substitute        sum               svd               sweep
+t                 tail              tan               tcrossprod
+unique            unpack            var               xgrid
 \end{verbatim}
 
 
