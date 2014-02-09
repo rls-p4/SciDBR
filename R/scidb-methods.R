@@ -20,6 +20,50 @@
 #* END_COPYRIGHT
 #*/
 
+# Non-traditional masking binary comparison operators
+setGeneric("%<%", def=function(x,y){NULL})
+setMethod("%<%",signature(x="scidb", y="ANY"),
+  function(x,y)
+  {
+    .compare(x,y,"<",traditional=FALSE)
+  },
+  valueClass="scidb"
+)
+setGeneric("%>%", def=function(x,y){NULL})
+setMethod("%>%",signature(x="scidb", y="ANY"),
+  function(x,y)
+  {
+    .compare(x,y,">",traditional=FALSE)
+  },
+  valueClass="scidb"
+)
+setGeneric("%<=%", def=function(x,y){NULL})
+setMethod("%<=%",signature(x="scidb", y="ANY"),
+  function(x,y)
+  {
+    .compare(x,y,"<=",traditional=FALSE)
+  },
+  valueClass="scidb"
+)
+setGeneric("%>=%", def=function(x,y){NULL})
+setMethod("%>=%",signature(x="scidb", y="ANY"),
+  function(x,y)
+  {
+    .compare(x,y,">=",traditional=FALSE)
+  },
+  valueClass="scidb"
+)
+setGeneric("%==%", def=function(x,y){NULL})
+setMethod("%==%",signature(x="scidb", y="ANY"),
+  function(x,y)
+  {
+    .compare(x,y,"==",traditional=FALSE)
+  },
+  valueClass="scidb"
+)
+
+
+
 setMethod("%*%",signature(x="scidb", y="scidbdf"),
   function(x,y)
   {

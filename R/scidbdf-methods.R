@@ -20,21 +20,18 @@
 #* END_COPYRIGHT
 #*/
 
-setGeneric("head")
 setMethod("head", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
   iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start,x@D$start + n - 1),`return`=TRUE,colClasses=x@colClasses)[,-1]
 })
 
-setGeneric("tail")
 setMethod("tail", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
   iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start + x@D$length - n - 1,x@D$start + x@D$length-1),`return`=TRUE, colClasses=x@colClasses)[,-1]
 })
 
-setGeneric("Filter")
 setMethod("Filter",signature(f="character",x="scidbdf"),
   function(f, x)
   {
@@ -46,7 +43,6 @@ setMethod('is.scidbdf', signature(x='scidbdf'),
   function(x) return(TRUE))
 setMethod('is.scidbdf', definition=function(x) return(FALSE))
 
-setGeneric('print', function(x) standardGeneric('print'))
 setMethod('print', signature(x='scidbdf'),
   function(x) {
     show(x)
@@ -63,42 +59,36 @@ setMethod("aggregate", signature(x="scidbdf"), aggregate_scidb)
 
 
 # The following methods return data to R
-setGeneric("sum")
 setMethod("sum", signature(x="scidbdf"),
 function(x)
 {
   iquery(sprintf("sum(%s)",x@name),return=TRUE)[,2]
 })
 
-setGeneric("mean")
 setMethod("mean", signature(x="scidbdf"),
 function(x)
 {
   iquery(sprintf("avg(%s)",x@name),return=TRUE)[,2]
 })
 
-setGeneric("min")
 setMethod("min", signature(x="scidbdf"),
 function(x)
 {
   iquery(sprintf("min(%s)",x@name),return=TRUE)[,2]
 })
 
-setGeneric("max")
 setMethod("max", signature(x="scidbdf"),
 function(x)
 {
   iquery(sprintf("max(%s)",x@name),return=TRUE)[,2]
 })
 
-setGeneric("sd")
 setMethod("sd", signature(x="scidbdf"),
 function(x)
 {
   iquery(sprintf("stdev(%s)",x@name),return=TRUE)[,2]
 })
 
-setGeneric("var")
 setMethod("var", signature(x="scidbdf"),
 function(x)
 {
@@ -145,3 +135,39 @@ setMethod("abs", signature(x="scidbdf"),
   {
     fn_scidb(x, "abs")
   })
+# Non-traditional masking binary comparison operators
+setMethod("%<%",signature(x="scidbdf", y="ANY"),
+  function(x,y)
+  {
+    .compare(x,y,"<",traditional=FALSE)
+  },
+  valueClass="scidbdf"
+)
+setMethod("%>%",signature(x="scidbdf", y="ANY"),
+  function(x,y)
+  {
+    .compare(x,y,">",traditional=FALSE)
+  },
+  valueClass="scidbdf"
+)
+setMethod("%<=%",signature(x="scidbdf", y="ANY"),
+  function(x,y)
+  {
+    .compare(x,y,"<=",traditional=FALSE)
+  },
+  valueClass="scidbdf"
+)
+setMethod("%>=%",signature(x="scidbdf", y="ANY"),
+  function(x,y)
+  {
+    .compare(x,y,">=",traditional=FALSE)
+  },
+  valueClass="scidbdf"
+)
+setMethod("%==%",signature(x="scidbdf", y="ANY"),
+  function(x,y)
+  {
+    .compare(x,y,"==",traditional=FALSE)
+  },
+  valueClass="scidbdf"
+)

@@ -28,7 +28,7 @@ Ops.scidb = function(e1,e2) {
     '*' = .binop(e1,e2,"*"),
     '/' = .binop(e1,e2,"/"),
     '<' = .compare(e1,e2,"<"),
-    '<=' = .compare(e1,e2,"<="),
+    '<=' =.compare(e1,e2,"<="),
     '>' = .compare(e1,e2,">"),
     '>=' = .compare(e1,e2,">="),
     '==' = .compare(e1,e2,"="),
@@ -272,14 +272,24 @@ scidbmultiply = function(e1,e2)
 #
 # Return a scidb object
 # Can throw a query error.
-.compare = function(e1,e2,op)
+.compare = function(e1,e2,op,traditional)
 {
+  if(missing(traditional)) traditional=TRUE
   if(!(inherits(e1,"scidb") || inherits(e1,"scidbdf"))) stop("Sorry, not yet implemented.")
   if(inherits(e2,"scidb")) return(.joincompare(e1,e2,op))
 #  type = names(.scidbtypes[.scidbtypes==e1@type])
 #  if(length(type)<1) stop("Unsupported data type.")
   op = gsub("==","=",op,perl=TRUE)
   q1 = paste(paste(e1@attributes,op,e2),collapse=" and ")
+# Traditional R comparisons return an array of the same shape with a true/false
+# value.
+  if(traditional)
+  {
+    newattr = make.unique_(e1@attributes, "condition")
+    query = sprintf("project(apply(%s, %s, %s), %s)", e1@name, newattr, q1, newattr)
+    return(.scidbeval(query, eval=FALSE, gc=TRUE, depend=list(e1)))
+  }
+# Alternate comparisons return a sparse mask
   query = sprintf("filter(%s, %s)", e1@name, q1)
   .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(e1))
 }
