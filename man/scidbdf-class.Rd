@@ -47,7 +47,7 @@ Objects can be created by calls of the form \code{new("scidbdf", ...)},
     \item{head}{\code{signature(x = "scidbdf")}: ... }
     \item{tail}{\code{signature(x = "scidbdf")}: ... }
     \item{show}{\code{signature(object = "scidbdf")}: ... }
-    \item{Filter}{\code{signature(f="character", x = "scidb")}: \code{Filter(f,x)}
+    \item{Filter}{\code{signature(f="character", x = "scidbdf")}: \code{Filter(f,x)}
       'Filter' masks elements of a vector for which a predicate (logical) SciDB expression 'f' returns false by making them empty, returning a sparse version of the array.
     }
     \item{sin}{\code{signature(x = "scidbdf")}: \code{sin(x)}
