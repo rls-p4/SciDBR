@@ -57,13 +57,13 @@
 }
 
 # x:   A scidb, scidbdf object
-# by:  A character vector of dimension and or attribute names of x, or,
+# by:  A list of character vector of dimension and or attribute names of x, or,
 #      a scidb or scidbdf object that will be cross_joined to x and then
 #      grouped by attribues of by.
 # FUN: A SciDB aggregation expresion
-`aggregate_scidb` = function(x,by,FUN,`eval`=FALSE,window,variable_window)
+`aggregate_scidb` = function(x,by,FUN,`eval`=FALSE,window,variable_window,unpack)
 {
-  unpack = FALSE
+  if(missing(unpack)) unpack=TRUE
 # Check for common function names and map to SciDB expressions
   if(is.function(FUN))
   {
@@ -79,27 +79,27 @@
   {
     `by`=""
   }
-  if(is.list(`by`)) `by` = by[[1]]
-  if(class(`by`) %in% c("scidb","scidbdf"))
+  if(!is.list(`by`)) `by`=list(`by`)
+
+  if(class(`by`[[1]]) %in% c("scidb","scidbdf"))
   {
 # We are grouping by attributes in another SciDB array `by`. We assume that
 # x and by have conformable dimensions to join along!
-    j = intersect(x@D$name, by@D$name)
+    j = intersect(x@D$name, by[[1]]@D$name)
 # Check for and resolve attribute name conflicts:
-    nn = make.unique_(x@attributes, by@attributes)
-    if(!isTRUE(all.equal(by@attributes,nn)))
+    nn = make.unique_(x@attributes, by[[1]]@attributes)
+    if(!isTRUE(all.equal(by[[1]]@attributes,nn)))
     {
-      `by`=attribute_rename(`by`,old=by@attributes,new=nn)
+      `by`[[1]]=attribute_rename(`by`[[1]],old=by[[1]]@attributes,new=nn)
     }
-    x = merge(x,`by`,by=j,eval=FALSE,depend=list(x,`by`))
-    n = by@attributes
-    `by` = list(n)
+    x = merge(x,`by`[[1]],by=j,eval=FALSE,depend=list(x,`by`[[1]]))
+    n = by[[1]]@attributes
+    `by`[[1]] = n
   }
 # A bug up to SciDB 13.6 unpack prevents us from using eval=FALSE
   if(!eval && !compare_versions(options("scidb.version")[[1]],13.9)) stop("eval=FALSE not supported by aggregate due to a bug in SciDB <= 13.6")
 
   b = `by`
-  if(length(b)>1) unpack = TRUE
   new_dim_name = make.names_(c(unlist(b),"row"))
   new_dim_name = new_dim_name[length(new_dim_name)]
   if(!all(b %in% c(x@attributes, x@D$name, "")))
