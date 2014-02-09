@@ -100,6 +100,13 @@ if(nchar(host)>0)
 
 # Pseudo-uint64 support! And also simplified aggregation function syntax
 # for apply.
-  check(sum(apply(a,2,count)[]),25)
+  check(sum(apply(a,2,count)[]),25))
+
+# Aggregation, just trying to catch errors
+  A = build("random()%10",c(100,100))
+  p = build("random()%2",100)
+  aggregate(A,by=p,mean) # Aggregate by another array
+  aggregate(A,by=2,mean) # Positional dimension index
+  aggregate(A,FUN=mean)  # Grand aggregate
 }
 gc()

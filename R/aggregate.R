@@ -86,7 +86,7 @@
 # We are grouping by attributes in another SciDB array `by`. We assume that
 # x and by have conformable dimensions to join along!
     j = intersect(x@D$name, b@D$name)
-    x = merge(x,b,by=list(j,j),eval=FALSE,depend=list(x,b))
+    x = merge(x,b,by=j,eval=FALSE,depend=list(x,b))
     n = by@attributes
     by = list(n)
   }
