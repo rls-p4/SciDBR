@@ -279,10 +279,8 @@ scidbmultiply = function(e1,e2)
 #  type = names(.scidbtypes[.scidbtypes==e1@type])
 #  if(length(type)<1) stop("Unsupported data type.")
   op = gsub("==","=",op,perl=TRUE)
-  if(is.scidb(e1))
-    query = sprintf("filter(%s, %s %s %s)",e1@name, e1@attribute, op, e2)
-  else
-    query = sprintf("filter(%s, %s %s %s)",e1@name, e1@attributes[[1]], op, e2)
+  q1 = paste(paste(e1@attributes,"op",e2),collapse=" and ")
+  query = sprintf("filter(%s, %s)", e1@name, e1)
   .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(e1))
 }
 
