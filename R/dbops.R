@@ -355,10 +355,17 @@
   }
   if(sort)
   {
+# XXX XXX There is a problem here if there is an attribute named 'n' (see sort function
+# below)...this must be fixed.
+    rs = sprintf("%s[n=0:%s,%s,0]",build_attr_schema(x,I=1),.scidb_DIM_MAX,noE(min(1e6,prod(dim(x)))))
     if(length(x@attributes)>1)
-      query = sprintf("uniq(sort(project(%s,%s)))",x@name,x@attributes[[1]])
+    {
+      query = sprintf("uniq(redimension(sort(project(%s,%s)),%s))",x@name,x@attributes[[1]],rs)
+    }
     else
-      query = sprintf("uniq(sort(%s))",x@name,x@attributes[[1]])
+    {
+      query = sprintf("uniq(redimension(sort(%s),%s))",x@name,x@attributes[[1]],rs)
+    }
   } else
   {
     query = sprintf("uniq(%s)",x@name)
@@ -388,7 +395,8 @@
   a = paste(paste(mc$attributes, dflag, sep=" "),collapse=",")
   if(!is.null(mc$chunk_size)) a = paste(a, mc$chunk_size, sep=",")
 
-  query = sprintf("sort(%s,%s)", X@name,a)
+  rs = sprintf("%s[n=0:%s,%s,0]",build_attr_schema(X,I=1),.scidb_DIM_MAX,noE(min(1e6,prod(dim(X)))))
+  query = sprintf("redimension(sort(%s,%s),%s)", X@name,a,rs)
   .scidbeval(query,eval,depend=list(X))
 }
 
