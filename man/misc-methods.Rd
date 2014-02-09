@@ -3,6 +3,9 @@
 \alias{sum}
 \alias{sum,scidb-method}
 \alias{sum,scidbdf-method}
+\alias{mean}
+\alias{mean,scidb-method}
+\alias{mean,scidbdf-method}
 \alias{min}
 \alias{min,scidb-method}
 \alias{min,scidbdf-method}
@@ -25,7 +28,9 @@ SciDB array object and return a scalar value to R.
 }
 
 \usage{
-\S4method{sum}{scidb}(x)
+\S4method{mean}{scidb}(x)
+\S4method{mean}{scidb}(x)
+\S4method{sum}{scidbdf}(x)
 \S4method{sum}{scidbdf}(x)
 \S4method{min}{scidb}(x)
 \S4method{min}{scidbdf}(x)

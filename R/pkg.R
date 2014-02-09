@@ -73,7 +73,7 @@
 .scidbfun = function(FUN)
 {
   fns = list(
-  mean="average",
+  mean="avg",
   sd="stdev",
   var="var",
   sum="sum",

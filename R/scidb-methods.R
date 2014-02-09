@@ -351,6 +351,13 @@ setMethod("xgrid", signature(x="scidb"),
     .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
   })
 
+setGeneric("Filter")
+setMethod("Filter",signature(f="character",x="scidb"),
+  function(f, x)
+  {
+    filter_scidb(x,f)
+  })
+
 setMethod("sin",signature(x="scidb"),
   function(x)
   {

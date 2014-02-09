@@ -34,6 +34,13 @@ function(x, n=6L, ...)
   iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start + x@D$length - n - 1,x@D$start + x@D$length-1),`return`=TRUE, colClasses=x@colClasses)[,-1]
 })
 
+setGeneric("Filter")
+setMethod("Filter",signature(f="character",x="scidbdf"),
+  function(f, x)
+  {
+    filter_scidb(x,f)
+  })
+
 setGeneric('is.scidbdf', function(x) standardGeneric('is.scidbdf'))
 setMethod('is.scidbdf', signature(x='scidbdf'),
   function(x) return(TRUE))

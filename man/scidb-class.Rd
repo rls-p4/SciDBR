@@ -30,6 +30,8 @@
 \alias{regrid,scidb-method}
 \alias{xgrid}
 \alias{xgrid,scidb-method}
+\alias{Filter}
+\alias{Filter,character,scidb-method}
 
 \alias{is.scidb,ANY-method}
 \alias{print,scidb-method}
@@ -85,6 +87,11 @@ Objects can be created by calls of the form \code{new("scidb", ...)},
     \item{xgrid}{\code{signature(x = "scidb")}: \code{xgrid(x, grid=c(m,...))}
       Prolong the coordinate system of the n-d SciDB array \code{x} by replicating its values according to the \code{grid} parameter. In some cases, \code{xgrid} can be the inverse operation of \code{regrid}. For example if \code{x} is a 10x10 matrix, then \code{xgrid(x, c(2,1))} returns a 20x10 matrix, replicating values twice along the row dimension.
     }
+
+    \item{Filter}{\code{signature(f="character", x = "scidb")}: \code{Filter(f,x)}
+      'Filter' masks elements of a vector for which a predicate (logical) SciDB expression 'f' returns false by making them empty, returning a sparse version of the array.
+    }
+
     \item{image}{\code{signature(x = "scidb")}: \code{image(x, grid=c(m,n), op="sum(attribute)")}
 Display a heatmap-like image of the 2-d scidb array reference object \code{x}.
 \code{grid(m,n)} specifies the repartitioned array block sizes and \code{op} is a valid SciDB aggregation function applied to the repartitioned chunks. }
