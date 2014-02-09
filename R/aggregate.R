@@ -71,9 +71,7 @@
     fn = .scidbfun(FUN)
     if(is.null(fn))
       stop("Apply requires a valid SciDB aggregate function")
-    if(is.scidb(x)) a = x@attribute
-    else a = x@attributes[1]
-    FUN = sprintf("%s(%s)",fn,a)
+    FUN = paste(paste(fn,"(",x@attributes,")",sep=""),collapse=",")
   }
   if(missing(`by`))
   {
