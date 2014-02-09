@@ -79,16 +79,21 @@
   {
     `by`=""
   }
-  b = `by`
-  if(is.list(b)) b = b[[1]]
-  if(class(b) %in% c("scidb","scidbdf"))
+  if(is.list(`by`)) `by` = by[[1]]
+  if(class(`by`) %in% c("scidb","scidbdf"))
   {
 # We are grouping by attributes in another SciDB array `by`. We assume that
 # x and by have conformable dimensions to join along!
-    j = intersect(x@D$name, b@D$name)
-    x = merge(x,b,by=j,eval=FALSE,depend=list(x,b))
+    j = intersect(x@D$name, by@D$name)
+# Check for and resolve attribute name conflicts:
+    nn = make.unique_(x@attributes, by@attributes)
+    if(!isTRUE(all.equal(by@attributes,nn)))
+    {
+      `by`=attribute_rename(`by`,old=by@attributes,new=nn)
+    }
+    x = merge(x,`by`,by=j,eval=FALSE,depend=list(x,`by`))
     n = by@attributes
-    by = list(n)
+    `by` = list(n)
   }
 # A bug up to SciDB 13.6 unpack prevents us from using eval=FALSE
   if(!eval && !compare_versions(options("scidb.version")[[1]],13.9)) stop("eval=FALSE not supported by aggregate due to a bug in SciDB <= 13.6")
