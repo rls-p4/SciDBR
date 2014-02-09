@@ -100,7 +100,7 @@ if(nchar(host)>0)
 
 # Pseudo-uint64 support! And also simplified aggregation function syntax
 # for apply.
-  check(sum(apply(a,2,count)[]),25))
+  check(sum(apply(a,2,count)[]),25)
 
 # Aggregation, just trying to catch errors
   A = build("random()%10",c(100,100))
