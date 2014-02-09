@@ -845,7 +845,7 @@ iqiter = function (con, n = 1, excludecol, ...)
   low = noE(A@D$start)
   hi = noE(as.numeric(A@D$length) - 1 + as.numeric(A@D$start))
   hi[as.numeric(hi)>=as.numeric(.scidb_DIM_MAX)] = NA
-  hi[is.na(hi)] = "*"
+  hi[is.na(hi)] = .scidb_DIM_MAX
   R = paste(low,hi,sep=":")
   S = paste(A@D$name,R,sep="=")
   S = paste(S,noE(A@D$chunk_interval),sep=",")

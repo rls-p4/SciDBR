@@ -241,14 +241,14 @@
     new_dim_name = make.unique_(c(x@D$name,y@D$name),"row")
     a = XI@attributes %in% paste(by.x,"index",sep="_")
     n = XI@attributes[a]
-    redim = paste(paste(n,"=-1:*,100000,0",sep=""), collapse=",")
+    redim = paste(paste(n,"=-1:",.scidb_DIM_MAX,",100000,0",sep=""), collapse=",")
     S = build_attr_schema(x, I=!(x@attributes %in% by.x))
     D = sprintf("[%s,%s]",redim,build_dim_schema(x,bracket=FALSE))
     q1 = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s)",XI@name,n,S,D)
 
     a = YI@attributes %in% paste(by.y,"index",sep="_")
     n = YI@attributes[a]
-    redim = paste(paste(n,"=-1:*,100000,0",sep=""), collapse=",")
+    redim = paste(paste(n,"=-1:",.scidb_DIM_MAX,",100000,0",sep=""), collapse=",")
     S = build_attr_schema(y)
     D = sprintf("[%s,%s]",redim,build_dim_schema(y,bracket=FALSE))
     D2 = sprintf("[%s,_%s]",redim,build_dim_schema(y,bracket=FALSE))

@@ -150,7 +150,7 @@
 # XXX XXX XXX
 # XXX What about chunk sizes? Also insert reasonable upper bound instead of *? XXX Take care of all these issues...
 # XXX XXX XXX
-    redim = paste(paste(n,"=0:*,1000,0",sep=""), collapse=",")
+    redim = paste(paste(n,"=0:",.scidb_DIM_MAX,",1000,0",sep=""), collapse=",")
     D = paste(build_dim_schema(x,FALSE),redim,sep=",")
     A = x
     A@attributes = x@attributes[!a]
