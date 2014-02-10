@@ -15,7 +15,6 @@
 \alias{asin,scidbdf-method}
 \alias{acos,scidbdf-method}
 \alias{atan,scidbdf-method}
-\alias{Filter}
 \alias{Filter,character,scidbdf-method}
 
 \title{Class \code{"scidbdf"}}
