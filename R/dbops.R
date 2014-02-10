@@ -146,14 +146,6 @@
   iquery(sprintf("count(%s)",x@name),return=TRUE)$count
 }
 
-# The new (SciDB 13.9) cumulate
-`cumulate` = function(x, expression, dimension, `eval`=FALSE)
-{
-  if(missing(dimension)) dimension = x@D$name[[1]]
-  query = sprintf("cumulate(%s, %s, %s)",x@name,expression,dimension)
-  .scidbeval(query,eval,depend=list(x))
-}
-
 # Filter the attributes of the scidb, scidbdf object to contain
 # only those specified in expr.
 # X:    a scidb, scidbdf object

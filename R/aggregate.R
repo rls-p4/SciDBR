@@ -184,3 +184,11 @@
   if(unpack) query = sprintf("unpack(%s,%s)",query,new_dim_name)
   .scidbeval(query,eval,gc=TRUE,depend=list(x))
 }
+
+# The new (SciDB 13.9) cumulate
+`cumulate` = function(x, expression, dimension, `eval`=FALSE)
+{
+  if(missing(dimension)) dimension = x@D$name[[1]]
+  query = sprintf("cumulate(%s, %s, %s)",x@name,expression,dimension)
+  .scidbeval(query,eval,depend=list(x))
+}
