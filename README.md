@@ -8,6 +8,7 @@ library('devtools')
 install_github("SciDBR","paradigm4",quick=TRUE)
 ```
 
+
 The SciDB R package requires installation of a simple open-source HTTP network
 service called on the computer that SciDB is installed on. This service only
 needs to be installed on the SciDB machine, not on client computers that
@@ -17,6 +18,13 @@ and installation instructions.
 Developers please note that R CMD check-style unit tests are skipped unless a
 system environment variable named SCIDB_TEST_HOST is set to the host name or
 I.P. address of SciDB. See the tests directory for test code.
+
+Wiki
+===
+Check out (and feel free to contribute to) examples in the wiki pages for
+this project here:
+
+https://github.com/Paradigm4/SciDBR/wiki/_pages
 
 New features
 ===
