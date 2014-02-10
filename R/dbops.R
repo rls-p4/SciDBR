@@ -356,7 +356,7 @@
     }
     else
     {
-      query = sprintf("uniq(redimension(sort(%s),%s))",x@name,x@attributes[[1]],rs)
+      query = sprintf("uniq(redimension(sort(%s),%s))",x@name,rs)
     }
   } else
   {
