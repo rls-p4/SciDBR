@@ -14,7 +14,7 @@
     old = sprintf("%s=",STATS@D$name[1])
     new = sprintf("%s=",MARGIN)
     schema = gsub(old,new,STATS@schema)
-    query = sprintf("cast(%s,%s)",STATS,schema)
+    query = sprintf("cast(%s,%s)",STATS@name,schema)
     STATS = .scidbeval(query,eval=FALSE, depend=list(x))
   }
 # Check for potential attribute name conflicts and adjust.
