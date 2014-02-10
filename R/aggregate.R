@@ -51,7 +51,7 @@
       stop("Apply requires a valid SciDB aggregate function")
     FUN = sprintf("%s(%s)",fn,X@attribute)
   }
-  Y = aggregate(X,MARGIN,FUN,eval=FALSE)
+  Y = aggregate(X,MARGIN,FUN,eval=FALSE,unpack=FALSE)
   a = Y@attributes[length(Y@attributes)]
   attribute_rename(project(Y,a,eval=FALSE),a, `name`, eval=`eval`)
 }
