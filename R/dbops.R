@@ -265,10 +265,10 @@
       x = make_nullable(x)
       z = make_nullable(z)
 # Form a null-valued version of each array in the alternate array coordinate system
-      xnames = make.unique_(z@attributes,x@attributes)
+      xnames = make.unique_(c(z@D$name,z@attributes),x@attributes)
       vals = paste(x@types, rep("(null)",length(x@types)))
       xnull = attribute_rename(project(bind(z,xnames,vals),xnames),xnames,x@attributes)
-      znames = make.unique_(x@attributes,z@attributes)
+      znames = make.unique_(c(x@D$name,x@attributes),z@attributes)
       vals = paste(z@types, rep("(null)",length(z@types)))
       znull = attribute_rename(project(bind(x,znames,vals),znames),znames,z@attributes)
 # Merge each array with its nullified counterpart, then join:
