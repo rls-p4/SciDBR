@@ -25,7 +25,7 @@
 cbind.scidb = function(x)
 {
   if(length(dim(x))!=1) return(x)
-  newdim=make.unique_(x@attributes, "j")
+  newdim=make.unique_(c(x@D$name,x@attributes), "j")
   nd = sprintf("%s[%s,%s=0:0,1,0]",build_attr_schema(x) , build_dim_schema(x,bracket=FALSE),newdim)
   redimension(x, nd)
 }

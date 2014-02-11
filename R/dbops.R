@@ -328,6 +328,11 @@
 {
   aname = X
   if(class(X) %in% c("scidb","scidbdf")) aname=X@name
+# Auto-generate names like X_n:
+  if(missing(name))
+  {
+    name = make.unique_(c(X@attributes,X@D$name), rep("X",length(FUN)))
+  }
   if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
   expr = paste(paste(name,FUN,sep=","),collapse=",")
   query = sprintf("apply(%s, %s)",aname, expr)
