@@ -338,7 +338,8 @@ setMethod("svd", signature(x="scidb"), svd_scidb)
 
 setOldClass("glm.fit")
 setGeneric("glm.fit")
-setMethod("glm.fit", signature(x="scidb"), glm_scidb)
+setClassUnion("MNSN", c("missing", "NULL", "scidb", "scidbdf", "numeric"))
+setMethod("glm.fit", signature(x="scidb",y="ANY",weights="MNSN"), glm_scidb)
 
 # Transpose a matrix or vector
 setOldClass("t")

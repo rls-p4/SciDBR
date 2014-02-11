@@ -114,5 +114,11 @@ if(nchar(host)>0)
   s = sort(a)
   i = apply(s,1,count)
   check(s[i][], sort(a[]))
+
+# GLM (requires SciDB p4 plugin)
+  x = as.scidb(matrix(rnorm(5000*20),nrow=5000))
+  y = as.scidb(rnorm(5000))
+  M = glm.fit(x, y)
+
 }
 gc()

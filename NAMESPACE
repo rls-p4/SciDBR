@@ -2,7 +2,7 @@ useDynLib(scidb)
 import("methods")
 importFrom("Matrix",nnzero, sparseMatrix, unpack, sparseVector)
 importFrom("utils", head, tail)
-importFrom("stats", aggregate, sd, var, reshape)
+importFrom("stats", aggregate, sd, var, reshape, glm.fit)
 import("RCurl", iterators)
 
 # Functions

@@ -2,6 +2,7 @@
 \docType{methods}
 \alias{glm.fit}
 \alias{glm.fit,scidb-method}
+\alias{glm.fit,scidb,ANY,MNSN-method}
 \title{
 Fitting generalized linear models
 }
@@ -16,7 +17,7 @@ matrix and response vector.
   \item{x}{a model matrix of dimension 'n * p'.}
   \item{y}{a response vector of length 'n'.}
   \item{weights}{an optional vector of 'prior weights' to be used in the
-          fitting process.  Should be 'NULL' or a numeric vector.}
+          fitting process.  Should be 'NULL' or a numeric or scidb vector.}
   \item{family}{a description of the error distribution and link function to
           be used in the model, supplied as the result of a call to
           a family function.}

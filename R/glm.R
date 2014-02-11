@@ -1,14 +1,15 @@
 # cf glm.fit
-glm_scidb = function(x,y,weights=NULL,family=gaussian())
+glm_scidb = function(x,y,`weights`=NULL,`family`=gaussian())
 {
+  nobs = length(y)
   got_glm = length(grep("glm",.scidbenv$ops[,2]))>0
-  if(is.null(weights))
+  if(missing(`weights`)) `weights`=NULL
+  if(is.numeric(`weights`))
+  {
+    `weights` = as.scidb(as.double(weights),chunkSize=x@D$chunk_interval[1])
+  } else
   {
     weights = build(1.0,nrow(x),start=x@D$start[1],chunksize=x@D$chunk_interval[1])
-  }
-  if(!is.scidb(weights))
-  {
-    weights = as.scidb(weights,chunkSize=x@D$chunk_interval[1])
   }
   if(!is.scidb(y))
   {
