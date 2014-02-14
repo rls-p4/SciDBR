@@ -957,7 +957,8 @@ project(
 )",`return`=TRUE)
 }
 
+# Map scidbdf object column classes into R, adding an extra "integer" at the start for the index!
 scidbdfcc = function(x)
 {
-  as.vector(unlist(lapply(.scidbdftypes[x@types],function(x) ifelse(is.null(x),NA,x))))
+  c("integer",as.vector(unlist(lapply(.scidbdftypes[x@types],function(x) ifelse(is.null(x),NA,x)))))
 }
