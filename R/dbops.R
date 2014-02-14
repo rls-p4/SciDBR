@@ -78,10 +78,12 @@
     stop("Invalid dimension specified")
   }
   limits[i] = noE(n)
-  query = sprintf("between(%s, %s)",x@name,paste(c(limits,limits),collapse=","))
-  A = build_attr_schema(x)
-  D = build_dim_schema(x,I=-i)
-  query = sprintf("redimension(%s, %s%s)",query,A,D)
+  query = sprintf("slice(%s, %s)",x@name,paste(paste(d,n,sep=","),collapse=","))
+# alternative method:
+#  query = sprintf("between(%s, %s)",x@name,paste(c(limits,limits),collapse=","))
+#  A = build_attr_schema(x)
+#  D = build_dim_schema(x,I=-i)
+#  query = sprintf("redimension(%s, %s%s)",query,A,D)
   .scidbeval(query,eval,depend=list(x))
 }
 

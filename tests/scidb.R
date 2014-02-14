@@ -120,5 +120,9 @@ if(nchar(host)>0)
   y = as.scidb(rnorm(5000))
   M = glm.fit(x, y)
 
+# slice
+  x = build("i+j+k",c(3,4,5))
+  check(slice(x,c("i","j"),c(2,3))[0][], 5)
+
 }
 gc()
