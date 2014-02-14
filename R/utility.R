@@ -634,6 +634,7 @@ iquery = function(query, `return`=FALSE,
        {
         sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
         result = GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE)
+        GET("/release_session",list(id=sessionid))
 # Handle escaped quotes
         result = gsub("\\\\'","''",result)
         result = gsub("\\\\\"","''",result)
@@ -642,7 +643,6 @@ iquery = function(query, `return`=FALSE,
                 read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)},
                 error=function(e){ warning(e);c()})
         close(val)
-        GET("/release_session",list(id=sessionid))
         chr = sapply(ret, function(x) "character" %in% class(x))
         if(any(chr))
         {
@@ -957,7 +957,7 @@ project(
 )",`return`=TRUE)
 }
 
-# Map scidbdf object column classes into R, adding an extra "integer" at the start for the index!
+# Map scidbdf object column classes into R, adding an extra integer at the start for the index!
 scidbdfcc = function(x)
 {
   c("integer",as.vector(unlist(lapply(.scidbdftypes[x@types],function(x) ifelse(is.null(x),NA,x)))))

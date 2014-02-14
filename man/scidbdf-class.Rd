@@ -33,7 +33,6 @@ Objects can be created by calls of the form \code{new("scidbdf", ...)},
     \item{\code{nullable}:}{Object of class \code{"logical"} Is the attribute nullable (TRUE/FALSE)? }
     \item{\code{schema}:}{Object of class \code{"character"} SciDB array schema.} 
     \item{\code{types}:}{Object of class \code{"character"} Vector of SciDB types for all the array attributes. }
-    \item{\code{colClasses}:}{Object of class \code{"character"} Optional vector of read.table-style column classes used to parse messages from SciDB. }
     \item{\code{gc}:}{Object of class \code{"environment"} An environment used to link the SciDB array to the R garbage collector. }
     \item{\code{.S3Class}:}{Object of class \code{"character"} ~~ }
   }

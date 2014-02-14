@@ -260,7 +260,6 @@ materialize = function(x, drop=FALSE)
   {
     stop("Unsupported data type. Try using the iquery function.")
   }
-  tval = vector(mode=type,length=1)
 
 # Set origin to zero and project. We need the zero origin here to reconstruct
 # array indices in R. We don't wrap subarray in sg here because there is no
