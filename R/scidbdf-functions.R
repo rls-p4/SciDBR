@@ -1,24 +1,32 @@
-#/*
-#**
-#* BEGIN_COPYRIGHT
-#*
-#* This file is part of SciDB.
-#* Copyright (C) 2008-2013 SciDB, Inc.
-#*
-#* SciDB is free software: you can redistribute it and/or modify
-#* it under the terms of the AFFERO GNU General Public License as published by
-#* the Free Software Foundation.
-#*
-#* SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
-#* INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
-#* NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
-#* the AFFERO GNU General Public License for the complete license terms.
-#*
-#* You should have received a copy of the AFFERO GNU General Public License
-#* along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
-#*
-#* END_COPYRIGHT
-#*/
+#
+#    _____      _ ____  ____
+#   / ___/_____(_) __ \/ __ )
+#   \__ \/ ___/ / / / / __  |
+#  ___/ / /__/ / /_/ / /_/ / 
+# /____/\___/_/_____/_____/  
+#
+#
+#
+# BEGIN_COPYRIGHT
+#
+# This file is part of SciDB.
+# Copyright (C) 2008-2014 SciDB, Inc.
+#
+# SciDB is free software: you can redistribute it and/or modify
+# it under the terms of the AFFERO GNU General Public License as published by
+# the Free Software Foundation.
+#
+# SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
+# INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
+# NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
+# the AFFERO GNU General Public License for the complete license terms.
+#
+# You should have received a copy of the AFFERO GNU General Public License
+# along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
+#
+# END_COPYRIGHT
+#
+
 # Element-wise operations
 Ops.scidbdf = function(e1,e2) {
   switch(.Generic,
@@ -100,12 +108,12 @@ dimnames.scidbdf = function(x)
   if(all(sapply(i,is.null)))
     if(iterative)
     {
-      ans = iquery(sprintf("%s",x@name),`return`=TRUE,iterative=TRUE,n=n,excludecol=1,colClasses=x@colClasses)
+      ans = iquery(sprintf("%s",x@name),`return`=TRUE,iterative=TRUE,n=n,excludecol=1,colClasses=scidbdfcc(x))
       return(ans)
     }
     else
     {
-      ans = iquery(sprintf("%s",x@name),`return`=TRUE,n=Inf, colClasses=x@colClasses)
+      ans = iquery(sprintf("%s",x@name),`return`=TRUE,n=Inf, colClasses=scidbdfcc(x))
       rownames(ans)= ans[,1]
       ans = ans[,-1,drop=FALSE]
       return(ans)

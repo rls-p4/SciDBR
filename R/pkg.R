@@ -1,4 +1,4 @@
-#/*
+#
 #    _____      _ ____  ____
 #   / ___/_____(_) __ \/ __ )
 #   \__ \/ ___/ / / / / __  |
@@ -6,26 +6,26 @@
 # /____/\___/_/_____/_____/  
 #
 #
-#**
-#* BEGIN_COPYRIGHT
-#*
-#* This file is part of SciDB.
-#* Copyright (C) 2008-2013 SciDB, Inc.
-#*
-#* SciDB is free software: you can redistribute it and/or modify
-#* it under the terms of the AFFERO GNU General Public License as published by
-#* the Free Software Foundation.
-#*
-#* SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
-#* INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
-#* NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
-#* the AFFERO GNU General Public License for the complete license terms.
-#*
-#* You should have received a copy of the AFFERO GNU General Public License
-#* along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
-#*
-#* END_COPYRIGHT
-#*/
+#
+# BEGIN_COPYRIGHT
+#
+# This file is part of SciDB.
+# Copyright (C) 2008-2014 SciDB, Inc.
+#
+# SciDB is free software: you can redistribute it and/or modify
+# it under the terms of the AFFERO GNU General Public License as published by
+# the Free Software Foundation.
+#
+# SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
+# INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
+# NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
+# the AFFERO GNU General Public License for the complete license terms.
+#
+# You should have received a copy of the AFFERO GNU General Public License
+# along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
+#
+# END_COPYRIGHT
+#
 
 .onLoad = function(libname,pkgname)
 {
@@ -59,6 +59,23 @@
   integer="int32",
   logical="bool",
   character="char"
+)
+
+# These types are used to infer dataframe column classes.
+.scidbdftypes = list(
+  double="double",
+  int64="double",
+  uint64="double",
+  uint32="double",
+  int32="integer",
+  int16="integer",
+  unit16="integer",
+  int8="integer",
+  uint8="integer",
+  bool="logical",
+  string="character",
+  char="character",
+  datetime="Date"
 )
 
 .typelen = list(
