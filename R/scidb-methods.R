@@ -139,6 +139,9 @@ setMethod("crossprod",signature(x="scidb", y="scidb"),
   valueClass="scidb"
 )
 
+setOldClass("na.locf")
+setGeneric("na.locf")
+setMethod("na.locf",signature(object="scidb"), na.locf_scidb)
 
 setMethod("tcrossprod",signature(x="scidb", y="scidb"),
   function(x,y)

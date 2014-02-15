@@ -55,6 +55,8 @@ setMethod('print', signature(x='scidbdf'),
     show(x)
   })
 
+setMethod("na.locf",signature(object="scidbdf"), na.locf_scidb)
+
 setMethod('show', 'scidbdf',
   function(object) {
     l = length(object@attributes)

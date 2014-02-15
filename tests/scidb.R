@@ -124,5 +124,8 @@ if(nchar(host)>0)
   x = build("i+j+k",c(3,4,5))
   check(slice(x,c("i","j"),c(2,3))[0][], 5)
 
+# na.locf
+  x = scidbeval(scidb("redimension(apply(build(<i:int64>[row=1:10,10,0],random()%10+1),j,random()%10+1,v,sin(row)),<v:double>[i=1:10,10,0,j=1:10,10,0])"))
+
 }
 gc()

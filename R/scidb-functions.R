@@ -28,7 +28,6 @@
 #
 
 # Various functions that support S3 methods for the SciDB class
-
 cbind.scidb = function(x)
 {
   if(length(dim(x))!=1) return(x)
