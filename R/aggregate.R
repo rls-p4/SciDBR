@@ -109,6 +109,7 @@
     FUN = paste(paste(fn,"(",setdiff(x@attributes,cb),")",sep=""),collapse=",")
   }
 
+# XXX Why limit this to the first `by` element?
   if(class(`by`[[1]]) %in% c("scidb","scidbdf"))
   {
 # We are grouping by attributes in another SciDB array `by`. We assume that

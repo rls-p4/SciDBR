@@ -8,6 +8,7 @@ importFrom("zoo", na.locf)
 
 # Functions
 export("scidb")
+export("dimensions")
 export("df2scidb")
 export("scidbeval")
 export("build")

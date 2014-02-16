@@ -44,6 +44,13 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
   .scidbeval(ans@name, `eval`=eval, name=name, gc=gc)
 }
 
+# Return a vector of dimension names of the SciDB object x. Equivalent to
+# x@D$name.
+dimensions = function(x)
+{
+  if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
+  x@D$name
+}
 
 # Create a new scidb reference to an existing SciDB array.
 # name (character): Name of the backing SciDB array
