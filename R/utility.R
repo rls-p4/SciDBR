@@ -52,6 +52,12 @@ dimensions = function(x)
   x@D$name
 }
 
+schema = function(x)
+{
+  if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
+  gsub(".*<","<",x@schema)
+}
+
 # Create a new scidb reference to an existing SciDB array.
 # name (character): Name of the backing SciDB array
 # attribute (character): Attribute in the backing SciDB array
