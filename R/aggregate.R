@@ -161,7 +161,7 @@
     {
 # Use index_lookup to factorize non-integer indices, creating new enumerated
 # attributes to sort by. It's probably not a great idea to have too many.
-      unpack = TRUE
+#      unpack = TRUE
       idx = which(nonint)
       oldatr = x@attributes
       for(j in idx)
