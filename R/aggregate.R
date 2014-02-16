@@ -103,7 +103,7 @@
   {
     M = match.call()
     fn = .scidbfun(FUN)
-    cb = unlist(by[lapply(by,is.character)]) # may be empty
+    cb = unlist(by[unlist(lapply(by,is.character))]) # may be empty
     if(is.null(fn))
       stop("Aggregate requires a valid SciDB aggregate function")
     FUN = paste(paste(fn,"(",setdiff(x@attributes,cb),")",sep=""),collapse=",")
