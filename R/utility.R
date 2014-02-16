@@ -63,7 +63,7 @@ scidb_sample.int = function(n, size=n, replace=FALSE, name="n")
 {
   dname = scidb:::make.unique_(name, "i")
   if(replace)
-    expr = sprintf("build(<%s:int64>[%s=1:%.0f,1000000,0], random() %% %.0f + 1)", name, dname, size, n)
+    expr = sprintf("build(<%s:int64>[%s=0:%.0f,1000000,0], random() %% %.0f + 1)", name, dname, size-1, n)
   else
     stop("replace=FALSE not yet supported")
   scidb:::.scidbeval(expr,`eval`=TRUE,gc=TRUE)
