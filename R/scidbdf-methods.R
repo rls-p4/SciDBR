@@ -67,42 +67,47 @@ setMethod('show', 'scidbdf',
 
 setMethod("aggregate", signature(x="scidbdf"), aggregate_scidb)
 
+scidbdf_grand = function(x, op)
+{
+  query = sprintf("aggregate(%s, %s(%s) as %s)", x@name, op, x@attributes[1], x@attributes[1])
+  iquery(query, `return`=TRUE)[,2]
+}
 
 # The following methods return data to R
 setMethod("sum", signature(x="scidbdf"),
 function(x)
 {
-  iquery(sprintf("sum(%s)",x@name),return=TRUE)[,2]
+  scidbdf_grand(x, "sum")
 })
 
 setMethod("mean", signature(x="scidbdf"),
 function(x)
 {
-  iquery(sprintf("avg(%s)",x@name),return=TRUE)[,2]
+  scidbdf_grand(x, "avg")
 })
 
 setMethod("min", signature(x="scidbdf"),
 function(x)
 {
-  iquery(sprintf("min(%s)",x@name),return=TRUE)[,2]
+  scidbdf_grand(x, "min")
 })
 
 setMethod("max", signature(x="scidbdf"),
 function(x)
 {
-  iquery(sprintf("max(%s)",x@name),return=TRUE)[,2]
+  scidbdf_grand(x, "max")
 })
 
 setMethod("sd", signature(x="scidbdf"),
 function(x)
 {
-  iquery(sprintf("stdev(%s)",x@name),return=TRUE)[,2]
+  scidbdf_grand(x, "stdev")
 })
 
 setMethod("var", signature(x="scidbdf"),
 function(x)
 {
-  iquery(sprintf("var(%s)",x@name),return=TRUE)[,2]
+  scidbdf_grand(x, "var")
 })
 
 log.scidbdf = function(x, base=exp(1))

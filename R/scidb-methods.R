@@ -164,54 +164,53 @@ setMethod("tcrossprod",signature(x="scidb", y="missing"),
 )
 
 
+scidb_grand = function(x, op)
+{
+  query = sprintf("aggregate(%s, %s(%s) as %s)", x@name, op, x@attribute, x@attribute)
+  iquery(query, `return`=TRUE)[,2]
+}
 
 # The remaining functions return data to R:
 setGeneric("sum")
 setMethod("sum", signature(x="scidb"),
 function(x)
 {
-  query = sprintf("aggregate(%s, sum(%s) as %s)", x@name, x@attribute, x@attribute)
-  iquery(query, `return`=TRUE)[,2]
+  scidb_grand(x, "sum")
 })
 
 setGeneric("mean")
 setMethod("mean", signature(x="scidb"),
 function(x)
 {
-  query = sprintf("aggregate(%s, avg(%s) as %s)", x@name, x@attribute, x@attribute)
-  iquery(query, `return`=TRUE)[,2]
+  scidb_grand(x, "avg")
 })
 
 setGeneric("min")
 setMethod("min", signature(x="scidb"),
 function(x)
 {
-  query = sprintf("aggregate(%s, min(%s) as %s)", x@name, x@attribute, x@attribute)
-  iquery(query, `return`=TRUE)[,2]
+  scidb_grand(x, "min")
 })
 
 setGeneric("max")
 setMethod("max", signature(x="scidb"),
 function(x)
 {
-  query = sprintf("aggregate(%s, max(%s) as %s)", x@name, x@attribute, x@attribute)
-  iquery(query, `return`=TRUE)[,2]
+  scidb_grand(x, "max")
 })
 
 setGeneric("sd")
 setMethod("sd", signature(x="scidb"),
 function(x)
 {
-  query = sprintf("aggregate(%s, sd(%s) as %s)", x@name, x@attribute, x@attribute)
-  iquery(query, `return`=TRUE)[,2]
+  scidb_grand(x, "stdev")
 })
 
 setGeneric("var")
 setMethod("var", signature(x="scidb"),
 function(x)
 {
-  query = sprintf("aggregate(%s, var(%s) as %s)", x@name, x@attribute, x@attribute)
-  iquery(query, `return`=TRUE)[,2]
+  scidb_grand(x, "var")
 })
 
 setGeneric("diag")
