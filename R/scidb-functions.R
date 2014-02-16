@@ -268,10 +268,12 @@ as.scidb = function(X,
 # XXX I couldn't get RCurl to work using the fileUpload(contents=x), with 'x'
 # a raw vector. But we need RCurl to support SSL. As a work-around, we save
 # the object. This extra local copy sucks and must be improved !!! XXX
+# XXX The bug is in RCurl's curl.c addFormElement function.
+# XXX
   fn = tempfile()
   bytes = writeBin(as.vector(t(X)),con=fn)
   url = URI("upload_file",list(id=session))
-  ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
+  ans = scidb_postForm(uri = url, uploadedfile = fileUpload(filename=fn),
            .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0))
   unlink(fn)
   ans = ans[[1]]
