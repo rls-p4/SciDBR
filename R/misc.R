@@ -1,4 +1,4 @@
-na.locf_scidb = function(object, along=object@D$name[1])
+na.locf_scidb = function(object, along=object@D$name[1],`eval`=FALSE)
 {
   i = which(object@D$name == along)
   if(length(along)!=1 || length(i)!=1) stop("Please specify exactly one dimension to run along.")
@@ -27,7 +27,7 @@ na.locf_scidb = function(object, along=object@D$name[1])
 # Run the na.locf
   impute = paste(paste("last_value(",object@attributes,") as ", object@attributes ,sep=""),collapse=",")
   query = sprintf("cumulate(%s, %s, %s)", query, impute, along)
-  .scidbeval(query,depend=list(object),`eval`=FALSE,gc=TRUE)
+  .scidbeval(query,depend=list(object),`eval`=eval,gc=TRUE)
 }
 
 

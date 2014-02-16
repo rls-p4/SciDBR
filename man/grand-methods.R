@@ -1,4 +1,4 @@
-\name{misc-methods}
+\name{grand-methods}
 \docType{methods}
 \alias{sum}
 \alias{sum,scidb-method}
