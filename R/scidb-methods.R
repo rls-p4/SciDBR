@@ -170,42 +170,48 @@ setGeneric("sum")
 setMethod("sum", signature(x="scidb"),
 function(x)
 {
-  iquery(sprintf("sum(%s)",x@name),return=TRUE)[,2]
+  query = sprintf("aggregate(%s, sum(%s) as %s)", x@name, x@attribute, x@attribute)
+  iquery(query, `return`=TRUE)[,2]
 })
 
 setGeneric("mean")
 setMethod("mean", signature(x="scidb"),
 function(x)
 {
-  iquery(sprintf("avg(%s)",x@name),return=TRUE)[,2]
+  query = sprintf("aggregate(%s, avg(%s) as %s)", x@name, x@attribute, x@attribute)
+  iquery(query, `return`=TRUE)[,2]
 })
 
 setGeneric("min")
 setMethod("min", signature(x="scidb"),
 function(x)
 {
-  iquery(sprintf("min(%s)",x@name),return=TRUE)[,2]
+  query = sprintf("aggregate(%s, min(%s) as %s)", x@name, x@attribute, x@attribute)
+  iquery(query, `return`=TRUE)[,2]
 })
 
 setGeneric("max")
 setMethod("max", signature(x="scidb"),
 function(x)
 {
-  iquery(sprintf("max(%s)",x@name),return=TRUE)[,2]
+  query = sprintf("aggregate(%s, max(%s) as %s)", x@name, x@attribute, x@attribute)
+  iquery(query, `return`=TRUE)[,2]
 })
 
 setGeneric("sd")
 setMethod("sd", signature(x="scidb"),
 function(x)
 {
-  iquery(sprintf("stdev(%s)",x@name),return=TRUE)[,2]
+  query = sprintf("aggregate(%s, sd(%s) as %s)", x@name, x@attribute, x@attribute)
+  iquery(query, `return`=TRUE)[,2]
 })
 
 setGeneric("var")
 setMethod("var", signature(x="scidb"),
 function(x)
 {
-  iquery(sprintf("var(%s)",x@name),return=TRUE)[,2]
+  query = sprintf("aggregate(%s, var(%s) as %s)", x@name, x@attribute, x@attribute)
+  iquery(query, `return`=TRUE)[,2]
 })
 
 setGeneric("diag")
