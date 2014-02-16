@@ -64,6 +64,18 @@
   .scidbeval(query,eval,depend=list(x))
 }
 
+`dimension_rename` = function(x, old, `new`, `eval`=FALSE)
+{
+  if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
+  dnames = x@D$name
+  idx = which(dnames %in% old)
+  dnames[idx] = `new`
+  if(length(idx)!=1) stop("Invalid old dimension name specified")
+  query = sprintf("cast(%s, %s%s)", x@name, build_attr_schema(x),
+             build_dim_schema(x, newnames=dnames))
+  .scidbeval(query,eval,depend=list(x))
+}
+
 `slice` = function(x, d, n, `eval`=FALSE)
 {
   N = length(x@D$name)

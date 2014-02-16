@@ -32,6 +32,7 @@ export("bind")
 export("rename")
 export("count")
 export("attribute_rename")
+export("dimension_rename")
 export("index_lookup")
 
 # S4 methods
