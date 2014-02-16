@@ -93,20 +93,21 @@
 `aggregate_scidb` = function(x,by,FUN,`eval`=FALSE,window,variable_window,unpack)
 {
   if(missing(unpack)) unpack=TRUE
-# Check for common function names and map to SciDB expressions
-  if(is.function(FUN))
-  {
-    M = match.call()
-    fn = .scidbfun(FUN)
-    if(is.null(fn))
-      stop("Apply requires a valid SciDB aggregate function")
-    FUN = paste(paste(fn,"(",x@attributes,")",sep=""),collapse=",")
-  }
   if(missing(`by`))
   {
     `by`=""
   }
   if(!is.list(`by`)) `by`=list(`by`)
+# Check for common function names and map to SciDB expressions
+  if(is.function(FUN))
+  {
+    M = match.call()
+    fn = .scidbfun(FUN)
+    cb = unlist(by[lapply(by,is.character)]) # may be empty
+    if(is.null(fn))
+      stop("Aggregate requires a valid SciDB aggregate function")
+    FUN = paste(paste(fn,"(",setdiff(x@attributes,cb),")",sep=""),collapse=",")
+  }
 
   if(class(`by`[[1]]) %in% c("scidb","scidbdf"))
   {

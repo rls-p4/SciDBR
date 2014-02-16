@@ -56,6 +56,7 @@ setMethod('print', signature(x='scidbdf'),
   })
 
 setMethod("na.locf",signature(object="scidbdf"), na.locf_scidb)
+setMethod("hist",signature(x="scidbdf"), hist_scidb)
 
 setMethod('show', 'scidbdf',
   function(object) {

@@ -143,6 +143,10 @@ setOldClass("na.locf")
 setGeneric("na.locf")
 setMethod("na.locf",signature(object="scidb"), na.locf_scidb)
 
+setOldClass("hist")
+setGeneric("hist")
+setMethod("hist",signature(x="scidb"), hist_scidb)
+
 setMethod("tcrossprod",signature(x="scidb", y="scidb"),
   function(x,y)
   {
