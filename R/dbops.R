@@ -132,6 +132,7 @@
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
 # NB SciDB NULL is not allowed along a coordinate axis prior to SciDB 12.11,
 # which could lead to a run time error here.
+  if((class(s) %in% c("scidb","scidbdf"))) s = schema(s)
   query = sprintf("redimension(%s,%s)",x@name,s)
   .scidbeval(query,eval,depend=list(x))
 }
