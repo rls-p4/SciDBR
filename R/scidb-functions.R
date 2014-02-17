@@ -247,7 +247,7 @@ as.scidb = function(X,
     chunkSize = min(chunkSize[[1]],length(X))
     X = as.matrix(X)
     schema = sprintf(
-      "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
+      "< val : %s null>  [i=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
       nrow(X)-1+start[[1]], min(nrow(X),chunkSize), overlap[[1]])
     load_schema = schema
   } else {
@@ -256,7 +256,7 @@ as.scidb = function(X,
       "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
       nrow(X)-1+start[[1]], chunkSize[[1]], overlap[[1]], start[[2]], ncol(X)-1+start[[2]],
       chunkSize[[2]], overlap[[2]])
-    load_schema = sprintf("<val:%s>[row=1:%.0f,1000000,0]",type,length(X))
+    load_schema = sprintf("<val:%s null>[row=1:%.0f,1000000,0]",type,length(X))
   }
   if(!is.matrix(X)) stop ("X must be a matrix or a vector")
 
@@ -271,9 +271,9 @@ as.scidb = function(X,
 # XXX The bug is in RCurl's curl.c addFormElement function.
 # XXX
   fn = tempfile()
-  bytes = writeBin(as.vector(t(X)),con=fn)
+  bytes = writeBin(.Call("scidb_raw",as.vector(t(X)),PACKAGE="scidb"),con=fn)
   url = URI("upload_file",list(id=session))
-  ans = scidb_postForm(uri = url, uploadedfile = fileUpload(filename=fn),
+  ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
            .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0))
   unlink(fn)
   ans = ans[[1]]
@@ -281,7 +281,7 @@ as.scidb = function(X,
   ans = gsub("\n","",ans)
 
 # Load query
-  query = sprintf("store(reshape(input(%s,'%s', 0, '(%s)'),%s),%s)",load_schema,ans,type,schema,name)
+  query = sprintf("store(reshape(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
   iquery(query)
   ans = scidb(name,gc=gc)
   ans

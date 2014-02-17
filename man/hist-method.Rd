@@ -22,6 +22,7 @@ returned.
   \item{materialize}{logical; if \code{TRUE}, the histogram results are materialized into R vectors and returned as a standard object of class \code{histogram}. Otherwise the results are returned as SciDB objects.}
   \item{eval}{Optional, logical; If \code{TRUE}, execute the query and store the reult array. Otherwise defer evaluation.}
   \item{plot}{Optional, logical; If \code{TRUE}, plot result before returning.}
+  \item{...}{Optional; additional arguments for plotting.}
 }
 \details{
 This histogram function only supports equidistant breaks. If 'right = TRUE'

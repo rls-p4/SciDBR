@@ -102,6 +102,7 @@
 `substitute` = function(x, value, `attribute`, `eval`=FALSE)
 {
   if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
+  if(!any(x@nullable)) return(x)
   if(missing(attribute))
   {
     attribute = ""

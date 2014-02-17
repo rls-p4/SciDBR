@@ -204,13 +204,13 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
       } else if(is.character(i[[j]]))
       {
 # Case 2: character labels, consult a lookup array if possible
-         lkup = x@gc$dimnames[[j]]
+         lkup = substitute(x@gc$dimnames[[j]])
          tmp = data.frame(i[[j]], stringsAsFactors=FALSE)
          names(tmp) = N
          tmp_1 = as.scidb(tmp, types="string", dimlabel=dimlabel,
                         start=x@D$start[[j]],
                         chunkSize=x@D$chunk_interval[[j]],
-                        rowOverlap=x@D$chunk_overlap[[j]])
+                        rowOverlap=x@D$chunk_overlap[[j]], nullable=FALSE)
         i[[j]] = attribute_rename(project(index_lookup(tmp_1, lkup, new_attr='_cazart'),"_cazart"),"_cazart",N)
         dependencies = c(dependencies, tmp_1)
         swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]))))

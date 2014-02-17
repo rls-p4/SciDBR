@@ -60,12 +60,12 @@ if(nchar(host)>0)
 
 # Aggregation
   check( sweep(B,MARGIN=2,apply(B,2,mean)),
-         sweep(Y,MARGIN=2,apply(Y,2,"avg(val)"))[])
+         sweep(Y,MARGIN=2,apply(Y,2,mean))[])
 
 # Join
   check(project(bind(merge(Y,diag(Y),by.x="i",by.y="i_1"),"v","val*val_1"),"v")[], diag(B)*B)
 
-# Sparse, count
+# Sparse upload, count
   S = Matrix::sparseMatrix(sample(100,200,replace=TRUE),sample(100,200,replace=TRUE),x=runif(200))
   Z = as.scidb(S)
   check(count(Z), Matrix::nnzero(S))

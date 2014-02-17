@@ -495,7 +495,7 @@ df2scidb = function(X,
   if(!is.data.frame(X)) stop("X must be a data frame")
   if(missing(start)) start=1
   if(missing(gc)) gc=FALSE
-  if(missing(nullable)) nullable = as.vector(unlist(lapply(X,function(x) any(is.na(x)))))
+  if(missing(nullable)) nullable = TRUE
   if(length(nullable)==1) nullable = rep(nullable, ncol(X))
   if(length(nullable)!=ncol(X)) stop ("nullable must be either of length 1 or ncol(X)")
   if(!is.null(types) && length(types)!=ncol(X)) stop("types must match the number of columns of X")
@@ -590,10 +590,10 @@ df2scidb = function(X,
   }
   if(type!="double") stop("Sorry, the package only supports double-precision sparse matrices right now.")
   schema = sprintf(
-      "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
+      "< val : %s null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
       nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],
       min(ncol(X),colChunkSize), colOverlap)
-  schema1d = sprintf("<i:int64, j:int64, val : %s>[idx=0:*,100000,0]",type)
+  schema1d = sprintf("<i:int64 null, j:int64 null, val : %s null>[idx=0:*,100000,0]",type)
 # Obtain a session from shim for the upload process
   session = getSession()
   if(length(session)<1) stop("SciDB http session error")
@@ -606,9 +606,10 @@ df2scidb = function(X,
 # Upload the data
 # XXX I couldn't get RCurl to work using the fileUpload(contents=x), with 'x'
 # a raw vector. But we need RCurl to support SSL. As a work-around, we save
-# the object. This copy sucks and must be fixed.
+# the object. This copy sucks and must be fixed. XXX problem is in RCurl, see
+# scidb-functions.R.
   fn = tempfile()
-  bytes = writeBin(as.vector(t(matrix(c(X@i + start[[1]],j + start[[2]], X@x),length(X@x)))),con=fn)
+  bytes = writeBin(.Call("scidb_raw",as.vector(t(matrix(c(X@i + start[[1]],j + start[[2]], X@x),length(X@x)))),PACKAGE="scidb"),con=fn)
   url = URI("/upload_file",list(id=session))
   ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
                  .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0))
@@ -617,7 +618,7 @@ df2scidb = function(X,
   ans = gsub("\r","",ans)
   ans = gsub("\n","",ans)
 
-  query = sprintf("store(redimension(input(%s,'%s',0,'(double,double,double)'),%s),%s)",schema1d, ans, schema, name)
+  query = sprintf("store(redimension(input(%s,'%s',0,'(double null,double null, double null)'),%s),%s)",schema1d, ans, schema, name)
   iquery(query)
   scidb(name,gc=gc)
 }

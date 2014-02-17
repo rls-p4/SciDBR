@@ -171,6 +171,7 @@ scidbmultiply = function(e1,e2)
   if(inherits(e1,"scidb"))
   {
 #    e1 = scidbeval(e1,gc=TRUE)
+    e1 = make_nullable(e1)
     e1a = e1@attribute
     depend = c(depend, e1)
     dnames = c(dnames, e1@D$name)
@@ -178,6 +179,7 @@ scidbmultiply = function(e1,e2)
   if(inherits(e2,"scidb"))
   {
 #    e2 = scidbeval(e2,gc=TRUE)
+    e2 = make_nullable(e2)
     e2a = e2@attribute
     depend = c(depend, e2)
     dnames = c(dnames, e2@D$name)
@@ -205,8 +207,8 @@ scidbmultiply = function(e1,e2)
   if(l==2 && l1==2)
   {
     schema = sprintf(
-       "<%s:%s>[%s=%.0f:%.0f,%.0f,%.0f,%s=%.0f:%.0f,%.0f,%.0f]",
-       e2a, e2@type[[1]],
+       "%s[%s=%.0f:%.0f,%.0f,%.0f,%s=%.0f:%.0f,%.0f,%.0f]",
+       build_attr_schema(e2,I=1),
        e2@D$name[[1]], 0, e2@D$length[[1]] - 1,
                           e1@D$chunk_interval[[1]], e1@D$chunk_overlap[[1]],
        e2@D$name[[2]], 0, e2@D$length[[2]] - 1,
@@ -218,11 +220,11 @@ scidbmultiply = function(e1,e2)
     {
       if(is.sparse(e1))
       {
-        q1 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q1,q2,e1@type)
+        q1 = sprintf("merge(%s,cast(project(apply(%s,__zero__,%s(0)),__zero__),<__zero__:%s null>%s))",q1,q2,e1@type,e1@type, build_dim_schema(e1))
       }
       if(is.sparse(e2))
       {
-        q2 = sprintf("merge(%s,project(apply(%s,__zero__,%s(0)),__zero__))",q2,q1,e2@type)
+        q2 = sprintf("merge(%s,cast(project(apply(%s,__zero__,%s(0)),__zero__),<__zero__:%s null>%s))",q2,q1,e2@type,e2@type, build_dim_schema(e2))
       }
     }
   }

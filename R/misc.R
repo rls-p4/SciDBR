@@ -40,8 +40,8 @@ hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `eval`=FALSE,
   breaks = as.integer(breaks)
   if(breaks < 1) stop("Too few breaks")
 # name of binning coordinates in output array:
-  d = scidb:::make.unique_(c(a,x@D$name), "bin")
-  M = scidb:::.scidbeval(sprintf("aggregate(%s, min(%s) as min, max(%s) as max)",x@name,a,a),`eval`=TRUE)
+  d = make.unique_(c(a,x@D$name), "bin")
+  M = .scidbeval(sprintf("aggregate(%s, min(%s) as min, max(%s) as max)",x@name,a,a),`eval`=TRUE)
   FILL = sprintf("slice(cross_join(build(<counts: uint64 null>[%s=0:%.0f,1000000,0],0),%s),i,0)", d, breaks,M@name)
   if(`right`)
   {
@@ -53,10 +53,10 @@ hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `eval`=FALSE,
   if(!materialize)
   {
 # Return a SciDB array that represents the histogram breaks and counts
-    return(scidb:::.scidbeval(query,depend=list(x,M),`eval`=`eval`,gc=TRUE,`data.frame`=TRUE))
+    return(.scidbeval(query,depend=list(x,M),`eval`=`eval`,gc=TRUE,`data.frame`=TRUE))
   }
 # Return a standard histogram object
-  ans = as.list(scidb:::.scidbeval(query,depend=list(x,M),`eval`=`eval`,gc=TRUE,`data.frame`=TRUE)[])
+  ans = as.list(.scidbeval(query,depend=list(x,M),`eval`=`eval`,gc=TRUE,`data.frame`=TRUE)[])
 # Cull the trailing zero bin to correspond to R's output
   if(`right`) ans$counts = ans$counts[-1]
   else ans$counts = ans$counts[-length(ans$counts)]

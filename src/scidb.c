@@ -39,6 +39,9 @@
 
 #define LINESIZE 4096
 
+#define NOT_MISSING 0xFF
+#define MISSING 0x00
+
 typedef struct
 {
   char *s;
@@ -241,7 +244,7 @@ scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE, SEXP INT64
             memcpy(&nx, raw, sizeof(char));  raw++;
           }
           memcpy(&x, raw, sizeof(double)); raw+=sizeof(double);
-          if((int)nx != 0)
+          if(nx == NOT_MISSING)
           {
             if(i64==1)
             {
@@ -267,7 +270,7 @@ scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE, SEXP INT64
           }
           memset(xc,0,2);
           memcpy(&xc, raw, sizeof(char)); raw+=sizeof(char);
-          if((int)nx != 0) SET_STRING_ELT (A, j, mkChar (xc));
+          if(nx == NOT_MISSING) SET_STRING_ELT (A, j, mkChar (xc));
         }
       break;
     case LGLSXP:
@@ -282,7 +285,7 @@ scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE, SEXP INT64
             memcpy(&nx, raw, sizeof(char));  raw++;
           }
           memcpy(&a, raw, sizeof(char)); raw+=sizeof(char);
-          if((int)nx != 0) LOGICAL (A)[j] = (int)a;
+          if(nx == NOT_MISSING) LOGICAL (A)[j] = (int)a;
         }
       break;
     case INTSXP:
@@ -297,7 +300,7 @@ scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE, SEXP INT64
             memcpy(&nx, raw, sizeof(char));  raw++;
           }
           memcpy(&xi, raw, sizeof(int)); raw+=sizeof(int);
-          if((int) nx != 0) INTEGER (A)[j] = xi;
+          if( nx == NOT_MISSING) INTEGER (A)[j] = xi;
         }
       break;
     default:
@@ -307,5 +310,92 @@ scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE, SEXP INT64
   SET_VECTOR_ELT(ans, 0, A);
   SET_VECTOR_ELT(ans, 1, I);
   UNPROTECT (3);
+  return ans;
+}
+
+/* Convert basic R vectors into SciDB nullable types, translating R
+ * missing values into SciDB missing values.
+ */
+SEXP
+scidb_raw (SEXP A)
+{
+  SEXP ans;
+  char *buf;
+  char c;
+  R_xlen_t j, len = XLENGTH(A);
+  const char not_missing = NOT_MISSING;
+  const char missing = MISSING;
+  switch (TYPEOF (A))
+    {
+    case REALSXP:
+      PROTECT(ans = allocVector(RAWSXP, len*(sizeof(double) + 1)));
+      buf = (char *)RAW(ans);
+      if(!buf) error ("Not enough memory.");
+      for(j=0;j<len;++j)
+      {
+        if(!ISNA(REAL(A)[j]))
+        {
+          memcpy(buf, &not_missing, 1); buf++;
+          memcpy(buf, &REAL(A)[j], sizeof(double)); buf+=sizeof(double);
+        } else
+        {
+          memcpy(buf, &missing, 1); buf++;
+          buf+=sizeof(double);
+        }
+      }
+      break;
+    case INTSXP:
+      PROTECT(ans = allocVector(RAWSXP, len*(sizeof(int) + 1)));
+      buf = (char *)RAW(ans);
+      if(!buf) error ("Not enough memory.");
+      for(j=0;j<len;++j)
+      {
+        if(INTEGER(A)[j] != R_NaInt)
+        {
+          memcpy(buf, &not_missing, 1); buf++;
+          memcpy(buf, &INTEGER(A)[j], sizeof(int)); buf+=sizeof(int);
+        } else
+        {
+          memcpy(buf, &missing, 1); buf++;
+          buf+=sizeof(int);
+        }
+      }
+      break;
+    case LGLSXP:
+      PROTECT(ans = allocVector(RAWSXP, len*(sizeof(char) + 1)));
+      buf = (char *)RAW(ans);
+      if(!buf) error ("Not enough memory.");
+      for(j=0;j<len;++j)
+      {
+        if(LOGICAL(A)[j] != NA_LOGICAL)
+        {
+          memcpy(buf, &not_missing, 1); buf++;
+          memcpy(buf, &LOGICAL(A)[j], sizeof(char)); buf++;
+        } else
+        {
+          memcpy(buf, &missing, 1); buf+=2;
+        }
+      }
+      break;
+    case STRSXP:
+      PROTECT(ans = allocVector(RAWSXP, len*(sizeof(char) + 1)));
+      buf = (char *)RAW(ans);
+      if(!buf) error ("Not enough memory.");
+      for(j=0;j<len;++j)
+      {
+        if(STRING_ELT(A,j) != NA_STRING)
+        {
+          memcpy(buf, &not_missing, 1); buf++;
+          memcpy(buf, CHAR(STRING_ELT(A,j)), sizeof(char)); buf++;
+        } else
+        {
+          memcpy(buf, &missing, 1); buf+=2;
+        }
+      }
+      break;
+    default:
+      break;
+    }
+  UNPROTECT(1);
   return ans;
 }
