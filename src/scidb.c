@@ -39,8 +39,8 @@
 
 #define LINESIZE 4096
 
-#define NOT_MISSING 0xFF
-#define MISSING 0x00
+#define NOT_MISSING 255
+#define MISSING 0
 
 typedef struct
 {
@@ -215,7 +215,7 @@ scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE, SEXP INT64
   char xc[2];
   int xi;
   char a;
-  char nx;
+  unsigned char nx;
   int nullable = INTEGER(NULLABLE)[0];
   int i64  = INTEGER(INT64)[0];
   char *raw = (char *)RAW(DATA);
@@ -323,7 +323,7 @@ scidb_raw (SEXP A)
   char *buf;
   char c;
   R_xlen_t j, len = XLENGTH(A);
-  const char not_missing = NOT_MISSING;
+  const unsigned char not_missing = NOT_MISSING;
   const char missing = MISSING;
   switch (TYPEOF (A))
     {
