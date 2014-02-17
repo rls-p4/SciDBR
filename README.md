@@ -29,6 +29,12 @@ https://github.com/Paradigm4/SciDBR/wiki/_pages
 New features
 ===
 
+## Better handling of missing values
+
+The array-like and dataframe-like classes now handle missing values in a
+uniform way. All SciDB missing codes are mapped to R NA values and R NA values
+are mapped to SciDB missing code zero.
+
 ## Windowed and moving-window aggregates
 
 Multidimensional windowed and moving-window aggregates are now supported with
