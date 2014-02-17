@@ -8,7 +8,6 @@ library('devtools')
 install_github("SciDBR","paradigm4",quick=TRUE)
 ```
 
-
 The SciDB R package requires installation of a simple open-source HTTP network
 service called on the computer that SciDB is installed on. This service only
 needs to be installed on the SciDB machine, not on client computers that
