@@ -652,16 +652,13 @@ iquery = function(query, `return`=FALSE,
 # Handle escaped quotes
         result = gsub("\\\\'","''",result)
         result = gsub("\\\\\"","''",result)
+# Map SciDB missing (aka null) to NA
+        result = gsub("null","NA",result)
         val = textConnection(result)
         ret = tryCatch({
                 read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)},
                 error=function(e){ warning(e);c()})
         close(val)
-        chr = sapply(ret, function(x) "character" %in% class(x))
-        if(any(chr))
-        {
-          for(j in which(chr)) ret[ret[,j]=="null",j] = NA
-        }
         ret
        }, error = function(e)
            {
