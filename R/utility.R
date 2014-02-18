@@ -917,6 +917,12 @@ is.sparse = function(x)
   ans
 }
 
+# Check for scidb missing flag
+is.nullable = function(x)
+{
+  any(x@nullable)
+}
+
 # Returns TRUE if version string x is greater than or equal to than version y
 compare_versions = function(x,y)
 {

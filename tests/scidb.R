@@ -70,6 +70,9 @@ if(nchar(host)>0)
   Z = as.scidb(S)
   check(count(Z), Matrix::nnzero(S))
 
+# spgemm
+  x = crossprod(Z)
+
 # Misc
   z = atan(tan(abs(acos(cos(asin(sin(Z)))))))
   s = atan(tan(abs(acos(cos(asin(sin(S)))))))

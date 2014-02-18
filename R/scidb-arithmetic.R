@@ -311,8 +311,8 @@ scidbmultiply = function(e1,e2)
 
 tsvd = function(x,nu,tol=0.0001,maxit=20)
 {
-  m = ceiling(nrow(x)/1e6)
-  n = ceiling(ncol(x)/1e6)
+  m = ceiling(1e6/nrow(x))
+  n = ceiling(1e6/ncol(x))
   schema = sprintf("[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0]",
                      x@D$name[1], nrow(x)-1, m,
                      x@D$name[2], ncol(x)-1, ncol(x))
