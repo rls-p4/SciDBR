@@ -409,7 +409,7 @@ diff.scidb = function(x, lag=1, ...)
 {
   y = lag(x,lag)
   n = make.unique_(c(x@attributes,y@attributes),"diff")
-  z = merge(y,x,by=x@D$name[1],all=FALSE)
+  z = merge(y,x,by=x@D$name,all=FALSE)
   expr = paste(z@attributes,collapse=" - ")
   project(bind(z, n, expr), n)
 }
