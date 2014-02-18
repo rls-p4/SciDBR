@@ -351,9 +351,9 @@ svd_scidb = function(x, nu=min(dim(x)), nv=nu)
     iquery(sprintf("store(gesvd(repart(%s,%s),'values'),%s)",x@name,schema,d))
     iquery(sprintf("store(transpose(gesvd(repart(%s,%s),'right')),%s)",x@name,schema,v))
     ans = list(u=scidb(u,gc=TRUE),d=scidb(d,gc=TRUE),v=scidb(v,gc=TRUE))
-    attr(ans$u,"sparse") = TRUE
-    attr(ans$d,"sparse") = TRUE
-    attr(ans$v,"sparse") = TRUE
+    attr(ans$u,"sparse") = FALSE
+    attr(ans$d,"sparse") = FALSE
+    attr(ans$v,"sparse") = FALSE
     return(ans)
   }
   warning("Using the IRLBA truncated SVD algorithm")
