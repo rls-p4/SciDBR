@@ -277,7 +277,8 @@ scidbmultiply = function(e1,e2)
 
 # Very basic comparisons. See also filter.
 # e1: A scidb array
-# e2: A scalar or a scidb array. If a scidb array, the return .joincompare(e1,e2,op) (q.v.)
+# e2: A scalar or a scidb array. If a scidb array, the return
+# .joincompare(e1,e2,op) (q.v.)
 # op: A comparison infix operator character
 #
 # Return a scidb object
@@ -290,6 +291,8 @@ scidbmultiply = function(e1,e2)
 #  type = names(.scidbtypes[.scidbtypes==e1@type])
 #  if(length(type)<1) stop("Unsupported data type.")
   op = gsub("==","=",op,perl=TRUE)
+# Automatically quote characters
+  if(is.character(e2)) e2 = sprintf("'%s'",e2)
   q1 = paste(paste(e1@attributes,op,e2),collapse=" and ")
 # Traditional R comparisons return an array of the same shape with a true/false
 # value.
