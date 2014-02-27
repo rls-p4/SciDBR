@@ -80,6 +80,12 @@ function(x)
   scidbdf_grand(x, "sum")
 })
 
+setMethod("median", signature(x="scidbdf"),
+function(x)
+{
+  scidbdf_grand(x, "median")
+})
+
 setMethod("mean", signature(x="scidbdf"),
 function(x)
 {
