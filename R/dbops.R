@@ -168,7 +168,7 @@
 # Special case:
   if(is.scidb(dim) || is.scidbdf(dim))
   {
-    schema = sprintf("%s%s",build_attr_schema(dim,I=1),build_dim_schem(dim))
+    schema = sprintf("%s%s",build_attr_schema(dim,I=1),build_dim_schema(dim))
     query = sprintf("build(%s,%s)",schema,data)
     ans = .scidbeval(query,eval)
 # We know that the output of build is not sparse
