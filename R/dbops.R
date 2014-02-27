@@ -140,11 +140,22 @@
   .scidbeval(query,eval,depend=list(x))
 }
 
-`redimension` = function(x, s, `eval`=FALSE)
+# Either supply s or dim. dim is a list of new dimensions made up
+# from the attributes and existing dimensions. Reduce is a scidb
+# aggregation expression.
+`redimension` = function(x, s, dim, reduce, `eval`=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
 # NB SciDB NULL is not allowed along a coordinate axis prior to SciDB 12.11,
 # which could lead to a run time error here.
+  if(missing(s)) s = NULL
+  if(missing(dim)) dim = NULL
+  if(missing(reduce))
+  {
+    reduce =  ""
+  } else
+  {
+  }
   if((class(s) %in% c("scidb","scidbdf"))) s = schema(s)
   query = sprintf("redimension(%s,%s)",x@name,s)
   .scidbeval(query,eval,depend=list(x))
@@ -154,6 +165,16 @@
 `build` = function(data, dim, names, type="double",
                  start, name, chunksize, overlap, gc=TRUE, `eval`=FALSE)
 {
+# Special case:
+  if(is.scidb(dim) || is.scidbdf(dim))
+  {
+    schema = sprintf("%s%s",build_attr_schema(dim,I=1),build_dim_schem(dim))
+    query = sprintf("build(%s,%s)",schema,data)
+    ans = .scidbeval(query,eval)
+# We know that the output of build is not sparse
+    attr(ans,"sparse") = FALSE
+    return(ans)
+  }
   if(missing(start)) start = rep(0,length(dim))
   if(missing(overlap)) overlap = rep(0,length(dim))
   if(missing(chunksize))
