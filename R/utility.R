@@ -225,7 +225,9 @@ scidb_from_schemastring = function(s,expr=character(), `data.frame`)
 }
 
 # store the connection information and obtain a unique ID
-scidbconnect = function(host='localhost', port=8080L, username, password)
+scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
+                        port=options("scidb.default_shim_port")[[1]],
+                        username, password)
 {
   scidbdisconnect()
   assign("host",host, envir=.scidbenv)
