@@ -309,7 +309,7 @@ materialize = function(x, drop=FALSE)
   stopifnot(nelem==as.integer(nelem))
   A = tryCatch(
     {
-      .Call("scidbparse",BUF,ndim,as.integer(nelem),type,N,i64,PACKAGE="scidb")
+      .Call("scidbparse",BUF,ndim,as.integer(nelem),type,as.integer(nl),i64,PACKAGE="scidb")
     },
     error = function(e){stop(e)})
 

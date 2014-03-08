@@ -140,6 +140,7 @@
   .scidbeval(query,eval,depend=list(x))
 }
 
+# SciDB redimension wrapper
 # Either supply s or dim. dim is a list of new dimensions made up
 # from the attributes and existing dimensions. Reduce is a scidb
 # aggregation expression.
