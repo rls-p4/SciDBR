@@ -66,7 +66,7 @@ schema = function(x)
 #     garbage collected? Default is FALSE.
 # data.frame (logical, optional): If true, return a data.frame-like object.
 #   Otherwise an array.
-`scidb` = function(name, attribute, gc, `data.frame`)
+scidb = function(name, attribute, gc, `data.frame`)
 {
   if(missing(name)) stop("array or expression must be specified")
   if(missing(gc)) gc=FALSE
@@ -75,7 +75,7 @@ schema = function(x)
     return(.scidbeval(name@name, eval=FALSE, attribute=attribute, gc=gc, `data.frame`=`data.frame`, depend=list(name)))
   }
   query = sprintf("show('%s as array','afl')",gsub("'","\\\\'",name,perl=TRUE))
-  schema = gsub("^.*<","<",iquery(query,`return`=1)$schema)
+  schema = gsub("^.*<","<",iquery(query,`return`=1)$schema, perl=TRUE)
   obj = scidb_from_schemastring(schema, name, `data.frame`)
   if(!missing(attribute))
   {
@@ -123,7 +123,8 @@ schema = function(x)
 # A `scidb` or `scidbdf` array object.
 #
 # NOTE
-# AFL only in SciDB expressions--AQL is not supported.
+# SciDB versions up to 13.12 only support AFL here. As of SciDB version
+# 14.3, expression can be AFL or AQL.
 `.scidbeval` = function(expr,eval,name,gc=TRUE, depend, attribute, `data.frame`)
 {
   ans = c()
@@ -197,7 +198,7 @@ scidb_from_schemastring = function(s,expr=character(), `data.frame`)
     st = grep("string",ctypes)
     if(length(st>0)) cc[st] = "character"
     return(new("scidbdf",
-                schema=gsub("^.*<","<",s),
+                schema=gsub("^.*<","<",s,perl=TRUE),
                 name=expr,
                 attributes=attributes,
                 types=types,
@@ -211,7 +212,7 @@ scidb_from_schemastring = function(s,expr=character(), `data.frame`)
 
   new("scidb",
       name=expr,
-      schema=gsub("^.*<","<",s),
+      schema=gsub("^.*<","<",s,perl=TRUE),
       attribute=attribute,
       type=type,
       attributes=attributes,
@@ -872,19 +873,6 @@ iqiter = function (con, n = 1, excludecol, ...)
   S = paste(S,collapse=",")
   if(bracket) S = sprintf("[%s]",S)
   S
-}
-
-# SciDB rename wrapper
-# Note! that the default garbage collection option here is to *not* remove.
-rename = function(A, name=A@name, gc)
-{
-  if(!(inherits(A,"scidb") || inherits(A,"scidbdf"))) stop("`A` must be a scidb object.")
-  if(missing(gc)) gc = FALSE
-  if(A@name != name) scidbquery(sprintf("rename(%s,%s)",A@name, name))
-  A@gc$remove=gc
-  A@name = name
-  A@gc$name = name
-  A
 }
 
 # .scidbdim is an internal function that retirieves dimension metadata from a
