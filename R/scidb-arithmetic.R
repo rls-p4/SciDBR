@@ -50,10 +50,10 @@ scidbmultiply = function(e1,e2)
 {
 # As of SciDB version 13.12, SciDB exhibits nasty bugs when gemm is nested
 # within other SciDB operators, in particular subarray. We use sg to avoid
-# this problem. XXX
+# this problem.
   `eval` = FALSE
 # Check for availability of spgemm
-  P4 = length(grep("spgemm",.scidbenv$ops[,2]))>0
+  SPGEMM = length(grep("spgemm",.scidbenv$ops[,2]))>0
   if(length(e1@attributes)>1)
     e1 = project(e1,e1@attribute)
   if(length(e2@attributes)>1)
@@ -61,6 +61,11 @@ scidbmultiply = function(e1,e2)
   e1.sparse = is.sparse(e1)
   e2.sparse = is.sparse(e2)
   SPARSE = e1.sparse || e2.sparse
+
+# Up to at least SciDB 13.12, gemm does not accept nullable attributes.
+# XXX This restriction needs to be changed in a future SciDB release.
+  if(any(e1@nullable))  e1 = substitute(e1)
+  if(any(e2@nullable))  e2 = substitute(e2)
 
   a1 = e1@attribute
   a2 = e2@attribute
@@ -136,11 +141,11 @@ scidbmultiply = function(e1,e2)
   }
 
 # Decide which multiplication algorithm to use
-  if(SPARSE && !P4)
+  if(SPARSE && !SPGEMM)
   {
     stop("Sparse matrix multiplication not supported")
   }
-  else if (SPARSE && P4)
+  else if (SPARSE && SPGEMM)
     query = sprintf("spgemm(%s, %s)", op1, op2)
   else
     query = sprintf("sg(gemm(%s, %s, %s),1,-1)",op1,op2,op3)
