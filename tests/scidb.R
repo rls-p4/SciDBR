@@ -136,5 +136,12 @@ if(nchar(host)>0)
   z = merge(x,a,by="j")
   check(count(z),4)
 
+# Complicated cross_join filtering
+  set.seed(1)
+  X = as.scidb( matrix(rnorm(20),nrow=5) )
+  rownames(X) = as.scidb( data.frame(letters[1:5]), start=0)
+  X[c("b","a","d"), ]
+  idx = rownames(X) > "b"
+  check(nrow(X[idx, ]),3)
 }
 gc()

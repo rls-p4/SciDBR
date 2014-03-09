@@ -206,14 +206,16 @@ scidbdf_subset = function(x, i, drop=FALSE)
   }
   else
   {
-    stop("This kind of indexing is not yet supported.")
+# Complicated indexing. Use scidb class. (XXX In future, do this for any index)
+    y = scidb(x, `data.frame`=FALSE)
+    return(dimfilter(y, list(i), `eval`=FALSE, drop=drop))
   }
   query = sprintf("project(%s, %s)",query, paste(attribute_range,collapse=","))
   if(drop && length(attribute_range)==1)
   {
-    return(.scidbeval(query, `data.frame`=FALSE, gc=TRUE, eval=FALSE, depend=x))
+    return(.scidbeval(query, `data.frame`=FALSE, gc=TRUE, `eval`=FALSE, depend=x))
   }
-  .scidbeval(query, `data.frame`=TRUE, gc=TRUE, eval=FALSE, depend=x)
+  .scidbeval(query, `data.frame`=TRUE, gc=TRUE, `eval`=FALSE, depend=x)
 }
 
 betweenbound = function(x, m, n)
