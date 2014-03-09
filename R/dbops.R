@@ -129,7 +129,11 @@ subarray = function(x, limits, schema, `eval`=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   if(missing(limits)) limits=paste(rep("null",2*length(x@D$name)),collapse=",")
-  if(!missing(schema)) limits=schema
+  if(!missing(schema))
+  {
+    if(!is.character(schema)) schema = schema(schema)
+    limits = paste(coordinate_bounds(schema),collapse=",")
+  }
   query = sprintf("subarray(%s,%s)",x@name,limits)
   .scidbeval(query, `eval`, depend=list(x))
 }

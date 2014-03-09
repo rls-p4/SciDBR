@@ -927,11 +927,10 @@ origin = function(x)
   .scidbeval(query,`eval`=FALSE,depend=list(x),gc=TRUE)
 }
 
-# Silly function to return schema string from object
-schema = function(x)
+# Take a SciDB schema and return a bounding vector of coordinate limits in SciDB subarray order
+coordinate_bounds = function(s)
 {
-  if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
-  gsub("^array","",x@schema)
+  paste(matrix(unlist(lapply(strsplit(gsub("\\].*","",gsub(".*\\[","",s,perl=TRUE),perl=TRUE),"=")[[1]][-1],function(x)strsplit(strsplit(x,",")[[1]][1],":")[[1]])),2,byrow=TRUE))
 }
 
 chunk_map = function()

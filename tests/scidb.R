@@ -130,5 +130,11 @@ if(nchar(host)>0)
 # na.locf
   x = scidbeval(scidb("redimension(apply(build(<i:int64>[row=1:10,10,0],random()%10+1),j,random()%10+1,v,sin(row)),<v:double>[i=1:10,10,0,j=1:10,10,0])"))
 
+# Another merge test courtesy Alex Polyiakov
+  x = build(1,c(2,2))
+  a = build(2,5,names=c("a","j"))
+  z = merge(x,a,by="j")
+  check(count(z),4)
+
 }
 gc()
