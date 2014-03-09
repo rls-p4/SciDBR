@@ -801,7 +801,7 @@ iqiter = function (con, n = 1, excludecol, ...)
 #    must be the same length as I.
 `build_attr_schema` = function(A, prefix="", I, newnames, nullable)
 {
-  if(missing(I)) I = rep(TRUE,length(A@attributes))
+  if(missing(I) || length(I)==0) I = rep(TRUE,length(A@attributes))
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   if(is.logical(I)) I = which(I)
   N = rep("", length(I))
@@ -839,7 +839,7 @@ iqiter = function (con, n = 1, excludecol, ...)
 `build_dim_schema` = function(A,bracket=TRUE, I, newnames, newlen, newstart)
 {
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-  if(!missing(I))
+  if(!missing(I) && length(I)>0)
   {
     A@D$type = A@D$type[I]
     A@D$name = A@D$name[I]

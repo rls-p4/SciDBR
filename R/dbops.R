@@ -91,11 +91,6 @@
   }
   limits[i] = noE(n)
   query = sprintf("slice(%s, %s)",x@name,paste(paste(d,n,sep=","),collapse=","))
-# alternative method:
-#  query = sprintf("between(%s, %s)",x@name,paste(c(limits,limits),collapse=","))
-#  A = build_attr_schema(x)
-#  D = build_dim_schema(x,I=-i)
-#  query = sprintf("redimension(%s, %s%s)",query,A,D)
   .scidbeval(query,eval,depend=list(x))
 }
 
@@ -151,13 +146,52 @@
 # which could lead to a run time error here.
   if(missing(s)) s = NULL
   if(missing(dim)) dim = NULL
-  if(missing(reduce))
+  if(is.null(s) && is.null(dim) ||
+    (!is.null(s) && !is.null(dim)))
   {
-    reduce =  ""
-  } else
-  {
+    stop("Exactly one of s or dim must be specified")
   }
   if((class(s) %in% c("scidb","scidbdf"))) s = schema(s)
+  if(!is.null(dim))
+  {
+    d = unlist(dim)
+    ia = which(x@attributes %in% d)
+    id = which(x@D$name %in% d)
+    if(length(ia)<1 && length(id)<1) stop("Invalid dimensions")
+    as = build_attr_schema(x, I=-ia)
+    if(length(id>0))
+    {
+      ds = build_dim_schema(x, I=id, bracket=FALSE)
+    } else
+    {
+      ds = c()
+    }
+    if(length(ia)>0)
+    {
+# Add the new dimension(s)
+      a = x@attributes[ia]
+      x@attributes = x@attributes[-ia]
+      f = paste(paste("min(",a,"), max(",a,")",sep=""),collapse=",")
+      m = matrix(aggregate(x, FUN=f, unpack=FALSE)[],ncol=2,byrow=TRUE)
+      p = prod(x@D$chunk_interval)
+      chunk = ceiling((1e6/p)^(1/length(ia)))
+      new = apply(m,1,paste,collapse=":")
+      new = paste(a,new,sep="=")
+      new = paste(new, chunk, "0", sep=",")
+      new = paste(new,collapse=",")
+      ds = ifelse(length(ds)>0,paste(ds,new,sep=","),new)
+    }
+    s = sprintf("%s[%s]",as,ds)
+  }
+  if(!missing(reduce))
+  {
+    if(!is.function(reduce)) stop("`reduce` must be a function")
+    fn = .scidbfun(reduce)
+    if(is.null(fn))
+      stop("`reduce` requires an aggregate function")
+    reduce = sprintf("%s(%s) as %s",fn,x@attributes,x@attributes)
+    s = sprintf("%s,%s", s, reduce)
+  }
   query = sprintf("redimension(%s,%s)",x@name,s)
   .scidbeval(query,eval,depend=list(x))
 }
@@ -222,6 +256,8 @@
 `project` = function(X,attributes,`eval`=FALSE)
 {
   xname = X
+  if(is.numeric(attributes))
+    attributes = X@attributes[attributes]
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
   query = sprintf("project(%s,%s)", xname,paste(attributes,collapse=","))
   .scidbeval(query,eval,depend=list(X))
