@@ -219,7 +219,7 @@ scidbdf_subset = function(x, i, drop=FALSE)
 betweenbound = function(x, m, n)
 {
   ans = sprintf("between(%s, %.0f, %.0f)", x@name, m, n)
-# Reset just the upper dimension index (this redimension is really only a
-# meta data operation)
+# Reset just the upper dimension index, use of redimension here is overkill
+# XXX FIX ME
   ans = sprintf("redimension(%s,%s[%s=%.0f:%.0f,%.0f,%.0f])", ans, build_attr_schema(x), x@D$name[1], x@D$start[1], n, x@D$chunk_interval[1], x@D$chunk_overlap[1])
 }

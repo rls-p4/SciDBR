@@ -126,7 +126,7 @@ substitute = function(x, value, `attribute`, `eval`=FALSE)
   .scidbeval(query, `eval`, depend=list(x))
 }
 
-subarray = function(x, limits, schema, `eval`=FALSE)
+subarray = function(x, limits, schema, between=FALSE, `eval`=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   if(missing(limits)) limits=paste(rep("null",2*length(x@D$name)),collapse=",")
@@ -135,7 +135,10 @@ subarray = function(x, limits, schema, `eval`=FALSE)
     if(!is.character(schema)) schema = schema(schema)
     limits = paste(coordinate_bounds(schema),collapse=",")
   }
-  query = sprintf("subarray(%s,%s)",x@name,limits)
+  if(between)
+    query = sprintf("between(%s,%s)",x@name,limits)
+  else
+    query = sprintf("subarray(%s,%s)",x@name,limits)
   .scidbeval(query, `eval`, depend=list(x))
 }
 

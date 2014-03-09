@@ -153,7 +153,7 @@
   newds = sprintf("[%s]",paste(newds,collapse=","))
   reschema = sprintf("%s%s", build_attr_schema(y),newds)
   castschema = sprintf("%s%s",newas,newds)
-  z = cast(redimension(subarray(y,schema=reschema),reschema),castschema)
+  z = cast(redimension(subarray(y,schema=reschema,between=TRUE),reschema),castschema)
 
 # Join on dimensions.
   query = sprintf("cross_join(%s as __X, %s as __Y", xname, z@name)
