@@ -119,16 +119,23 @@ if(nchar(host)>0)
   check(s[i][], sort(a[]))
 
 # GLM (requires SciDB p4 plugin)
-  x = as.scidb(matrix(rnorm(5000*20),nrow=5000))
-  y = as.scidb(rnorm(5000))
-  M = glm.fit(x, y)
+  got = length(grep("glm",scidbls(type="operators")))>0
+  if(got)
+  {
+    x = as.scidb(matrix(rnorm(5000*20),nrow=5000))
+    y = as.scidb(rnorm(5000))
+    M = glm.fit(x, y)
+  }
 
 # slice
   x = build("i+j+k",c(3,4,5))
   check(slice(x,c("i","j"),c(2,3))[0][], 5)
 
 # na.locf
-  x = scidbeval(scidb("redimension(apply(build(<i:int64>[row=1:10,10,0],random()%10+1),j,random()%10+1,v,sin(row)),<v:double>[i=1:10,10,0,j=1:10,10,0])"))
+# Write me!
+
+# hist
+# Write me!
 
 # Another merge test courtesy Alex Polyiakov
   x = build(1,c(2,2))
