@@ -48,6 +48,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+\newcommand{\code}[1]{\tt{#1}}
 \newcommand{\bld}[1]{\mbox{\boldmath $#1$}}
 \newcommand{\shell}[1]{\mbox{$#1$}}
 \renewcommand{\vec}[1]{\mbox{\bf {#1}}}
@@ -255,12 +256,12 @@ the examples.
 \end{Sinput}
 \begin{Soutput}
 SciDB array name:  morely
-SciDB array schema:  array<Expt:int32,Run:int32,Speed:int32> [row=1:100,100,0]
+SciDB array schema:  <Expt:int32 NULL DEFAULT NA,Run:int32 NULL DEFAULT NA,Speed:int32 NULL DEFAULT NA> [row=1:100,100,0]
 Attributes:
   attribute  type nullable
-1      Expt int32    FALSE
-2       Run int32    FALSE
-3     Speed int32    FALSE
+1      Expt int32     TRUE
+2       Run int32     TRUE
+3     Speed int32     TRUE
 Row dimension:
   name  type start length chunk_interval chunk_overlap
 1  row int64     1    100            100             0
@@ -357,8 +358,8 @@ bulk data load utility as outlined in the SciDB documentation instead.
 > str(v)
 \end{Sinput}
 \begin{Soutput}
-SciDB array name:  R_array2a744958edbd1...
-SciDB array schema:  array<val:double> [i=0:4,5,0,j=0:4,5,0]
+SciDB array name:  R_array458624d3ad101...
+SciDB array schema:  <val:double NULL DEFAULT NA> [i=0:4,5,0,j=0:4,5,0]
 attribute in use:  val
 All attributes:  val
 Array dimensions:
@@ -370,24 +371,24 @@ Array dimensions:
 > crossprod( v[] )              # Compute t(v) %*% v using R
 \end{Sinput}
 \begin{Soutput}
-           [,1]       [,2]       [,3]       [,4]      [,5]
-[1,]  8.4151708  0.1499719 -2.8462983 -0.2295290 -3.253944
-[2,]  0.1499719  6.7479528 -0.3039991 -0.6215236 -4.002421
-[3,] -2.8462983 -0.3039991  2.4557626  0.6185673  2.741907
-[4,] -0.2295290 -0.6215236  0.6185673  0.8387504  1.786353
-[5,] -3.2539438 -4.0024207  2.7419065  1.7863531  6.231967
+           [,1]       [,2]       [,3]       [,4]       [,5]
+[1,]  6.4246240  2.2260416  2.3209546 -0.0962403  4.1176475
+[2,]  2.2260416  4.7946990  0.3261715  5.9363580 -0.7415525
+[3,]  2.3209546  0.3261715  7.1619760 -1.8222962  2.0932342
+[4,] -0.0962403  5.9363580 -1.8222962 21.3228324 -3.6040576
+[5,]  4.1176475 -0.7415525  2.0932342 -3.6040576  4.8750848
 \end{Soutput}
 \begin{Sinput}
 > # Now compute using SciDB, and materialize the result to R:
 > crossprod(v)[]
 \end{Sinput}
 \begin{Soutput}
-           [,1]       [,2]       [,3]       [,4]      [,5]
-[1,]  8.4151708  0.1499719 -2.8462983 -0.2295290 -3.253944
-[2,]  0.1499719  6.7479528 -0.3039991 -0.6215236 -4.002421
-[3,] -2.8462983 -0.3039991  2.4557626  0.6185673  2.741907
-[4,] -0.2295290 -0.6215236  0.6185673  0.8387504  1.786353
-[5,] -3.2539438 -4.0024207  2.7419065  1.7863531  6.231967
+           [,1]       [,2]       [,3]       [,4]       [,5]
+[1,]  6.4246240  2.2260416  2.3209546 -0.0962403  4.1176475
+[2,]  2.2260416  4.7946990  0.3261715  5.9363580 -0.7415525
+[3,]  2.3209546  0.3261715  7.1619760 -1.8222962  2.0932342
+[4,] -0.0962403  5.9363580 -1.8222962 21.3228324 -3.6040576
+[5,]  4.1176475 -0.7415525  2.0932342 -3.6040576  4.8750848
 \end{Soutput}
 \end{Schunk}
 
@@ -447,10 +448,10 @@ indexing operations produce new SciDB array objects.
 array coordinate system. Note that SciDB arrays generally are zero-indexed
 and may even have negative indices. SciDB data frame-like objects generally
 use 1-based indexing. When in doubt about the base index, use the \verb+str+
-function to interrogate the SciDB object for details.
+or \verb+dimensions+ functions to interrogate the SciDB object for details.
 \item Numeric indexing may include contiguous ranges or vectors of distinct
 coordinate values, but repeated coordinate values in a single dimension are
-not allowed. Examples of valid index ranges include
+not allowed right now (sorry about that). Examples of valid index ranges include
 \verb+[1:4, c(3,1,5), -10:15]+, but not \verb+[c(1,3,1)]+.
 \item The \verb+scidbdf+ class represents 1-d SciDB arrays as data frame
 objects with SciDB array attribute as columns. Use either positional numeric
@@ -470,8 +471,41 @@ instead of \verb+[1:1e9]+.
 extract a vector of diagonal elements from a matrix, or to create a
 sparse diagonal matrix from a vector.
 }
-Examples of indexing operations follow.
 
+\subsection{Comparison operators and filtering}
+
+The package follows R convention and returns a logical-valued object after
+comparison. Additionally, the package defines special comparison operators
+enclosed in the \verb+%+ symbol that return a sparse SciDB array object
+whose values not meeting the condition are masked as empty (preserving
+the values that do meet the condition).
+
+The difference is illustrated in the following example.
+\begin{Schunk}
+\begin{Sinput}
+> x <- as.scidb(head(iris))
+> # Standard R-style logical comparison:
+> (x$Petal_Length > 1.4 )[]
+\end{Sinput}
+\begin{Soutput}
+[1] FALSE FALSE FALSE  TRUE FALSE  TRUE
+\end{Soutput}
+\begin{Sinput}
+> # Special SciDB-style maksed comparison:
+> (x$Petal_Length %>% 1.4)[]
+\end{Sinput}
+\begin{Soutput}
+sparse vector (nnz/length = 2/6) of class "dsparseVector"
+[1]   .   .   . 1.5   . 1.7
+\end{Soutput}
+\end{Schunk}
+
+Comparison results can be used as filters in scidb and scidbdf objects.
+This works mostly like R, except that such filters may only be applied
+along coordinate axes. (That is, R's special single-index indexing mode
+is not supported.)
+
+Additional examples showing dimension labels and filtering follow.
 \begin{Schunk}
 \begin{Sinput}
 > # Example of labeling indices with a label array.
@@ -491,7 +525,7 @@ A reference to a  3x4 SciDB array
 \begin{Sinput}
 > # Example of indexing by a condition on an auxiliary array.
 > # Determine a subset of the rownames of X (another SciDB array):
-> idx <- rownames(X) > "'b'"
+> idx <- rownames(X) > "b"
 > # Subset X by the condition on its rows:
 > X[idx, ]
 \end{Sinput}
@@ -621,11 +655,10 @@ columns.  The \verb+scidb+ class also supports a short-hand notation for
 > (A > 0)[]
 \end{Sinput}
 \begin{Soutput}
-3 x 3 sparse Matrix of class "dgCMatrix"
-                                  
-[1,] .         1.5952808 0.4874291
-[2,] 0.1836433 0.3295078 0.7383247
-[3,] .         .         0.5757814
+      [,1]  [,2] [,3]
+[1,] FALSE  TRUE TRUE
+[2,]  TRUE  TRUE TRUE
+[3,] FALSE FALSE TRUE
 \end{Soutput}
 \end{Schunk}
 %%\caption*{Example of array value filtering with subset}
@@ -752,14 +785,14 @@ equivalent column subset selection of variables using brackets.
 > head(a, n=3)
 \end{Sinput}
 \begin{Soutput}
-  Sepal_Length Sepal_Width Petal_Length Petal_Width Species
-1          4.9         3.1          1.5         0.1  setosa
-2          4.9         3.6          1.4         0.1  setosa
-3          4.8         3.0          1.4         0.1  setosa
+  n Sepal_Length
+1 0          4.9
+2 1          4.9
+3 2          4.8
 \end{Soutput}
 \begin{Sinput}
 > # Find unique values of Species:
-> unique(a[,"Species"])[]
+> unique(x$Species)[]
 \end{Sinput}
 \begin{Soutput}
      Species
@@ -769,16 +802,16 @@ equivalent column subset selection of variables using brackets.
 \end{Soutput}
 \begin{Sinput}
 > # Add a new variable that enumerates factor levels of Species:
-> head(index_lookup(a, unique(project(a,"Species")), "Species"))
+> head(index_lookup(x, unique(x$Species), "Species"))
 \end{Sinput}
 \begin{Soutput}
   Sepal_Length Sepal_Width Petal_Length Petal_Width Species Species_index
-1          4.9         3.1          1.5         0.1  setosa             0
-2          4.9         3.6          1.4         0.1  setosa             0
-3          4.8         3.0          1.4         0.1  setosa             0
-4          4.3         3.0          1.1         0.1  setosa             0
-5          5.2         4.1          1.5         0.1  setosa             0
-6          4.9         3.0          1.4         0.2  setosa             0
+1          5.1         3.5          1.4         0.2  setosa             0
+2          4.9         3.0          1.4         0.2  setosa             0
+3          4.7         3.2          1.3         0.2  setosa             0
+4          4.6         3.1          1.5         0.2  setosa             0
+5          5.0         3.6          1.4         0.2  setosa             0
+6          5.4         3.9          1.7         0.4  setosa             0
 \end{Soutput}
 \end{Schunk}
 
@@ -848,13 +881,13 @@ Here is an example:
 > B@name
 \end{Sinput}
 \begin{Soutput}
-[1] "redimension(redimension(between(transpose(test),3,null,3,null), <val:double>[j=3:3,4,0,i=0:4,5,0]), <val:double>[i=0:4,5,0])"
+[1] "redimension(redimension(between(transpose(test),3,null,3,null), <val:double NULL>[j=3:3,4,0,i=0:4,5,0]), <val:double NULL>[i=0:4,5,0])"
 \end{Soutput}
 \begin{Sinput}
 > B@schema
 \end{Sinput}
 \begin{Soutput}
-[1] "array<val:double> [i=0:4,5,0]"
+[1] "<val:double NULL DEFAULT NA> [i=0:4,5,0]"
 \end{Soutput}
 \begin{Sinput}
 > B@gc$depend[[1]]@gc$depend[[1]]@name
@@ -871,13 +904,13 @@ Here is an example:
 > C@name
 \end{Sinput}
 \begin{Soutput}
-[1] "R_array2a74f85fd1a1101055313670"
+[1] "R_array4586faea4c91100946420012"
 \end{Soutput}
 \begin{Sinput}
 > C@schema
 \end{Sinput}
 \begin{Soutput}
-[1] "array<val:double> [i=0:4,5,0]"
+[1] "<val:double NULL DEFAULT NA> [i=0:4,5,0]"
 \end{Soutput}
 \end{Schunk}
 
@@ -896,6 +929,7 @@ objects.
 \item \verb+count+ Return the number of nonempty cells of an array.
 \item \verb+cumulate+ Compute a cumulative aggregate function, for example
   a cumulative sum or product.
+\item \verb+dimension_rename+ Rename one or more dimensions of a SciDB array.
 \item \verb+index_lookup+ Look up attribute values in a mapping array, adding
   a new attribute with the index.
 \item \verb+project+ Pick out one or more attributes from an array.
@@ -904,16 +938,59 @@ objects.
   and applying an aggregate function to the bins.
 \item \verb+rename+ Rename a SciDB array.
 \item \verb+repart+ Repartition an array.
+\item \verb+reshape+ Reshape an array.
+\item \verb+schema+ Show the schema of a SciDB array object.
+\item \verb+scidblist+ List SciDB arrays (also \verb+scidbls+).
+\item \verb+scidbremove+ Delete SciDB arrays (also \verb+scidbrm+).
 \item \verb+slice+ Slice a SciDB array along one of its axes, returning a
   lower-dimensional array.
 \item \verb+sort+ Sort the elements of an array.
+\item \verb+subarray+ Perform a SciDB subarray or between operation on an array.
 \item \verb+unique+ Return a set of unique elements of a sorted array.
+\item \verb+unpack+ Unpack a SciDB array into a 1-d table.
 \item \verb+xgrid+ Prolong one or more coordinate axes by replicating
   cell values.
 \end{itemize}
 See the online manual pages for more details and examples.
 
 
+\section{Miscellaneous functions}
+
+This catch-all section summarizes miscellaneous functions.
+
+\subsection{Histograms}
+
+The generic function \verb+hist+ computes a histogram of the given data values
+in a SciDb array object.  If \verb+plot=TRUE+, the resulting object of class
+histogram is plotted by \verb+plot.histogram+, before it is returned.
+
+This histogram function only supports equidistant breaks. If \verb+right=TRUE+
+(default), the histogram cells are intervals of the form '(a, b]', i.e.,
+they include their right-hand endpoint, but not their left one.
+
+\subsection{Last-value imputation}
+
+The \code{na.locf} function is a generic function for replacing each missing or
+empty value with the most recent non-missing value prior to it.
+
+Unlike the usual \code{na.locf} function from the \code{zoo} package, the SciDB
+\code{na.locf} function fills in both missing (SciDB \code{null} values) and
+empty (SciDB sparse) values with the last non-missing and non-sparse value
+along the indicated dimension.
+
+Time series represented in SciDB are often sparse arrays. The \code{na.locf}
+function defines a conveniet way to  fill in all missing values along the time
+coordinate axis down to the time resolution.
+
+Caution! The output array is a mostly dense, filled-in version of the input
+array. If the time resolution is very fine and the input array very sparse,
+then the output array can be huge. Consider using \code{regrid} first on
+very fine time scales to reduce their resolution.
+
+The default \code{na.locf} method in the \code{zoo} package unforunately
+overrides this function (it uses \code{ANY} in its method signature). If
+you need to use SciDB arrays and the \code{zoo} package, prefix SciDB's
+version with \code{scidb::na.locf(...)}.
 
 
 
@@ -1016,24 +1093,26 @@ Here is a summary list of functions and methods defined by  the package.  See
 online help for examples and more information on each one.
 
 \begin{verbatim}
-$                 %*%               Filter            Ops
+$                 %<%               Filter            Ops
 [                 abs               acos              aggregate
 apply             as.scidb          asin              atan
 attribute_rename  between           bind              build
 cast              cbind             colnames          colnames<-
 cos               count             crossprod         cumulate
 df2scidb          diag              diff              dim
-dimnames          dimnames<-        glm.fit           head
-image             index_lookup      iquery            is.scidb
-is.scidbdf        lag               length            log
-max               mean              merge             min
-names             names<-           ncol              nrow
-print             project           redimension       regrid
-rename            repart            reshape           rownames
-rownames<-        scidb             scidbconnect      scidbdf
-scidbeval         scidblist         scidbls           scidbremove
-scidbrm           sd                show              sin
-slice             sort              str               subset
+dimension_rename  dimensions        dimnames          dimnames<-
+glm.fit           head              hist              image
+index_lookup      iquery            is.scidb          is.scidbdf
+lag               length            log               max
+mean              median            merge             min
+na.locf           names             names<-           ncol
+nrow              print             project           redimension
+regrid            rename            repart            reshape
+rownames          rownames<-        schema            scidb
+scidbconnect      scidbdf           scidbeval         scidblist
+scidbls           scidbremove       scidbrm           sd
+show              sin               slice             solve
+sort              str               subarray          subset
 substitute        sum               svd               sweep
 t                 tail              tan               tcrossprod
 unique            unpack            var               xgrid
