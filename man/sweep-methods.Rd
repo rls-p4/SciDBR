@@ -8,7 +8,7 @@ Return an array obtained from an input array by sweeping out a
 summary statistic.
 }
 \usage{
-\S4method{sweep}{scidb}(x, MARGIN, STATS, FUN = "-", check.margin = TRUE, ...)
+\S4method{sweep}{scidb}(x, MARGIN, STATS, FUN = "-", eval = FALSE, name, ...)
 }
 \arguments{
   \item{x}{a \code{scidb} object.}
@@ -16,7 +16,7 @@ summary statistic.
           correspond to 'STATS'.}
   \item{STATS}{the summary statistic which is to be swept out.}
   \item{FUN}{the function to be used to carry out the sweep.
-         (Default is `-`.)}
+         (Default is "-".)}
   \item{eval}{(Optional) If TRUE, execute the query and store the reult array.
                Otherwise defer evaluation.}
 }
