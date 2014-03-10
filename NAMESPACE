@@ -25,6 +25,7 @@ export("scidbls")
 export("scidbconnect")
 export("scidbremove")
 export("substitute")
+export("subarray")
 export("scidbrm")
 export("iquery")
 export("project")
@@ -37,7 +38,7 @@ export("index_lookup")
 
 # S4 methods
 exportClasses("scidb","scidbdf")
-exportMethods("%<%","%>%","%<=%","%>=%","%==%","%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,mean,sd,var,min,max,t,abs,sin,cos,tan,asin,acos,atan,unpack,reshape,regrid,svd,xgrid,glm.fit,lag,Filter,na.locf,hist)
+exportMethods("%<%","%>%","%<=%","%>=%","%==%","%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,median,mean,sd,var,min,max,t,abs,sin,cos,tan,asin,acos,atan,unpack,reshape,regrid,svd,xgrid,glm.fit,lag,Filter,na.locf,hist)
 
 # S3 methods
 S3method("Ops",scidb)
@@ -63,6 +64,7 @@ S3method("subset",scidb)
 S3method("log",scidb)
 S3method("diff",scidb)
 S3method("cbind",scidb)
+S3method("solve",scidb)
 
 S3method("Ops",scidbdf)
 S3method("[",scidbdf)

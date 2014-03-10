@@ -206,20 +206,22 @@ scidbdf_subset = function(x, i, drop=FALSE)
   }
   else
   {
-    stop("This kind of indexing is not yet supported.")
+# Complicated indexing. Use scidb class. (XXX In future, do this for any index)
+    y = scidb(x, `data.frame`=FALSE)
+    return(dimfilter(y, list(i), `eval`=FALSE, drop=drop))
   }
   query = sprintf("project(%s, %s)",query, paste(attribute_range,collapse=","))
   if(drop && length(attribute_range)==1)
   {
-    return(.scidbeval(query, `data.frame`=FALSE, gc=TRUE, eval=FALSE, depend=x))
+    return(.scidbeval(query, `data.frame`=FALSE, gc=TRUE, `eval`=FALSE, depend=x))
   }
-  .scidbeval(query, `data.frame`=TRUE, gc=TRUE, eval=FALSE, depend=x)
+  .scidbeval(query, `data.frame`=TRUE, gc=TRUE, `eval`=FALSE, depend=x)
 }
 
 betweenbound = function(x, m, n)
 {
   ans = sprintf("between(%s, %.0f, %.0f)", x@name, m, n)
-# Reset just the upper dimension index (this redimension is really only a
-# meta data operation)
+# Reset just the upper dimension index, use of redimension here is overkill
+# XXX FIX ME
   ans = sprintf("redimension(%s,%s[%s=%.0f:%.0f,%.0f,%.0f])", ans, build_attr_schema(x), x@D$name[1], x@D$start[1], n, x@D$chunk_interval[1], x@D$chunk_overlap[1])
 }

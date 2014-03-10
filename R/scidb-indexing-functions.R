@@ -197,7 +197,7 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
                         start=x@D$start[[j]],
                         chunkSize=x@D$chunk_interval[[j]],
                         rowOverlap=x@D$chunk_overlap[[j]])
-        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]))))
+        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]), start=x@D$start[[j]])))
 
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
@@ -213,12 +213,17 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
                         rowOverlap=x@D$chunk_overlap[[j]], nullable=FALSE)
         i[[j]] = attribute_rename(project(index_lookup(tmp_1, lkup, new_attr='_cazart'),"_cazart"),"_cazart",N)
         dependencies = c(dependencies, tmp_1)
-        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]))))
+        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]), start=x@D$start[[j]])))
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
       } else if(is.scidb(i[[j]]))
       {
 # Case 3. A SciDB array, really just a densified cross_join selector.
+# If it's boolen, convert it to a sparse array for cross_join indexing
+        if(i[[j]]@types[[1]] == "bool")
+        {
+          i[[j]] = i[[j]] %==% TRUE
+        }
         tmp = sort(project(bind(i[[j]],N,i[[j]]@D$name[[1]],eval=0),N,eval=0),eval=0)
 # Insane scidb name conflict problems, check for and resolve them.
         tmpaname = make.unique_(dimlabel, tmp@attributes)
@@ -228,17 +233,17 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
         dependencies = c(dependencies, tmp)
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", tmp@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
-        swap = c(swap, list(list(old=N, new=dimlabel, length=cnt)))
+        swap = c(swap, list(list(old=N, new=dimlabel, length=cnt, start=0)))
       }
     } else # No special index in this coordinate
     {
-      swap = c(swap,list(list(old=N, new=N, length=x@D$length[[j]])))
+      swap = c(swap,list(list(old=N, new=N, length=x@D$length[[j]], start=x@D$start[[j]])))
     }
   }
   nn = sapply(swap, function(x) x[[2]])
   nl = sapply(swap, function(x) x[[3]])
-  newstart = x@D$start
-  query = sprintf("redimension(%s, %s%s)",query, build_attr_schema(x), build_dim_schema(x,newstart=newstart,newnames=nn,newlen=nl))
+  ns = sapply(swap, function(x) x[[4]])
+  query = sprintf("redimension(%s, %s%s)",query, build_attr_schema(x), build_dim_schema(x,newstart=ns,newnames=nn,newlen=nl))
   ans = .scidbeval(query, eval=FALSE, depend=dependencies)
   if(drop)
   {
@@ -309,7 +314,7 @@ materialize = function(x, drop=FALSE)
   stopifnot(nelem==as.integer(nelem))
   A = tryCatch(
     {
-      .Call("scidbparse",BUF,ndim,as.integer(nelem),type,N,i64,PACKAGE="scidb")
+      .Call("scidbparse",BUF,ndim,as.integer(nelem),type,as.integer(nl),i64,PACKAGE="scidb")
     },
     error = function(e){stop(e)})
 

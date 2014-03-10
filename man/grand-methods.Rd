@@ -6,6 +6,9 @@
 \alias{mean}
 \alias{mean,scidb-method}
 \alias{mean,scidbdf-method}
+\alias{median}
+\alias{median,scidb-method}
+\alias{median,scidbdf-method}
 \alias{min}
 \alias{min,scidb-method}
 \alias{min,scidbdf-method}
@@ -30,6 +33,8 @@ SciDB array object and return a scalar value to R.
 \usage{
 \S4method{mean}{scidb}(x)
 \S4method{mean}{scidb}(x)
+\S4method{median}{scidb}(x)
+\S4method{median}{scidbdf}(x)
 \S4method{sum}{scidbdf}(x)
 \S4method{sum}{scidbdf}(x)
 \S4method{min}{scidb}(x)
@@ -48,6 +53,8 @@ SciDB array object and return a scalar value to R.
 }
 \details{
 {\code{sum}} computes the global sum of the SciDB array elements (applies only to numeric types);
+{\code{mean}} computes the arithmetic average of the SciDB array elements;
+{\code{median}} computes the median of the SciDB array elements;
 {\code{min}} computes the minimum of the SciDB array elements;
 {\code{max}} computes the maximum of the SciDB array elements;
 {\code{count}} returns the number of non-empty cell values in the SciDB array;

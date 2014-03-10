@@ -50,10 +50,10 @@ scidbmultiply = function(e1,e2)
 {
 # As of SciDB version 13.12, SciDB exhibits nasty bugs when gemm is nested
 # within other SciDB operators, in particular subarray. We use sg to avoid
-# this problem. XXX
+# this problem.
   `eval` = FALSE
 # Check for availability of spgemm
-  P4 = length(grep("spgemm",.scidbenv$ops[,2]))>0
+  SPGEMM = length(grep("spgemm",.scidbenv$ops[,2]))>0
   if(length(e1@attributes)>1)
     e1 = project(e1,e1@attribute)
   if(length(e2@attributes)>1)
@@ -61,6 +61,11 @@ scidbmultiply = function(e1,e2)
   e1.sparse = is.sparse(e1)
   e2.sparse = is.sparse(e2)
   SPARSE = e1.sparse || e2.sparse
+
+# Up to at least SciDB 13.12, gemm does not accept nullable attributes.
+# XXX This restriction needs to be changed in a future SciDB release.
+  if(any(e1@nullable))  e1 = substitute(e1)
+  if(any(e2@nullable))  e2 = substitute(e2)
 
   a1 = e1@attribute
   a2 = e2@attribute
@@ -136,11 +141,11 @@ scidbmultiply = function(e1,e2)
   }
 
 # Decide which multiplication algorithm to use
-  if(SPARSE && !P4)
+  if(SPARSE && !SPGEMM)
   {
     stop("Sparse matrix multiplication not supported")
   }
-  else if (SPARSE && P4)
+  else if (SPARSE && SPGEMM)
     query = sprintf("spgemm(%s, %s)", op1, op2)
   else
     query = sprintf("sg(gemm(%s, %s, %s),1,-1)",op1,op2,op3)
@@ -277,7 +282,8 @@ scidbmultiply = function(e1,e2)
 
 # Very basic comparisons. See also filter.
 # e1: A scidb array
-# e2: A scalar or a scidb array. If a scidb array, the return .joincompare(e1,e2,op) (q.v.)
+# e2: A scalar or a scidb array. If a scidb array, the return
+# .joincompare(e1,e2,op) (q.v.)
 # op: A comparison infix operator character
 #
 # Return a scidb object
@@ -290,6 +296,8 @@ scidbmultiply = function(e1,e2)
 #  type = names(.scidbtypes[.scidbtypes==e1@type])
 #  if(length(type)<1) stop("Unsupported data type.")
   op = gsub("==","=",op,perl=TRUE)
+# Automatically quote characters
+  if(is.character(e2)) e2 = sprintf("'%s'",e2)
   q1 = paste(paste(e1@attributes,op,e2),collapse=" and ")
 # Traditional R comparisons return an array of the same shape with a true/false
 # value.
@@ -350,7 +358,11 @@ svd_scidb = function(x, nu=min(dim(x)), nv=nu)
     iquery(sprintf("store(gesvd(repart(%s,%s),'left'),%s)",x@name,schema,u))
     iquery(sprintf("store(gesvd(repart(%s,%s),'values'),%s)",x@name,schema,d))
     iquery(sprintf("store(transpose(gesvd(repart(%s,%s),'right')),%s)",x@name,schema,v))
-    return(list(u=scidb(u,gc=TRUE),d=scidb(d,gc=TRUE),v=scidb(v,gc=TRUE)))
+    ans = list(u=scidb(u,gc=TRUE),d=scidb(d,gc=TRUE),v=scidb(v,gc=TRUE))
+    attr(ans$u,"sparse") = FALSE
+    attr(ans$d,"sparse") = FALSE
+    attr(ans$v,"sparse") = FALSE
+    return(ans)
   }
   warning("Using the IRLBA truncated SVD algorithm")
   return(tsvd(x,nu))
@@ -405,7 +417,7 @@ diff.scidb = function(x, lag=1, ...)
 {
   y = lag(x,lag)
   n = make.unique_(c(x@attributes,y@attributes),"diff")
-  z = merge(y,x,by=x@D$name[1],all=FALSE)
+  z = merge(y,x,by=x@D$name,all=FALSE)
   expr = paste(z@attributes,collapse=" - ")
   project(bind(z, n, expr), n)
 }

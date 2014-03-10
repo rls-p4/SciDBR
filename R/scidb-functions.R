@@ -28,6 +28,19 @@
 #
 
 # Various functions that support S3 methods for the SciDB class
+
+# cheeky solve
+solve.scidb = function(a, b, ...)
+{
+  A = scidbeval(crossprod(a))
+  s = svd(A)
+  x = scidbeval(t(t(b) %*% a))
+  x = t(s$u) %*% x
+  x = s$d^(-1) * x
+  x = s$v %*% x
+  scidbeval(x)
+}
+
 cbind.scidb = function(x)
 {
   if(length(dim(x))!=1) return(x)

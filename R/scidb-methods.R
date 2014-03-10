@@ -185,6 +185,13 @@ function(x)
   scidb_grand(x, "avg")
 })
 
+setGeneric("median")
+setMethod("median", signature(x="scidb"),
+function(x)
+{
+  scidb_grand(x, "median")
+})
+
 setGeneric("min")
 setMethod("min", signature(x="scidb"),
 function(x)

@@ -39,6 +39,9 @@
   options(scidb.version=13.9)
 # Set this to 32 for SciDB version 13.6
   options(scidb.gemm_chunk_size=1000)
+# Default shim port
+  options(scidb.default_shim_port=8080L)
+  options(scidb.default_shim_host="localhost")
 }
 
 .onUnload = function(libpath)
