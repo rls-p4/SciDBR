@@ -71,7 +71,11 @@ if(nchar(host)>0)
   check(count(Z), Matrix::nnzero(S))
 
 # spgemm
-  x = crossprod(Z)
+  got = length(grep("spgemm",scidbls(type="operators")))>0
+  if(got)
+  {
+    x = crossprod(Z)
+  }
 
 # Misc
   z = atan(tan(abs(acos(cos(asin(sin(Z)))))))
