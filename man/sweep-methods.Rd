@@ -8,7 +8,7 @@ Return an array obtained from an input array by sweeping out a
 summary statistic.
 }
 \usage{
-\S4method{sweep}{scidb}(x, MARGIN, STATS, FUN = "-", eval = FALSE, name, ...)
+\S4method{sweep}{scidb}(x, MARGIN, STATS, FUN = "-", eval = FALSE, name)
 }
 \arguments{
   \item{x}{a \code{scidb} object.}
@@ -19,6 +19,8 @@ summary statistic.
          (Default is "-".)}
   \item{eval}{(Optional) If TRUE, execute the query and store the reult array.
                Otherwise defer evaluation.}
+  \item{name}{If \code{x} is a multi-attribute array, specify the attribute
+              to work on, default to the first listed array attribute.}
 }
 \details{
 \code{STATS} must be a vector whose length matches the dimension size
