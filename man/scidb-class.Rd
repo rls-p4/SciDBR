@@ -16,7 +16,6 @@
 
 \alias{diag,scidb-method}
 \alias{apply,scidb-method}
-\alias{sweep,scidb-method}
 \alias{unpack,scidb-method}
 \alias{t,scidb-method}
 \alias{sin,scidb-method}
@@ -80,7 +79,6 @@ Objects can be created by calls of the form \code{new("scidb", ...)},
     \item{head}{\code{signature(x = "scidb")}: ... }
     \item{tail}{\code{signature(x = "scidb")}: ... }
     \item{apply}{\code{signature(x = "scidb")}: ... }
-    \item{sweep}{\code{signature(x = "scidb")}: ... }
     \item{regrid}{\code{signature(x = "scidb")}: \code{regrid(x, grid=c(m,...), expr="avg(attribute)")}
       Decimate the n-d SciDB array \code{x} by binning its coordinate system according to the \code{grid} argument and applying the aggregate expression on each bin. The \code{grid} argument must be the same length as the dimension of the array \code{x}. For example if \code{x} is a 10x10 matrix, then \code{regrid(x, c(2,1))} returns a 5x10 matrix replacing the rows with the average of values along every two rows.
     }
