@@ -46,11 +46,13 @@
 {
   mc = list(...)
   `by` = by.x = by.y = NULL
-  `all` = FALSE;
+  `all` = FALSE
+  scidbmerge = FALSE
   if(!is.null(mc$by)) `by` = mc$by
   if(!is.null(mc$all)) `all` = mc$all
   if(!is.null(mc$by.x)) by.x = mc$by.x
   if(!is.null(mc$by.y)) by.y = mc$by.y
+  if(!is.null(mc$merge)) scidbmerge = mc$merge
   `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
   xname = x@name
   yname = y@name
@@ -131,7 +133,13 @@
       query = sprintf("join(merge(%s,%s),merge(%s,%s))",x@name,xnull@name,z@name,znull@name)
     }
     else
-      query = sprintf("join(%s,%s)",x@name,z@name)
+      if(scidbmerge)
+      {
+        query = sprintf("merge(%s,%s)",x@name,z@name)
+      } else
+      {
+        query = sprintf("join(%s,%s)",x@name,z@name)
+      }
     return(.scidbeval(query,eval,depend=list(x,y)))
   }
 
