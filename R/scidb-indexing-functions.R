@@ -197,7 +197,7 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
                         start=x@D$start[[j]],
                         chunkSize=x@D$chunk_interval[[j]],
                         rowOverlap=x@D$chunk_overlap[[j]])
-        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]))))
+        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]), start=x@D$start[[j]])))
 
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
@@ -213,7 +213,7 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
                         rowOverlap=x@D$chunk_overlap[[j]], nullable=FALSE)
         i[[j]] = attribute_rename(project(index_lookup(tmp_1, lkup, new_attr='_cazart'),"_cazart"),"_cazart",N)
         dependencies = c(dependencies, tmp_1)
-        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]))))
+        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]), start=x@D$start[[j]])))
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
       } else if(is.scidb(i[[j]]))
