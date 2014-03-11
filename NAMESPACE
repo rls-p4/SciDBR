@@ -3,6 +3,7 @@ import("methods")
 importFrom("Matrix",nnzero, sparseMatrix, unpack, sparseVector)
 importFrom("utils", head, tail)
 importFrom("stats", aggregate, sd, var, reshape, glm.fit)
+importFrom("graphics", image)
 import("RCurl", iterators)
 importFrom("zoo", na.locf)
 
