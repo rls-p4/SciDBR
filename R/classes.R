@@ -72,3 +72,5 @@ setClass("scidbdf",
                         types="character",
                         gc="environment"),
          S3methods=TRUE)
+
+setClassUnion("scidbOrScidbdf", c("scidb", "scidbdf")) 
