@@ -198,7 +198,7 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
                         chunkSize=x@D$chunk_interval[[j]],
                         rowOverlap=x@D$chunk_overlap[[j]])
         swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]), start=x@D$start[[j]])))
-
+        dependencies = c(dependencies, i[[j]])
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
       } else if(is.character(i[[j]]))

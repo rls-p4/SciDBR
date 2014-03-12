@@ -270,7 +270,6 @@ function(x, n=6L, ...)
     do.call(dimfilter,args=list(x=x,i=limits,eval=FALSE))[],
     error = function(e)
     {
-      warning("Unsupported data type. Using iquery to display array data.")
       iquery(x@name, return=TRUE, n=n)
     })
 })
