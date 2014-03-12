@@ -20,7 +20,10 @@ Aggregate a SciDB array object grouped by a subset of its dimensions and/or attr
   \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
   \item{window}{(Optional) If specified, perform a moving window aggregate along the specified coordinate windows--see details below.}
   \item{variable_window}{(Optional) If specified, perform a moving window aggregate over successive data values along the coordinate dimension axis specified by \code{by}--see details below.}
-  \item{unpack}{(Optional) If TRUE, return an unpacked SciDB result as a scidbdf dataframe-like object. It's sometimes useful to set this to FALSE if the aggregated result needs to be joined with another array. Default=TRUE.}
+  \item{unpack}{(Optional) If TRUE, return an unpacked SciDB result as a
+                 scidbdf dataframe-like object. It's sometimes useful to
+                 set this to FALSE if the aggregated result needs to be
+                 joined with another array. Default=FALSE.}
 }
 \details{
 Group the \code{scidb}, or \code{scidbdf} array object \code{x} by dimensions

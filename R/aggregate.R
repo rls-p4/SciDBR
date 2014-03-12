@@ -92,7 +92,7 @@
 # FUN: A SciDB aggregation expresion
 `aggregate_scidb` = function(x,by,FUN,`eval`=FALSE,window,variable_window,unpack)
 {
-  if(missing(unpack)) unpack=TRUE
+  if(missing(unpack)) unpack=FALSE
   if(missing(`by`))
   {
     `by`=""
