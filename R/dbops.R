@@ -238,6 +238,7 @@ build = function(data, dim, names, type,
     if(is.character(data))
     {
       if(length(grep("\\(",data))>0) type="double"
+      else type="string"
     }
   }
 # Special case:
