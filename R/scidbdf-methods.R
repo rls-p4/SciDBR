@@ -27,10 +27,12 @@
 # END_COPYRIGHT
 #
 
+# XXX This is a prototype. Right now the attribute list must match.
 setGeneric("c")
 setMethod(c,signature(x="scidbdf"),
 function(x,y)
 {
+  if(is.scidb(y)) y = scidb(y,`data.frame`=TRUE)
   if(!is.scidbdf(y)) y = as.scidb(y)
   if(x@D$length<as.numeric(.scidb_DIM_MAX))
   {
