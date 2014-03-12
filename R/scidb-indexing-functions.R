@@ -187,7 +187,7 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
       if(is.numeric(i[[j]]))
       {
 # Special index case 1: non-contiguous numeric indices
-        tmp = data.frame(as.integer(unique(i[[j]])))
+        tmp = data.frame(noE(unique(i[[j]])))
         if(nrow(tmp)!=length(i[[j]]))
         {
           warning("The scidb package doesn't yet support repeated indices in subarray selection")
