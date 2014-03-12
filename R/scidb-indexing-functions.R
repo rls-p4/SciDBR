@@ -263,8 +263,12 @@ materialize = function(x, drop=FALSE)
   type = names(.scidbtypes[.scidbtypes==x@type])
   if(length(type)<1)
   {
-    warning("Partially supported data type, using unpack to return results")
-    iquery(x,return=TRUE)
+    u = unpack(x)[]
+    ans = array(dim=dim(x))
+    k = rep(1 - x@D$start, each=nrow(x))
+    i = as.matrix(u[,1:length(dim(x))]) + k
+    ans[i] = u[,ncol(u)]
+    return(ans)
   }
 
 # Set origin to zero and project. We need the zero origin here to reconstruct
