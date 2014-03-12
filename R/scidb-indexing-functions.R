@@ -263,7 +263,8 @@ materialize = function(x, drop=FALSE)
   type = names(.scidbtypes[.scidbtypes==x@type])
   if(length(type)<1)
   {
-    stop("Unsupported data type. Try using the iquery function.")
+    warning("Partially supported data type, using unpack to return results")
+    iquery(x,return=TRUE)
   }
 
 # Set origin to zero and project. We need the zero origin here to reconstruct
