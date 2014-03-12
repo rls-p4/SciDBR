@@ -229,9 +229,17 @@ redimension = function(x, s, dim, FUN, `eval`=FALSE)
 }
 
 # SciDB build wrapper, intended to act something like the R 'array' function.
-build = function(data, dim, names, type="double",
+build = function(data, dim, names, type,
                  start, name, chunksize, overlap, gc=TRUE, `eval`=FALSE)
 {
+  if(missing(type))
+  {
+    type = typeof(data)
+    if(is.character(data))
+    {
+      if(length(grep("\\(",data))>0) type="double"
+    }
+  }
 # Special case:
   if(is.scidb(dim) || is.scidbdf(dim))
   {
