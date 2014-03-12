@@ -9,3 +9,12 @@ setMethod("phyper", signature(x="scidbOrScidbdf"),
     query = sprintf("hygecdf(%s,%s,%s,%s)",q,m,n,k)
     bind(x, new, query)
   })
+
+setOldClass("qhyper")
+setGeneric("qhyper", function(x, ...) stats::qhyper(x,...))
+setMethod("qhyper", signature(x="scidbOrScidbdf"),
+  function(x, q, m, n, k, new="q")
+  {
+    query = sprintf("ihygecdf(%s,%s,%s,%s)",q,m,n,k)
+    bind(x, new, query)
+  })

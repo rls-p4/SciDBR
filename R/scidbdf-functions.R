@@ -40,11 +40,18 @@ Ops.scidbdf = function(e1,e2) {
   )
 }
 
-`cbind.scidbdf` = function(x)
+`cbind.scidbdf` = function(x, y)
 {
-  newdim=make.unique_(x@attributes, "j")
-  nd = sprintf("%s[%s,%s=0:0,1,0]",build_attr_schema(x) , build_dim_schema(x,bracket=FALSE),newdim)
-  redimension(bind(x,newdim,0), nd)
+  if(missing(y))
+  {
+    newdim=make.unique_(x@attributes, "j")
+    nd = sprintf("%s[%s,%s=0:0,1,0]",build_attr_schema(x) , build_dim_schema(x,bracket=FALSE),newdim)
+    return(redimension(bind(x,newdim,0), nd))
+  }
+  if(!is.scidb(y) && !is.scidbdf(y)) stop("cbind requires either a single argument or two SciDB arrays")
+  i = intersect(x@D$name,y@D$name)
+  if(length(i)<1) stop("Non-conformable arrays") # XXX Should really try harder
+  merge(x,y,by=i)
 }
 
 colnames.scidbdf = function(x)
@@ -223,5 +230,5 @@ betweenbound = function(x, m, n)
   ans = sprintf("between(%s, %.0f, %.0f)", x@name, m, n)
 # Reset just the upper dimension index, use of redimension here is overkill
 # XXX FIX ME
-  ans = sprintf("redimension(%s,%s[%s=%.0f:%.0f,%.0f,%.0f])", ans, build_attr_schema(x), x@D$name[1], x@D$start[1], n, x@D$chunk_interval[1], x@D$chunk_overlap[1])
+  ans = sprintf("redimension(%s,%s[%s=%.0f:%.0f,%.0f,%.0f])", ans, build_attr_schema(x), x@D$name[1], m, n, x@D$chunk_interval[1], x@D$chunk_overlap[1])
 }
