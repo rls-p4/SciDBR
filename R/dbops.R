@@ -241,7 +241,7 @@ build = function(data, dim, names, type,
       else
       {
         type = "string"
-        data = sprintf("'%s'%",data)
+        data = sprintf("'%s'",data)
       }
     }
   }
