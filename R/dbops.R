@@ -227,7 +227,7 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
       x@attributes = x@attributes[-ia]
       f = paste(paste("min(",a,"), max(",a,")",sep=""),collapse=",")
       m = matrix(aggregate(x, FUN=f, unpack=FALSE)[],ncol=2,byrow=TRUE)
-      p = prod(x@D$chunk_interval)
+      p = prod(x@D$chunk_interval[-id])
       chunk = ceiling((1e6/p)^(1/length(ia)))
       new = apply(m,1,paste,collapse=":")
       new = paste(a,new,sep="=")
