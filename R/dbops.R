@@ -168,7 +168,7 @@ repart = function(x, upper, chunk, overlap, `eval`=FALSE)
 
 # SciDB redimension wrapper
 # Either supply s or dim. dim is a list of new dimensions made up
-# from the attributes and existing dimensions. Reduce is a scidb
+# from the attributes and existing dimensions. FUN is a limited scidb
 # aggregation expression.
 redimension = function(x, schema, dim, FUN, `eval`=FALSE)
 {
@@ -216,7 +216,11 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
           d[d %in% nid] = newat
         }
       }
-      if(reindexed) ia = which(x@attributes %in% d)
+      if(reindexed)
+      {
+        ia = which(x@attributes %in% d)
+        as = build_attr_schema(x, I=-ia)
+      }
 
 # Add the new dimension(s)
       a = x@attributes[ia]
