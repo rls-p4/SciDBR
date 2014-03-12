@@ -261,12 +261,14 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
 materialize = function(x, drop=FALSE)
 {
   type = names(.scidbtypes[.scidbtypes==x@type])
+# Check for types that are not fully supported yet.
   if(length(type)<1)
   {
     u = unpack(x)[]
     ans = array(dim=dim(x))
-    k = rep(1 - x@D$start, each=nrow(x))
-    i = as.matrix(u[,1:length(dim(x))]) + k
+#    k = rep(1 - x@D$start, each=nrow(x))
+    i = as.matrix(u[,1:length(dim(x))])
+    for(j in 1:length(dim(x))) i[,j] = i[,j] + 1 - x@D$start[j]
     ans[i] = u[,ncol(u)]
     return(ans)
   }
