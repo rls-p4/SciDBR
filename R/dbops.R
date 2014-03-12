@@ -170,13 +170,14 @@ repart = function(x, upper, chunk, overlap, `eval`=FALSE)
 # Either supply s or dim. dim is a list of new dimensions made up
 # from the attributes and existing dimensions. Reduce is a scidb
 # aggregation expression.
-redimension = function(x, s, dim, FUN, `eval`=FALSE)
+redimension = function(x, schema, dim, FUN, `eval`=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
 # NB SciDB NULL is not allowed along a coordinate axis prior to SciDB 12.11,
 # which could lead to a run time error here.
-  if(missing(s)) s = NULL
+  if(missing(schema)) schema = NULL
   if(missing(dim)) dim = NULL
+  s = schema
   if(is.null(s) && is.null(dim) ||
     (!is.null(s) && !is.null(dim)))
   {
@@ -199,6 +200,24 @@ redimension = function(x, s, dim, FUN, `eval`=FALSE)
     }
     if(length(ia)>0)
     {
+# We'll be converting attributes to dimensions here.
+# First, we make sure that they are all int64. If not, we add a new
+# auxiliary attribute with index_lookup and dimension along that instead.
+      reindexed = FALSE
+      for(nid in x@attributes[ia])
+      {
+        idx = which(x@attributes %in% nid)
+        if(x@types[idx] != "int64")
+        {
+          reindexed = TRUE
+          newat = sprintf("%s_index",nid)
+          newat = make.unique_(x@attributes, newat)
+          x = index_lookup(x, unique(x[,nid]), nid, newat)
+          d[d %in% nid] = newat
+        }
+      }
+      if(reindexed) ia = which(x@attributes %in% d)
+
 # Add the new dimension(s)
       a = x@attributes[ia]
       x@attributes = x@attributes[-ia]

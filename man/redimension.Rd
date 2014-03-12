@@ -7,11 +7,11 @@ redimension
 The \code{redimension} function is a wrapper to the SciDB `redimension` operator.
 }
 \usage{
-redimension(x, s, dim, FUN, `eval`=FALSE)
+redimension(x, schema, dim, FUN, `eval`=FALSE)
 }
 \arguments{
   \item{x}{A SciDB array object of class scidb or scidbdf.}
-  \item{s}{An optional SciDB array object of class scidb, scidbdf,
+  \item{schema}{An optional SciDB array object of class scidb, scidbdf,
            or a character string representation of the output array schema.}
   \item{dim}{An optional character vector or list of new dimension names
              from the union of dimension and attribute names of x. Exactly
