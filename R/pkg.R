@@ -42,6 +42,10 @@
 # Default shim port
   options(scidb.default_shim_port=8080L)
   options(scidb.default_shim_host="localhost")
+# Make it harder to remove arrays. When this option is TRUE, users
+# have to specify scidbrm(array, force=TRUE) to remove arrays that do not
+# begin with "R_array".
+  options(scidb.safe_remove=TRUE)
 }
 
 .onUnload = function(libpath)
@@ -50,6 +54,9 @@
   options(scidb.max.array.elements=c())
   options(scidb.version=c())
   options(scidb.gemm_chunk_size=c())
+  options(scidb.safe_remove=c())
+  options(scidb.default_shim_port=c())
+  options(scidb.default_shim_host=c())
 }
 
 # scidb array object type map. We don't yet support strings in scidb array

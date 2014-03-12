@@ -466,16 +466,21 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
 # x (character): a vector or single character string listing array names
 # error (function): error handler. Use stop or warn, for example.
 # async (optional boolean): If TRUE use expermental shim async option for speed
+# force (optional boolean): If TRUE really remove this array, even if scidb.safe_remove=TRUE
 # Output:
 # null
-scidbremove = function(x, error=warning, async)
+scidbremove = function(x, error=warning, async, force)
 {
   if(is.null(x)) return(invisible())
   if(missing(async)) async=FALSE
+  if(missing(force)) force=FALSE
   if(inherits(x,"scidb")) x = x@name
   if(!inherits(x,"character")) stop("Invalid argument. Perhaps you meant to quote the variable name(s)?")
+  safe = options("scidb.safe_remove")[[1]]
+  if(is.null(safe)) safe = TRUE
   for(y in x) {
     if(grepl("\\(",y)) next
+    if((!grepl("^R_array",y,perl=TRUE) || !safe) || force) next
     tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=async, release=1),
               error=function(e) error(e))
   }
