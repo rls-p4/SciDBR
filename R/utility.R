@@ -475,6 +475,7 @@ scidbremove = function(x, error=warning, async, force)
   if(missing(async)) async=FALSE
   if(missing(force)) force=FALSE
   if(inherits(x,"scidb")) x = x@name
+  if(inherits(x,"scidbdf")) x = x@name
   if(!inherits(x,"character")) stop("Invalid argument. Perhaps you meant to quote the variable name(s)?")
   safe = options("scidb.safe_remove")[[1]]
   if(is.null(safe)) safe = TRUE
