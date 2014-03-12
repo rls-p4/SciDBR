@@ -66,7 +66,7 @@
 # Check for simple cross case
   if(is.null(`by`) && is.null(by.x) && is.null(by.y))
   {
-    query = sprintf("cross(%s, %s)",xname,yname)
+    query = sprintf("cross_join(%s, %s)",xname,yname)
     return(.scidbeval(query,eval,depend=list(x,y)))
   }
 
