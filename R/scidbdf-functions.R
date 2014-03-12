@@ -68,7 +68,7 @@ rownames.scidbdf = function(x)
   iquery(Q,return=TRUE,n=x@D$length[1]+1)[,2]
 }
 
-names.scidbdf = function(x)
+`names.scidbdf` = function(x)
 {
   x@attributes
 }
@@ -82,7 +82,7 @@ names.scidbdf = function(x)
   iquery(query)
 }
 
-dimnames.scidbdf = function(x)
+`dimnames.scidbdf` = function(x)
 {
   list(rownames.scidbdf(x), x@attributes)
 }
@@ -133,13 +133,7 @@ dimnames.scidbdf = function(x)
 `dim.scidbdf` = function(x)
 {
   if(length(x@dim)==0) return(NULL)
-  d = x@dim
-# Try to make arrays with '*' upper bounds seem more reasonable
-    if(d[1] - as.numeric(.scidb_DIM_MAX) == 0)
-    {
-      d[1] = NA
-    }
-  d
+  x@dim
 }
 
 `dim<-.scidbdf` = function(x, value)
