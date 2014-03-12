@@ -204,6 +204,7 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
 # First, we make sure that they are all int64. If not, we add a new
 # auxiliary attribute with index_lookup and dimension along that instead.
       reindexed = FALSE
+      xold = x
       for(nid in x@attributes[ia])
       {
         idx = which(x@attributes %in% nid)
@@ -212,7 +213,7 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
           reindexed = TRUE
           newat = sprintf("%s_index",nid)
           newat = make.unique_(x@attributes, newat)
-          x = index_lookup(x, unique(x[,nid]), nid, newat)
+          x = index_lookup(x, unique(xold[,nid]), nid, newat)
           d[d %in% nid] = newat
         }
       }
@@ -231,7 +232,7 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
       chunk = ceiling((1e6/p)^(1/length(ia)))
       new = apply(m,1,paste,collapse=":")
       new = paste(a,new,sep="=")
-      new = paste(new, chunk, "0", sep=",")
+      new = paste(new, noE(chunk), "0", sep=",")
       new = paste(new,collapse=",")
       ds = ifelse(length(ds)>0,paste(ds,new,sep=","),new)
     }
