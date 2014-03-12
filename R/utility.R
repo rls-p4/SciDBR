@@ -481,9 +481,15 @@ scidbremove = function(x, error=warning, async, force)
   if(!safe) force=TRUE
   for(y in x) {
     if(grepl("\\(",y)) next
-    if(!grepl("^R_array",y,perl=TRUE) || !force) next 
-    tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=async, release=1),
-              error=function(e) error(e))
+    if(grepl("^R_array",y,perl=TRUE))
+    {
+      tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=async, release=1),
+                error=function(e) error(e))
+    } else if(force)
+    {
+      tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=async, release=1),
+                error=function(e) error(e))
+    }
   }
   invisible()
 }
