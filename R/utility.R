@@ -478,9 +478,10 @@ scidbremove = function(x, error=warning, async, force)
   if(!inherits(x,"character")) stop("Invalid argument. Perhaps you meant to quote the variable name(s)?")
   safe = options("scidb.safe_remove")[[1]]
   if(is.null(safe)) safe = TRUE
+  if(!safe) force=TRUE
   for(y in x) {
     if(grepl("\\(",y)) next
-    if((!grepl("^R_array",y,perl=TRUE) || !safe) || force) next
+    if(!grepl("^R_array",y,perl=TRUE) || !force) next 
     tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=async, release=1),
               error=function(e) error(e))
   }
