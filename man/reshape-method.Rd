@@ -28,9 +28,6 @@ B. W. Lewis <blewis@paradigm4.com>
 }
 \examples{
 \dontrun{
-library("scidb")
-scidbconnect()
-
 # Create a 5 x 4 matrix
 X <- as.scidb(matrix(rnorm(20),5))
 

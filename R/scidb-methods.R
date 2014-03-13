@@ -270,7 +270,6 @@ function(x, n=6L, ...)
     do.call(dimfilter,args=list(x=x,i=limits,eval=FALSE))[],
     error = function(e)
     {
-      warning("Unsupported data type. Using iquery to display array data.")
       iquery(x@name, return=TRUE, n=n)
     })
 })
@@ -314,7 +313,7 @@ setMethod('show', 'scidb',
           "SciDB array\n")
   })
 
-setGeneric("image", function(x,...) x)
+setGeneric("image")
 setMethod("image", signature(x="scidb"),
 function(x, grid=c(500,500), op=sprintf("sum(%s)", x@attribute), na=0, ...)
 {
@@ -355,7 +354,7 @@ setMethod("apply", signature(X = "scidb"), apply_scidb)
 setMethod("unpack",signature(x="scidb"),unpack_scidb)
 
 setOldClass("reshape")
-setGeneric("reshape", function(data,...) data)
+setGeneric("reshape", function(data,...) stats::reshape(data,...))
 setMethod("reshape", signature(data="scidb"), reshape_scidb)
 
 setOldClass("svd")

@@ -72,6 +72,7 @@ rename = function(A, name=A@name, gc)
 
 `attribute_rename` = function(x, old, `new`, `eval`=FALSE)
 {
+  old = ifelse(is.numeric(old),x@attributes[which(x@attributes %in% old)], old)
   query = sprintf("attribute_rename(%s,%s)",x@name,
     paste(paste(old,new,sep=","),collapse=","))
   .scidbeval(query,eval,depend=list(x))
@@ -81,7 +82,7 @@ rename = function(A, name=A@name, gc)
 {
   if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
   dnames = x@D$name
-  idx = which(dnames %in% old)
+  idx = ifelse(is.numeric(old),old,which(dnames %in% old))
   dnames[idx] = `new`
   if(length(idx)!=1) stop("Invalid old dimension name specified")
   query = sprintf("cast(%s, %s%s)", x@name, build_attr_schema(x),
@@ -168,15 +169,16 @@ repart = function(x, upper, chunk, overlap, `eval`=FALSE)
 
 # SciDB redimension wrapper
 # Either supply s or dim. dim is a list of new dimensions made up
-# from the attributes and existing dimensions. Reduce is a scidb
+# from the attributes and existing dimensions. FUN is a limited scidb
 # aggregation expression.
-redimension = function(x, s, dim, FUN, `eval`=FALSE)
+redimension = function(x, schema, dim, FUN, `eval`=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
 # NB SciDB NULL is not allowed along a coordinate axis prior to SciDB 12.11,
 # which could lead to a run time error here.
-  if(missing(s)) s = NULL
+  if(missing(schema)) schema = NULL
   if(missing(dim)) dim = NULL
+  s = schema
   if(is.null(s) && is.null(dim) ||
     (!is.null(s) && !is.null(dim)))
   {
@@ -199,16 +201,39 @@ redimension = function(x, s, dim, FUN, `eval`=FALSE)
     }
     if(length(ia)>0)
     {
+# We'll be converting attributes to dimensions here.
+# First, we make sure that they are all int64. If not, we add a new
+# auxiliary attribute with index_lookup and dimension along that instead.
+      reindexed = FALSE
+      xold = x
+      for(nid in x@attributes[ia])
+      {
+        idx = which(x@attributes %in% nid)
+        if(x@types[idx] != "int64")
+        {
+          reindexed = TRUE
+          newat = sprintf("%s_index",nid)
+          newat = make.unique_(x@attributes, newat)
+          x = index_lookup(x, unique(xold[,nid]), nid, newat)
+          d[d %in% nid] = newat
+        }
+      }
+      if(reindexed)
+      {
+        ia = which(x@attributes %in% d)
+        as = build_attr_schema(x, I=-ia)
+      }
+
 # Add the new dimension(s)
       a = x@attributes[ia]
       x@attributes = x@attributes[-ia]
       f = paste(paste("min(",a,"), max(",a,")",sep=""),collapse=",")
       m = matrix(aggregate(x, FUN=f, unpack=FALSE)[],ncol=2,byrow=TRUE)
-      p = prod(x@D$chunk_interval)
+      p = prod(x@D$chunk_interval[-id])
       chunk = ceiling((1e6/p)^(1/length(ia)))
       new = apply(m,1,paste,collapse=":")
       new = paste(a,new,sep="=")
-      new = paste(new, chunk, "0", sep=",")
+      new = paste(new, noE(chunk), "0", sep=",")
       new = paste(new,collapse=",")
       ds = ifelse(length(ds)>0,paste(ds,new,sep=","),new)
     }
@@ -229,9 +254,22 @@ redimension = function(x, s, dim, FUN, `eval`=FALSE)
 }
 
 # SciDB build wrapper, intended to act something like the R 'array' function.
-build = function(data, dim, names, type="double",
+build = function(data, dim, names, type,
                  start, name, chunksize, overlap, gc=TRUE, `eval`=FALSE)
 {
+  if(missing(type))
+  {
+    type = typeof(data)
+    if(is.character(data))
+    {
+      if(length(grep("\\(",data))>0) type="double"
+      else
+      {
+        type = "string"
+        data = sprintf("'%s'",data)
+      }
+    }
+  }
 # Special case:
   if(is.scidb(dim) || is.scidbdf(dim))
   {

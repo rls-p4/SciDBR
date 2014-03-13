@@ -73,7 +73,8 @@ B. W. Lewis <blewis@paradigm4.com>
 }
 \examples{
 \dontrun{
-library("scidb")
-scidbconnect()
+data("iris")
+x <- as.scidb(iris)
+sum(x$Petal_Length)
 }
 }

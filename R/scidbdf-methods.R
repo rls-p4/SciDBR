@@ -27,6 +27,29 @@
 # END_COPYRIGHT
 #
 
+# XXX This is a prototype. Right now the attribute list must match.
+setGeneric("c")
+setMethod(c,signature(x="scidbdf"),
+function(x,y,`eval`=FALSE)
+{
+  if(is.scidb(y)) y = scidb(y,`data.frame`=TRUE)
+  if(!is.scidbdf(y)) y = as.scidb(y)
+  if(x@D$length<as.numeric(.scidb_DIM_MAX))
+  {
+    s = sprintf("%s%s",build_attr_schema(x),build_dim_schema(x,newlen=as.numeric(.scidb_DIM_MAX)))
+    x = redimension(x,s)
+  }
+  i = count(x) + x@D$start
+  j = make.unique_(y@attributes, "j")
+  fun = sprintf("%s + %.0f", y@D$name, i)
+  s = sprintf("apply(%s, %s, %s)",y@name, j, fun)
+  scma = sprintf("%s%s",build_attr_schema(y), build_dim_schema(x,newname=j))
+  s = sprintf("redimension(%s, %s)",s, scma)
+  s = sprintf("cast(%s, %s%s)", s,build_attr_schema(y), build_dim_schema(x))
+  s = sprintf("merge(%s, %s)", x@name, s)
+  .scidbeval(s, `data.frame`=TRUE, gc=TRUE, `eval`=eval, depend=list(x,y))
+})
+
 setMethod("head", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {

@@ -187,7 +187,7 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
       if(is.numeric(i[[j]]))
       {
 # Special index case 1: non-contiguous numeric indices
-        tmp = data.frame(as.integer(unique(i[[j]])))
+        tmp = data.frame(noE(unique(i[[j]])))
         if(nrow(tmp)!=length(i[[j]]))
         {
           warning("The scidb package doesn't yet support repeated indices in subarray selection")
@@ -198,7 +198,7 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
                         chunkSize=x@D$chunk_interval[[j]],
                         rowOverlap=x@D$chunk_overlap[[j]])
         swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]), start=x@D$start[[j]])))
-
+        dependencies = c(dependencies, i[[j]])
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
       } else if(is.character(i[[j]]))
@@ -261,9 +261,16 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
 materialize = function(x, drop=FALSE)
 {
   type = names(.scidbtypes[.scidbtypes==x@type])
+# Check for types that are not fully supported yet.
   if(length(type)<1)
   {
-    stop("Unsupported data type. Try using the iquery function.")
+    u = unpack(x)[]
+    ans = array(dim=dim(x))
+#    k = rep(1 - x@D$start, each=nrow(x))
+    i = as.matrix(u[,1:length(dim(x))])
+    for(j in 1:length(dim(x))) i[,j] = i[,j] + 1 - x@D$start[j]
+    ans[i] = u[,ncol(u)]
+    return(ans)
   }
 
 # Set origin to zero and project. We need the zero origin here to reconstruct
