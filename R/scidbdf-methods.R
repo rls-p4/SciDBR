@@ -39,7 +39,7 @@ function(x,y)
     s = sprintf("%s%s",build_attr_schema(x),build_dim_schema(x,newlen=as.numeric(.scidb_DIM_MAX)))
     x = redimension(x,s)
   }
-  i = count(x) + x@D$start - 1
+  i = count(x) + x@D$start
   j = make.unique_(y@attributes, "j")
   fun = sprintf("%s + %.0f", y@D$name, i)
   s = sprintf("apply(%s, %s, %s)",y@name, j, fun)
