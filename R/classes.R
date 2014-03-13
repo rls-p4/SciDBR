@@ -73,4 +73,4 @@ setClass("scidbdf",
                         gc="environment"),
          S3methods=TRUE)
 
-setClassUnion("scidbOrScidbdf", c("scidb", "scidbdf")) 
+setClassUnion("scidb_or_scidbdf", c("scidb", "scidbdf")) 

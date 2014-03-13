@@ -72,6 +72,7 @@ rename = function(A, name=A@name, gc)
 
 `attribute_rename` = function(x, old, `new`, `eval`=FALSE)
 {
+  old = ifelse(is.numeric(old),x@attributes[which(x@attributes %in% old)], old)
   query = sprintf("attribute_rename(%s,%s)",x@name,
     paste(paste(old,new,sep=","),collapse=","))
   .scidbeval(query,eval,depend=list(x))
@@ -81,7 +82,7 @@ rename = function(A, name=A@name, gc)
 {
   if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
   dnames = x@D$name
-  idx = which(dnames %in% old)
+  idx = ifelse(is.numeric(old),old,which(dnames %in% old))
   dnames[idx] = `new`
   if(length(idx)!=1) stop("Invalid old dimension name specified")
   query = sprintf("cast(%s, %s%s)", x@name, build_attr_schema(x),

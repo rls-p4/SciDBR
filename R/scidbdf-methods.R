@@ -30,7 +30,7 @@
 # XXX This is a prototype. Right now the attribute list must match.
 setGeneric("c")
 setMethod(c,signature(x="scidbdf"),
-function(x,y)
+function(x,y,`eval`=FALSE)
 {
   if(is.scidb(y)) y = scidb(y,`data.frame`=TRUE)
   if(!is.scidbdf(y)) y = as.scidb(y)
@@ -47,7 +47,7 @@ function(x,y)
   s = sprintf("redimension(%s, %s)",s, scma)
   s = sprintf("cast(%s, %s%s)", s,build_attr_schema(y), build_dim_schema(x))
   s = sprintf("merge(%s, %s)", x@name, s)
-  .scidbeval(s, `data.frame`=TRUE, gc=TRUE, `eval`=FALSE, depend=list(x,y))
+  .scidbeval(s, `data.frame`=TRUE, gc=TRUE, `eval`=eval, depend=list(x,y))
 })
 
 setMethod("head", signature(x="scidbdf"),

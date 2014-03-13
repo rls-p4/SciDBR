@@ -31,4 +31,3 @@ y <- dimension_rename(x, "row", "i")
 
 str(y)
 }}
-
