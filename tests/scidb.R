@@ -25,7 +25,7 @@ if(nchar(host)>0)
   check(Y[],B)
 
 # n-d array
-  x = build("k",dim=c(3,3,3),names=c("x","i","j","k"))
+  x = build("k",dim=c(3,3,3),names=c("x","i","j","k"), type="double")
   check(x[][,,2] , matrix(1,3,3))
 
 # Dense matrix multiplication
