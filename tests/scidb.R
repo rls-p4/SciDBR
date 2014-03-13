@@ -117,7 +117,7 @@ if(nchar(host)>0)
   aggregate(A,FUN=mean)  # Grand aggregate
 
 # More special index tests, sort, apply, densify giant sparse sort result.
-  a = build("i+j",c(5,5))
+  a = build("i+j",c(5,5),type="double")
   s = sort(a)
   i = apply(s,1,count)
   check(s[i][], sort(a[]))
@@ -132,7 +132,7 @@ if(nchar(host)>0)
   }
 
 # slice
-  x = build("i+j+k",c(3,4,5))
+  x = build("i+j+k",c(3,4,5),type="double")
   check(slice(x,c("i","j"),c(2,3))[0][], 5)
 
 # na.locf
