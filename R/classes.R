@@ -74,3 +74,4 @@ setClass("scidbdf",
          S3methods=TRUE)
 
 setClassUnion("scidb_or_scidbdf", c("scidb", "scidbdf")) 
+setClassUnion("MNSN", c("missing", "NULL", "scidb", "scidbdf", "numeric"))

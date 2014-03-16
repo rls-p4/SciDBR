@@ -28,7 +28,6 @@
 #
 
 # Non-traditional masking binary comparison operators
-setGeneric("%<%", def=function(x,y){NULL})
 setMethod("%<%",signature(x="scidb", y="ANY"),
   function(x,y)
   {
@@ -36,7 +35,6 @@ setMethod("%<%",signature(x="scidb", y="ANY"),
   },
   valueClass="scidb"
 )
-setGeneric("%>%", def=function(x,y){NULL})
 setMethod("%>%",signature(x="scidb", y="ANY"),
   function(x,y)
   {
@@ -44,7 +42,6 @@ setMethod("%>%",signature(x="scidb", y="ANY"),
   },
   valueClass="scidb"
 )
-setGeneric("%<=%", def=function(x,y){NULL})
 setMethod("%<=%",signature(x="scidb", y="ANY"),
   function(x,y)
   {
@@ -52,7 +49,6 @@ setMethod("%<=%",signature(x="scidb", y="ANY"),
   },
   valueClass="scidb"
 )
-setGeneric("%>=%", def=function(x,y){NULL})
 setMethod("%>=%",signature(x="scidb", y="ANY"),
   function(x,y)
   {
@@ -60,7 +56,6 @@ setMethod("%>=%",signature(x="scidb", y="ANY"),
   },
   valueClass="scidb"
 )
-setGeneric("%==%", def=function(x,y){NULL})
 setMethod("%==%",signature(x="scidb", y="ANY"),
   function(x,y)
   {
@@ -119,8 +114,6 @@ setMethod("%*%",signature(x="numeric", y="scidb"),
   valueClass="character"
 )
 
-setOldClass("crossprod")
-setGeneric("crossprod")
 setMethod("crossprod",signature(x="scidb", y="missing"),
   function(x)
   {
@@ -129,8 +122,6 @@ setMethod("crossprod",signature(x="scidb", y="missing"),
   valueClass="scidb"
 )
 
-setOldClass("crossprod")
-setGeneric("crossprod")
 setMethod("crossprod",signature(x="scidb", y="scidb"),
   function(x,y)
   {
@@ -139,12 +130,8 @@ setMethod("crossprod",signature(x="scidb", y="scidb"),
   valueClass="scidb"
 )
 
-setOldClass("na.locf")
-setGeneric("na.locf")
 setMethod("na.locf",signature(object="scidb"), na.locf_scidb)
 
-setOldClass("hist")
-setGeneric("hist")
 setMethod("hist",signature(x="scidb"), hist_scidb)
 
 setMethod("tcrossprod",signature(x="scidb", y="scidb"),
@@ -171,56 +158,48 @@ scidb_grand = function(x, op)
 }
 
 # The remaining functions return data to R:
-setGeneric("sum")
 setMethod("sum", signature(x="scidb"),
 function(x)
 {
   scidb_grand(x, "sum")
 })
 
-setGeneric("mean")
 setMethod("mean", signature(x="scidb"),
 function(x)
 {
   scidb_grand(x, "avg")
 })
 
-setGeneric("median")
 setMethod("median", signature(x="scidb"),
 function(x)
 {
   scidb_grand(x, "median")
 })
 
-setGeneric("min")
 setMethod("min", signature(x="scidb"),
 function(x)
 {
   scidb_grand(x, "min")
 })
 
-setGeneric("max")
 setMethod("max", signature(x="scidb"),
 function(x)
 {
   scidb_grand(x, "max")
 })
 
-setGeneric("sd")
 setMethod("sd", signature(x="scidb"),
 function(x)
 {
   scidb_grand(x, "stdev")
 })
 
-setGeneric("var")
 setMethod("var", signature(x="scidb"),
 function(x)
 {
   scidb_grand(x, "var")
 })
 
-setGeneric("diag")
 setMethod("diag", signature(x="scidb"),
 function(x)
 {
@@ -259,7 +238,6 @@ function(x)
   return(ans)
 })
 
-setGeneric("head")
 setMethod("head", signature(x="scidb"),
 function(x, n=6L, ...)
 {
@@ -274,7 +252,6 @@ function(x, n=6L, ...)
     })
 })
 
-setGeneric("tail")
 setMethod("tail", signature(x="scidb"),
 function(x, n=6L, ...)
 {
@@ -286,7 +263,6 @@ function(x, n=6L, ...)
 })
 
 
-setGeneric('is.scidb', function(x) standardGeneric('is.scidb'))
 setMethod('is.scidb', signature(x='ANY'),
   function(x) 
   {
@@ -296,7 +272,6 @@ setMethod('is.scidb', signature(x='ANY'),
 )
 #setMethod('is.scidb', definition=function(x) return(FALSE))
 
-setGeneric('print', function(x) standardGeneric('print'))
 setMethod('print', signature(x='scidb'),
   function(x) {
     show(x)
@@ -313,7 +288,6 @@ setMethod('show', 'scidb',
           "SciDB array\n")
   })
 
-setGeneric("image")
 setMethod("image", signature(x="scidb"),
 function(x, grid=c(500,500), op=sprintf("sum(%s)", x@attribute), na=0, ...)
 {
@@ -339,36 +313,21 @@ function(x, grid=c(500,500), op=sprintf("sum(%s)", x@attribute), na=0, ...)
   B
 })
 
-setOldClass("aggregate")
-setGeneric("aggregate")
 setMethod("aggregate", signature(x="scidb"), aggregate_scidb)
 
-setOldClass("sweep")
-setGeneric("sweep")
 setMethod("sweep", signature(x="scidb"), sweep_scidb)
 
-setOldClass("apply")
-setGeneric("apply")
 setMethod("apply", signature(X = "scidb"), apply_scidb)
 
 setMethod("unpack",signature(x="scidb"),unpack_scidb)
 
-setOldClass("reshape")
-setGeneric("reshape", function(data,...) stats::reshape(data,...))
 setMethod("reshape", signature(data="scidb"), reshape_scidb)
 
-setOldClass("svd")
-setGeneric("svd")
 setMethod("svd", signature(x="scidb"), svd_scidb)
 
-setOldClass("glm.fit")
-setGeneric("glm.fit")
-setClassUnion("MNSN", c("missing", "NULL", "scidb", "scidbdf", "numeric"))
 setMethod("glm.fit", signature(x="scidb",y="ANY",weights="MNSN"), glm_scidb)
 
 # Transpose a matrix or vector
-setOldClass("t")
-setGeneric("t")
 setMethod("t", signature(x="scidb"), 
   function(x)
   {
@@ -378,8 +337,6 @@ setMethod("t", signature(x="scidb"),
 )
 
 # Lead or lag a time series
-setOldClass("lag")
-setGeneric("lag")
 setMethod("lag",signature(x="scidb"),
   function(x,k=1,dim=1,eval=FALSE)
   {
@@ -404,7 +361,6 @@ setMethod("lag",signature(x="scidb"),
   })
 
 # SciDB's regrid and xgrid operators (simple wrappers)
-setGeneric("regrid", def=function(x,grid,expr){NULL})
 setMethod("regrid", signature(x="scidb"),
   function(x, grid, expr)
   {
@@ -413,7 +369,6 @@ setMethod("regrid", signature(x="scidb"),
                x@name, paste(noE(grid),collapse=","), expr)
     .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
   })
-setGeneric("xgrid", def=function(x,grid){NULL})
 setMethod("xgrid", signature(x="scidb"),
   function(x, grid)
   {
@@ -421,7 +376,6 @@ setMethod("xgrid", signature(x="scidb"),
     .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
   })
 
-setGeneric("Filter")
 setMethod("Filter",signature(f="character",x="scidb"),
   function(f, x)
   {

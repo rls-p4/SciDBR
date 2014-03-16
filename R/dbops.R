@@ -134,7 +134,7 @@ subarray = function(x, limits, schema, between=FALSE, `eval`=FALSE)
   if(!missing(schema))
   {
     if(!is.character(schema)) schema = schema(schema)
-    limits = paste(coordinate_bounds(schema),collapse=",")
+    limits = paste(between_coordinate_bounds(schema),collapse=",")
   }
   if(between)
     query = sprintf("between(%s,%s)",x@name,limits)
@@ -146,8 +146,7 @@ subarray = function(x, limits, schema, between=FALSE, `eval`=FALSE)
 cast = function(x, s, `eval`=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-# Default cast strips "Not nullable" array property
-  if(missing(s)) s = extract_schema(scidb_from_schemastring(x@schema))
+  if(missing(s)) stop("Missing cast schema")
   query = sprintf("cast(%s,%s)",x@name,s)
   .scidbeval(query,eval,depend=list(x))
 }

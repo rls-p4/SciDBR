@@ -44,22 +44,8 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
   .scidbeval(ans@name, `eval`=eval, name=name, gc=gc)
 }
 
-# Return a vector of dimension names of the SciDB object x. Equivalent to
-# x@D$name.
-dimensions = function(x)
-{
-  if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
-  x@D$name
-}
-
-schema = function(x)
-{
-  if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
-  gsub(".*<","<",x@schema)
-}
-
 # Create a new scidb reference to an existing SciDB array.
-# name (character): Name of the backing SciDB array
+# name (character): SciDB expression or array name
 # attribute (character): Attribute in the backing SciDB array
 #   (applies to n-d arrays, not data.frame-like 1-d arrays)
 # gc (logical, optional): Remove backing SciDB array when R object is
@@ -149,81 +135,6 @@ scidb = function(name, attribute, gc, `data.frame`)
   ans
 }
 
-
-# Construct a scidb promise from a SciDB schema string.
-scidb_from_schemastring = function(s,expr=character(), `data.frame`)
-{
-  a=strsplit(strsplit(strsplit(strsplit(s,">")[[1]][1],"<")[[1]][2],",")[[1]],":")
-  attributes=unlist(lapply(a,function(x)x[[1]]))
-  attribute=attributes[[1]]
-
-  ts = lapply(a,function(x)x[[2]])
-  nullable = rep(FALSE,length(ts))
-  n = grep("null",ts,ignore.case=TRUE)
-  if(any(n)) nullable[n]=TRUE
-
-  types = gsub(" .*","",ts)
-  type = types[1]
-
-  d = gsub("\\]","",strsplit(s,"\\[")[[1]][[2]])
-  d = strsplit(strsplit(d,"=")[[1]],",")
-  dname = unlist(lapply(d[-length(d)],function(x)x[[length(x)]]))
-  dtype = rep("int64",length(dname))
-  chunk_interval = as.numeric(unlist(lapply(d[-1],function(x)x[[2]])))
-  chunk_overlap = as.numeric(unlist(lapply(d[-1],function(x)x[[3]])))
-  d = lapply(d[-1],function(x)x[[1]])
-
-  dlength = unlist(lapply(d,function(x)diff(as.numeric(gsub("\\*",.scidb_DIM_MAX,strsplit(x,":")[[1]])))+1))
-  dstart = unlist(lapply(d,function (x)as.numeric(strsplit(x,":")[[1]][[1]])))
-
-  D = list(name=dname,
-           type=dtype,
-           start=dstart,
-           length=dlength,
-           chunk_interval=chunk_interval,
-           chunk_overlap=chunk_overlap
-           )
-  if(missing(`data.frame`)) `data.frame` = ( (length(dname)==1) &&  (length(attributes)>1))
-  if(length(dname)>1 && `data.frame`) stop("SciDB data frame objects can only be associated with 1-D SciDB arrays")
-
-  if(`data.frame`)
-  {
-# Set default column types
-    ctypes = c("int64",dtype)
-    cc = rep(NA,length(ctypes))
-    cc[ctypes=="datetime"] = "Date"
-    cc[ctypes=="float"] = "double"
-    cc[ctypes=="double"] = "double"
-    cc[ctypes=="bool"] = "logical"
-    st = grep("string",ctypes)
-    if(length(st>0)) cc[st] = "character"
-    return(new("scidbdf",
-                schema=gsub("^.*<","<",s,perl=TRUE),
-                name=expr,
-                attributes=attributes,
-                types=types,
-                nullable=nullable,
-                D=D,
-                dim=c(D$length,length(attributes)),
-                gc=new.env(),
-                length=length(attributes)
-             ))
-  }
-
-  new("scidb",
-      name=expr,
-      schema=gsub("^.*<","<",s,perl=TRUE),
-      attribute=attribute,
-      type=type,
-      attributes=attributes,
-      types=types,
-      nullable=nullable,
-      D=D,
-      dim=D$length,
-      gc=new.env(),
-      length=prod(D$length)
-  )
-}
 
 # store the connection information and obtain a unique ID
 scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
@@ -784,52 +695,10 @@ iqiter = function (con, n = 1, excludecol, ...)
   ans
 }
 
-# Return a SciDB schema of a scidb object x.
-# Explicitly indicate attribute part of schema with remaining arguments
-`extract_schema` = function(x, at=x@attributes, ty=x@types, nu=x@nullable)
-{
-  if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) stop("Not a scidb object")
-  op = options(scipen=20)
-  nullable = rep("",length(nu))
-  if(any(nu)) nullable[nu] = " NULL"
-  attr = paste(at,ty,sep=":")
-  attr = paste(attr, nullable,sep="")
-  attr = sprintf("<%s>",paste(attr,collapse=","))
-  dims = sprintf("[%s]",paste(paste(paste(paste(paste(paste(x@D$name,"=",sep=""),x@D$start,sep=""),x@D$start+x@D$length-1,sep=":"),x@D$chunk_interval,sep=","),x@D$chunk_overlap,sep=","),collapse=","))
-  options(op)
-  paste(attr,dims,sep="")
-}
-
 # Internal utility function, make every attribute of an array nullable
 `make_nullable` = function(x)
 {
   cast(x,sprintf("%s%s",build_attr_schema(x,nullable=TRUE),build_dim_schema(x)))
-}
-
-# Build the attribute part of a SciDB array schema from a scidb, scidbdf object.
-# Set prefix to add a prefix to all attribute names.
-# I: optional vector of dimension indices to use, if missing use all
-# newnames: optional vector of new dimension names, must be the same length
-#    as I.
-# nullable: optional vector of new nullability expressed as FALSE or TRUE,
-#    must be the same length as I.
-`build_attr_schema` = function(A, prefix="", I, newnames, nullable)
-{
-  if(missing(I) || length(I)==0) I = rep(TRUE,length(A@attributes))
-  if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-  if(is.logical(I)) I = which(I)
-  N = rep("", length(I))
-  N[A@nullable[I]] = " NULL"
-  if(!missing(nullable))
-  {
-    N = rep("", length(I))
-    N[nullable] = " NULL"
-  }
-  N = paste(A@types[I],N,sep="")
-  attributes = paste(prefix,A@attributes[I],sep="")
-  if(!missing(newnames)) attributes = newnames
-  S = paste(paste(attributes,N,sep=":"),collapse=",")
-  sprintf("<%s>",S)
 }
 
 `noE` = function(w) sapply(w,
@@ -838,75 +707,6 @@ iqiter = function (con, n = 1, excludecol, ...)
     if(is.character(x)) return(x)
     sprintf("%.0f",x)
   })
-
-# Build the dimension part of a SciDB array schema from a scidb,
-# scidbdf object.
-# A: A scidb or scidbdf object
-# bracket: if TRUE, enclose dimension expression in square brackets
-# I: optional vector of dimension indices to use, if missing use all
-# newnames: optional vector of new dimension names, must be the same length
-#    as I.
-# newlen: optional vector of new dimension lengths, must be the same length
-#    as I.
-# newstart: optional vector of new start values, must be the same length
-#    as I.
-`build_dim_schema` = function(A,bracket=TRUE, I, newnames, newlen, newstart)
-{
-  if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-  if(!missing(I) && length(I)>0)
-  {
-    A@D$type = A@D$type[I]
-    A@D$name = A@D$name[I]
-    A@D$start = A@D$start[I]
-    A@D$length = A@D$length[I]
-    A@D$chunk_interval = A@D$chunk_interval[I]
-    A@D$chunk_overlap = A@D$chunk_overlap[I]
-  }
-  if(!missing(newnames))
-  {
-    A@D$name = newnames
-  }
-  if(!missing(newstart))
-  {
-    A@D$start = newstart
-  }
-  if(!missing(newlen))
-  {
-    A@D$length = newlen
-  }
-
-  low = noE(A@D$start)
-  hi = noE(as.numeric(A@D$length) - 1 + as.numeric(A@D$start))
-  hi[as.numeric(hi)>=as.numeric(.scidb_DIM_MAX)] = NA
-  hi[is.na(hi)] = .scidb_DIM_MAX
-  R = paste(low,hi,sep=":")
-  S = paste(A@D$name,R,sep="=")
-  S = paste(S,noE(A@D$chunk_interval),sep=",")
-  S = paste(S,noE(A@D$chunk_overlap),sep=",")
-  S = paste(S,collapse=",")
-  if(bracket) S = sprintf("[%s]",S)
-  S
-}
-
-# .scidbdim is an internal function that retirieves dimension metadata from a
-# scidb array called "name."
-.scidbdim = function(name)
-{
-#  if(!.scidbexists(name)) stop ("not found") 
-  d = iquery(paste("dimensions(",name,")"),return=TRUE)
-# R is unfortunately interpreting 'i' as an imaginary unit I think.
-  if(any(is.na(d))) d[is.na(d)] = "i"
-  d
-}
-
-# Retrieve list of attributes for a named SciDB array (internal function).
-.scidbattributes = function(name)
-{
-  x = iquery(paste("attributes(",name,")",sep=""),return=TRUE,colClasses=c(NA,"character",NA,NA))
-# R is unfortunately interpreting 'i' as an imaginary unit I think.
-  if(any(is.na(x))) x[is.na(x)] = "i"
-  list(attributes=x[,2],types=x[,3],nullable=(x[,4]=="true"))
-}
 
 # If a scidb object has the "sparse" attribute set, return that. Otherwise
 # interrogate the backing array to determine if it's sparse or not.
@@ -938,12 +738,6 @@ origin = function(x)
   N = paste(rep("null",2*length(x@D$name)),collapse=",")
   query = sprintf("sg(subarray(%s,%s),1,-1)",x@name,N)
   .scidbeval(query,`eval`=FALSE,depend=list(x),gc=TRUE)
-}
-
-# Take a SciDB schema and return a bounding vector of coordinate limits in SciDB subarray order
-coordinate_bounds = function(s)
-{
-  paste(t(matrix(unlist(lapply(strsplit(gsub("\\].*","",gsub(".*\\[","",s,perl=TRUE),perl=TRUE),"=")[[1]][-1],function(x)strsplit(strsplit(x,",")[[1]][1],":")[[1]])),2,byrow=FALSE)))
 }
 
 chunk_map = function()

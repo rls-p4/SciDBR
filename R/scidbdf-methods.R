@@ -28,7 +28,6 @@
 #
 
 # XXX This is a prototype. Right now the attribute list must match.
-setGeneric("c")
 setMethod(c,signature(x="scidbdf"),
 function(x,y,`eval`=FALSE)
 {
@@ -68,7 +67,6 @@ setMethod("Filter",signature(f="character",x="scidbdf"),
     filter_scidb(x,f)
   })
 
-setGeneric('is.scidbdf', function(x) standardGeneric('is.scidbdf'))
 setMethod('is.scidbdf', signature(x='scidbdf'),
   function(x) return(TRUE))
 setMethod('is.scidbdf', definition=function(x) return(FALSE))
