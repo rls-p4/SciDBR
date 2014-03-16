@@ -66,11 +66,12 @@
 # Check for simple cross case
   if(is.null(`by`) && is.null(by.x) && is.null(by.y))
   {
+    if(scidbmerge) stop("SciDB merge not supported in this context")
     query = sprintf("cross_join(%s, %s)",xname,yname)
     return(.scidbeval(query,eval,depend=list(x,y)))
   }
 
-# Convert identically specified by int separate by.x by.y
+# Convert identically specified by into separate by.x by.y
   if(length(by)>0)
   {
     by.x = `by`
@@ -82,6 +83,7 @@
 # - only inner join
   if(all(by.x %in% x@attributes) && all(by.y %in% y@attributes))
   {
+    if(scidbmerge) stop("SciDB merge not supported in this context")
     by.x = by.x[[1]]  # Limitation: only one attribute for now
     by.y = by.y[[1]]  # Ditto
     lkup = unique(project(x,by.x),attributes=by.x)
@@ -120,6 +122,7 @@
     if(all)
     {
 # Experimental outer join XXX XXX
+      if(scidbmerge) stop("at most one of `all` and `merge` may be set TRUE")
       x = make_nullable(x)
       z = make_nullable(z)
 # Form a null-valued version of each array in the alternate array coordinate system
@@ -142,8 +145,8 @@
       }
     return(.scidbeval(query,eval,depend=list(x,y)))
   }
-
 # Cross-join case (trickiest)
+  if(scidbmerge) stop("cross-merge not yet supported")
 # Cast and redimension y conformably with x along join dimensions:
   idx.x = which(x@D$name %in% by.x)
   msk.y = y@D$name %in% by.y
