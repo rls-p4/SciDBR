@@ -90,7 +90,7 @@
     XI = index_lookup(x,lkup,by.x,`eval`=FALSE)
     YI = index_lookup(y,lkup,by.y,`eval`=FALSE)
 
-    new_dim_name = make.unique_(c(x@D$name,y@D$name),"row")
+    new_dim_name = make.unique_(c(dimensions(x),dimensions(y)),"row")
     a = XI@attributes %in% paste(by.x,"index",sep="_")
     n = XI@attributes[a]
     redim = paste(paste(n,"=-1:",.scidb_DIM_MAX,",100000,0",sep=""), collapse=",")
@@ -112,9 +112,9 @@
 # New attribute schema for y that won't conflict with x:
   newas = build_attr_schema(y,newnames=make.unique_(x@attributes,y@attributes))
 # Check for join case (easy case)
-  if((length(by.x) == length(by.y)) && all(x@D$name %in% by.x) && all(y@D$name %in% by.y))
+  if((length(by.x) == length(by.y)) && all(dimensions(x) %in% by.x) && all(dimensions(y) %in% by.y))
   {
-    newds = build_dim_schema(y,newnames=x@D$name)
+    newds = build_dim_schema(y,newnames=dimensions(x))
     castschema = sprintf("%s%s", newas, newds)
     reschema = sprintf("%s%s", newas,build_dim_schema(x))
 # Cast and redimension y conformably with x:
@@ -126,12 +126,12 @@
       x = make_nullable(x)
       z = make_nullable(z)
 # Form a null-valued version of each array in the alternate array coordinate system
-      xnames = make.unique_(c(z@D$name,z@attributes),x@attributes)
-      vals = paste(x@types, rep("(null)",length(x@types)))
-      xnull = attribute_rename(project(bind(z,xnames,vals),xnames),xnames,x@attributes)
-      znames = make.unique_(c(x@D$name,x@attributes),z@attributes)
-      vals = paste(z@types, rep("(null)",length(z@types)))
-      znull = attribute_rename(project(bind(x,znames,vals),znames),znames,z@attributes)
+      xnames = make.unique_(c(dimensions(z),scidb_attributes(z)),scidb_attributes(x))
+      vals = paste(scidb_types(x), rep("(null)",length(x@types)))
+      xnull = attribute_rename(project(bind(z,xnames,vals),xnames),xnames,scidb_attributes(x))
+      znames = make.unique_(c(dimensions(x),scidb_attributes(x)),scidb_attributes(z))
+      vals = paste(scidb_types(z), rep("(null)",length(scidb_types(z))))
+      znull = attribute_rename(project(bind(x,znames,vals),znames),znames,scidb_attributes(z))
 # Merge each array with its nullified counterpart, then join:
       query = sprintf("join(merge(%s,%s),merge(%s,%s))",x@name,xnull@name,z@name,znull@name)
     }
@@ -148,9 +148,9 @@
 # Cross-join case (trickiest)
   if(scidbmerge) stop("cross-merge not yet supported")
 # Cast and redimension y conformably with x along join dimensions:
-  idx.x = which(x@D$name %in% by.x)
-  msk.y = y@D$name %in% by.y
-  newds = lapply(1:length(y@D$name),
+  idx.x = which(dimensions(x) %in% by.x)
+  msk.y = dimensions(y) %in% by.y
+  newds = lapply(1:length(dimensions(y)),
     function(j) {
       if(!msk.y[j])
       {
@@ -158,7 +158,7 @@
       } else
       {
         k = sum(msk.y[1:j])
-        d = build_dim_schema(x,I=idx.x[k],newnames=y@D$name[j],bracket=FALSE)
+        d = build_dim_schema(x,I=idx.x[k],newnames=dimensions(y)[j],bracket=FALSE)
       }
     })
   newds = sprintf("[%s]",paste(newds,collapse=","))

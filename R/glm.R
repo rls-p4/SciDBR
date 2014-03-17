@@ -32,13 +32,14 @@ glm_scidb = function(x,y,`weights`=NULL,`family`=gaussian())
 {
   nobs = length(y)
   got_glm = length(grep("glm",.scidbenv$ops[,2]))>0
+  xchunks = as.numeric(scidb_coordinate_chunksize(x))
   if(missing(`weights`)) `weights`=NULL
   if(is.numeric(`weights`))
   {
-    `weights` = as.scidb(as.double(weights),chunkSize=x@D$chunk_interval[1])
+    `weights` = as.scidb(as.double(weights),chunkSize=xchunks[1])
   } else
   {
-    weights = build(1.0,nrow(x),start=x@D$start[1],chunksize=x@D$chunk_interval[1])
+    weights = build(1.0,nrow(x),start=as.numeric(scidb_coordinate_start(x)[1]),chunksize=xchunks[1])
   }
   if(!is.scidb(y))
   {
@@ -54,13 +55,15 @@ glm_scidb = function(x,y,`weights`=NULL,`family`=gaussian())
   dist = family$family
   link = family$link
 # GLM has a some data partitioning requirements to look out for:
-  if(x@D$chunk_interval[2]<dim(x)[2])
+  if(xchunks[2]<dim(x)[2])
   {
-    x = repart(x,chunk=c(x@D$chunk_interval[1],dim(x)[2]))
+    x = repart(x,chunk=c(xchunks[1],dim(x)[2]))
   }
-  if((y@D$chunk_interval[1] != x@D$chunk_interval[1]) )
+  xchunks = as.numeric(scidb_coordinate_chunksize(x))
+  ychunks = as.numeric(scidb_coordinate_chunksize(y))
+  if((ychunks[1] != xchunks[1]) )
   {
-    y = repart(y, chunk=x@D$chunk_interval[1])
+    y = repart(y, chunk=xchunks[1])
   }
   query = sprintf("glm(%s,%s,%s,'%s','%s')",
            x@name, y@name, weights@name, dist, link)

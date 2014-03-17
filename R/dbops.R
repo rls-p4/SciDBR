@@ -59,6 +59,7 @@ reshape_scidb = function(data, schema, shape, dimnames, chunks, `eval`=FALSE)
 # Note! that the default garbage collection option here is to *not* remove.
 rename = function(A, name=A@name, gc)
 {
+XXX
   if(!(inherits(A,"scidb") || inherits(A,"scidbdf"))) stop("`A` must be a scidb object.")
   if(missing(gc)) gc = FALSE
   if(A@name != name) scidbquery(sprintf("rename(%s,%s)",A@name, name))
@@ -68,25 +69,26 @@ rename = function(A, name=A@name, gc)
   A
 }
 
-`unpack_scidb` = function(x, `eval`=FALSE)
+unpack_scidb = function(x, `eval`=FALSE)
 {
-  dimname = make.unique_(c(x@D$name,x@attributes), "i")
+  dimname = make.unique_(c(dimensions(x),scidb_attributes(x)), "i")
   query = sprintf("unpack(%s, %s)",x@name, dimname)
   .scidbeval(query,eval,depend=list(x))
 }
 
-`attribute_rename` = function(x, old, `new`, `eval`=FALSE)
+attribute_rename = function(x, old, `new`, `eval`=FALSE)
 {
-  old = ifelse(is.numeric(old),x@attributes[which(x@attributes %in% old)], old)
+  atr = scidb_attributes(x)
+  old = ifelse(is.numeric(old),atr[which(atr %in% old)], old)
   query = sprintf("attribute_rename(%s,%s)",x@name,
     paste(paste(old,new,sep=","),collapse=","))
   .scidbeval(query,eval,depend=list(x))
 }
 
-`dimension_rename` = function(x, old, `new`, `eval`=FALSE)
+dimension_rename = function(x, old, `new`, `eval`=FALSE)
 {
   if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
-  dnames = x@D$name
+  dnames = dimensions(x)
   idx = ifelse(is.numeric(old),old,which(dnames %in% old))
   dnames[idx] = `new`
   if(length(idx)!=1) stop("Invalid old dimension name specified")
@@ -98,12 +100,12 @@ rename = function(A, name=A@name, gc)
 slice = function(x, d, n, `eval`=FALSE)
 {
   if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
-  N = length(x@D$name)
+  N = length(dimensions(x))
   limits = rep("null",N)
   i = d
   if(is.character(d))
   {
-    i = which(x@D$name %in% d)
+    i = which(dimensions(x) %in% d)
   }
   if(length(i)==0 || i>N)
   {
@@ -135,7 +137,7 @@ substitute = function(x, value, `attribute`, `eval`=FALSE)
 subarray = function(x, limits, schema, between=FALSE, `eval`=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-  if(missing(limits)) limits=paste(rep("null",2*length(x@D$name)),collapse=",")
+  if(missing(limits)) limits=paste(rep("null",2*length(dimensions(x))),collapse=",")
   if(!missing(schema))
   {
     if(!is.character(schema)) schema = schema(schema)
@@ -156,18 +158,19 @@ cast = function(x, s, `eval`=FALSE)
   .scidbeval(query,eval,depend=list(x))
 }
 
-repart = function(x, upper, chunk, overlap, `eval`=FALSE)
+repart = function(x, schema, upper, chunk, overlap, `eval`=FALSE)
 {
+  if(!missing(schema))
+  {
+    query = sprintf("repart(%s, %s)", x@name, schema)
+    return(.scidbeval(query,eval,depend=list(x)))
+  }
+  if(missing(upper)) upper = scidb_coordinate_end(x)
+  if(missing(chunk)) chunk = scidb_coordinate_chunksize(x)
+  if(missing(overlap)) overlap = scidb_coordinate_overlap(x)
   a = build_attr_schema(x)
-  if(missing(upper)) upper = x@D$start + x@D$length - 1
-  if(missing(chunk)) chunk = x@D$chunk_interval
-  if(missing(overlap)) overlap = x@D$chunk_overlap
-  y = x
-  y@D$length = upper - y@D$start + 1
-  y@D$chunk_interval = chunk
-  y@D$chunk_overlap = overlap
-  d = build_dim_schema(y)
-  query = sprintf("repart(%s, %s%s)", x@name, a, d)
+  schema = sprintf("%s%s", a, build_dim_schema(x,newend=upper,newchunk=chunk,newoverlap=overlap))
+  query = sprintf("repart(%s, %s)", x@name, schema)
   .scidbeval(query,eval,depend=list(x))
 }
 
@@ -192,8 +195,8 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
   if(!is.null(dim))
   {
     d = unlist(dim)
-    ia = which(x@attributes %in% d)
-    id = which(x@D$name %in% d)
+    ia = which(scidb_attributes(x) %in% d)
+    id = which(dimensions(x) %in% d)
     if(length(ia)<1 && length(id)<1) stop("Invalid dimensions")
     as = build_attr_schema(x, I=-ia)
     if(length(id>0))
@@ -233,7 +236,7 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
       x@attributes = x@attributes[-ia]
       f = paste(paste("min(",a,"), max(",a,")",sep=""),collapse=",")
       m = matrix(aggregate(x, FUN=f, unpack=FALSE)[],ncol=2,byrow=TRUE)
-      p = prod(x@D$chunk_interval[-id])
+      p = prod(as.numeric(scidb_coordinate_chunksize(x)[-id]))
       chunk = ceiling((1e6/p)^(1/length(ia)))
       new = apply(m,1,paste,collapse=":")
       new = paste(a,new,sep="=")
@@ -372,7 +375,7 @@ bind = function(X, name, FUN, `eval`=FALSE)
 # Auto-generate names like X_n:
   if(missing(name))
   {
-    name = make.unique_(c(X@attributes,X@D$name), rep("X",length(FUN)))
+    name = make.unique_(c(scidb_attributes(X),dimensions(X)), rep("X",length(FUN)))
   }
   if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
   expr = paste(paste(name,FUN,sep=","),collapse=",")
