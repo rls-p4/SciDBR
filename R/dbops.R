@@ -32,8 +32,13 @@
 # defined below work with objects of class scidb (arrays), scidbdf (data
 # frames). They can be efficiently nested by explicitly setting eval=FALSE on
 # inner functions, deferring computation until eval=TRUE.
-`reshape_scidb` = function(data, shape, dimnames, chunks, `eval`=FALSE)
+reshape_scidb = function(data, schema, shape, dimnames, chunks, `eval`=FALSE)
 {
+  if(!missing(schema))
+  {
+    query = sprintf("reshape(%s,%s)",data@name,schema)
+    return(.scidbeval(query,eval,depend=list(data)))
+  }
   if(missing(shape)) stop("Missing dimension shape")
   N = length(shape)
   if(missing(dimnames))

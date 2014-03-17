@@ -64,52 +64,50 @@ scidbmultiply = function(e1,e2)
 
 # Up to at least SciDB 13.12, gemm does not accept nullable attributes.
 # XXX This restriction needs to be changed in a future SciDB release.
-  if(any(e1@nullable))  e1 = substitute(e1)
-  if(any(e2@nullable))  e2 = substitute(e2)
+  if(any(scidb_nullable(e1)))
+  {
+    warning("Missing values are not yet understood by SciDB multiplication operators. Any missing values have been replaced with zero.")
+    e1 = substitute(e1)
+  }
+  if(any(scidb_nullable(e2)))
+  {
+    warning("Missing values are not yet understood by SciDB multiplication operators. Any missing values have been replaced with zero.")
+    e2 = substitute(e2)
+  }
 
   a1 = e1@attribute
   a2 = e2@attribute
-  op1 = e1@name
-  op2 = e2@name
 
 # Promote vectors to row- or column-vectors as required.
   if(length(dim(e1))<2)
   {
+    e2len = as.numeric(scidb_coordinate_bounds(e2)$length)
+    e1chunk = scidb_coordinate_chunksize(e1)
+    e2chunk = scidb_coordinate_chunksize(e2)
     L = dim(e1)
-    M = L/e2@D$length[1]
+    M = L/e2len[1]
     if(M != floor(M)) stop("Non-conformable dimensions")
 
     as = build_attr_schema(e1)
-    op1 = sprintf("reshape(%s,%s[i=0:%.0f,%.0f,0,j=0:%.0f,%.0f,0])",
-            op1, as, M-1, e1@D$chunk_interval[1],
-              e2@D$length[1]-1, e2@D$chunk_interval[1])
-    
-    e1@D$name = c("i","j")
-    e1@D$type = c("int64","int64")
-    e1@D$start = c(0,0)
-    e1@D$length = c(M,e2@D$length[1])
-    e1@D$chunk_interval = c(e1@D$chunk_interval[1],e2@D$chunk_interval[1])
-    e1@D$chunk_overlap = c(0,0)
-    e1@dim = e1@D$length
+    osc = sprintf("%s[i=0:%s,%s,0,j=0:%s,%s,0]",
+            as, noE(M-1), noE(e1chunk[1]),
+              noE(e2len[1]-1), noE(e2chunk[1]))
+    e1 = reshape(e1, schema=osc)
   }
-  if(length(dim(e2))<2)
+  if(length(dim(e2)) < 2)
   {
+    e1len = as.numeric(scidb_coordinate_bounds(e1)$length)
+    e1chunk = scidb_coordinate_chunksize(e1)
+    e2chunk = scidb_coordinate_chunksize(e2)
     L = dim(e2)
-    N = L/e1@D$length[2]
+    N = L/e1len[2]
     if(N != floor(N)) stop("Non-conformable dimensions")
 
     as = build_attr_schema(e2)
-    op2 = sprintf("reshape(%s,%s[i=0:%.0f,%.0f,0,j=0:%.0f,%.0f,0])",
-            op2, as, e1@D$length[2]-1, e1@D$chunk_interval[2],
-                     N-1, e2@D$chunk_interval[1])
-    
-    e2@D$name = c("i","j")
-    e2@D$type = c("int64","int64")
-    e2@D$start = c(0,0)
-    e2@D$length = c(e1@D$length[2],N)
-    e2@D$chunk_interval = c(e1@D$chunk_interval[2],e2@D$chunk_interval[1])
-    e2@D$chunk_overlap = c(0,0)
-    e2@dim = e2@D$length
+    osc = sprintf("%s[i=0:%s,%s,0,j=0:%s,%s,0]",
+            as, noE(e1len[2]-1), noE(e1chunk[2]),
+                     noE(N-1), noE(e2chunk[1]))
+    e2 = reshape(e2, schema=osc)
   }
 
 # We use subarray to handle starting index mismatches (subarray
@@ -117,27 +115,36 @@ scidbmultiply = function(e1,e2)
   l1 = length(dim(e1))
   lb = paste(rep("null",l1),collapse=",")
   ub = paste(rep("null",l1),collapse=",")
-  op1 = sprintf("sg(subarray(%s,%s,%s),1,-1)",op1,lb,ub)
+  op1 = sprintf("sg(subarray(%s,%s,%s),1,-1)",e1@name,lb,ub)
   l2 = length(dim(e2))
   lb = paste(rep("null",l2),collapse=",")
   ub = paste(rep("null",l2),collapse=",")
-  op2 = sprintf("sg(subarray(%s,%s,%s),1,-1)",op2,lb,ub)
+  op2 = sprintf("sg(subarray(%s,%s,%s),1,-1)",e2@name,lb,ub)
 
   if(!SPARSE)
   {
 # Adjust the arrays to conform to GEMM requirements
-    dnames = make.names_(c(e1@D$name[[1]],e2@D$name[[2]]))
+    dnames = make.names_(c(dimensions(e1)[[1]],dimensions(e2)[[2]]))
     CHUNK_SIZE = options("scidb.gemm_chunk_size")[[1]]
-    op1 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0])",op1,a1,e1@type[1],e1@D$name[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,e1@D$name[[2]],e1@D$length[[2]]-1,CHUNK_SIZE)
-    op2 = sprintf("repart(%s,<%s:%s>[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0])",op2,a2,e2@type[1],e2@D$name[[1]],e2@D$length[[1]]-1,CHUNK_SIZE,e2@D$name[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
-    osc = sprintf("<%s:%s>[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0]",a1,e1@type[1],dnames[[1]],e1@D$length[[1]]-1,CHUNK_SIZE,dnames[[2]],e2@D$length[[2]]-1,CHUNK_SIZE)
+    op1 = sprintf("repart(%s,<%s:%s>[%s=0:%s,%s,0,%s=0:%s,%s,0])",op1,a1,scidb_types(e1)[1],
+            dimensions(e1)[1],noE(as.numeric(scidb_coordinate_end(e1)[1])),noE(CHUNK_SIZE),
+            dimensions(e1)[2],noE(as.numeric(scidb_coordinate_end(e1)[2])),noE(CHUNK_SIZE))
+    op2 = sprintf("repart(%s,<%s:%s>[%s=0:%s,%s,0,%s=0:%s,%s,0])",op2,a2,scidb_types(e2)[1],
+            dimensions(e2)[1],noE(as.numeric(scidb_coordinate_end(e2)[1])),noE(CHUNK_SIZE),
+            dimensions(e2)[2],noE(as.numeric(scidb_coordinate_end(e2)[2])),noE(CHUNK_SIZE))
+    osc = sprintf("<%s:%s>[%s=0:%s,%s,0,%s=0:%s,%s,0]",a1,scidb_types(e1)[1],
+              dnames[[1]],noE(as.numeric(scidb_coordinate_end(e1)[1])),noE(CHUNK_SIZE),
+              dnames[[2]],noE(as.numeric(scidb_coordinate_end(e2)[2])),noE(CHUNK_SIZE))
     op3 = sprintf("build(%s,0)",osc)
   } else
   {
 # Adjust array partitions as required by spgemm
-    op2 = sprintf("repart(%s, <%s:%s>[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0])",
-            op2, a2, e2@type[1], e2@D$name[[1]], e2@D$length[[1]]-1, e1@D$chunk_interval[[2]],
-            e2@D$name[[2]], e2@D$length[[2]]-1, e2@D$chunk_interval[[2]])
+    op2 = sprintf("repart(%s, <%s:%s>[%s=0:%s,%s,0,%s=0:%s,%s,0])",
+            op2, a2, scidb_types(e2)[1],
+            dimensions(e2)[1],noE(as.numeric(scidb_coordinate_end(e2)[1])),
+                              noE(scidb_coordinate_chunksize(e1)[2]),
+            dimensions(e2)[2], noE(as.numeric(scidb_coordinate_end(e2)[2])),
+                              noE(scidb_coordinate_chunksize(e2)[2]))
   }
 
 # Decide which multiplication algorithm to use
@@ -150,7 +157,6 @@ scidbmultiply = function(e1,e2)
   else
     query = sprintf("sg(gemm(%s, %s, %s),1,-1)",op1,op2,op3)
 # XXX Note: sg required as of SciDB v 13.12 to handle serious bugs when gemm is composed with other operators.
-
   ans = .scidbeval(query,gc=TRUE,eval=eval,depend=list(e1,e2))
   ans
 }
@@ -179,7 +185,7 @@ scidbmultiply = function(e1,e2)
     e1 = make_nullable(e1)
     e1a = e1@attribute
     depend = c(depend, e1)
-    dnames = c(dnames, e1@D$name)
+    dnames = c(dnames, dimensions(e1))
   }
   if(inherits(e2,"scidb"))
   {
@@ -187,7 +193,7 @@ scidbmultiply = function(e1,e2)
     e2 = make_nullable(e2)
     e2a = e2@attribute
     depend = c(depend, e2)
-    dnames = c(dnames, e2@D$name)
+    dnames = c(dnames, dimensions(e2))
   }
 # OK, we've got two scidb arrays, op them. v holds the new attribute name.
   v = make.unique_(c(e1a,e2a,dnames),"v")
@@ -211,13 +217,16 @@ scidbmultiply = function(e1,e2)
 # Adjust the 2nd array to be schema-compatible with the 1st:
   if(l==2 && l1==2)
   {
+    e2names = dimensions(e2)
+    bounds  = scidb_coordinate_bounds(e2)
+    e2end = bounds$end
+    e1chunk = scidb_coordinate_chunksize(e1)
+    e1overlap = scidb_coordinate_overlap(e1)
     schema = sprintf(
-       "%s[%s=%.0f:%.0f,%.0f,%.0f,%s=%.0f:%.0f,%.0f,%.0f]",
+       "%s[%s=0:%s,%s,%s,%s=0:%s,%s,%s]",
        build_attr_schema(e2,I=1),
-       e2@D$name[[1]], 0, e2@D$length[[1]] - 1,
-                          e1@D$chunk_interval[[1]], e1@D$chunk_overlap[[1]],
-       e2@D$name[[2]], 0, e2@D$length[[2]] - 1,
-                          e1@D$chunk_interval[[2]], e1@D$chunk_overlap[[2]])
+       e2names[1], noE(e2end[1]), noE(e1chunk[1]), noE(e1overlap[1]),
+       e2names[2], noE(e2end[2]), noE(e1chunk[2]), noE(e1overlap[2]))
     q2 = sprintf("repart(%s, %s)", q2, schema)
 
 # Handle sparsity by cross-merging data (full outer join):
@@ -253,11 +262,9 @@ scidbmultiply = function(e1,e2)
 # useful for matrix row scaling. This is limited to vectors that match the
 # number of rows of the array.
 # First, conformably redimension e1
-    newschema = build_dim_schema(e2,I=1,newnames=e1@D$name[1])
+    newschema = build_dim_schema(e2,I=1,newnames=dimensions(e1)[1])
     re1 = sprintf("redimension(%s,%s%s)",q1,build_attr_schema(e1),newschema)
-#    Q = sprintf("cross_join(%s as e1, %s as e2, e1.%s, e2.%s)", re1, q2, e1@D$name[1], e2@D$name[1])
-#    Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
-    Q = sprintf("cross_join(%s as e2, %s as e1, e2.%s, e1.%s)", q2, re1, e2@D$name[1], e1@D$name[1])
+    Q = sprintf("cross_join(%s as e2, %s as e1, e2.%s, e1.%s)", q2, re1, dimensions(e2)[1], dimensions(e1)[1])
     Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
   }
   else if(l1==2 && l==1)
@@ -266,9 +273,9 @@ scidbmultiply = function(e1,e2)
 # This case requires a dimensional match along the 2nd dimension, and it's
 # useful for matrix column scaling. This is not R standard but very useful.
 # First, conformably redimension e2.
-    newschema = build_dim_schema(e1,I=2,newnames=e2@D$name[1])
+    newschema = build_dim_schema(e1,I=2,newnames=dimensions(e2)[1])
     re2 = sprintf("redimension(%s,%s%s)",q2,build_attr_schema(e2),newschema)
-    Q = sprintf("cross_join(%s as e1, %s as e2, e1.%s, e2.%s)", q1, re2, e1@D$name[2], e2@D$name[1])
+    Q = sprintf("cross_join(%s as e1, %s as e2, e1.%s, e2.%s)", q1, re2, dimensions(e1)[2], dimensions(e2)[1])
     Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
   }
   else
@@ -321,12 +328,12 @@ tsvd = function(x,nu,tol=0.0001,maxit=20)
 {
   m = ceiling(1e6/nrow(x))
   n = ceiling(1e6/ncol(x))
-  schema = sprintf("[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0]",
-                     x@D$name[1], nrow(x)-1, m,
-                     x@D$name[2], ncol(x)-1, ncol(x))
-  tschema = sprintf("[%s=0:%.0f,%.0f,0,%s=0:%.0f,%.0f,0]",
-                     x@D$name[2], ncol(x)-1, n,
-                     x@D$name[1], nrow(x)-1, nrow(x))
+  schema = sprintf("[%s=0:%s,%s,0,%s=0:%s,%s,0]",
+                     dimensions(x)[1], noE(nrow(x)-1), noE(m),
+                     dimensions(x)[2], noE(ncol(x)-1), noE(ncol(x)))
+  tschema = sprintf("[%s=0:%s,%s,0,%s=0:%s,%s,0]",
+                     dimensions(x)[2], noE(ncol(x)-1), noE(n),
+                     dimensions(x)[1], noE(nrow(x)-1), noE(nrow(x)))
   schema = sprintf("%s%s",build_attr_schema(x), schema)
   tschema = sprintf("%s%s",build_attr_schema(x), tschema)
   query  = sprintf("tsvd(redimension(unpack(%s,row),%s), redimension(unpack(transpose(%s),row),%s), %.0f, %f, %.0f)", x@name, schema, x@name, tschema, nu,tol,maxit)
@@ -351,9 +358,10 @@ svd_scidb = function(x, nu=min(dim(x)), nv=nu)
     u = tmpnam()
     d = tmpnam()
     v = tmpnam()
-    schema = sprintf("[%s=0:%.0f,1000,0,%s=0:%.0f,1000,0]",
-                     x@D$name[1],x@D$length[1]-1,
-                     x@D$name[2],x@D$length[2]-1)
+    xend = scidb_coordinate_end(x)
+    schema = sprintf("[%s=0:%s,1000,0,%s=0:%s,1000,0]",
+                     dimensions(x)[1],noE(xend[1]),
+                     dimensions(x)[2],noE(xend[2]))
     schema = sprintf("%s%s",build_attr_schema(x),schema)
     iquery(sprintf("store(gesvd(repart(%s,%s),'left'),%s)",x@name,schema,u))
     iquery(sprintf("store(gesvd(repart(%s,%s),'values'),%s)",x@name,schema,d))
@@ -417,7 +425,7 @@ diff.scidb = function(x, lag=1, ...)
 {
   y = lag(x,lag)
   n = make.unique_(c(x@attributes,y@attributes),"diff")
-  z = merge(y,x,by=x@D$name,all=FALSE)
+  z = merge(y,x,by=dimensions(x),all=FALSE)
   expr = paste(z@attributes,collapse=" - ")
   project(bind(z, n, expr), n)
 }

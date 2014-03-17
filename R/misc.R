@@ -1,13 +1,14 @@
-na.locf_scidb = function(object, along=object@D$name[1],`eval`=FALSE)
+na.locf_scidb = function(object, along=dimensions(object)[1],`eval`=FALSE)
 {
-  i = which(object@D$name == along)
+  dnames = dimensions(object)
+  i = which(dnames == along)
   if(length(along)!=1 || length(i)!=1) stop("Please specify exactly one dimension to run along.")
 # Make object nullable
   object = make_nullable(object)
 # Set up a bounding box that contains the data.
-  aname = make.unique_(c(object@attributes, object@D$name),object@D$name)
+  aname = make.unique_(c(object@attributes, dnames),dnames)
   expr = paste(paste("min(",aname,"), max(", aname,")",sep=""),collapse=",")
-  limits = matrix(unlist(aggregate(bind(object, aname, object@D$name), FUN=expr, unpack=FALSE)[]),nrow=2)
+  limits = matrix(unlist(aggregate(bind(object, aname, dnames), FUN=expr, unpack=FALSE)[]),nrow=2)
 # limits is a 2 x length(dim(object)) matrix. The first row contains the min
 # dim values, and the 2nd row the max dim values.
   reschema = sprintf("%s%s",build_attr_schema(object),
@@ -18,7 +19,7 @@ na.locf_scidb = function(object, along=object@D$name[1],`eval`=FALSE)
   N = sprintf("build(%s%s,null)",build_attr_schema(object,I=1), build_dim_schema(object))
   if(length(object@attributes)>1)
   {
-    vals = paste(object@types[-1],"(null)",sep="")
+    vals = paste(scidb_types(object)[-1],"(null)",sep="")
     N = sprintf("apply(%s, %s)", N, paste(paste(object@attributes[-1],vals,sep=","),collapse=","))
   }
   query = sprintf("merge(%s,%s)",object@name, N)
@@ -35,11 +36,11 @@ hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `eval`=FALSE,
   if(length(x@attributes)>1) stop("Histogram requires a single-attribute array.")
   if(length(breaks)>1) stop("The SciDB histogram function requires a single numeric value indicating the number of breaks.")
   a = x@attributes[1]
-  t = x@types[1]
+  t = scidb_types(x)[1]
   breaks = as.integer(breaks)
   if(breaks < 1) stop("Too few breaks")
 # name of binning coordinates in output array:
-  d = make.unique_(c(a,x@D$name), "bin")
+  d = make.unique_(c(a,dimensions(x)), "bin")
   M = .scidbeval(sprintf("aggregate(%s, min(%s) as min, max(%s) as max)",x@name,a,a),`eval`=TRUE)
   FILL = sprintf("slice(cross_join(build(<counts: uint64 null>[%s=0:%.0f,1000000,0],0),%s),i,0)", d, breaks,M@name)
   if(`right`)
