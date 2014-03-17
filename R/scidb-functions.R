@@ -203,19 +203,19 @@ cat("HOMER XXX IN PROCESS\n")
     cat("\tattribute: ",x@attribute)
   cat("\n")
   print(head(x))
-  if(is.null(x@dim)) j = x@length - 6
-  else j = x@dim[1]-6
+  if(is.null(dim(x))) j = as.numeric(scidb_coordinate_bounds(x)$length) - 6
+  else j = dim(x)[1]-6
   if(j>2) cat("and ",j,"more rows not displayed...\n")
-  if(length(x@dim)>0) {
-    k = x@dim[2] - 6
+  if(length(dim(x))>0) {
+    k = dim(x)[2] - 6
     if(k>2) cat("and ",k,"more columns not displayed...\n")
   }
 }
 
-ncol.scidb = function(x) x@dim[2]
-nrow.scidb = function(x) x@dim[1]
-dim.scidb = function(x) {if(length(x@dim)>0) return(x@dim); NULL}
-length.scidb = function(x) x@length
+ncol.scidb = function(x) dim(x)[2]
+nrow.scidb = function(x) dim(x)[1]
+dim.scidb = function(x) as.numeric(scidb_coordinate_bounds(x)$length)
+length.scidb = function(x) prod(as.numeric(scidb_coordinate_bounds(x)$length))
 
 # Vector, Matrix, matrix, or data.frame only.
 # XXX Future: Add n-d array support here (TODO)

@@ -351,7 +351,8 @@ setMethod("show", "scidb",
   function(object) {
     atr=object@attribute
     if(is.null(dim(object)) || length(dim(object))==1)
-      cat("Reference to a SciDB vector of length",object@length,"\n")
+      cat("Reference to a SciDB vector of length",
+           scidb_coordinate_bounds(object)$length,"\n")
     else
       cat("A reference to a ",
           paste(object@dim,collapse="x"),

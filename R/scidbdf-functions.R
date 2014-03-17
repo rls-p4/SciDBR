@@ -49,7 +49,7 @@ Ops.scidbdf = function(e1,e2) {
     return(redimension(bind(x,newdim,0), nd))
   }
   if(!is.scidb(y) && !is.scidbdf(y)) stop("cbind requires either a single argument or two SciDB arrays")
-  i = intersect(x@D$name,y@D$name)
+  i = intersect(dimensions(x),dimensions(y))
   if(length(i)<1) stop("Non-conformable arrays") # XXX Should really try harder
   merge(x,y,by=i)
 }
@@ -61,14 +61,10 @@ colnames.scidbdf = function(x)
 
 rownames.scidbdf = function(x)
 {
-  if(x@D$type[1] != "string") return(c(x@D$start[1],x@D$start[1]+x@D$length[1]-1))
-  if(x@D$length[1] > options("scidb.max.array.elements"))
-    stop("Result might be too big. Perhaps try a manual query with an iterative result.")
-  Q = sprintf("scan(%s:%s)",x@name,x@D$name[1])
-  iquery(Q,return=TRUE,n=x@D$length[1]+1)[,2]
+  stop("Sorry, not implemented yet")
 }
 
-`names.scidbdf` = function(x)
+names.scidbdf = function(x)
 {
   x@attributes
 }
@@ -82,7 +78,7 @@ rownames.scidbdf = function(x)
   iquery(query)
 }
 
-`dimnames.scidbdf` = function(x)
+dimnames.scidbdf = function(x)
 {
   list(rownames.scidbdf(x), x@attributes)
 }
@@ -142,32 +138,26 @@ rownames.scidbdf = function(x)
 }
 
 
-`str.scidbdf` = function(object, ...)
+str.scidbdf = function(object, ...)
 {
   name = substr(object@name,1,20)
   if(nchar(object@name)>20) name = paste(name,"...",sep="")
   cat("SciDB array name: ",name)
-  cat("\nSciDB array schema: ",object@schema)
+  cat("\nSciDB array schema: ",schema(object))
   cat("\nAttributes:\n")
-  cat(paste(capture.output(print(data.frame(attribute=object@attributes,type=object@types,nullable=object@nullable))),collapse="\n"))
+  cat(paste(capture.output(print(data.frame(attribute=object@attributes,type=scidb_types(object),nullable=scidb_nullable(object)))),collapse="\n"))
   cat("\nRow dimension:\n")
-  cat(paste(capture.output(print(data.frame(object@D))),collapse="\n"))
+cat("HOMER XXX IN PROCESS\n")
   cat("\n")
 }
 
-`ncol.scidbdf` = function(x) x@dim[2]
-`nrow.scidbdf` = function(x) 
+ncol.scidbdf = function(x) length(scidb_attributes(x))
+nrow.scidbdf = function(x) 
   {
-    n = x@dim[1]
-# Try to make arrays with '*' upper bounds seem more reasonable
-    if(n - as.numeric(.scidb_DIM_MAX) == 0)
-    {
-      n = NA
-    }
-    n
+    dim(x)[1]
   }
-`length.scidbdf` = function(x) x@length
-
+# This is consistent with regular data frames:
+length.scidbdf = function(x) ncol(x)
 
 
 
@@ -224,5 +214,6 @@ betweenbound = function(x, m, n)
   ans = sprintf("between(%s, %.0f, %.0f)", x@name, m, n)
 # Reset just the upper dimension index, use of redimension here is overkill
 # XXX FIX ME
-  ans = sprintf("redimension(%s,%s[%s=%.0f:%.0f,%.0f,%.0f])", ans, build_attr_schema(x), x@D$name[1], m, n, x@D$chunk_interval[1], x@D$chunk_overlap[1])
+  schema = sprintf("%s%s",build_attr_schema(x), build_dim_schema(x,newstart=m,newend=n))
+  ans = sprintf("redimension(%s,%s)", ans, schema)
 }

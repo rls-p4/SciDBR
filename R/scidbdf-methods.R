@@ -31,19 +31,20 @@ setGeneric("c")
 setGeneric('is.scidbdf', function(x) standardGeneric('is.scidbdf'))
 
 # XXX This is a prototype. Right now the attribute list must match.
+# XXX rbind on dataframes should call this
 setMethod(c,signature(x="scidbdf"),
 function(x,y,`eval`=FALSE)
 {
   if(is.scidb(y)) y = scidb(y,`data.frame`=TRUE)
   if(!is.scidbdf(y)) y = as.scidb(y)
-  if(x@D$length<as.numeric(.scidb_DIM_MAX))
+  if(as.numeric(scidb_coordinate_bounds(x)$length) < as.numeric(.scidb_DIM_MAX))
   {
-    s = sprintf("%s%s",build_attr_schema(x),build_dim_schema(x,newlen=as.numeric(.scidb_DIM_MAX)))
+    s = sprintf("%s%s",build_attr_schema(x),build_dim_schema(x,newend=.scidb_DIM_MAX))
     x = redimension(x,s)
   }
-  i = count(x) + x@D$start
+  i = count(x) + as.numeric(scidb_coordinate_start(x)) - as.numeric(scidb_coordinate_start(y))
   j = make.unique_(y@attributes, "j")
-  fun = sprintf("%s + %.0f", y@D$name, i)
+  fun = sprintf("%s + %.0f", dimensions(y), i)
   s = sprintf("apply(%s, %s, %s)",y@name, j, fun)
   scma = sprintf("%s%s",build_attr_schema(y), build_dim_schema(x,newname=j))
   s = sprintf("redimension(%s, %s)",s, scma)
@@ -55,13 +56,17 @@ function(x,y,`eval`=FALSE)
 setMethod("head", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
-  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start,x@D$start + n - 1),`return`=TRUE,colClasses=scidbdfcc(x))[,-1]
+  xstart = as.numeric(scidb_coordinate_start(x))
+  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,xstart,xstart + n - 1),`return`=TRUE,colClasses=scidbdfcc(x))[,-1]
 })
 
 setMethod("tail", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
-  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,x@D$start + x@D$length - n - 1,x@D$start + x@D$length-1),`return`=TRUE, colClasses=scidbdfcc(x))[,-1]
+  bounds = scidb_coordinate_bounds(x)
+  xstart = as.numeric(bounds$start)
+  xlen   = as.numeric(bounds$len)
+  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,xstart + xlen - n - 1,xstart + xlen-1),`return`=TRUE, colClasses=scidbdfcc(x))[,-1]
 })
 
 setMethod("Filter",signature(f="character",x="scidbdf"),
@@ -86,7 +91,8 @@ setMethod('show', 'scidbdf',
   function(object) {
     l = length(object@attributes)
     v = ifelse(l<2, "variable", "variables")
-    cat(sprintf("SciDB 1-D array: %.0f obs. of %d %s.\n", (object@D$length), length(object@attributes),v))
+    cat(sprintf("SciDB 1-D array: %s obs. of %d %s.\n", scidb_coordinate_bounds(object)$length,
+        length(object@attributes),v))
   })
 
 setMethod("aggregate", signature(x="scidbdf"), aggregate_scidb)
