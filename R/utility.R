@@ -421,6 +421,7 @@ df2scidb = function(X,
 {
   if(!is.data.frame(X)) stop("X must be a data frame")
   if(missing(start)) start=1
+  start = as.numeric(start)
   if(missing(gc)) gc=FALSE
   if(missing(nullable)) nullable = TRUE
   if(length(nullable)==1) nullable = rep(nullable, ncol(X))
@@ -441,6 +442,7 @@ df2scidb = function(X,
   if(missing(chunkSize)) {
     chunkSize = min(nrow(X),10000)
   }
+  chunkSize = as.numeric(chunkSize)
   m = ceiling(nrow(X) / chunkSize)
 
 # Default type is string
@@ -696,12 +698,12 @@ iqiter = function (con, n = 1, excludecol, ...)
 }
 
 # Internal utility function, make every attribute of an array nullable
-`make_nullable` = function(x)
+make_nullable = function(x)
 {
   cast(x,sprintf("%s%s",build_attr_schema(x,nullable=TRUE),build_dim_schema(x)))
 }
 
-`noE` = function(w) sapply(w,
+noE = function(w) sapply(w,
   function(x)
   {
     if(is.character(x)) return(x)
@@ -735,7 +737,7 @@ compare_versions = function(x,y)
 # Reset array coordinate system to zero-indexed origin
 origin = function(x)
 {
-  N = paste(rep("null",2*length(x@D$name)),collapse=",")
+  N = paste(rep("null",2*length(dimensions(x))),collapse=",")
   query = sprintf("sg(subarray(%s,%s),1,-1)",x@name,N)
   .scidbeval(query,`eval`=FALSE,depend=list(x),gc=TRUE)
 }

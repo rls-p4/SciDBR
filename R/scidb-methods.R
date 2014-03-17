@@ -266,6 +266,12 @@ setMethod("diag", signature(x="scidb"),
 function(x)
 {
   D = dim(x)
+  dims = dimensions(x)
+  bounds = scidb_coordinate_bounds(x)
+  len = as.numeric(bounds$length)
+  chunk = scidb_coordinate_chunksize(x)
+  overlap = scidb_coordinate_overlap(x)
+  xtypes = scidb_types(x)
   if(length(D)>2) stop("diag requires a matrix or vector")
 # Two cases
 # Case 1: Given a matrix, return its diagonal as a vector.
@@ -273,27 +279,27 @@ function(x)
   {
     bschema = sprintf("<%s:double>",x@attribute)
     bschema = sprintf("%s%s",bschema,build_dim_schema(x,newstart=c(0,0)))
-    mask = sprintf("build(<%s:double>[%s=%.0f:%.0f,1000000,0],1)",x@attribute,x@D$name[1],0,min(x@D$length)-1)
-    mask = sprintf("apply(%s,%s,%s)",mask,x@D$name[2],x@D$name[1])
+    mask = sprintf("build(<%s:double>[%s=0:%s,1000000,0],1)",x@attribute,dims[1],noE(min(len)-1))
+    mask = sprintf("apply(%s,%s,%s)",mask,dims[2],dims[1])
     mask = sprintf("redimension(%s,%s)",mask, bschema)
     mask = sprintf("attribute_rename(%s,%s,%s)",mask,x@attribute,make.unique_(x@attribute,"v"))
     query = sprintf("project(join(sg(subarray(%s,null,null,null,null),1,-1),%s),%s)",x@name,mask,x@attribute)
-    query = sprintf("unpack(%s,%s)",query, make.unique_(x@D$name, "i"))
+    query = sprintf("unpack(%s,%s)",query, make.unique_(dims, "i"))
     query = sprintf("project(%s,%s)",query,x@attribute)
-    query = sprintf("sg(subarray(%s,0,%.0f),1,-1)",query,min(x@D$length)-1)
+    query = sprintf("sg(subarray(%s,0,%s),1,-1)",query,noE(min(len)-1))
     return(.scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x)))
   }
 # Case 2: Given a vector return  diagonal matrix.
-  dim2 = make.unique_(x@D$name, "j")
-  query = sprintf("build(<%s:%s>[%s=0:%.0f,%.0f,%.0f],nan)",
-           make.unique_(x@attributes,"v"), x@type,
-           x@D$name[1], x@D$length[1] - 1 , x@D$chunk_interval[1], x@D$chunk_overlap[1])
-  query = sprintf("apply(%s,%s,%s)",query,dim2,x@D$name[1])
-  query = sprintf("redimension(%s,<%s:%s>[%s=0:%.0f,%.0f,%.0f,%s=0:%.0f,%.0f,%.0f])",
+  dim2 = make.unique_(dims, "j")
+  query = sprintf("build(<%s:%s>[%s=0:%s,%s,%s],nan)",
+           make.unique_(x@attributes,"v"), xtypes,
+           dims[1], noE(len[1] - 1), chunk[1], overlap[1])
+  query = sprintf("apply(%s,%s,%s)",query,dim2,dims[1])
+  query = sprintf("redimension(%s,<%s:%s>[%s=0:%s,%s,%s,%s=0:%s,%s,%s])",
            query, make.unique_(x@attributes,"v"), x@type,
-           x@D$name[1], x@D$length[1] - 1 , x@D$chunk_interval[1], x@D$chunk_overlap[1],
-           dim2, x@D$length[1] - 1 , x@D$chunk_interval[1], x@D$chunk_overlap[1])
-  query = sprintf("cross_join(%s as __X,%s as __Y,__X.%s,__Y.%s)",query,x@name,x@D$name[1],x@D$name[1])
+           dims[1], noE(len[1] - 1) , chunk[1], overlap[1],
+           dim2, noE(len[1] - 1), chunk[1], overlap[1])
+  query = sprintf("cross_join(%s as __X,%s as __Y,__X.%s,__Y.%s)",query,x@name,dims[1],dims[1])
   query = sprintf("project(%s,%s)",query,x@attribute)
   ans = .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
   attr(ans, "sparse") = TRUE
@@ -303,7 +309,7 @@ function(x)
 setMethod("head", signature(x="scidb"),
 function(x, n=6L, ...)
 {
-  m = x@D$start
+  m = as.numeric(scidb_coordinate_start(x))
   p = m + n - 1
   limits = lapply(1:length(m), function(j) seq(m[j],p[j]))
   tryCatch(
@@ -317,9 +323,12 @@ function(x, n=6L, ...)
 setMethod("tail", signature(x="scidb"),
 function(x, n=6L, ...)
 {
-  p = x@D$start + x@D$length - 1
-  m = x@D$start + x@D$length - n
-  m = unlist(lapply(1:length(m),function(j) max(m[j],x@D$start[j])))
+  bounds = scidb_coordinate_bounds(x)
+  xstart = as.numeric(bounds$start)
+  xlen   = as.numeric(bounds$length)
+  p = xstart + xlen - 1
+  m = xstart + xlen - n
+  m = unlist(lapply(1:length(m),function(j) max(m[j],xstart[j])))
   limits = lapply(1:length(m), function(j) seq(m[j],p[j]))
   do.call(dimfilter,args=list(x=x,i=limits,eval=FALSE))[]
 })
@@ -354,7 +363,7 @@ function(x, grid=c(500,500), op=sprintf("sum(%s)", x@attribute), na=0, ...)
 {
   if(length(dim(x))!=2) stop("Sorry, array must be two-dimensional")
   if(length(grid)!=2) stop("The grid parameter must contain two values")
-  blocks = x@D$length
+  blocks = as.numeric(scidb_coordinate_length(x))
   blocks = blocks/grid
   if(any(blocks<1)) blocks[which(blocks<1)] = 1
   query = sprintf("regrid(project(%s,%s),%.0f,%.0f,%s)",x@name,x@attribute,blocks[1],blocks[2],op)
@@ -401,24 +410,23 @@ setMethod("t", signature(x="scidb"),
 setMethod("lag",signature(x="scidb"),
   function(x,k=1,dim=1,eval=FALSE)
   {
-    n = make.unique_(c(x@attributes, x@D$name), "n")
-    expr = sprintf("%s - %s", x@D$name[dim], k)
+    names = dimensions(x)
+    start = scidb_coordinate_start(x)
+    xstart = start
+    n = make.unique_(c(scidb_attributes(x), names), "n")
+    expr = sprintf("%s - %s", names[dim], k)
     y = bind(x,n,expr)
-    start = x@D$start
-    start[dim] = start[dim] - k
-    names = x@D$name
+    start[dim] = noE(as.numeric(start[dim]) - k)
     names[dim] = n
     schema = sprintf("%s%s", build_attr_schema(x),
       build_dim_schema(x,newstart=start,newnames=names))
     y = redimension(y,schema)
     cschema = sprintf("%s%s",build_attr_schema(x),
-                build_dim_schema(y,newnames=x@D$name))
+                build_dim_schema(y,newnames=dimensions(x)))
     y = cast(y,cschema)
-    b = paste(paste(noE(x@D$start),collapse=","),
-        paste(noE(x@D$length-1),collapse=","),sep=",")
-    query = sprintf("between(%s,%s)",y@name,b)
+    query = sprintf("between(%s,%s)",y@name,between_coordinate_bounds(x))
     query = sprintf("redimension(%s,%s%s)",query, build_attr_schema(x),build_dim_schema(x))
-    .scidbeval(query,eval=FALSE,gc=TRUE,depend=list(x))
+    .scidbeval(query,eval=FALSE,gc=TRUE,depend=list(x,y))
   })
 
 # SciDB's regrid and xgrid operators (simple wrappers)

@@ -86,14 +86,14 @@ scidb_coordinate_bounds = function(x)
   end = unlist(lapply(d[-1],function(x)strsplit(x[1],":")[[1]][2]))
   s1 = gsub("\\*",scidb:::.scidb_DIM_MAX,start)
   s2 = gsub("\\*",scidb:::.scidb_DIM_MAX,end)
-  len = as.numeric(s2) - as.numeric(s1)
-  list(start=start, end=end, length=len)
+  len = as.numeric(s2) - as.numeric(s1) + 1
+  list(start=noE(start), end=noE(end), length=noE(len))
 }
 
 # A between-style string of coordinate bounds
 between_coordinate_bounds = function(s)
 {
-  if((inherits(x,"scidb") || inherits(x,"scidbdf"))) s = schema(s)
+  if((inherits(s,"scidb") || inherits(s,"scidbdf"))) s = schema(s)
   paste(t(matrix(unlist(lapply(strsplit(gsub("\\].*","",gsub(".*\\[","",s,perl=TRUE),perl=TRUE),"=")[[1]][-1],function(x)strsplit(strsplit(x,",")[[1]][1],":")[[1]])),2,byrow=FALSE)),collapse=",")
 }
 

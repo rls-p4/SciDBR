@@ -94,8 +94,7 @@ dimfilter = function(x, i, eval, drop)
       else
        {
 # Unspecified range or special index (ci case), which we handle later.
-#         c(x@D$start[j],x@D$start[j] + x@D$length[j] - 1)
-          c('null','null')
+         c('null','null')
        }
     })
   ranges = r
@@ -114,7 +113,7 @@ dimfilter = function(x, i, eval, drop)
     ina = is.na(newstart)
     if(any(ina))
     {
-      newstart[ina] = x@D$start[ina]
+      newstart[ina] = scidb_coordinate_start(x)[ina]
     }
     newend = unlist(lapply(ranges,function(z)z[2]))
     newend[newend=="null"] = NA
@@ -145,10 +144,10 @@ dimfilter = function(x, i, eval, drop)
   ans
 }
 
-# Helper function to drop dimensions of any scidb object
+# Helper function to drop dimensions of length 1 (cf R's drop)
 drop_dim = function(ans)
 {
-  i = ans@D$length==1
+  i = as.numeric(scidb_coordinate_bounds(ans)$length) == 1
   if(all(i))
   {
     i[1] = FALSE
@@ -225,11 +224,11 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
       {
 # Case 3. A SciDB array, really just a densified cross_join selector.
 # If it's boolen, convert it to a sparse array for cross_join indexing
-        if(i[[j]]@types[[1]] == "bool")
+        if(scidb_types(i[[j]])[[1]] == "bool")
         {
           i[[j]] = i[[j]] %==% TRUE
         }
-        tmp = sort(project(bind(i[[j]],N,i[[j]]@D$name[[1]],eval=0),N,eval=0),eval=0)
+        tmp = sort(project(bind(i[[j]],N,dimensions(i[[j]])[1],eval=0),N,eval=0),eval=0)
 # Insane scidb name conflict problems, check for and resolve them.
         tmpaname = make.unique_(dimlabel, scidb_attributes(tmp))
         cst = paste(build_attr_schema(tmp,newnames=tmpaname),build_dim_schema(tmp,newnames=dimlabel))
@@ -268,13 +267,13 @@ materialize = function(x, drop=FALSE)
 {
   type = names(.scidbtypes[.scidbtypes==x@type])
 # Check for types that are not fully supported yet.
+  xstart = as.numeric(scidb_coordinate_start(x))
   if(length(type)<1)
   {
     u = unpack(x)[]
     ans = array(dim=dim(x))
-#    k = rep(1 - x@D$start, each=nrow(x))
     i = as.matrix(u[,1:length(dim(x))])
-    for(j in 1:length(dim(x))) i[,j] = i[,j] + 1 - x@D$start[j]
+    for(j in 1:length(dim(x))) i[,j] = i[,j] + 1 - xstart[j]
     ans[i] = u[,ncol(u)]
     return(ans)
   }
@@ -282,17 +281,17 @@ materialize = function(x, drop=FALSE)
 # Set origin to zero and project. We need the zero origin here to reconstruct
 # array indices in R. We don't wrap subarray in sg here because there is no
 # chance that this will be involved in a gemm query later.
-  N = paste(rep("null",2*length(x@D$name)),collapse=",")
+  ndim = as.integer(length(dimensions(x)))
+  N = paste(rep("null",2*ndim),collapse=",")
   query = sprintf("subarray(project(%s,%s),%s)",x@name,x@attribute,N)
 
 # Unpack
   query = sprintf("unpack(%s,%s)",query,"__row")
 
-# We're always assuming missing values may exist
-  i = paste(rep("int64",length(x@dim)),collapse=",")
-#  nl = x@nullable[x@attribute==x@attributes][[1]]
+# We always assume missing values may exist
+  i = paste(rep("int64",ndim),collapse=",")
   nl = TRUE
-  N = ifelse(nl,"NULL","")
+  N = "NULL"
 
   savestring = sprintf("(%s,%s %s)",i,x@type,N)
 
@@ -306,7 +305,6 @@ materialize = function(x, drop=FALSE)
   r = URI("/read_bytes",list(id=sessionid,n=n))
   BUF = getBinaryURL(r, .opts=list('ssl.verifypeer'=0))
 
-  ndim = as.integer(length(x@D$name))
   type = eval(parse(text=paste(names(.scidbtypes[.scidbtypes==x@type]),"()")))
   len  = as.integer(.typelen[names(.scidbtypes[.scidbtypes==x@type])])
   len  = len + nl # Type length
@@ -331,12 +329,13 @@ materialize = function(x, drop=FALSE)
     },
     error = function(e){stop(e)})
 
-  p = prod(x@D$length)
+  xlen = as.numeric(scidb_coordinate_bounds(x)$length)
+  p = prod(xlen)
 
 # Check for sparse matrix case
   if(ndim==2 && nelem<p)
   {
-    return(Matrix::sparseMatrix(i=A[[2]][,1]+1,j=A[[2]][,2]+1,x=A[[1]],dims=x@D$length))
+    return(Matrix::sparseMatrix(i=A[[2]][,1]+1,j=A[[2]][,2]+1,x=A[[1]],dims=xlen))
   } else if(ndim==1 && nelem <p)
   {
     return(Matrix::sparseVector(x=A[[1]],i=A[[2]][,1]+1,length=p))
@@ -346,9 +345,7 @@ materialize = function(x, drop=FALSE)
     names(A)=c("values","coordinates")
     return(A)
   }
-#  aperm(array(data=A[[1]], dim=x@D$length, dimnames=x@D$name),
-#        perm=seq(from=length(x@D$length),to=1,by=-1))
-  ans = array(NA, dim=x@dim)
+  ans = array(NA, dim=dim(x))
   ans[A[[2]]+1] = A[[1]]
   if(length(dim(ans))==1)
   {

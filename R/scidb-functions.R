@@ -44,7 +44,7 @@ solve.scidb = function(a, b, ...)
 cbind.scidb = function(x)
 {
   if(length(dim(x))!=1) return(x)
-  newdim=make.unique_(c(x@D$name,x@attributes), "j")
+  newdim=make.unique_(c(dimensions(x),x@attributes), "j")
   nd = sprintf("%s[%s,%s=0:0,1,0]",build_attr_schema(x) , build_dim_schema(x,bracket=FALSE),newdim)
   redimension(x, nd)
 }
@@ -113,12 +113,13 @@ dimnames.scidb = function(x)
         return(v);
       }
       as.scidb(data.frame(label=v)[,1,drop=FALSE],
-               start=x@D$start[j], chunkSize=x@D$chunk_interval[j])
+               start=scidb_coordinate_start(x)[j],
+               chunkSize=scidb_coordinate_chunksize(x)[j])
     })
 
   check = unlist(lapply(1:length(value), function(j)
     {
-      is.null(value[[j]]) || (value[[j]]@D$start[1] == x@D$start[j])
+      is.null(value[[j]]) || (scidb_coordinate_start(value[[j]])[1] == scidb_coordinate_start(x)[j])
     }))
   if(!all(check))
     stop("Label array starting indices don't match data array--please check")
@@ -191,7 +192,7 @@ summary.scidb = function(x)
   cat("\nattribute in use: ",object@attribute)
   cat("\nAll attributes: ",object@attributes)
   cat("\nArray dimensions:\n")
-  cat(paste(capture.output(print(data.frame(object@D))),collapse="\n"))
+cat("HOMER XXX IN PROCESS\n")
   cat("\n")
 }
 
@@ -211,10 +212,10 @@ summary.scidb = function(x)
   }
 }
 
-`ncol.scidb` = function(x) x@dim[2]
-`nrow.scidb` = function(x) x@dim[1]
-`dim.scidb` = function(x) {if(length(x@dim)>0) return(x@dim); NULL}
-`length.scidb` = function(x) x@length
+ncol.scidb = function(x) x@dim[2]
+nrow.scidb = function(x) x@dim[1]
+dim.scidb = function(x) {if(length(x@dim)>0) return(x@dim); NULL}
+length.scidb = function(x) x@length
 
 # Vector, Matrix, matrix, or data.frame only.
 # XXX Future: Add n-d array support here (TODO)
@@ -229,17 +230,19 @@ as.scidb = function(X,
     if(missing(chunkSize))
       return(df2scidb(X,name=name,gc=gc,start=start,...))
     else
-      return(df2scidb(X,name=name,chunkSize=chunkSize[[1]],gc=gc,start=start,...))
+      return(df2scidb(X,name=name,chunkSize=as.numeric(chunkSize[[1]]),gc=gc,start=start,...))
   if(missing(chunkSize))
   {
 # Note nrow, ncol might be NULL here if X is not a matrix. That's OK, we'll
 # deal with that case later.
     chunkSize=c(min(1000L,nrow(X)),min(1000L,ncol(X)))
   }
+  chunkSize = as.numeric(chunkSize)
   if(length(chunkSize)==1) chunkSize = c(chunkSize, chunkSize)
   if(!missing(overlap)) warning("Sorry, overlap is not yet supported by the as.scidb function. Consider using the reparition function for now.")
   overlap = c(0,0)
   if(missing(start)) start=c(0,0)
+  start     = as.numeric(start)
   if(length(start)==1) start=c(start,start)
   if(inherits(X,"dgCMatrix"))
   {
