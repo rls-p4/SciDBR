@@ -27,6 +27,9 @@
 # END_COPYRIGHT
 #
 
+setGeneric("c")
+setGeneric('is.scidbdf', function(x) standardGeneric('is.scidbdf'))
+
 # XXX This is a prototype. Right now the attribute list must match.
 setMethod(c,signature(x="scidbdf"),
 function(x,y,`eval`=FALSE)

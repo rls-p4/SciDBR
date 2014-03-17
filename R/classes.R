@@ -60,7 +60,6 @@ setClass("scidb",
                         gc="environment"),
          S3methods=TRUE)
 
-
 setClass("scidbdf",
          representation(name="character",
                         schema="character",

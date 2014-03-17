@@ -27,6 +27,68 @@
 # END_COPYRIGHT
 #
 
+# Generic function declarations
+setGeneric("%<%", def=function(x,y){NULL})
+setGeneric("%>%", def=function(x,y){NULL})
+setGeneric("%<=%", def=function(x,y){NULL})
+setGeneric("%>=%", def=function(x,y){NULL})
+setGeneric("%==%", def=function(x,y){NULL})
+
+setOldClass("crossprod")
+setGeneric("crossprod")
+
+setOldClass("crossprod")
+setGeneric("crossprod")
+
+setOldClass("na.locf")
+setGeneric("na.locf")
+
+setOldClass("hist")
+setGeneric("hist")
+
+setGeneric("sum")
+setGeneric("mean")
+setGeneric("median")
+setGeneric("min")
+setGeneric("max")
+setGeneric("sd")
+setGeneric("var")
+setGeneric("diag")
+setGeneric("head")
+setGeneric("tail")
+setGeneric("is.scidb", function(x) standardGeneric("is.scidb"))
+setGeneric("print")#, function(x) standardGeneric("print"))
+setGeneric("image")
+
+setOldClass("aggregate")
+setGeneric("aggregate")
+
+setOldClass("sweep")
+setGeneric("sweep")
+
+setOldClass("apply")
+setGeneric("apply")
+
+setMethod("unpack",signature(x="scidb"),unpack_scidb)
+
+setOldClass("reshape")
+setGeneric("reshape", function(data,...) stats::reshape(data,...))
+
+setOldClass("svd")
+setGeneric("svd")
+
+setOldClass("glm.fit")
+setGeneric("glm.fit")
+
+setOldClass("t")
+setGeneric("t")
+
+setOldClass("lag")
+setGeneric("lag")
+setGeneric("regrid", def=function(x,grid,expr){NULL})
+setGeneric("xgrid", def=function(x,grid){NULL})
+setGeneric("Filter")
+
 # Non-traditional masking binary comparison operators
 setMethod("%<%",signature(x="scidb", y="ANY"),
   function(x,y)
@@ -262,8 +324,7 @@ function(x, n=6L, ...)
   do.call(dimfilter,args=list(x=x,i=limits,eval=FALSE))[]
 })
 
-
-setMethod('is.scidb', signature(x='ANY'),
+setMethod("is.scidb", signature(x="ANY"),
   function(x) 
   {
     if(inherits(x, "scidb")) return(TRUE)
@@ -272,12 +333,12 @@ setMethod('is.scidb', signature(x='ANY'),
 )
 #setMethod('is.scidb', definition=function(x) return(FALSE))
 
-setMethod('print', signature(x='scidb'),
+setMethod("print", signature(x="scidb"),
   function(x) {
     show(x)
   })
 
-setMethod('show', 'scidb',
+setMethod("show", "scidb",
   function(object) {
     atr=object@attribute
     if(is.null(dim(object)) || length(dim(object))==1)

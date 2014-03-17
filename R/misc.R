@@ -10,9 +10,8 @@ na.locf_scidb = function(object, along=object@D$name[1],`eval`=FALSE)
   limits = matrix(unlist(aggregate(bind(object, aname, object@D$name), FUN=expr, unpack=FALSE)[]),nrow=2)
 # limits is a 2 x length(dim(object)) matrix. The first row contains the min
 # dim values, and the 2nd row the max dim values.
-  len = limits[2,] - limits[1, ] + 1
   reschema = sprintf("%s%s",build_attr_schema(object),
-               build_dim_schema(object,newlen=len,newstart=limits[1,]))
+               build_dim_schema(object,newend=limits[2,],newstart=limits[1,]))
   object = redimension(object, reschema)
 
 # Build a null-merge array

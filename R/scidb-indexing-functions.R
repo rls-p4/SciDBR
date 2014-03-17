@@ -116,16 +116,15 @@ dimfilter = function(x, i, eval, drop)
     {
       newstart[ina] = x@D$start[ina]
     }
-    newlen = unlist(lapply(ranges,function(z)z[2]))
-    newlen[newlen=="null"] = NA
-    newlen = as.numeric(newlen) - newstart + 1
-    ina = is.na(newlen)
+    newend = unlist(lapply(ranges,function(z)z[2]))
+    newend[newend=="null"] = NA
+    ina = is.na(newend)
     if(any(ina))
     {
-      newlen[ina] = x@D$length[ina]
+      newend[ina] = scidb_coordinate_end(x)[ina]
     }
     q = sprintf("redimension(%s, %s%s)", q, build_attr_schema(x),
-          build_dim_schema(x,newlen=newlen,newstart=newstart))
+          build_dim_schema(x,newend=newend,newstart=newstart))
   }
 # Return a new scidb array reference
   ans = .scidbeval(q,eval=FALSE,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
@@ -170,10 +169,16 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
 {
   swap = NULL
   dependencies = x
+  xdims = dimensions(x)
+  xstart = scidb_coordinate_start(x)
+  xend = scidb_coordinate_end(x)
+  xchunk = scidb_coordinate_chunksize(x)
+  xoverlap = scidb_coordinate_overlap(x)
+
   for(j in 1:length(idx))
   {
-    N = x@D$name[[j]]
-    dimlabel = make.unique_(x@D$name,paste(N,"_1",sep=""))
+    N = xdims[j]
+    dimlabel = make.unique_(xdims, sprintf("%s_1",N))
     if(is.list(swap[[1]]))
     {
       slabels = unlist(lapply(swap,function(x)x[[2]]))
@@ -194,10 +199,10 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
         }
         names(tmp) = N
         i[[j]] = as.scidb(tmp, types="int64", dimlabel=dimlabel,
-                        start=x@D$start[[j]],
-                        chunkSize=x@D$chunk_interval[[j]],
-                        rowOverlap=x@D$chunk_overlap[[j]])
-        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]), start=x@D$start[[j]])))
+                        start=xstart[j],
+                        chunkSize=xchunk[j],
+                        rowOverlap=xoverlap[j], nullable=FALSE)
+        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]), start=xstart[j])))
         dependencies = c(dependencies, i[[j]])
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
@@ -208,12 +213,12 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
          tmp = data.frame(i[[j]], stringsAsFactors=FALSE)
          names(tmp) = N
          tmp_1 = as.scidb(tmp, types="string", dimlabel=dimlabel,
-                        start=x@D$start[[j]],
-                        chunkSize=x@D$chunk_interval[[j]],
-                        rowOverlap=x@D$chunk_overlap[[j]], nullable=FALSE)
+                        start=xstart[j],
+                        chunkSize=xchunk[j],
+                        rowOverlap=xoverlap[j], nullable=FALSE)
         i[[j]] = attribute_rename(project(index_lookup(tmp_1, lkup, new_attr='_cazart'),"_cazart"),"_cazart",N)
         dependencies = c(dependencies, tmp_1)
-        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]), start=x@D$start[[j]])))
+        swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]), start=xstart[j])))
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
       } else if(is.scidb(i[[j]]))
@@ -226,7 +231,7 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
         }
         tmp = sort(project(bind(i[[j]],N,i[[j]]@D$name[[1]],eval=0),N,eval=0),eval=0)
 # Insane scidb name conflict problems, check for and resolve them.
-        tmpaname = make.unique_(dimlabel, tmp@attributes)
+        tmpaname = make.unique_(dimlabel, scidb_attributes(tmp))
         cst = paste(build_attr_schema(tmp,newnames=tmpaname),build_dim_schema(tmp,newnames=dimlabel))
         tmp = cast(tmp,cst,eval=0)
         cnt = count(tmp)
@@ -237,7 +242,8 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
       }
     } else # No special index in this coordinate
     {
-      swap = c(swap,list(list(old=N, new=N, length=x@D$length[[j]], start=x@D$start[[j]])))
+      len = scidb_coordinate_bounds(x)$length
+      swap = c(swap,list(list(old=N, new=N, length=len[j], start=xstart[j])))
     }
   }
   nn = sapply(swap, function(x) x[[2]])
