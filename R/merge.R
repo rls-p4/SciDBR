@@ -57,9 +57,13 @@
   yname = y@name
 
 # Check input
-  if(!is.null(`by`) && (!is.null(by.x) || !is.null(by.y)))
+  if(sum(!is.null(by.x), !is.null(by.y))==1)
   {
-    stop("`by` may not also be specified with `by.x` or `by.y`")
+    stop("Either both or none of by.x and by.y must be specified.")
+  }
+  if((!is.null(by.x) && !is.null(by.y)))
+  {
+    `by` = NULL
   }
 
 # Check for full cross case.
