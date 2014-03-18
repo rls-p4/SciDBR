@@ -15,9 +15,6 @@ dimensions(x)
 \value{
 A character vector of SciDB array dimension names.
 }
-\note{
-This function is equivalent to \code{x@D$name}.
-}
 \author{
 B. W. Lewis<blewis@paradigm4.com>
 }
@@ -29,5 +26,4 @@ B. W. Lewis<blewis@paradigm4.com>
 # Upload data to create a 10x10 SciDB matrix
 A <- as.scidb(matrix(rnorm(100),10))
 dimensions(A)
-A@D$name
 }}

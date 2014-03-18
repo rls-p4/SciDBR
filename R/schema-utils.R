@@ -126,45 +126,17 @@ schema = function(x)
   gsub(".*<","<",x@schema)
 }
 
-
 # Construct a scidb promise from a SciDB schema string s.
 # s: schema character string
 # expr: SciDB expression or array name
 # data.frame: logical
 scidb_from_schemastring = function(s, expr=character(), `data.frame`)
 {
-  a=strsplit(strsplit(strsplit(strsplit(s,">")[[1]][1],"<")[[1]][2],",")[[1]],":")
-  attributes=unlist(lapply(a,function(x)x[[1]]))
-  attribute=attributes[[1]]
-
-  ts = lapply(a,function(x)x[[2]])
-  nullable = rep(FALSE,length(ts))
-  n = grep("null",ts,ignore.case=TRUE)
-  if(any(n)) nullable[n]=TRUE
-
-  types = gsub(" .*","",ts)
-  type = types[1]
-
-  d = gsub("\\]","",strsplit(s,"\\[")[[1]][[2]])
-  d = strsplit(strsplit(d,"=")[[1]],",")
-  dname = unlist(lapply(d[-length(d)],function(x)x[[length(x)]]))
-  dtype = rep("int64",length(dname))
-  chunk_interval = as.numeric(unlist(lapply(d[-1],function(x)x[[2]])))
-  chunk_overlap = as.numeric(unlist(lapply(d[-1],function(x)x[[3]])))
-  d = lapply(d[-1],function(x)x[[1]])
-
-  dlength = unlist(lapply(d,function(x)diff(as.numeric(gsub("\\*",.scidb_DIM_MAX,strsplit(x,":")[[1]])))+1))
-  dstart = unlist(lapply(d,function (x)as.numeric(strsplit(x,":")[[1]][[1]])))
-
-  D = list(name=dname,
-           type=dtype,
-           start=dstart,
-           length=dlength,
-           chunk_interval=chunk_interval,
-           chunk_overlap=chunk_overlap
-           )
-  if(missing(`data.frame`)) `data.frame` = ( (length(dname)==1) &&  (length(attributes)>1))
-  if(length(dname)>1 && `data.frame`) stop("SciDB data frame objects can only be associated with 1-D SciDB arrays")
+  attributes = scidb_attributes(s)
+  dimensions = dimensions(s)
+  if(missing(`data.frame`)) `data.frame` = ( (length(dimensions)==1) &&  (length(attributes)>1))
+  if(length(dimensions)>1 && `data.frame`)
+    stop("SciDB data frame objects can only be associated with 1-D SciDB arrays")
 
   if(`data.frame`)
   {
@@ -181,28 +153,16 @@ scidb_from_schemastring = function(s, expr=character(), `data.frame`)
                 schema=gsub("^.*<","<",s,perl=TRUE),
                 name=expr,
                 attributes=attributes,
-                types=types,
-                nullable=nullable,
-                D=D,
-                dim=c(D$length,length(attributes)),
-                gc=new.env(),
-                length=length(attributes)
-             ))
+                dimensions=dimensions,
+                gc=new.env()))
   }
 
   new("scidb",
       name=expr,
       schema=gsub("^.*<","<",s,perl=TRUE),
-      attribute=attribute,
-      type=type,
       attributes=attributes,
-      types=types,
-      nullable=nullable,
-      D=D,
-      dim=D$length,
-      gc=new.env(),
-      length=prod(D$length)
-  )
+      dimensions=dimensions,
+      gc=new.env())
 }
 
 

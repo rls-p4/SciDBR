@@ -54,10 +54,8 @@ scidbmultiply = function(e1,e2)
   `eval` = FALSE
 # Check for availability of spgemm
   SPGEMM = length(grep("spgemm",.scidbenv$ops[,2]))>0
-  if(length(e1@attributes)>1)
-    e1 = project(e1,e1@attribute)
-  if(length(e2@attributes)>1)
-    e2 = project(e2,e2@attribute)
+  a1 = .get_attribute(e1)
+  a2 = .get_attribute(e2)
   e1.sparse = is.sparse(e1)
   e2.sparse = is.sparse(e2)
   SPARSE = e1.sparse || e2.sparse
@@ -74,9 +72,6 @@ scidbmultiply = function(e1,e2)
     warning("Missing values are not yet understood by SciDB multiplication operators. Any missing values have been replaced with zero.")
     e2 = substitute(e2)
   }
-
-  a1 = e1@attribute
-  a2 = e2@attribute
 
 # Promote vectors to row- or column-vectors as required.
   if(length(dim(e1))<2)
@@ -183,7 +178,7 @@ scidbmultiply = function(e1,e2)
   {
 #    e1 = scidbeval(e1,gc=TRUE)
     e1 = make_nullable(e1)
-    e1a = e1@attribute
+    e1a = .get_attribute(e1)
     depend = c(depend, e1)
     dnames = c(dnames, dimensions(e1))
   }
@@ -191,7 +186,7 @@ scidbmultiply = function(e1,e2)
   {
 #    e2 = scidbeval(e2,gc=TRUE)
     e2 = make_nullable(e2)
-    e2a = e2@attribute
+    e2a = .get_attribute(e2)
     depend = c(depend, e2)
     dnames = c(dnames, dimensions(e2))
   }
@@ -205,14 +200,14 @@ scidbmultiply = function(e1,e2)
   ub = paste(rep("null",l1),collapse=",")
   if(inherits(e1,"scidb"))
   {
-    q1 = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",e1@name,e1@attribute,lb,ub)
+    q1 = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",e1@name,e1a,lb,ub)
   }
   l = length(dim(e2))
   lb = paste(rep("null",l),collapse=",")
   ub = paste(rep("null",l),collapse=",")
   if(inherits(e2,"scidb"))
   {
-    q2 = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",e2@name,e2@attribute,lb,ub)
+    q2 = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",e2@name,e2a,lb,ub)
   }
 # Adjust the 2nd array to be schema-compatible with the 1st:
   if(l==2 && l1==2)
@@ -382,7 +377,7 @@ log_scidb = function(x, base=exp(1))
 {
   w = x@types == "double"
   if(!any(w)) stop("requires at least one double-precision valued attribute")
-  if(class(x) %in% "scidb") attr = x@attribute
+  if(class(x) %in% "scidb") attr = .get_attribute(x)
   else attr = x@attributes[which(w)[[1]]]
   new_attribute = sprintf("%s_log",attr)
   if(base==exp(1))
@@ -396,9 +391,7 @@ log_scidb = function(x, base=exp(1))
   {
     query = sprintf("apply(%s, %s, log(%s)/log(%.15f))",x@name, new_attribute, attr, base)
   }
-  ans = .scidbeval(query,`eval`=FALSE)
-  if(class(x) %in% "scidb") ans@attribute = new_attribute
-  ans
+  .scidbeval(query,`eval`=FALSE)
 }
 
 # S4 method conforming to standard generic trig functions. See help for
@@ -409,14 +402,12 @@ fn_scidb = function(x,fun,attr)
   {
     w = x@types == "double"
 #    if(!any(w)) stop("requires at least one double-precision valued attribute")
-    if(class(x) %in% "scidb") attr = x@attribute
+    if(class(x) %in% "scidb") attr = .get_attribute(x)
     else attr = x@attributes[which(w)[[1]]]
   }
   new_attribute = sprintf("%s_%s",attr,fun)
   query = sprintf("apply(%s, %s, %s(%s))",x@name, new_attribute, fun, attr)
-  ans = .scidbeval(query,`eval`=FALSE,gc=TRUE,depend=list(x),`data.frame`=(is.scidbdf(x)))
-  if(class(ans) %in% "scidb") ans@attribute = new_attribute
-  ans
+  .scidbeval(query,`eval`=FALSE,gc=TRUE,depend=list(x),`data.frame`=(is.scidbdf(x)))
 }
 
 # S3 Method conforming to usual diff implementation. The `differences`

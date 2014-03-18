@@ -10,7 +10,7 @@ non-missing value prior to it.
 }
 
 \usage{
-\S4method{na.locf}{scidb}(object, along=object@D$name[1],`eval`=FALSE)
+\S4method{na.locf}{scidb}(object, along=dimensions(object)[1],`eval`=FALSE)
 }
 \arguments{
   \item{object}{A \code{scidb} or \code{scidbdf} object.}

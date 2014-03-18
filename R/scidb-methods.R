@@ -215,8 +215,10 @@ setMethod("tcrossprod",signature(x="scidb", y="missing"),
 
 scidb_grand = function(x, op)
 {
-  query = sprintf("aggregate(%s, %s(%s) as %s)", x@name, op, x@attribute, x@attribute)
-  iquery(query, `return`=TRUE)[,2]
+  ag = paste(sprintf("%s(%s) as %s", op, x@attributes, x@attributes),collapse=",")
+  query = sprintf("aggregate(%s, %s)", x@name, ag)
+  if(length(x@attributes)==1) return(iquery(query, `return`=TRUE)[,2])
+  iquery(query,`return`=TRUE)
 }
 
 # The remaining functions return data to R:
@@ -266,6 +268,7 @@ setMethod("diag", signature(x="scidb"),
 function(x)
 {
   D = dim(x)
+  atr = .get_attribute(x)
   dims = dimensions(x)
   bounds = scidb_coordinate_bounds(x)
   len = as.numeric(bounds$length)
@@ -277,15 +280,15 @@ function(x)
 # Case 1: Given a matrix, return its diagonal as a vector.
   if(length(D)==2)
   {
-    bschema = sprintf("<%s:double>",x@attribute)
+    bschema = sprintf("<%s:double>",atr)
     bschema = sprintf("%s%s",bschema,build_dim_schema(x,newstart=c(0,0)))
-    mask = sprintf("build(<%s:double>[%s=0:%s,1000000,0],1)",x@attribute,dims[1],noE(min(len)-1))
+    mask = sprintf("build(<%s:double>[%s=0:%s,1000000,0],1)",atr,dims[1],noE(min(len)-1))
     mask = sprintf("apply(%s,%s,%s)",mask,dims[2],dims[1])
     mask = sprintf("redimension(%s,%s)",mask, bschema)
-    mask = sprintf("attribute_rename(%s,%s,%s)",mask,x@attribute,make.unique_(x@attribute,"v"))
-    query = sprintf("project(join(sg(subarray(%s,null,null,null,null),1,-1),%s),%s)",x@name,mask,x@attribute)
+    mask = sprintf("attribute_rename(%s,%s,%s)",mask,atr,make.unique_(atr,"v"))
+    query = sprintf("project(join(sg(subarray(%s,null,null,null,null),1,-1),%s),%s)",x@name,mask,atr)
     query = sprintf("unpack(%s,%s)",query, make.unique_(dims, "i"))
-    query = sprintf("project(%s,%s)",query,x@attribute)
+    query = sprintf("project(%s,%s)",query,atr)
     query = sprintf("sg(subarray(%s,0,%s),1,-1)",query,noE(min(len)-1))
     return(.scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x)))
   }
@@ -300,7 +303,7 @@ function(x)
            dims[1], noE(len[1] - 1) , chunk[1], overlap[1],
            dim2, noE(len[1] - 1), chunk[1], overlap[1])
   query = sprintf("cross_join(%s as __X,%s as __Y,__X.%s,__Y.%s)",query,x@name,dims[1],dims[1])
-  query = sprintf("project(%s,%s)",query,x@attribute)
+  query = sprintf("project(%s,%s)",query,atr)
   ans = .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
   attr(ans, "sparse") = TRUE
   return(ans)
@@ -349,7 +352,6 @@ setMethod("print", signature(x="scidb"),
 
 setMethod("show", "scidb",
   function(object) {
-    atr=object@attribute
     if(is.null(dim(object)) || length(dim(object))==1)
       cat("Reference to a SciDB vector of length",
            scidb_coordinate_bounds(object)$length,"\n")
@@ -360,14 +362,14 @@ setMethod("show", "scidb",
   })
 
 setMethod("image", signature(x="scidb"),
-function(x, grid=c(500,500), op=sprintf("sum(%s)", x@attribute), na=0, ...)
+function(x, grid=c(500,500), op=sprintf("sum(%s)", .get_attribute(x)), na=0, ...)
 {
   if(length(dim(x))!=2) stop("Sorry, array must be two-dimensional")
   if(length(grid)!=2) stop("The grid parameter must contain two values")
   blocks = as.numeric(scidb_coordinate_length(x))
   blocks = blocks/grid
   if(any(blocks<1)) blocks[which(blocks<1)] = 1
-  query = sprintf("regrid(project(%s,%s),%.0f,%.0f,%s)",x@name,x@attribute,blocks[1],blocks[2],op)
+  query = sprintf("regrid(project(%s,%s),%.0f,%.0f,%s)",x@name,.get_attribute(x),blocks[1],blocks[2],op)
   A = iquery(query,return=TRUE,n=Inf)
   A[is.na(A[,3]),3] = na
   m = max(A[,1]) + 1
@@ -434,7 +436,7 @@ setMethod("lag",signature(x="scidb"),
 setMethod("regrid", signature(x="scidb"),
   function(x, grid, expr)
   {
-    if(missing(expr)) expr = sprintf("avg(%s)",x@attribute)
+    if(missing(expr)) expr = paste(sprintf("avg(%s)",x@attributes),collapse=",")
     query = sprintf("regrid(%s, %s, %s)",
                x@name, paste(noE(grid),collapse=","), expr)
     .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))

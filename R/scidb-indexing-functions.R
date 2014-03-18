@@ -78,7 +78,6 @@ dimfilter = function(x, i, eval, drop)
 # Identify everything else
   ci = !(si | bi | ui)
 
-  if(length(x@attribute)<1) x@attribute=x@attributes[1]
   r = lapply(1:length(bi), function(j)
     {
       if(bi[j])
@@ -126,7 +125,7 @@ dimfilter = function(x, i, eval, drop)
           build_dim_schema(x,newend=newend,newstart=newstart))
   }
 # Return a new scidb array reference
-  ans = .scidbeval(q,eval=FALSE,gc=TRUE,attribute=x@attribute,`data.frame`=FALSE,depend=x)
+  ans = .scidbeval(q,eval=FALSE,gc=TRUE,`data.frame`=FALSE,depend=x)
   if(any(ci)) 
   {
     assign("dimnames",dimnames(x),envir=ans@gc)
@@ -268,6 +267,13 @@ materialize = function(x, drop=FALSE)
   type = names(.scidbtypes[.scidbtypes==x@type])
 # Check for types that are not fully supported yet.
   xstart = as.numeric(scidb_coordinate_start(x))
+# If x has multiple attributes, warn.
+  if(length(x@attributes)>1)
+  {
+    warning("The array contains multiple SciDB attributes, returning as an unpacked dataframe.")
+    return(iquery(x, return=TRUE,n=Inf))
+  }
+  attr = .get_attributes(x)
   if(length(type)<1)
   {
     u = unpack(x)[]
@@ -283,7 +289,7 @@ materialize = function(x, drop=FALSE)
 # chance that this will be involved in a gemm query later.
   ndim = as.integer(length(dimensions(x)))
   N = paste(rep("null",2*ndim),collapse=",")
-  query = sprintf("subarray(project(%s,%s),%s)",x@name,x@attribute,N)
+  query = sprintf("subarray(project(%s,%s),%s)",x@name,attr,N)
 
 # Unpack
   query = sprintf("unpack(%s,%s)",query,"__row")

@@ -321,7 +321,7 @@ build = function(data, dim, names, type,
 count = function(x)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-  iquery(sprintf("count(%s)",x@name),return=TRUE)$count
+  iquery(sprintf("aggregate(%s, count(*) as count)",x@name),return=TRUE)$count
 }
 
 # Filter the attributes of the scidb, scidbdf object to contain

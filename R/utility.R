@@ -46,28 +46,21 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
 
 # Create a new scidb reference to an existing SciDB array.
 # name (character): SciDB expression or array name
-# attribute (character): Attribute in the backing SciDB array
-#   (applies to n-d arrays, not data.frame-like 1-d arrays)
 # gc (logical, optional): Remove backing SciDB array when R object is
 #     garbage collected? Default is FALSE.
 # data.frame (logical, optional): If true, return a data.frame-like object.
 #   Otherwise an array.
-scidb = function(name, attribute, gc, `data.frame`)
+scidb = function(name, gc, `data.frame`)
 {
   if(missing(name)) stop("array or expression must be specified")
   if(missing(gc)) gc=FALSE
   if(is.scidb(name) || is.scidbdf(name))
   {
-    return(.scidbeval(name@name, eval=FALSE, attribute=attribute, gc=gc, `data.frame`=`data.frame`, depend=list(name)))
+    return(.scidbeval(name@name, eval=FALSE, gc=gc, `data.frame`=`data.frame`, depend=list(name)))
   }
   query = sprintf("show('%s as array','afl')",gsub("'","\\\\'",name,perl=TRUE))
   schema = gsub("^.*<","<",iquery(query,`return`=1)$schema, perl=TRUE)
   obj = scidb_from_schemastring(schema, name, `data.frame`)
-  if(!missing(attribute))
-  {
-    if(!(attribute %in% obj@attributes)) warning("Requested attribute not found")
-    obj@attribute = attribute
-  }
   if(gc)
   {
     if(length(grep("\\(",name))==0)
@@ -99,8 +92,6 @@ scidb = function(name, attribute, gc, `data.frame`)
 # depend: (optional list) An optional list of other scidb or scidbdf objects
 #         that this expression depends on (preventing their garbage collection
 #         if other references to them go away).
-# attribute: (optional character) Set the attribute on a scidb object,
-#             requires data.frame=TRUE
 # data.frame: (optional, logical) If TRUE, return a data.frame object, false
 #             return a scidb object. Default is missing, in which case an
 #             automatic decision is made about the object return class.
@@ -111,7 +102,7 @@ scidb = function(name, attribute, gc, `data.frame`)
 # NOTE
 # SciDB versions up to 13.12 only support AFL here. As of SciDB version
 # 14.3, expression can be AFL or AQL.
-`.scidbeval` = function(expr,eval,name,gc=TRUE, depend, attribute, `data.frame`)
+`.scidbeval` = function(expr,eval,name,gc=TRUE, depend, `data.frame`)
 {
   ans = c()
   if(missing(depend)) depend=c()
@@ -122,10 +113,10 @@ scidb = function(name, attribute, gc, `data.frame`)
     else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
     scidbquery(query)
-    ans = scidb(newarray,gc=gc,attribute=attribute,`data.frame`=`data.frame`)
+    ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)
   } else
   {
-    ans = scidb(expr,gc=gc,attribute=attribute,`data.frame`=`data.frame`)
+    ans = scidb(expr,gc=gc,`data.frame`=`data.frame`)
 # Assign dependencies
     if(length(depend)>0)
     {
@@ -782,3 +773,13 @@ scidbdfcc = function(x)
   }
   c("integer",as.vector(unlist(lapply(.scidbdftypes[x@types],function(x) ifelse(is.null(x),NA,x)))))
 }
+
+# A utility function for operations that require a single attribute
+# Throws error if a multi-attribute array is specified.
+.get_attribute = function(x)
+{
+  a = scidb_attributes(x)
+  if(length(a > 1) stop("This function requires a single-attribute array. Consider using project.")
+  a
+}
+

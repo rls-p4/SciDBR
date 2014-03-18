@@ -189,18 +189,15 @@ summary.scidb = function(x)
   if(nchar(object@name)>20) name = paste(name,"...",sep="")
   cat("SciDB array name: ",name)
   cat("\nSciDB array schema: ",object@schema)
-  cat("\nattribute in use: ",object@attribute)
   cat("\nAll attributes: ",object@attributes)
   cat("\nArray dimensions:\n")
-cat("HOMER XXX IN PROCESS\n")
+XXX
   cat("\n")
 }
 
 `print.scidb` = function(x, ...)
 {
   cat("\nSciDB array ",x@name)
-  if(nchar(x@attribute)>0)
-    cat("\tattribute: ",x@attribute)
   cat("\n")
   print(head(x))
   if(is.null(dim(x))) j = as.numeric(scidb_coordinate_bounds(x)$length) - 6

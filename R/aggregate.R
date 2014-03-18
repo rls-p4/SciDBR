@@ -36,7 +36,9 @@
   if(length(MARGIN)!=1) stop("MARGIN must indicate a single dimension")
   if(length(dimensions(STATS))>1) stop("STATS must be a one-dimensional SciDB array")
   if(is.numeric(MARGIN)) MARGIN = dimensions(x)[MARGIN]
-  if(missing(`name`)) `name` = x@attribute
+  xattr = .get_attribute(x)
+  sattr = .get_attribute(STATS)
+  if(missing(`name`)) `name` = xattr
   if(!(MARGIN %in% dimensions(STATS)))
   {
 # Make sure coordinate axis along MARGIN are named the same in each array
@@ -47,13 +49,13 @@
     STATS = .scidbeval(query,eval=FALSE, depend=list(x))
   }
 # Check for potential attribute name conflicts and adjust.
-  if(length(intersect(x@attributes, STATS@attributes))>0)
+  if(length(intersect(scidb_attributes(x), scidb_attributes(STATS)))>0)
   {
     STATS = cast(STATS,paste(build_attr_schema(STATS,"V_"),build_dim_schema(STATS)),`eval`=FALSE)
   }
   if(nchar(FUN)==1)
   {
-    FUN = sprintf("%s %s %s",x@attribute, FUN, STATS@attribute)
+    FUN = sprintf("%s %s %s",scidb_attribtues(x), FUN, scidb_attributes(STATS))
   }
   substitute(
   attribute_rename(
@@ -78,7 +80,7 @@
     fn = .scidbfun(FUN)
     if(is.null(fn))
       stop("Apply requires a valid SciDB aggregate function")
-    FUN = sprintf("%s(%s)",fn,X@attribute)
+    FUN = paste(sprintf("%s(%s)",fn,X@attributes),collapse=",")
   }
   Y = aggregate(X,MARGIN,FUN,eval=FALSE,unpack=FALSE)
   a = Y@attributes[length(Y@attributes)]
