@@ -35,16 +35,24 @@
 # utility
 .dimsplitter = function(x)
 {
-  if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
-  s = schema(x)
+  if(is.character(x)) s = x
+  else
+  {
+    if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
+    s = schema(x)
+  }
   d = gsub("\\]","",strsplit(s,"\\[")[[1]][[2]])
   strsplit(strsplit(d,"=")[[1]],",")
 }
 
 .attsplitter = function(x)
 {
-  if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
-  s = schema(x)
+  if(is.character(x)) s = x
+  else
+  {
+    if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
+    s = schema(x)
+  }
   strsplit(strsplit(strsplit(strsplit(s,">")[[1]][1],"<")[[1]][2],",")[[1]],":")
 }
 
@@ -141,14 +149,6 @@ scidb_from_schemastring = function(s, expr=character(), `data.frame`)
   if(`data.frame`)
   {
 # Set default column types
-    ctypes = c("int64",dtype)
-    cc = rep(NA,length(ctypes))
-    cc[ctypes=="datetime"] = "Date"
-    cc[ctypes=="float"] = "double"
-    cc[ctypes=="double"] = "double"
-    cc[ctypes=="bool"] = "logical"
-    st = grep("string",ctypes)
-    if(length(st>0)) cc[st] = "character"
     return(new("scidbdf",
                 schema=gsub("^.*<","<",s,perl=TRUE),
                 name=expr,

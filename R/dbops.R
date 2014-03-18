@@ -59,14 +59,10 @@ reshape_scidb = function(data, schema, shape, dimnames, chunks, `eval`=FALSE)
 # Note! that the default garbage collection option here is to *not* remove.
 rename = function(A, name=A@name, gc)
 {
-XXX
   if(!(inherits(A,"scidb") || inherits(A,"scidbdf"))) stop("`A` must be a scidb object.")
   if(missing(gc)) gc = FALSE
-  if(A@name != name) scidbquery(sprintf("rename(%s,%s)",A@name, name))
-  A@gc$remove=gc
-  A@name = name
-  A@gc$name = name
-  A
+  query = sprintf("rename(%s,%s)",A@name, name)
+  .scidbeval(query,eval=TRUE,gc=gc)
 }
 
 unpack_scidb = function(x, `eval`=FALSE)

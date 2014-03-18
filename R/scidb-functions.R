@@ -191,7 +191,7 @@ summary.scidb = function(x)
   cat("\nSciDB array schema: ",object@schema)
   cat("\nAll attributes: ",object@attributes)
   cat("\nArray dimensions:\n")
-XXX
+  cat("\nAll dimensions: ",object@dimensions)
   cat("\n")
 }
 

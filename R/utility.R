@@ -779,7 +779,7 @@ scidbdfcc = function(x)
 .get_attribute = function(x)
 {
   a = scidb_attributes(x)
-  if(length(a > 1) stop("This function requires a single-attribute array. Consider using project.")
+  if(length(a > 1)) stop("This function requires a single-attribute array. Consider using project.")
   a
 }
 
