@@ -42,13 +42,12 @@
 # merge(x,y)        # Cross-product of x and y
 # merge(x,y,by='i') # Natural join on common dimension i
 # merge(x,y,by.x='i',by.y='i') # equiv. to the last expression
-`merge_scidb` = function(x,y,...)
+`merge_scidb` = function(x,y,`by`,...)
 {
   mc = list(...)
-  `by` = by.x = by.y = NULL
+  by.x = by.y = NULL
   `all` = FALSE
   scidbmerge = FALSE
-  if(!is.null(mc$by)) `by` = mc$by
   if(!is.null(mc$all)) `all` = mc$all
   if(!is.null(mc$by.x)) by.x = mc$by.x
   if(!is.null(mc$by.y)) by.y = mc$by.y
@@ -63,8 +62,9 @@
     stop("`by` may not also be specified with `by.x` or `by.y`")
   }
 
-# Check for simple cross case
-  if(is.null(`by`) && is.null(by.x) && is.null(by.y))
+# Check for full cross case.
+  if((is.null(`by`) && is.null(by.x) && is.null(by.y)) ||
+      length(`by`)==0 && is.null(by.x) && is.null(by.y))
   {
     if(scidbmerge) stop("SciDB merge not supported in this context")
     query = sprintf("cross_join(%s, %s)",xname,yname)

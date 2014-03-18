@@ -438,8 +438,8 @@ bind = function(X, name, FUN, `eval`=FALSE)
 }
 
 # S3 methods
-`merge.scidb` = function(x,y,...) merge_scidb(x,y,...)
-`merge.scidbdf` = function(x,y,...) merge_scidb(x,y,...)
+`merge.scidb` = function(x,y,by=intersect(dimensions(x),dimensions(y)),...) merge_scidb(x,y,by,...)
+`merge.scidbdf` = function(x,y,by=intersect(dimensions(x),dimensions(y)),...) merge_scidb(x,y,by,...)
 `sort.scidb` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `sort.scidbdf` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `unique.scidb` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)

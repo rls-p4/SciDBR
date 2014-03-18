@@ -5,11 +5,11 @@
 \alias{merge,scidbdf-method}
 \title{Methods for Function \code{merge} in Package \pkg{scidb}}
 \description{
-SciDB \code{cross}, \code{cross_join}, and \code{join} operations.
+SciDB \code{merge}, \code{cross_join}, and \code{join} operations.
 }
 \usage{
-\S4method{merge}{scidb}(x,y, by, by.x, by.y, merge, eval)
-\S4method{merge}{scidbdf}(x,y, by, by.x, by.y, merge, eval)
+\S4method{merge}{scidb}(x,y, by=intersect(dimensions(x),dimensions(y)), by.x, by.y, merge, eval)
+\S4method{merge}{scidbdf}(x,y, by=intersect(dimensions(x),dimensions(y)), by.x, by.y, merge, eval)
 }
 \arguments{
   \item{x}{A \code{scidb} or \code{scidbdf}}
@@ -27,10 +27,10 @@ SciDB \code{cross}, \code{cross_join}, and \code{join} operations.
 }
 \details{
 Only one of either \code{by} or both \code{by.x} and \code{by.y} may be
-specified.  If none of the \code{by*} arguments are specified, the result is
-the Cartesian product of \code{x} and \code{y} computed with the SciDB
-\code{cross} operator. (Note that this differs from the usual R \code{merge}
-behavior!)
+specified.  If none of the \code{by.x},\code{by.y} arguments are specified, and
+\code{by=NULL} the result is the Cartesian product of \code{x} and \code{y}.
+The default value of \code{by} performs a \code{cross_join} or \code{join}
+along common array dimensions.
 
 If only \code{by} is specified, the dimension names or attribute name in
 \code{by} are assumed to be common across \code{x} and \code{y}.  Otherwise
