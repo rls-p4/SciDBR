@@ -62,7 +62,7 @@ scidbmultiply = function(e1,e2)
 
 # Up to at least SciDB 13.12, gemm does not accept nullable attributes.
 # XXX This restriction needs to be changed in a future SciDB release.
-  miswarn = "This array might contain missing values (R NA/SciDB 'null').\nMissing values are not yet understood by SciDB multiplication operators.\nMissing values, if any, have been replaced with zero."
+  miswarn = "This array might contain missing values (R NA/SciDB 'null').\n Missing values are not yet understood by SciDB multiplication operators.\n Missing values, if any, have been replaced with zero."
   if(any(scidb_nullable(e1)))
   {
     warning(miswarn)
