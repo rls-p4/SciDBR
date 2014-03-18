@@ -716,7 +716,7 @@ is.sparse = function(x)
 # Check for scidb missing flag
 is.nullable = function(x)
 {
-  any(x@nullable)
+  any(scidb_nullable(x))
 }
 
 # Returns TRUE if version string x is greater than or equal to than version y
@@ -771,15 +771,5 @@ scidbdfcc = function(x)
     cat("Using old method for data.frame import")
     return(NA)
   }
-  c("integer",as.vector(unlist(lapply(.scidbdftypes[x@types],function(x) ifelse(is.null(x),NA,x)))))
+  c("integer",as.vector(unlist(lapply(.scidbdftypes[scidb_types(x)],function(x) ifelse(is.null(x),NA,x)))))
 }
-
-# A utility function for operations that require a single attribute
-# Throws error if a multi-attribute array is specified.
-.get_attribute = function(x)
-{
-  a = scidb_attributes(x)
-  if(length(a > 1)) stop("This function requires a single-attribute array. Consider using project.")
-  a
-}
-

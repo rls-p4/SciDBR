@@ -128,8 +128,7 @@ dimnames.scidbdf = function(x)
 
 `dim.scidbdf` = function(x)
 {
-  if(length(x@dim)==0) return(NULL)
-  x@dim
+  as.numeric(scidb_coordinate_bounds(x)$length) 
 }
 
 `dim<-.scidbdf` = function(x, value)

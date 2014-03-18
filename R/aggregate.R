@@ -158,7 +158,7 @@
 # by in place of the original specified attribute. This creates a new virtual
 # array x with additional attributes.
     types = x@attributes[a]
-    nonint = x@types != "int64" & a
+    nonint = scidb_types(x) != "int64" & a
     if(any(nonint))
     {
 # Use index_lookup to factorize non-integer indices, creating new enumerated

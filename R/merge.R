@@ -127,7 +127,7 @@
       z = make_nullable(z)
 # Form a null-valued version of each array in the alternate array coordinate system
       xnames = make.unique_(c(dimensions(z),scidb_attributes(z)),scidb_attributes(x))
-      vals = paste(scidb_types(x), rep("(null)",length(x@types)))
+      vals = paste(scidb_types(x), rep("(null)",length(scidb_types(x))))
       xnull = attribute_rename(project(bind(z,xnames,vals),xnames),xnames,scidb_attributes(x))
       znames = make.unique_(c(dimensions(x),scidb_attributes(x)),scidb_attributes(z))
       vals = paste(scidb_types(z), rep("(null)",length(scidb_types(z))))

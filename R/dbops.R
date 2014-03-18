@@ -116,7 +116,7 @@ slice = function(x, d, n, `eval`=FALSE)
 substitute = function(x, value, `attribute`, `eval`=FALSE)
 {
   if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
-  if(!any(x@nullable)) return(x)
+  if(!any(scidb_nullable(x))) return(x)
   if(missing(attribute))
   {
     attribute = ""
@@ -212,7 +212,7 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
       for(nid in x@attributes[ia])
       {
         idx = which(x@attributes %in% nid)
-        if(x@types[idx] != "int64")
+        if(scidb_types(x)[idx] != "int64")
         {
           reindexed = TRUE
           newat = sprintf("%s_index",nid)

@@ -299,7 +299,7 @@ function(x)
            dims[1], noE(len[1] - 1), chunk[1], overlap[1])
   query = sprintf("apply(%s,%s,%s)",query,dim2,dims[1])
   query = sprintf("redimension(%s,<%s:%s>[%s=0:%s,%s,%s,%s=0:%s,%s,%s])",
-           query, make.unique_(x@attributes,"v"), x@type,
+           query, make.unique_(x@attributes,"v"), scidb_types(x),
            dims[1], noE(len[1] - 1) , chunk[1], overlap[1],
            dim2, noE(len[1] - 1), chunk[1], overlap[1])
   query = sprintf("cross_join(%s as __X,%s as __Y,__X.%s,__Y.%s)",query,x@name,dims[1],dims[1])
@@ -357,7 +357,7 @@ setMethod("show", "scidb",
            scidb_coordinate_bounds(object)$length,"\n")
     else
       cat("A reference to a ",
-          paste(object@dim,collapse="x"),
+          paste(dim(object),collapse="x"),
           "SciDB array\n")
   })
 

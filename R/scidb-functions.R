@@ -171,19 +171,13 @@ summary.scidb = function(x)
   dimfilter(x,i,eval,drop=drop)
 }
 
-`dim.scidb` = function(x)
-{
-  if(length(x@dim)==0) return(NULL)
-  x@dim
-}
-
 `dim<-.scidb` = function(x, value)
 {
   stop("unsupported")
 }
 
 
-`str.scidb` = function(object, ...)
+str.scidb = function(object, ...)
 {
   name = substr(object@name,1,20)
   if(nchar(object@name)>20) name = paste(name,"...",sep="")

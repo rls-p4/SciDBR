@@ -260,3 +260,12 @@ build_dim_schema = function(A, bracket=TRUE, I,
   if(bracket) S = sprintf("[%s]",S)
   S
 }
+
+# A utility function for operations that require a single attribute
+# Throws error if a multi-attribute array is specified.
+.get_attribute = function(x)
+{
+  a = scidb_attributes(x)
+  if(length(a) > 1) stop("This function requires a single-attribute array. Consider using project.")
+  a
+}

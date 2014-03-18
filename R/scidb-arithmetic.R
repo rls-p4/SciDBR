@@ -62,14 +62,15 @@ scidbmultiply = function(e1,e2)
 
 # Up to at least SciDB 13.12, gemm does not accept nullable attributes.
 # XXX This restriction needs to be changed in a future SciDB release.
+  miswarn = "This array might contain missing values (R NA/SciDB 'null').\nMissing values are not yet understood by SciDB multiplication operators.\nMissing values, if any, have been replaced with zero."
   if(any(scidb_nullable(e1)))
   {
-    warning("Missing values are not yet understood by SciDB multiplication operators. Any missing values have been replaced with zero.")
+    warning(miswarn)
     e1 = substitute(e1)
   }
   if(any(scidb_nullable(e2)))
   {
-    warning("Missing values are not yet understood by SciDB multiplication operators. Any missing values have been replaced with zero.")
+    warning(miswarn)
     e2 = substitute(e2)
   }
 
@@ -229,11 +230,11 @@ scidbmultiply = function(e1,e2)
     {
       if(is.sparse(e1))
       {
-        q1 = sprintf("merge(%s,cast(project(apply(%s,__zero__,%s(0)),__zero__),<__zero__:%s null>%s))",q1,q2,e1@type,e1@type, build_dim_schema(e1))
+        q1 = sprintf("merge(%s,cast(project(apply(%s,__zero__,%s(0)),__zero__),<__zero__:%s null>%s))",q1,q2,scidb_types(e1),scidb_types(e1), build_dim_schema(e1))
       }
       if(is.sparse(e2))
       {
-        q2 = sprintf("merge(%s,cast(project(apply(%s,__zero__,%s(0)),__zero__),<__zero__:%s null>%s))",q2,q1,e2@type,e2@type, build_dim_schema(e2))
+        q2 = sprintf("merge(%s,cast(project(apply(%s,__zero__,%s(0)),__zero__),<__zero__:%s null>%s))",q2,q1,scidb_types(e2),scidb_types(e2), build_dim_schema(e2))
       }
     }
   }
@@ -295,8 +296,6 @@ scidbmultiply = function(e1,e2)
   if(missing(traditional)) traditional=TRUE
   if(!(inherits(e1,"scidb") || inherits(e1,"scidbdf"))) stop("Sorry, not yet implemented.")
   if(inherits(e2,"scidb")) return(.joincompare(e1,e2,op))
-#  type = names(.scidbtypes[.scidbtypes==e1@type])
-#  if(length(type)<1) stop("Unsupported data type.")
   op = gsub("==","=",op,perl=TRUE)
 # Automatically quote characters
   if(is.character(e2)) e2 = sprintf("'%s'",e2)
@@ -375,8 +374,8 @@ svd_scidb = function(x, nu=min(dim(x)), nv=nu)
 # Miscellaneous functions
 log_scidb = function(x, base=exp(1))
 {
-  w = x@types == "double"
-  if(!any(w)) stop("requires at least one double-precision valued attribute")
+  w = scidb_types(x) == "double"
+  if(!any(w)) stop("requires one double-precision valued attribute")
   if(class(x) %in% "scidb") attr = .get_attribute(x)
   else attr = x@attributes[which(w)[[1]]]
   new_attribute = sprintf("%s_log",attr)
@@ -400,7 +399,7 @@ fn_scidb = function(x,fun,attr)
 {
   if(missing(attr))
   {
-    w = x@types == "double"
+    w = scidb_types(x) == "double"
 #    if(!any(w)) stop("requires at least one double-precision valued attribute")
     if(class(x) %in% "scidb") attr = .get_attribute(x)
     else attr = x@attributes[which(w)[[1]]]

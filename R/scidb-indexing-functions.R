@@ -264,16 +264,16 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
 # Materialize the single-attribute scidb array x as an R array.
 materialize = function(x, drop=FALSE)
 {
-  type = names(.scidbtypes[.scidbtypes==x@type])
-# Check for types that are not fully supported yet.
-  xstart = as.numeric(scidb_coordinate_start(x))
 # If x has multiple attributes, warn.
   if(length(x@attributes)>1)
   {
     warning("The array contains multiple SciDB attributes, returning as an unpacked dataframe.")
     return(iquery(x, return=TRUE,n=Inf))
   }
-  attr = .get_attributes(x)
+  type = names(.scidbtypes[.scidbtypes==scidb_types(x)])
+# Check for types that are not fully supported yet.
+  xstart = as.numeric(scidb_coordinate_start(x))
+  attr = .get_attribute(x)
   if(length(type)<1)
   {
     u = unpack(x)[]
@@ -299,7 +299,7 @@ materialize = function(x, drop=FALSE)
   nl = TRUE
   N = "NULL"
 
-  savestring = sprintf("(%s,%s %s)",i,x@type,N)
+  savestring = sprintf("(%s,%s %s)",i,scidb_types(x),N)
 
   sessionid = tryCatch(
                 scidbquery(query, save=savestring, async=FALSE, release=0),
@@ -311,17 +311,17 @@ materialize = function(x, drop=FALSE)
   r = URI("/read_bytes",list(id=sessionid,n=n))
   BUF = getBinaryURL(r, .opts=list('ssl.verifypeer'=0))
 
-  type = eval(parse(text=paste(names(.scidbtypes[.scidbtypes==x@type]),"()")))
-  len  = as.integer(.typelen[names(.scidbtypes[.scidbtypes==x@type])])
+  type = eval(parse(text=paste(names(.scidbtypes[.scidbtypes==scidb_types(x)]),"()")))
+  len  = as.integer(.typelen[names(.scidbtypes[.scidbtypes==scidb_types(x)])])
   len  = len + nl # Type length
   i64 = 0L;
 # Special int64 cases:
-  if(x@type=="int64")
+  if(scidb_types(x)[1]=="int64")
   {
     i64 = 1L;
     warning("Coercing SciDB int64 values to R double precision real numeric values.")
   }
-  if(x@type=="uint64")
+  if(scidb_types(x)[1]=="uint64")
   {
     i64 = 2L;
     warning("Coercing SciDB uint64 values to R double precision real numeric values.")
