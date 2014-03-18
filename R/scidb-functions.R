@@ -176,20 +176,12 @@ summary.scidb = function(x)
   stop("unsupported")
 }
 
-
 str.scidb = function(object, ...)
 {
-  name = substr(object@name,1,20)
-  if(nchar(object@name)>20) name = paste(name,"...",sep="")
-  cat("SciDB array name: ",name)
-  cat("\nSciDB array schema: ",object@schema)
-  cat("\nAll attributes: ",object@attributes)
-  cat("\nArray dimensions:\n")
-  cat("\nAll dimensions: ",object@dimensions)
-  cat("\n")
+  .scidbstr(object)
 }
 
-`print.scidb` = function(x, ...)
+print.scidb = function(x, ...)
 {
   cat("\nSciDB array ",x@name)
   cat("\n")

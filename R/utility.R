@@ -773,3 +773,19 @@ scidbdfcc = function(x)
   }
   c("integer",as.vector(unlist(lapply(.scidbdftypes[scidb_types(x)],function(x) ifelse(is.null(x),NA,x)))))
 }
+
+.scidbstr = function(object)
+{
+  name = substr(object@name,1,25)
+  v = ifelse(length(object@attributes)<2, "variable", "variables")
+  if(nchar(object@name)>25) name = paste(name,"...",sep="")
+  cat(sprintf("SciDB array: %s obs. of %d %s.\n", scidb_coordinate_bounds(object)$length,
+        length(object@attributes),v))
+  cat("SciDB expression: ",name)
+  cat("\nSciDB schema: ",schema(object))
+  cat("\nAttributes:\n")
+  cat(paste(capture.output(print(data.frame(attribute=object@attributes,type=scidb_types(object),nullable=scidb_nullable(object)))),collapse="\n"))
+  cat("\nRow dimension:",dimensions(object),"\n")
+  cat("\n")
+}
+

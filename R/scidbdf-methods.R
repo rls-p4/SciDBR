@@ -89,8 +89,7 @@ setMethod("hist",signature(x="scidbdf"), hist_scidb)
 
 setMethod('show', 'scidbdf',
   function(object) {
-    l = length(object@attributes)
-    v = ifelse(l<2, "variable", "variables")
+    v = ifelse(length(object@attributes)<2, "variable", "variables")
     cat(sprintf("SciDB 1-D array: %s obs. of %d %s.\n", scidb_coordinate_bounds(object)$length,
         length(object@attributes),v))
   })

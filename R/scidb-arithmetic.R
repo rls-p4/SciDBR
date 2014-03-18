@@ -399,13 +399,14 @@ fn_scidb = function(x,fun,attr)
 {
   if(missing(attr))
   {
-    w = scidb_types(x) == "double"
-#    if(!any(w)) stop("requires at least one double-precision valued attribute")
-    if(class(x) %in% "scidb") attr = .get_attribute(x)
-    else attr = x@attributes[which(w)[[1]]]
+    attr = x@attributes
   }
-  new_attribute = sprintf("%s_%s",attr,fun)
-  query = sprintf("apply(%s, %s, %s(%s))",x@name, new_attribute, fun, attr)
+  new_attributes = make.unique_(x@attributes,attr)
+  expr = paste(sprintf("%s, %s(%s)", new_attributes, fun, attr),collapse=",")
+  query = sprintf("apply(%s, %s)",x@name, expr)
+  query = sprintf("project(%s, %s)",query, paste(new_attributes,collapse=","))
+  ren = paste(sprintf("%s,%s",new_attributes,attr),collapse=",")
+  query = sprintf("attribute_rename(%s,%s)",query,ren)
   .scidbeval(query,`eval`=FALSE,gc=TRUE,depend=list(x),`data.frame`=(is.scidbdf(x)))
 }
 

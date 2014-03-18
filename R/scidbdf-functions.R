@@ -128,7 +128,7 @@ dimnames.scidbdf = function(x)
 
 `dim.scidbdf` = function(x)
 {
-  as.numeric(scidb_coordinate_bounds(x)$length) 
+  c(as.numeric(scidb_coordinate_bounds(x)$length), length(scidb_attributes(x)))
 }
 
 `dim<-.scidbdf` = function(x, value)
@@ -139,15 +139,7 @@ dimnames.scidbdf = function(x)
 
 str.scidbdf = function(object, ...)
 {
-  name = substr(object@name,1,20)
-  if(nchar(object@name)>20) name = paste(name,"...",sep="")
-  cat("SciDB array name: ",name)
-  cat("\nSciDB array schema: ",schema(object))
-  cat("\nAttributes:\n")
-  cat(paste(capture.output(print(data.frame(attribute=object@attributes,type=scidb_types(object),nullable=scidb_nullable(object)))),collapse="\n"))
-  cat("\nRow dimension:\n")
-cat("HOMER XXX IN PROCESS\n")
-  cat("\n")
+  .scidbstr(object)
 }
 
 ncol.scidbdf = function(x) length(scidb_attributes(x))
