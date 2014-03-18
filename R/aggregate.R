@@ -53,9 +53,10 @@
   {
     STATS = cast(STATS,paste(build_attr_schema(STATS,"V_"),build_dim_schema(STATS)),`eval`=FALSE)
   }
+# Handle infix notation
   if(nchar(FUN)==1)
   {
-    FUN = sprintf("%s %s %s",scidb_attribtues(x), FUN, scidb_attributes(STATS))
+    FUN = sprintf("%s %s %s",scidb_attributes(x), FUN, scidb_attributes(STATS))
   }
   substitute(
   attribute_rename(
@@ -67,12 +68,11 @@
 }
 
 # A very limited version of R's apply.
-`apply_scidb` = function(X,MARGIN,FUN,`eval`=FALSE,`name`,...)
+`apply_scidb` = function(X,MARGIN,FUN,`eval`=FALSE,...)
 {
   if(!is.scidb(X)) stop("X must be a scidb object")
   if(length(MARGIN)!=1) stop("MARGIN must indicate a single dimension")
   if(is.numeric(MARGIN)) MARGIN = dimensions(X)[MARGIN]
-  if(missing(`name`)) `name` = X@attribute
 # Check for common function names and map to SciDB expressions
   if(is.function(FUN))
   {
@@ -80,11 +80,9 @@
     fn = .scidbfun(FUN)
     if(is.null(fn))
       stop("Apply requires a valid SciDB aggregate function")
-    FUN = paste(sprintf("%s(%s)",fn,X@attributes),collapse=",")
+    FUN = paste(sprintf("%s(%s) as %s",fn,X@attributes,X@attributes),collapse=",")
   }
-  Y = aggregate(X,MARGIN,FUN,eval=FALSE,unpack=FALSE)
-  a = Y@attributes[length(Y@attributes)]
-  attribute_rename(project(Y,a,eval=FALSE),a, `name`, eval=`eval`)
+  aggregate(X,MARGIN,FUN,eval=FALSE,unpack=FALSE)
 }
 
 # x:   A scidb, scidbdf object

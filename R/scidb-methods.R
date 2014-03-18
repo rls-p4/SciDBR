@@ -387,17 +387,11 @@ function(x, grid=c(500,500), op=sprintf("sum(%s)", .get_attribute(x)), na=0, ...
 })
 
 setMethod("aggregate", signature(x="scidb"), aggregate_scidb)
-
 setMethod("sweep", signature(x="scidb"), sweep_scidb)
-
 setMethod("apply", signature(X = "scidb"), apply_scidb)
-
 setMethod("unpack",signature(x="scidb"),unpack_scidb)
-
 setMethod("reshape", signature(data="scidb"), reshape_scidb)
-
 setMethod("svd", signature(x="scidb"), svd_scidb)
-
 setMethod("glm.fit", signature(x="scidb",y="ANY",weights="MNSN"), glm_scidb)
 
 # Transpose a matrix or vector
