@@ -784,7 +784,9 @@ scidbdfcc = function(x)
   cat("\nSciDB schema: ",schema(object))
   cat("\nAttributes:\n")
   cat(paste(capture.output(print(data.frame(attribute=object@attributes,type=scidb_types(object),nullable=scidb_nullable(object)))),collapse="\n"))
-  cat("\nDimension",dn,paste(dimensions(object),collapse=","),"\n")
+  cat("\nDimension",dn,"\n")
+  bounds = scidb_coordinate_bounds(object)
+  cat(paste(capture.output(print(data.frame(dimension=dimensions(object),start=bounds$start,end=bounds$end,chunk=scidb_coordinate_chunksize(object)))),collapse="\n"))
   cat("\n")
 }
 
