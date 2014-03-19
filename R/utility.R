@@ -776,17 +776,17 @@ scidbdfcc = function(x)
 
 .scidbstr = function(object)
 {
-  name = substr(object@name,1,25)
-  if(nchar(object@name)>25) name = paste(name,"...",sep="")
-  dn = "name:"
-  if(length(dimensions(object))>1) dn = "names:"
+  name = substr(object@name,1,35)
+  if(nchar(object@name)>35) name = paste(name,"...",sep="")
+  dn = "\nDimension:"
+  if(length(dimensions(object))>1) dn = "\nDimensions:"
   cat("SciDB expression: ",name)
   cat("\nSciDB schema: ",schema(object))
-  cat("\nAttributes:\n")
+  cat("\n\nAttributes:\n")
   cat(paste(capture.output(print(data.frame(attribute=object@attributes,type=scidb_types(object),nullable=scidb_nullable(object)))),collapse="\n"))
-  cat("\nDimension",dn,"\n")
+  cat(dn,"\n")
   bounds = scidb_coordinate_bounds(object)
-  cat(paste(capture.output(print(data.frame(dimension=dimensions(object),start=bounds$start,end=bounds$end,chunk=scidb_coordinate_chunksize(object)))),collapse="\n"))
+  cat(paste(capture.output(print(data.frame(dimension=dimensions(object),start=bounds$start,end=bounds$end,chunk=scidb_coordinate_chunksize(object),row.names=NULL,stringsAsFactors=FALSE))),collapse="\n"))
   cat("\n")
 }
 
