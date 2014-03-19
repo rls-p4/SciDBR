@@ -93,15 +93,3 @@ glm_scidb = function(x,y,`weights`=NULL,`family`=gaussian())
   )
   ans
 }
-
-
-glm_scidb = function(x, formula)
-{
-  t = terms(formula)
-  v = attr(t,"term.variables")
-  l = attr(t,"term.labels")
-  r = attr(t,"response")
-  i = attr(t,"intercept")
-  response = v[r]
-
-
