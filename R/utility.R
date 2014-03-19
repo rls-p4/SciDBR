@@ -248,27 +248,33 @@ URI = function(resource="", args=list())
   ans
 }
 
-# Send an HTTP GET message
-GET = function(resource, args=list(), header=TRUE, async=FALSE)
+# Send an HTTP GET message to the shim service
+# resource: URI service name
+# args: named list of HTTP GET query parameters
+# header: TRUE=return the HTTP response header, FALSE=don't return it
+# async: Doesn't really do anything
+# disable_interrupt: With care, set to TRUE to prevent SIGINT during call
+GET = function(resource, args=list(), header=TRUE, async=FALSE, disable_interrupt=FALSE)
 {
   if(!(substr(resource,1,1)=="/")) resource = paste("/",resource,sep="")
   uri = URI(resource, args)
   uri = URLencode(uri)
   uri = gsub("\\+","%2B",uri,perl=TRUE)
+  on.exit(sigint(SIG_DFL))
+  callback = curl_signal_trap
+  if(disable_interrupt) callback = function(down,up) 0L
   if(async)
   {
     sigint(SIG_IGN)
     getURI(url=uri,
       .opts=list(header=header,'ssl.verifypeer'=0,
-                 noprogress=FALSE, progressfunction=curl_signal_trap),
+                 noprogress=FALSE, progressfunction=callback),
       async=TRUE)
-    sigint(SIG_DFL)
     return(NULL)
   }
   sigint(SIG_IGN)
   ans = getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0,
-                         noprogress=FALSE, progressfunction=curl_signal_trap))
-  sigint(SIG_DFL)
+                         noprogress=FALSE, progressfunction=callback))
   ans
 }
 
@@ -338,23 +344,33 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
   if(async)
   {
     ans =tryCatch(
-      GET("/execute_query",list(id=sessionid,release=release,query=query,async='1',afl=as.integer(afl)),async=TRUE),
-      error=function(e) {
-        GET("release_session", list(id=sessionid))
+     {
+      GET("/execute_query",list(id=sessionid,release=release,query=query,async='1',afl=as.integer(afl)),async=TRUE)
+      }, error=function(e)
+      {
+# User cancel?
+        GET("/cancel", list(id=sessionid), disable_interrupt=TRUE)
+        GET("/release_session", list(id=sessionid), disable_interrupt=TRUE)
         stop("HTTP/1.0 500 ERROR")
       })
   } else
   {
     ans = tryCatch(
       {
-      if(is.null(save))
-        GET("/execute_query",list(id=sessionid,release=release,query=query,afl=as.integer(afl)))
-      else
-        GET("/execute_query",list(id=sessionid,release=release,save=save,query=query,afl=as.integer(afl)))
-      },
-      error=function(e) {
-        GET("/release_session",list(id=sessionid))
+        if(is.null(save))
+          GET("/execute_query",list(id=sessionid,release=release,query=query,afl=as.integer(afl)))
+        else
+          GET("/execute_query",list(id=sessionid,release=release,save=save,query=query,afl=as.integer(afl)))
+      }, error=function(e)
+      {
+# User cancel?
+        GET("/cancel", list(id=sessionid), disable_interrupt=TRUE)
+        GET("/release_session", list(id=sessionid), disable_interrupt=TRUE)
         "HTTP/1.0 500 ERROR"
+      }, interrupt=function(e)
+      {
+        GET("/cancel", list(id=sessionid,async='1'), disable_interrupt=TRUE, async=TRUE)
+        GET("/release_session", list(id=sessionid), disable_interrupt=TRUE)
       })
     w = ans
     err = 200
@@ -584,6 +600,8 @@ iquery = function(query, `return`=FALSE,
 # Not used yet. It will be important when shim is modified to stream
 # results back. XXX TODO
 #            GET("/cancel",list(id=sessionid))
+             GET("/release_session",list(id=sessionid))
+             stop("Canceled")
           })
         GET("/release_session",list(id=sessionid))
 # Handle escaped quotes
@@ -834,12 +852,12 @@ curl_signal_trap = function(down,up)
   {
     sigint(SIG_DFL)  # Enable SIGINT
 # cat("TRAP",down,up,"\n") # Debug
-    Sys.sleep(0.01)  # Ugly!
+    Sys.sleep(0.1)   # Horrible!
     sigint(SIG_IGN)  # Disable SIGINT
     0L
   }, interrupt=function(e)
   {
-    cat("Download canceled\n")
+    cat("canceled\n")
     1L
   })
 }

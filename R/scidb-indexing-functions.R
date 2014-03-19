@@ -315,6 +315,7 @@ materialize = function(x, drop=FALSE)
           getBinaryURL(r, .opts=list('ssl.verifypeer'=0, noprogress=FALSE, progressfunction=curl_signal_trap))
         }, error=function(e)
         {
+          GET("/release_session",list(id=sessionid))
           sigint(SIG_DFL)
           stop("Canceled")
         })
