@@ -40,7 +40,7 @@ Ops.scidbdf = function(e1,e2) {
   )
 }
 
-`cbind.scidbdf` = function(x, y)
+cbind.scidbdf = function(x, y)
 {
   if(missing(y))
   {
@@ -52,6 +52,11 @@ Ops.scidbdf = function(e1,e2) {
   i = intersect(dimensions(x),dimensions(y))
   if(length(i)<1) stop("Non-conformable arrays") # XXX Should really try harder
   merge(x,y,by=i)
+}
+
+rbind.scidbdf = function(x, y)
+{
+  c(x,y)
 }
 
 colnames.scidbdf = function(x)
