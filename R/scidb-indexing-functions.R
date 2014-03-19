@@ -309,7 +309,16 @@ materialize = function(x, drop=FALSE)
   n = 0
 
   r = URI("/read_bytes",list(id=sessionid,n=n))
-  BUF = getBinaryURL(r, .opts=list('ssl.verifypeer'=0))
+  sigint(SIG_IGN)
+  BUF = tryCatch(
+        {
+          getBinaryURL(r, .opts=list('ssl.verifypeer'=0, noprogress=FALSE, progressfunction=curl_signal_trap))
+        }, error=function(e)
+        {
+          sigint(SIG_DFL)
+          stop("Canceled")
+        }
+  sigint(SIG_DFL)
 
   type = eval(parse(text=paste(names(.scidbtypes[.scidbtypes==scidb_types(x)]),"()")))
   len  = as.integer(.typelen[names(.scidbtypes[.scidbtypes==scidb_types(x)])])

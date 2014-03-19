@@ -399,3 +399,19 @@ scidb_raw (SEXP A)
   UNPROTECT(1);
   return ans;
 }
+
+
+/* Enable or disable SIGINT */
+SEXP
+sig(SEXP I)
+{
+  int i = INTEGER(I)[0];
+  if(i>0)
+  {
+    signal(SIGINT, SIG_IGN);
+  } else
+  {
+    signal(SIGINT, SIG_DFL);
+  }
+  return R_NilValue;
+}

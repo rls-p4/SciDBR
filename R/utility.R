@@ -257,12 +257,20 @@ GET = function(resource, args=list(), header=TRUE, async=FALSE)
   uri = gsub("\\+","%2B",uri,perl=TRUE)
   if(async)
   {
-    getURI(url=uri,.opts=list(header=header,'ssl.verifypeer'=0),async=TRUE)
+    sigint(SIG_IGN)
+    getURI(url=uri,
+      .opts=list(header=header,'ssl.verifypeer'=0,
+                 noprogress=FALSE, progressfunction=curl_signal_trap),
+      async=TRUE)
+    sigint(SIG_DFL)
     return(NULL)
   }
-  getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0))
+  sigint(SIG_IGN)
+  ans = getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0,
+                         noprogress=FALSE, progressfunction=curl_signal_trap))
+  sigint(SIG_DFL)
+  ans
 }
-
 
 # Check if array exists
 .scidbexists = function(name)
@@ -567,7 +575,16 @@ iquery = function(query, `return`=FALSE,
       ans = tryCatch(
        {
         sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
-        result = GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE)
+        result = tryCatch(
+          {
+            GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE)
+          },
+          error=function(e)
+          {
+# Not used yet. It will be important when shim is modified to stream
+# results back. XXX TODO
+#            GET("/cancel",list(id=sessionid))
+          })
         GET("/release_session",list(id=sessionid))
 # Handle escaped quotes
         result = gsub("\\\\'","''",result)
@@ -790,3 +807,39 @@ scidbdfcc = function(x)
   cat("\n")
 }
 
+# The RCurl package does not handle interruption well, sometimes segfaulting.
+# We abuse the curl progress meter function to only expose the SIGINT signal
+# for a tiny time slice, handling it gracefully from R. This protects RCurl
+# from segfaulting, but incurs a slight download performance penalty.
+# Use the curl_signal_trap as a progress function in curl calls.
+#
+# Here is an example:
+#
+#    sigint(SIG_IGN)
+#    x=getBinaryURL(url,
+#        .opts=list(noprogress=FALSE, progressfunction=curl_signal_trap))
+#    sigint(SIG_DFL)
+#
+# Note that users might have to hold down CTRL+C a while because of the tiny
+# time window it's available.
+sigint = function(switch)
+{
+  val = SIG_DFL
+  if(switch>0) val=SIG_IGN
+  .Call("sig",val,PACKAGE="scidb")
+}
+curl_signal_trap = function(down,up)
+{
+  k = tryCatch(
+  {
+    sigint(SIG_DFL)  # Enable SIGINT
+# cat("TRAP",down,up,"\n") # Debug
+    Sys.sleep(0.01)  # Ugly!
+    sigint(SIG_IGN)  # Disable SIGINT
+    0L
+  }, interrupt=function(e)
+  {
+    cat("Download canceled\n")
+    1L
+  })
+}

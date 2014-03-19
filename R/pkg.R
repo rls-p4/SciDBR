@@ -27,6 +27,10 @@
 # END_COPYRIGHT
 #
 
+# Signal constants
+SIG_IGN = 1L
+SIG_DFL = 0L
+
 .onLoad = function(libname,pkgname)
 {
 # Maximum allowed sequential index limit (for larger, use between)
