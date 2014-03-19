@@ -317,7 +317,7 @@ materialize = function(x, drop=FALSE)
         {
           sigint(SIG_DFL)
           stop("Canceled")
-        }
+        })
   sigint(SIG_DFL)
 
   type = eval(parse(text=paste(names(.scidbtypes[.scidbtypes==scidb_types(x)]),"()")))
