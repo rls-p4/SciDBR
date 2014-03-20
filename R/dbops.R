@@ -121,6 +121,7 @@ substitute = function(x, value, `attribute`, `eval`=FALSE)
   {
     attribute = ""
   }
+  if(is.numeric(attribute)) attribute = x@attributes[attribute]
   if(missing(value))
     value = sprintf("build(%s[i=0:0,1,0],i)",build_attr_schema(x,I=1))
   if(nchar(attribute)<1)

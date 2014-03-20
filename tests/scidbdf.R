@@ -24,6 +24,9 @@ if(nchar(host)>0)
   i[,5] = as.character(i[,5])
   check(x[],i)
 
+# cast
+  cast(x,x)
+
 # Selection by name
   check(x[,"Petal_Length"][], iris[,"Petal.Length"])
   check(x$Petal_Length[], iris$Petal.Length)

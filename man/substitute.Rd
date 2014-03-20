@@ -22,7 +22,7 @@ A new \code{scidb} or \code{scidbdf} object.
 If \code{value} is missing, a value of numeric zero, false, or the string "0" will be used
 to replace NULL values depending on the replacement attribute type.
 
-If \code{value} is missing, then an attempt will be made to replace all NULL values in the
+If \code{attribute} is missing, then an attempt will be made to replace all NULL values in the
 array.
 }
 \author{
