@@ -7,11 +7,11 @@ Low-level SciDB cast operator
 Apply the low-level SciDB cast operator to a SciDB array.
 }
 \usage{
-cast(x, s, `eval`=FALSE)
+cast(x, schema, `eval`=FALSE)
 }
 \arguments{
   \item{x}{A \code{scidb}  or \code{scidbdf} object.}
-  \item{s}{A character string representation of a SciDB array schema.}
+  \item{schema}{A character string representation of a SciDB array schema.}
   \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \note{

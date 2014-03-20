@@ -605,10 +605,13 @@ iquery = function(query, `return`=FALSE,
           })
         GET("/release_session",list(id=sessionid))
 # Handle escaped quotes
-        result = gsub("\\\\'","''",result)
-        result = gsub("\\\\\"","''",result)
-# Map SciDB missing (aka null) to NA
-        result = gsub("null","NA",result)
+        result = gsub("\\\\'","''",result, perl=TRUE)
+        result = gsub("\\\\\"","''",result, perl=TRUE)
+# Map SciDB missing (aka null) to NA, but preserve DEFAULT null.
+# This sucks, need to avoid this parsing and move on to binary xfer.
+        result = gsub("DEFAULT null","@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo",result,perl=TRUE)
+        result = gsub("null","NA",result, perl=TRUE)
+        result = gsub("@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo","DEFAULT null",result,perl=TRUE)
         val = textConnection(result)
         ret = tryCatch({
                 read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)},

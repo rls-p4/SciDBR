@@ -146,11 +146,12 @@ subarray = function(x, limits, schema, between=FALSE, `eval`=FALSE)
   .scidbeval(query, `eval`, depend=list(x))
 }
 
-cast = function(x, s, `eval`=FALSE)
+cast = function(x, schema, `eval`=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-  if(missing(s)) stop("Missing cast schema")
-  query = sprintf("cast(%s,%s)",x@name,s)
+  if(missing(schema)) stop("Missing cast schema")
+  if(is.scidb(schema) || is.scidbdf(schema)) schema = schema(schema) # wow!
+  query = sprintf("cast(%s,%s)",x@name,schema)
   .scidbeval(query,eval,depend=list(x))
 }
 
