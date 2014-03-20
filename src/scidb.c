@@ -319,9 +319,8 @@ scidbparse (SEXP DATA, SEXP NDIM, SEXP LEN, SEXP TYPE, SEXP NULLABLE, SEXP INT64
 SEXP
 scidb_raw (SEXP A)
 {
-  SEXP ans;
+  SEXP ans = R_NilValue;
   char *buf;
-  char c;
   R_xlen_t j, len = XLENGTH(A);
   const unsigned char not_missing = NOT_MISSING;
   const char missing = MISSING;
