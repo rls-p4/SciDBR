@@ -381,7 +381,7 @@ bind = function(X, name, FUN, `eval`=FALSE)
   .scidbeval(query,eval,depend=list(X))
 }
 
-`unique_scidb` = function(x, incomparables=FALSE, sort=TRUE, ...)
+unique_scidb = function(x, incomparables=FALSE, sort=TRUE, ...)
 {
   mc = list(...)
   `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
@@ -412,7 +412,7 @@ bind = function(X, name, FUN, `eval`=FALSE)
   .scidbeval(query,eval,depend=list(x),`data.frame`=TRUE)
 }
 
-`sort_scidb` = function(X, decreasing = FALSE, ...)
+sort_scidb = function(X, decreasing = FALSE, ...)
 {
   mc = list(...)
   if(!is.null(mc$na.last))
@@ -427,15 +427,16 @@ bind = function(X, name, FUN, `eval`=FALSE)
   }
   if(is.null(mc$attributes))
   {
-    if(length(X@attributes)>1) stop("Array contains more than one attribute. Specify one or more attributes to sort on with the attributes= function argument")
+    if(length(X@attributes)>1) warning("Array contains more than one attribute, sorting on all of them.\nUse the attributes= option to restrict the sort.")
     mc$attributes=X@attributes
   }
   `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
   a = paste(paste(mc$attributes, dflag, sep=" "),collapse=",")
   if(!is.null(mc$chunk_size)) a = paste(a, mc$chunk_size, sep=",")
 
-  rs = sprintf("%s[n=0:%s,%s,0]",build_attr_schema(X,I=1),.scidb_DIM_MAX,noE(min(1e6,prod(dim(X)))))
-  query = sprintf("redimension(sort(%s,%s),%s)", X@name,a,rs)
+#  rs = sprintf("%s[n=0:%s,%s,0]",build_attr_schema(X,I=1),.scidb_DIM_MAX,noE(min(1e6,prod(dim(X)))))
+#  query = sprintf("redimension(sort(%s,%s),%s)", X@name,a,rs)
+  query = sprintf("sort(%s,%s)", X@name,a)
   .scidbeval(query,eval,depend=list(X))
 }
 
