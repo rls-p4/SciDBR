@@ -112,7 +112,7 @@ scidb = function(name, gc, `data.frame`)
     if(missing(name)) newarray = tmpnam()
     else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
-    tryCatch( scidbquery(query, disable_interrupt=FALSE), error=function(e) cat("canceled\n"))
+    tryCatch( scidbquery(query, interrupt=TRUE), error=function(e) cat("canceled\n"))
     ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)
   } else
   {
@@ -253,31 +253,33 @@ URI = function(resource="", args=list())
 # args: named list of HTTP GET query parameters
 # header: TRUE=return the HTTP response header, FALSE=don't return it
 # async: Doesn't really do anything
-# disable_interrupt: With care, set to TRUE to prevent SIGINT during call, set to FALSE
-# to allow users to interrupt the connection. Note disable_interrupt=TRUE is faster
-# for communication sessions that are known to be short.
-GET = function(resource, args=list(), header=TRUE, async=FALSE, disable_interrupt=TRUE)
+# interrupt: Set to FALSE to disable SIGINT, otherwise handle gracefully.
+GET = function(resource, args=list(), header=TRUE, async=FALSE, interrupt=FALSE)
 {
   if(!(substr(resource,1,1)=="/")) resource = paste("/",resource,sep="")
   uri = URI(resource, args)
   uri = URLencode(uri)
   uri = gsub("\\+","%2B",uri,perl=TRUE)
-  on.exit(sigint(SIG_DFL))
+  on.exit(sigint(SIG_DFL)) # Reset signal handler on exit
   callback = curl_signal_trap
-  if(disable_interrupt) callback = function(down,up) 0L
+  if(interrupt)
+  {
+    sigreset ()
+    sigint(SIG_TRP)          # Handle SIGINT
+  } else
+  {
+    sigint(SIG_IGN)          # Ignore SIGINT
+  }
   if(async)
   {
-    sigint(SIG_IGN)
     getURI(url=uri,
       .opts=list(header=header,'ssl.verifypeer'=0,
-                 noprogress=disable_interrupt, progressfunction=callback),
+                 noprogress=!interrupt, progressfunction=curl_signal_trap),
       async=TRUE)
     return(NULL)
   }
-  sigint(SIG_IGN)
-  ans = getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0,
-                         noprogress=disable_interrupt, progressfunction=callback))
-  ans
+  getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0,
+                         noprogress=!interrupt, progressfunction=curl_signal_trap))
 }
 
 # Check if array exists
@@ -321,7 +323,6 @@ scidbls = function(...) scidblist(...)
 # release: Set to zero preserve web session until manually calling release_session
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
 # resp(logical): return http response
-# See GET for description of disable_interrupt
 # Example values of save:
 # save="dcsv"
 # save="lcsv+"
@@ -329,8 +330,7 @@ scidbls = function(...) scidblist(...)
 #
 # Returns the HTTP session in each case
 scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
-                      release=1, session=NULL, resp=FALSE,
-                      disable_interrupt=TRUE)
+                      release=1, session=NULL, resp=FALSE, interrupt=FALSE)
 {
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
@@ -351,13 +351,12 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
     ans =tryCatch(
      {
       GET("/execute_query",list(id=sessionid,release=release,
-          query=query,async='1',afl=as.integer(afl)),async=TRUE,
-          disable_interrupt=disable_interrupt)
+          query=query,async='1',afl=as.integer(afl)),async=TRUE, interrupt=interrupt)
       }, error=function(e)
       {
 # User cancel?
-        GET("/cancel", list(id=sessionid), disable_interrupt=TRUE)
-        GET("/release_session", list(id=sessionid), disable_interrupt=TRUE)
+        GET("/cancel", list(id=sessionid))
+        GET("/release_session", list(id=sessionid))
         "HTTP/1.0 206 ERROR"
       })
   } else
@@ -367,21 +366,21 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
         if(is.null(save))
           GET("/execute_query",list(id=sessionid,release=release,
                query=query,afl=as.integer(afl)),
-               disable_interrupt=disable_interrupt)
+               interrupt=interrupt)
         else
           GET("/execute_query",list(id=sessionid,release=release,
               save=save,query=query,afl=as.integer(afl)), 
-              disable_interrupt=disable_interrupt)
+              interrupt=interrupt)
       }, error=function(e)
       {
-# User cancel?
-        GET("/cancel", list(id=sessionid), disable_interrupt=TRUE)
-        GET("/release_session", list(id=sessionid), disable_interrupt=TRUE)
+# User cancel? Note not interruptable.
+        GET("/cancel", list(id=sessionid,async='1'), async=TRUE)
+        GET("/release_session", list(id=sessionid))
         "HTTP/1.0 206 ERROR"
       }, interrupt=function(e)
       {
-        GET("/cancel", list(id=sessionid,async='1'), disable_interrupt=TRUE, async=TRUE)
-        GET("/release_session", list(id=sessionid), disable_interrupt=TRUE)
+        GET("/cancel", list(id=sessionid,async='1'), async=TRUE)
+        GET("/release_session", list(id=sessionid))
         "HTTP/1.0 206 ERROR"
       })
     w = ans
@@ -593,7 +592,7 @@ iquery = function(query, `return`=FALSE,
   if(iterative)
   {
     sessionid = tryCatch(
-                  scidbquery(query,afl,async=FALSE,save="lcsv+",release=0,disable_interrupt=FALSE),
+                  scidbquery(query,afl,async=FALSE,save="lcsv+",release=0,interrupt=TRUE),
                     error=function(e){cat("canceled\n")})
     return(iqiter(con=sessionid,n=n,excludecol=excludecol,...))
   }
@@ -606,10 +605,10 @@ iquery = function(query, `return`=FALSE,
     {
       ans = tryCatch(
        {
-        sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0, disable_interrupt=FALSE)
+        sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0, interrupt=TRUE)
         result = tryCatch(
           {
-            GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE,disable_interrupt=FALSE)
+            GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE,interrupt=TRUE)
           },
           error=function(e)
           {
@@ -845,38 +844,38 @@ scidbdfcc = function(x)
 }
 
 # The RCurl package does not handle interruption well, sometimes segfaulting.
-# We abuse the curl progress meter function to only expose the SIGINT signal
-# for a tiny time slice, handling it gracefully from R. This protects RCurl
-# from segfaulting, but incurs a slight download performance penalty.
-# Use the curl_signal_trap as a progress function in curl calls.
 #
 # Here is an example:
 #
-#    sigint(SIG_IGN)
+#    sigint(SIG_TRP)
 #    x=getBinaryURL(url,
 #        .opts=list(noprogress=FALSE, progressfunction=curl_signal_trap))
 #    sigint(SIG_DFL)
 #
 # Note that users might have to hold down CTRL+C a while because of the tiny
 # time window it's available.
-sigint = function(switch)
+sigint = function(val)
 {
-  val = SIG_DFL
-  if(switch>0) val=SIG_IGN
-  .Call("sig",val,PACKAGE="scidb")
+  .Call("sig",as.integer(val),PACKAGE="scidb")
+}
+sigstate = function()
+{
+  .Call("state",PACKAGE="scidb")
+}
+sigreset = function()
+{
+  .Call("reset",PACKAGE="scidb")
 }
 curl_signal_trap = function(down,up)
 {
-  k = tryCatch(
+  k = sigstate()
+# DEBUG
+#cat("TRAP",down,up,k,"\n")
+# -----
+  if(k>0)
   {
-    sigint(SIG_DFL)  # Enable SIGINT
-# cat("TRAP",down,up,"\n") # Debug
-    Sys.sleep(0.1)   # Horrible!
-    sigint(SIG_IGN)  # Disable SIGINT
-    0L
-  }, interrupt=function(e)
-  {
-    cat("canceled\n")
-    1L
-  })
+    cat("Canceling...\n",file=stderr())
+    return(1L)
+  }
+  0L
 }

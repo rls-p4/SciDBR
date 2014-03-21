@@ -40,7 +40,16 @@
 #define LINESIZE 4096
 
 #define NOT_MISSING 255
-#define MISSING 0
+#define IS_MISSING 0
+
+/* sig_int is used to detect user SIGINT signals */
+static volatile int sig_int = 0;
+
+static void
+handler (int s, siginfo_t *i, void *x)
+{
+  sig_int = 1;
+}
 
 typedef struct
 {
@@ -323,7 +332,7 @@ scidb_raw (SEXP A)
   char *buf;
   R_xlen_t j, len = XLENGTH(A);
   const unsigned char not_missing = NOT_MISSING;
-  const char missing = MISSING;
+  const char missing = IS_MISSING;
   switch (TYPEOF (A))
     {
     case REALSXP:
@@ -399,18 +408,52 @@ scidb_raw (SEXP A)
   return ans;
 }
 
-
-/* Enable or disable SIGINT */
-SEXP
-sig(SEXP I)
+void
+reset_sig ()
 {
-  int i = INTEGER(I)[0];
-  if(i>0)
-  {
-    signal(SIGINT, SIG_IGN);
-  } else
-  {
-    signal(SIGINT, SIG_DFL);
-  }
+  sig_int = 0;
+}
+
+SEXP
+state ()
+{
+  return ScalarInteger(sig_int);
+}
+
+SEXP
+reset ()
+{
+  reset_sig();
+  return R_NilValue;
+}
+
+/* Enable or disable SIGINT
+   I = 1: Ignore SIGINT
+   I = 2: Use custom handler
+   ELSE : Use default handler
+ */
+SEXP
+sig (SEXP I)
+{
+  struct sigaction action;
+  int j;
+  int i = INTEGER (I)[0];
+  memset (&action, 0, sizeof(action));
+  action.sa_sigaction = &handler;
+  action.sa_flags = SA_SIGINFO;
+ 
+  switch (i)
+    {
+    case 1:
+      signal (SIGINT, SIG_IGN);
+      break;
+    case 2:
+      j = sigaction(SIGINT, &action, NULL);
+      if(j<0) error("Error setting signal handler");
+      break;
+    default:
+      reset_sig();
+      signal (SIGINT, SIG_DFL);
+    }
   return R_NilValue;
 }

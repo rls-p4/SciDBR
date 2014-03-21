@@ -28,8 +28,9 @@
 #
 
 # Signal constants
-SIG_IGN = 1L
-SIG_DFL = 0L
+SIG_TRP = 2L # A custom SIGINT signal handler
+SIG_IGN = 1L # Ignore SIGINT
+SIG_DFL = 0L # Default SIGINT signal handler
 
 .onLoad = function(libname,pkgname)
 {
