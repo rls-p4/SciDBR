@@ -112,7 +112,7 @@ scidb = function(name, gc, `data.frame`)
     if(missing(name)) newarray = tmpnam()
     else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
-    tryCatch( scidbquery(query, interrupt=TRUE), error=function(e) cat("canceled\n"))
+    scidbquery(query, interrupt=TRUE)
     ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)
   } else
   {
@@ -392,7 +392,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
       stop("HTTP request canceled\n")
     } else if(err>206)
     {
-      stop(w)
+      stop(strsplit(w,"\r\n\r\n")[[1]][[2]])
     }
   }
   if(DEBUG) print(proc.time()-t1)
