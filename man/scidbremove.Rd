@@ -8,7 +8,7 @@ Remove an array.
 Remove (delete) an array from SciDB.
 }
 \usage{
-scidbremove(x, error = warning, async, force)
+scidbremove(x, error = warning, async, force, warn=TRUE)
 }
 \arguments{
   \item{x}{
@@ -21,6 +21,7 @@ may also be a vector of names to remove.
                for the query to complete. The default value is FALSE.}
   \item{force}{(Optional) logical: If TRUE, force removal of specified array,
                even if the \code{scidb.safe_remove} option is set to \code{TRUE}.}
+  \item{warn}{(Optional) logical: Set to FALSE to disable warnings during removal.}
 }
 \value{
 NULL is invisibly returned. SciDB errors are returned as
@@ -31,11 +32,12 @@ Supply a user-defined error handling function to avoid stopping on error (for
 example trying to delete a non-existing array). For example, use
 \code{error=warning} to covert errors to warnings but still report them.
 
-The package option \code{scidb.safe_remove} adds some protection for accidentally
-removing arrays. When \code{TRUE} (the default value), only arrays that begin with
-\code{R_array} are removed without also setting the \code{force} option.
-Specify \code{force=TRUE} to remove any specified array, or optionally set the
-\code{options(scidb.safe_remove=FALSE)} to disable this safety check.
+The package option \code{scidb.safe_remove} adds some protection for
+accidentally removing arrays. When \code{TRUE} (the default value), only
+temporary arrays associated with the current R session can be removed without
+also setting the \code{force} option.  Specify \code{force=TRUE} to remove any
+specified array, or optionally set the \code{options(scidb.safe_remove=FALSE)}
+to disable this safety check.
 }
 \author{
 B. W. Lewis<blewis@paradigm4.com>

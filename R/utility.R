@@ -72,7 +72,7 @@ scidb = function(name, gc, `data.frame`)
         {
           if (e$remove && exists("name",envir=e))
             {
-              tryCatch(scidbremove(e$name), error = function(e) invisible())
+              tryCatch(scidbremove(e$name,warn=FALSE), error = function(e) invisible())
             }
         }, onexit = TRUE)
   } else obj@gc = new.env()
@@ -408,7 +408,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
 # force (optional boolean): If TRUE really remove this array, even if scidb.safe_remove=TRUE
 # Output:
 # null
-scidbremove = function(x, error=warning, async, force)
+scidbremove = function(x, error=warning, async, force, warn=TRUE)
 {
   if(is.null(x)) return(invisible())
   if(missing(async)) async=FALSE
@@ -419,9 +419,11 @@ scidbremove = function(x, error=warning, async, force)
   safe = options("scidb.safe_remove")[[1]]
   if(is.null(safe)) safe = TRUE
   if(!safe) force=TRUE
-  for(y in x) {
-    if(grepl("\\(",y)) next
-    if(grepl("^R_array",y,perl=TRUE))
+  uid = get("uid",envir=.scidbenv)
+  for(y in x)
+  {
+    if(grepl("\\(",y)) next  # Not a stored array
+    if(grepl(sprintf("^R_array.*%s$",uid),y,perl=TRUE))
     {
       tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=async, release=1),
                 error=function(e) error(e))
@@ -429,7 +431,7 @@ scidbremove = function(x, error=warning, async, force)
     {
       tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=async, release=1),
                 error=function(e) error(e))
-    } else
+    } else if(warn)
     {
       warning("The array ",y," is protected from easy removal. Specify force=TRUE if you really want to remove it.")
     }
