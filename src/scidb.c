@@ -456,7 +456,7 @@ sig (SEXP I)
   int j;
   struct sigaction action;
   memset (&action, 0, sizeof(action));
-  action.sa_sigaction = &handler;
+  action.sa_sigaction = handler;
   action.sa_flags = SA_SIGINFO;
  
   switch (i)

@@ -866,23 +866,15 @@ sigreset = function()
 {
   .Call("reset",PACKAGE="scidb")
 }
-# Note on Windows: Although we were able to set up a working console signal
-# handler in test versions, we couldn't get something that worked all-around
-# for both console and GUI (RStudio) R implementations on Windows.  Instead, we
-# default to a crude, but simpler and more robust, approach on Windows systems.
-# We disable SIGINT generally, and then periodically enable it for a tiny time
-# slice in the RCurl progress callback, allowing R to trap the interrupt there
-# normally and gracefully shut down the connection.  Any ideas for improving
-# this, for example using a better signal handler like the Unix versions use,
-# is welcome!
 curl_signal_trap = function(down,up)
 {
-  if("windows" %in% tolower(Sys.info()["sysname"]))
+# Unforunately, RStudio doesn't seem to let us set up custom signal handlers.
+  if(SIG_TRP == SIG_IGN)
   {
     k = tryCatch(
     {
       sigint(SIG_DFL)    # Enable SIGINT
-      Sys.sleep(0.1)     # The horror
+      Sys.sleep(0.02)    # Just plain ugly
       sigint(SIG_IGN)    # Disable
       0L
     }, interrupt = function(e)
@@ -892,6 +884,7 @@ curl_signal_trap = function(down,up)
     })
     return(k)
   }
+# Fast custom signal handler
   k = sigstate()
   if(k>0)
   {

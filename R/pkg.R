@@ -28,9 +28,24 @@
 #
 
 # Signal constants
-SIG_TRP = 2L # A custom SIGINT signal handler
-SIG_IGN = 1L # Ignore SIGINT
 SIG_DFL = 0L # Default SIGINT signal handler
+SIG_IGN = 1L # Ignore SIGINT
+SIG_TRP = 2L # A custom signal handler (see scidb.c)
+
+# RStudio does not let us set up a custom signal handler, and this has also
+# been problematic to set up on non-Console Windows R processes.  We check for
+# these special cases and resort to a more basic method to gracefully trap
+# SIGINT and bail out of RCurl sessions.
+.onAttach = function(libname,pkgname)
+{
+  if(Sys.getenv("RSTUDIO")=="1" || "windows" %in% tolower(Sys.info()["sysname"]))
+  {
+    env = asNamespace(pkgname)
+    unlockBinding("SIG_TRP",env=env)
+    assign("SIG_TRP",1L,env=env) # SIG_IGN
+    lockBinding("SIG_TRP",env=env)
+  }
+}
 
 .onLoad = function(libname,pkgname)
 {
