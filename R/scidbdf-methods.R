@@ -97,6 +97,7 @@ setMethod('show', 'scidbdf',
   })
 
 setMethod("aggregate", signature(x="scidbdf"), aggregate_scidb)
+setMethod("reshape", signature(data="scidbdf"), reshape_scidb)
 
 scidbdf_grand = function(x, op)
 {
