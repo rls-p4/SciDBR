@@ -32,23 +32,17 @@ SIG_DFL = 0L # Default SIGINT signal handler
 SIG_IGN = 1L # Ignore SIGINT
 SIG_TRP = 2L # A custom signal handler (see scidb.c)
 
+.onLoad = function(libname,pkgname)
+{
 # RStudio does not let us set up a custom signal handler, and this has also
 # been problematic to set up on non-Console Windows R processes.  We check for
 # these special cases and resort to a more basic method to gracefully trap
 # SIGINT and bail out of RCurl sessions.
-.onAttach = function(libname,pkgname)
-{
   if(Sys.getenv("RSTUDIO")=="1" || "windows" %in% tolower(Sys.info()["sysname"]))
   {
     env = asNamespace(pkgname)
-    unlockBinding("SIG_TRP",env=env)
-    assign("SIG_TRP",1L,env=env) # SIG_IGN
-    lockBinding("SIG_TRP",env=env)
+    assign("SIG_TRP",1L,envir=env)  # SIG_TRP = SIG_IGN
   }
-}
-
-.onLoad = function(libname,pkgname)
-{
 # Maximum allowed sequential index limit (for larger, use between)
   options(scidb.index.sequence.limit=1000000)
 # Maximum allowed elements in an array return result
