@@ -32,7 +32,7 @@
 # defined below work with objects of class scidb (arrays), scidbdf (data
 # frames). They can be efficiently nested by explicitly setting eval=FALSE on
 # inner functions, deferring computation until eval=TRUE.
-reshape_scidb = function(data, schema, shape, dimnames, chunks, `eval`=FALSE)
+reshape_scidb = function(data, schema, shape, dimnames, start, chunks, `eval`=FALSE)
 {
   if(!missing(schema))
   {
@@ -47,10 +47,11 @@ reshape_scidb = function(data, schema, shape, dimnames, chunks, `eval`=FALSE)
   }
   if(missing(chunks))
   {
-    chunks = rep(1000,N)
+    chunks = ceiling(1e6^(1/N))
   }
-  D = paste(paste(dimnames,"=",0,":",shape-1,",",chunks,",0",sep=""),collapse=",")
-  D = sprintf("[%s]",D)
+  if(missing(start)) start = rep(0,N)
+  shape = shape - 1 + start
+  D = build_dim_schema(data, newstart=start, newnames=dimnames, newend=shape, newchunk=chunks)
   query = sprintf("reshape(%s,%s%s)",data@name,build_attr_schema(data),D)
   .scidbeval(query,eval,depend=list(data))
 }

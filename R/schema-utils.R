@@ -92,8 +92,8 @@ scidb_coordinate_bounds = function(x)
   d = .dimsplitter(x)
   start = unlist(lapply(d[-1],function(x)strsplit(x[1],":")[[1]][1]))
   end = unlist(lapply(d[-1],function(x)strsplit(x[1],":")[[1]][2]))
-  s1 = gsub("\\*",scidb:::.scidb_DIM_MAX,start)
-  s2 = gsub("\\*",scidb:::.scidb_DIM_MAX,end)
+  s1 = gsub("\\*",.scidb_DIM_MAX,start)
+  s2 = gsub("\\*",.scidb_DIM_MAX,end)
   len = as.numeric(s2) - as.numeric(s1) + 1
   list(start=noE(start), end=noE(end), length=noE(len))
 }
@@ -227,7 +227,7 @@ build_dim_schema = function(A, bracket=TRUE, I,
   }
   if(!missing(newstart))
   {
-    start = scidb:::noE(newstart)
+    start = noE(newstart)
   }
   if(!missing(newend))
   {
@@ -236,16 +236,16 @@ build_dim_schema = function(A, bracket=TRUE, I,
   }
   if(!missing(newchunk))
   {
-    chunksize = scidb:::noE(newchunk)
+    chunksize = noE(newchunk)
   }
   if(!missing(newoverlap))
   {
-    overlap = scidb:::noE(newoverlap)
+    overlap = noE(newoverlap)
   }
   if(!missing(newlen))
   {
     star = grep("\\*",newlen)
-    len = gsub("\\*",scidb:::.scidb_DIM_MAX, newlen)
+    len = gsub("\\*",.scidb_DIM_MAX, newlen)
     end = noE(as.numeric(start) + as.numeric(len) - 1)
     if(length(star)>0)
     {
