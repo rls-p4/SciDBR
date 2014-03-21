@@ -301,9 +301,7 @@ materialize = function(x, drop=FALSE)
 
   savestring = sprintf("(%s,%s %s)",i,scidb_types(x),N)
 
-  sessionid = tryCatch(
-                scidbquery(query, save=savestring, async=FALSE, release=0,
-                 interrupt=TRUE), error = function(e) {cat("canceled\n")})
+  sessionid = scidbquery(query, save=savestring, async=FALSE, release=0, interrupt=TRUE)
 # Release the session on exit
   on.exit( GET("/release_session",list(id=sessionid)) ,add=TRUE)
   n = 0

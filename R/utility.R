@@ -591,9 +591,7 @@ iquery = function(query, `return`=FALSE,
   if(missing(excludecol)) excludecol=NA
   if(iterative)
   {
-    sessionid = tryCatch(
-                  scidbquery(query,afl,async=FALSE,save="lcsv+",release=0,interrupt=TRUE),
-                    error=function(e){cat("canceled\n")})
+    sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0,interrupt=TRUE)
     return(iqiter(con=sessionid,n=n,excludecol=excludecol,...))
   }
   qsplit = strsplit(query,";")[[1]]
@@ -616,7 +614,7 @@ iquery = function(query, `return`=FALSE,
 # results back. XXX TODO
 #            GET("/cancel",list(id=sessionid))
              GET("/release_session",list(id=sessionid))
-             stop("canceled")
+             stop(e)
           })
         GET("/release_session",list(id=sessionid))
 # Handle escaped quotes
