@@ -392,7 +392,7 @@ setMethod("apply", signature(X = "scidb"), apply_scidb)
 setMethod("unpack",signature(x="scidb"),unpack_scidb)
 setMethod("reshape", signature(data="scidb"), reshape_scidb)
 setMethod("svd", signature(x="scidb"), svd_scidb)
-setMethod("glm.fit", signature(x="scidb",y="ANY",weights="MNSN"), glm_scidb)
+setMethod("glm.fit", signature(x="scidb",y="ANY",weights="MNSN"), glm.fit_scidb)
 
 # Transpose a matrix or vector
 setMethod("t", signature(x="scidb"), 

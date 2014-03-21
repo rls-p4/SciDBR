@@ -28,7 +28,7 @@
 #
 
 # cf glm.fit
-glm_scidb = function(x,y,`weights`=NULL,`family`=gaussian())
+glm.fit_scidb = function(x,y,`weights`=NULL,`family`=gaussian())
 {
   nobs = length(y)
   got_glm = length(grep("glm",.scidbenv$ops[,2]))>0
