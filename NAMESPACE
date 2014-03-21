@@ -8,6 +8,7 @@ import("RCurl", iterators)
 importFrom("zoo", na.locf)
 
 # Functions
+export("persist")
 export("scidb")
 export("dimensions")
 export("scidb_attributes")

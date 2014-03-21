@@ -429,6 +429,9 @@ scidbremove = function(x, error=warning, async, force)
     {
       tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=async, release=1),
                 error=function(e) error(e))
+    } else
+    {
+      warning("The array ",y," is protected from easy removal. Specify force=TRUE if you really want to remove it.")
     }
   }
   invisible()
@@ -890,4 +893,17 @@ curl_signal_trap = function(down,up)
     return(1L)
   }
   0L
+}
+
+# Walk the dependency graph, setting all upstreams array to persist
+persist = function(x, remove=FALSE)
+{
+  DEBUG = FALSE
+  if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
+  for(y in x@gc$depend)
+  {
+    if(DEBUG) cat("Persisting ",y@name,"\n")
+    y@gc$remove = remove
+    if(!is.null(y@gc$depend)) persist(y)
+  }
 }

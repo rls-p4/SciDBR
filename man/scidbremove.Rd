@@ -33,7 +33,7 @@ example trying to delete a non-existing array). For example, use
 
 The package option \code{scidb.safe_remove} adds some protection for accidentally
 removing arrays. When \code{TRUE} (the default value), only arrays that begin with
-\code{R_array} are removed without also settin the \code{force} option.
+\code{R_array} are removed without also setting the \code{force} option.
 Specify \code{force=TRUE} to remove any specified array, or optionally set the
 \code{options(scidb.safe_remove=FALSE)} to disable this safety check.
 }
