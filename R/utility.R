@@ -72,7 +72,7 @@ scidb = function(name, gc, `data.frame`)
         {
           if (e$remove && exists("name",envir=e))
             {
-              tryCatch(scidbremove(e$name,async=TRUE), error = function(e) invisible())
+              tryCatch(scidbremove(e$name), error = function(e) invisible())
             }
         }, onexit = TRUE)
   } else obj@gc = new.env()
@@ -112,7 +112,7 @@ scidb = function(name, gc, `data.frame`)
     if(missing(name)) newarray = tmpnam()
     else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
-    scidbquery(query)
+    tryCatch( scidbquery(query, disable_interrupt=FALSE), error=function(e) cat("canceled\n"))
     ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)
   } else
   {
@@ -253,8 +253,10 @@ URI = function(resource="", args=list())
 # args: named list of HTTP GET query parameters
 # header: TRUE=return the HTTP response header, FALSE=don't return it
 # async: Doesn't really do anything
-# disable_interrupt: With care, set to TRUE to prevent SIGINT during call
-GET = function(resource, args=list(), header=TRUE, async=FALSE, disable_interrupt=FALSE)
+# disable_interrupt: With care, set to TRUE to prevent SIGINT during call, set to FALSE
+# to allow users to interrupt the connection. Note disable_interrupt=TRUE is faster
+# for communication sessions that are known to be short.
+GET = function(resource, args=list(), header=TRUE, async=FALSE, disable_interrupt=TRUE)
 {
   if(!(substr(resource,1,1)=="/")) resource = paste("/",resource,sep="")
   uri = URI(resource, args)
@@ -268,13 +270,13 @@ GET = function(resource, args=list(), header=TRUE, async=FALSE, disable_interrup
     sigint(SIG_IGN)
     getURI(url=uri,
       .opts=list(header=header,'ssl.verifypeer'=0,
-                 noprogress=FALSE, progressfunction=callback),
+                 noprogress=disable_interrupt, progressfunction=callback),
       async=TRUE)
     return(NULL)
   }
   sigint(SIG_IGN)
   ans = getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0,
-                         noprogress=FALSE, progressfunction=callback))
+                         noprogress=disable_interrupt, progressfunction=callback))
   ans
 }
 
@@ -319,13 +321,16 @@ scidbls = function(...) scidblist(...)
 # release: Set to zero preserve web session until manually calling release_session
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
 # resp(logical): return http response
+# See GET for description of disable_interrupt
 # Example values of save:
 # save="dcsv"
 # save="lcsv+"
 # save="(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, session=NULL, resp=FALSE)
+scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
+                      release=1, session=NULL, resp=FALSE,
+                      disable_interrupt=TRUE)
 {
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
@@ -345,40 +350,49 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL, release=1, sessio
   {
     ans =tryCatch(
      {
-      GET("/execute_query",list(id=sessionid,release=release,query=query,async='1',afl=as.integer(afl)),async=TRUE)
+      GET("/execute_query",list(id=sessionid,release=release,
+          query=query,async='1',afl=as.integer(afl)),async=TRUE,
+          disable_interrupt=disable_interrupt)
       }, error=function(e)
       {
 # User cancel?
         GET("/cancel", list(id=sessionid), disable_interrupt=TRUE)
         GET("/release_session", list(id=sessionid), disable_interrupt=TRUE)
-        stop("HTTP/1.0 500 ERROR")
+        "HTTP/1.0 206 ERROR"
       })
   } else
   {
     ans = tryCatch(
       {
         if(is.null(save))
-          GET("/execute_query",list(id=sessionid,release=release,query=query,afl=as.integer(afl)))
+          GET("/execute_query",list(id=sessionid,release=release,
+               query=query,afl=as.integer(afl)),
+               disable_interrupt=disable_interrupt)
         else
-          GET("/execute_query",list(id=sessionid,release=release,save=save,query=query,afl=as.integer(afl)))
+          GET("/execute_query",list(id=sessionid,release=release,
+              save=save,query=query,afl=as.integer(afl)), 
+              disable_interrupt=disable_interrupt)
       }, error=function(e)
       {
 # User cancel?
         GET("/cancel", list(id=sessionid), disable_interrupt=TRUE)
         GET("/release_session", list(id=sessionid), disable_interrupt=TRUE)
-        "HTTP/1.0 500 ERROR"
+        "HTTP/1.0 206 ERROR"
       }, interrupt=function(e)
       {
         GET("/cancel", list(id=sessionid,async='1'), disable_interrupt=TRUE, async=TRUE)
         GET("/release_session", list(id=sessionid), disable_interrupt=TRUE)
+        "HTTP/1.0 206 ERROR"
       })
     w = ans
     err = 200
     if(nchar(w)>9)
       err = as.integer(strsplit(substr(w,1,20)," ")[[1]][[2]])
-    if(err>399)
+    if(err==206)
     {
-      w = paste(strsplit(w,"\r\n\r\n")[[1]][-1],collapse="\n")
+      stop("HTTP request canceled\n")
+    } else if(err>206)
+    {
       stop(w)
     }
   }
@@ -578,7 +592,9 @@ iquery = function(query, `return`=FALSE,
   if(missing(excludecol)) excludecol=NA
   if(iterative)
   {
-    sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
+    sessionid = tryCatch(
+                  scidbquery(query,afl,async=FALSE,save="lcsv+",release=0,disable_interrupt=FALSE),
+                    error=function(e){cat("canceled\n")})
     return(iqiter(con=sessionid,n=n,excludecol=excludecol,...))
   }
   qsplit = strsplit(query,";")[[1]]
@@ -590,10 +606,10 @@ iquery = function(query, `return`=FALSE,
     {
       ans = tryCatch(
        {
-        sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
+        sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0, disable_interrupt=FALSE)
         result = tryCatch(
           {
-            GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE)
+            GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE,disable_interrupt=FALSE)
           },
           error=function(e)
           {
@@ -601,7 +617,7 @@ iquery = function(query, `return`=FALSE,
 # results back. XXX TODO
 #            GET("/cancel",list(id=sessionid))
              GET("/release_session",list(id=sessionid))
-             stop("Canceled")
+             stop("canceled")
           })
         GET("/release_session",list(id=sessionid))
 # Handle escaped quotes
