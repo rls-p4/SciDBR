@@ -312,14 +312,20 @@ function(x)
 setMethod("head", signature(x="scidb"),
 function(x, n=6L, ...)
 {
-  m = as.numeric(scidb_coordinate_start(x))
+  bounds = scidb_coordinate_bounds(x)
+  xstart = as.numeric(bounds$start)
+  xlen   = as.numeric(bounds$end)
+  m = xstart
   p = m + n - 1
+  p = apply(cbind(p, xlen),1,min)
+  if(length(p)>2) p[3:length(p)] = m[3:length(p)]
   limits = lapply(1:length(m), function(j) seq(m[j],p[j]))
   tryCatch(
-    do.call(dimfilter,args=list(x=x,i=limits,eval=FALSE))[],
+    do.call(dimfilter,args=list(x=x,i=limits,eval=FALSE,drop=TRUE))[],
     error = function(e)
     {
-      iquery(x@name, return=TRUE, n=n)
+      query = betweenbound(x,m,p)
+      iquery(query, return=TRUE, n=n)
     })
 })
 
@@ -333,7 +339,7 @@ function(x, n=6L, ...)
   m = xstart + xlen - n
   m = unlist(lapply(1:length(m),function(j) max(m[j],xstart[j])))
   limits = lapply(1:length(m), function(j) seq(m[j],p[j]))
-  do.call(dimfilter,args=list(x=x,i=limits,eval=FALSE))[]
+  do.call(dimfilter,args=list(x=x,i=limits,eval=FALSE,drop=TRUE))[]
 })
 
 setMethod("is.scidb", signature(x="ANY"),
@@ -343,7 +349,6 @@ setMethod("is.scidb", signature(x="ANY"),
     FALSE
   }
 )
-#setMethod('is.scidb', definition=function(x) return(FALSE))
 
 setMethod("print", signature(x="scidb"),
   function(x) {

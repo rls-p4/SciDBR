@@ -277,7 +277,14 @@ materialize = function(x, drop=FALSE)
   if(length(type)<1)
   {
     u = unpack(x)[]
-    ans = array(dim=dim(x))
+    ans = tryCatch(
+      {
+        array(dim=dim(x))
+      },error = function(e)
+      {
+        n = length(dim(x))
+        array(dim=apply(u[,1:n,drop=FALSE],2,function(x){max(x)+1}))
+      })
     i = as.matrix(u[,1:length(dim(x))])
     for(j in 1:length(dim(x))) i[,j] = i[,j] + 1 - xstart[j]
     ans[i] = u[,ncol(u)]
