@@ -303,7 +303,7 @@ materialize = function(x, drop=FALSE)
 
   sessionid = tryCatch(
                 scidbquery(query, save=savestring, async=FALSE, release=0,
-                 disable_interrupt=FALSE), error = function(e) {cat("canceled\n")})
+                 interrupt=TRUE), error = function(e) {cat("canceled\n")})
 # Release the session on exit
   on.exit( GET("/release_session",list(id=sessionid)) ,add=TRUE)
   n = 0
