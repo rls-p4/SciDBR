@@ -28,10 +28,12 @@
 #include <sys/stat.h>
 #include <math.h>
 #include <signal.h>
-#ifndef WIN32
+#include <string.h>
+#ifdef WIN32
+#include <windows.h>
+#else
 #include <sys/mman.h>
 #endif
-#include <string.h>
 
 #include <R.h>
 #define USE_RINTERNALS
@@ -45,11 +47,13 @@
 /* sig_int is used to detect user SIGINT signals */
 static volatile int sig_int = 0;
 
+#ifndef WIN32
 static void
 handler (int s, siginfo_t *i, void *x)
 {
   sig_int = 1;
 }
+#endif
 
 typedef struct
 {
@@ -435,9 +439,22 @@ reset ()
 SEXP
 sig (SEXP I)
 {
-  struct sigaction action;
-  int j;
   int i = INTEGER (I)[0];
+#ifdef WIN32
+  switch (i)
+  {
+    case 1:
+      signal(SIGINT, SIG_IGN);
+      break;
+    case 2:
+      signal(SIGINT, SIG_IGN);
+      break;
+    default:
+      signal(SIGINT, SIG_DFL);
+  }
+#else
+  int j;
+  struct sigaction action;
   memset (&action, 0, sizeof(action));
   action.sa_sigaction = &handler;
   action.sa_flags = SA_SIGINFO;
@@ -455,5 +472,6 @@ sig (SEXP I)
       reset_sig();
       signal (SIGINT, SIG_DFL);
     }
+#endif
   return R_NilValue;
 }
