@@ -120,7 +120,10 @@ glm_scidb = function(formula, data, family=gaussian(), weights=NULL)
 
 .format = function(x)
 {
-  paste(capture.output(x),collapse="\n")
+  o = options(digits=4)
+  ans = paste(capture.output(x),collapse="\n")
+  options(o)
+  ans
 }
 
 # cf print.glm
@@ -137,8 +140,8 @@ print.glm_scidb = function(x, ...)
   ans = paste(ans,"Coefficients:",sep="\n")
   ans = paste(ans,.format(cfs),sep="\n\n")
   ans = paste(ans,sprintf("Null deviance: %.2f on %d degrees of freedom",x$null.deviance, x$df.null),sep="\n\n")
-  ans = paste(ans,sprintf("Residual deviance: %.2f on %d degrees of freedom",x$res.deviance, x$df.residual),sep="\n\n")
-  ans = paste(ans,sprintf("AIC: %.1f",x$aic),sep="\n\n")
+  ans = paste(ans,sprintf("Residual deviance: %.2f on %d degrees of freedom",x$res.deviance, x$df.residual),sep="\n")
+  ans = paste(ans,sprintf("AIC: %.1f",x$aic),sep="\n")
   cat(ans,"\n")
 }
 
@@ -166,9 +169,9 @@ summary.glm_scidb = function(object, ...)
   ans = paste(ans,"---\nSignif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1   1",sep="\n")
   ans = paste(ans,sprintf("Dispersion parameter: %.2f",x$dispersion),sep="\n\n")
   ans = paste(ans,sprintf("Null deviance: %.2f on %d degrees of freedom",x$null.deviance, x$df.null),sep="\n\n")
-  ans = paste(ans,sprintf("Residual deviance: %.2f on %d degrees of freedom",x$res.deviance, x$df.residual),sep="\n\n")
-  ans = paste(ans,sprintf("AIC: %.1f",x$aic),sep="\n\n")
-  ans = paste(ans,sprintf("Number of Fisher Scoring iterations: %d",x$iter),sep="\n\n")
+  ans = paste(ans,sprintf("Residual deviance: %.2f on %d degrees of freedom",x$res.deviance, x$df.residual),sep="\n")
+  ans = paste(ans,sprintf("AIC: %.1f",x$aic),sep="\n")
+  ans = paste(ans,sprintf("Number of Fisher Scoring iterations: %d",x$iter),sep="\n")
   cat(ans,"\n")
 }
 
