@@ -153,7 +153,7 @@ summary.glm_scidb = function(object, ...)
   ans = paste(ans,.format(x$call),sep="\n")
   ans = paste(ans,"Formula that was used:",sep="\n\n")
   ans = paste(ans,.format(x$formula),sep="\n")
-  ans = paste(ans,.format(x$family),sep="\n\n")
+  ans = paste(ans,.format(x$family),sep="\n")
 
 # Coefficient table
   tbl_coef = coef(x)[]
