@@ -161,7 +161,7 @@ summary.glm_scidb = function(object, ...)
   tbl_zval = x$tval[]
   p = x$pval[]
   sig = c("***","**","*",".","")
-  star = sig[as.integer(cut(p,breaks=c(2e-16,0.001,0.01,0.05,0.1,1)))]
+  star = sig[as.integer(cut(p,breaks=c(0,0.001,0.01,0.05,0.1,1)))]
   tbl = data.frame(tbl_coef, tbl_stderr, tbl_zval, p, star)
   colnames(tbl) = c("Estimate", "Std. Error", "z value", "Pr(>|z|)","")
   rownames(tbl) = x$coefficient_names
