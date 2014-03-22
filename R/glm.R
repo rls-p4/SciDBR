@@ -28,10 +28,12 @@
 #
 
 # cf glm.fit
-glm.fit_scidb = function(x,y,weights=NULL,family=gaussian())
+glm.fit_scidb = function(x,y,weights=NULL,family=gaussian(),intercept)
 {
   nobs = length(y)
   got_glm = length(grep("glm",.scidbenv$ops[,2]))>0
+  if(missing(intercept)) intercept=0
+  intercept = as.numeric(intercept)
   xchunks = as.numeric(scidb_coordinate_chunksize(x))
   if(missing(`weights`)) `weights`=NULL
   if(is.numeric(`weights`))
@@ -78,7 +80,7 @@ glm.fit_scidb = function(x,y,weights=NULL,family=gaussian())
     null.deviance = m1[13],
     res.deviance = m1[15],
     dispersion = m1[5],
-    df.null = m1[6],
+    df.null = m1[6] - intercept,
     df.residual = m1[7],
     converged = m1[10]==1,
     totalObs = m1[8],
@@ -110,7 +112,7 @@ glm_scidb = function(formula, data, family=gaussian(), weights=NULL)
   if(!is.scidbdf(data)) stop("data must be a scidbdf object")
   if(is.character(formula)) formula=as.formula(formula)
   M = model_scidb(formula, data)
-  ans = glm.fit(M$model, M$response, weights=weights, family=family)
+  ans = glm.fit(M$model, M$response, weights=weights, family=family,intercept=M$intercept)
   ans$formula = M$formula
   ans$coefficient_names = M$names
   ans$call = match.call()
@@ -186,6 +188,7 @@ summary.glm_scidb = function(object, ...)
 # formual:  The formula
 # names:    The names of the model variables corresponding to the
 #           columns of 'model'
+# intercept: TRUE if an intercept term is present
 model_scidb = function(formula, data)
 {
   tryCatch(iquery("load_library('collate')"),
@@ -248,7 +251,7 @@ model_scidb = function(formula, data)
   query = sprintf("collate(project(%s,%s))",data@name,varsstr)
   M = scidb:::.scidbeval(query,gc=TRUE,eval=TRUE)
 
-  if(length(factors)<1) return(list(model=M,response=response,formula=formula,names=vars))
+  if(length(factors)<1) return(list(formula=formula,model=M,response=response,names=vars,intercept=(i==1)))
 
 # Repartition to accomodate the factor contrasts, subtracting one
 # if an intercept term is present (i).
@@ -302,5 +305,5 @@ model_scidb = function(formula, data)
     M = merge(M,y,merge=TRUE) # eval this?
   }
 
-  return(list(formula=formula,model=M,response=response,formula=formula,names=varnames))
+  return(list(formula=formula,model=M,response=response,names=varnames,intercept=(i==1)))
 }

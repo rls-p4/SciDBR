@@ -64,6 +64,16 @@ and \code{summary} methods.
 \item{\emph{y}}{  response vector (SciDB array).}
 \item{\emph{x}}{  model matrix (SciDB array).}
 }
+
+\code{model_scidb}  returns an output list with:
+\itemize{
+\item{\emph{formula}}{The model forumual}
+\item{\emph{model}}{The model matrix (SciDB array)}
+\item{\emph{response}}{The model response vector (SciDB array)}
+\item{\emph{names}}{An R character vector of variable names in the model matrix}
+\item{\emph{intercept}}{A logical value; if TRUE the model includes an intercept term}
+}
+
 }
 \details{
 The \code{glm_scidb} function works similarly to a limited version of
@@ -85,9 +95,11 @@ available yet (you are free to build your own model matrix and use
 double-precision values.
 
 Use the \code{model_scidb} function to build a model matrix from a formula and
-a \code{scidbdf} data.frame-like SciDB array.  The matrix is returned as a
-sparse SciDB matrix of class \code{scidb} with character string variables
-encoded as treatment contrasts as described above.
+a \code{scidbdf} data frame-like SciDB array.  The matrix is returned within an
+output list as a sparse SciDB matrix of class \code{scidb} with character
+string variables encoded as treatment contrasts as described above.
+
+
 }
 \author{
 B. W. Lewis<blewis@paradigm4.com>
