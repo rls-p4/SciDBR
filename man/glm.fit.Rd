@@ -1,21 +1,29 @@
 \name{glm.fit}
-\docType{methods}
 \alias{glm.fit}
+\alias{glm_scidb}
+\alias{model_scidb}
 \alias{glm.fit,scidb-method}
 \alias{glm.fit,scidb,ANY,MNSN-method}
 \title{
 Fitting generalized linear models
 }
 \description{
-'glm.fit' is used to fit generalized linear models specified by a model
-matrix and response vector.
+\code{glm.fit} is used to fit generalized linear models specified by a model
+matrix and response vector. \code{glm_scidb} is a simplified interface for
+\code{scidbdf} objects similar (but much simpler than) \code{glm}.
 }
 \usage{
 \S4method{glm.fit}{scidb}(x,y,weights=NULL,family=gaussian())
+glm_scidb(formula, data, family=gaussian(), weights=NULL)
+model_scidb(formula, data)
 }
 \arguments{
   \item{x}{a model matrix of dimension 'n * p'.}
   \item{y}{a response vector of length 'n'.}
+  \item{formula}{an object of class \code{formula} (or one that can be coerced to
+          that class): a symbolic description of the model to be
+          fitted. See details for limitations.}
+  \item{data}{an object of class \code{scidbdf}.}
   \item{weights}{an optional vector of 'prior weights' to be used in the
           fitting process.  Should be 'NULL' or a numeric or scidb vector.}
   \item{family}{a description of the error distribution and link function to
@@ -23,7 +31,10 @@ matrix and response vector.
           a family function.}
 }
 \value{
-A list of model output values:
+The \code{glm.fit} and \code{glm_scidb} functions return
+a list of model output values described below. The \code{glm_scidb}
+method uses an S3 class to additionally overload nice printing
+and \code{summary} methods.
 \enumerate{
 \item{\emph{coefficients}}{  model coefficient vector (SciDB array)}
 \item{\emph{stderr}}{  vector of model coefficient standard errors (SciDB array)}
@@ -54,6 +65,30 @@ A list of model output values:
 \item{\emph{x}}{  model matrix (SciDB array).}
 }
 }
+\details{
+The \code{glm_scidb} function works similarly to a limited version of
+the usual \code{glm} function, but with a \code{scidbdf} data.frame-like
+SciDB array instead of a standard data.frame.
+
+Formulas in the \code{glm_scidb} function may only refer to variables present
+in the \code{data} \code{scidbdf} object. And the indicated response must refer
+to a single-column response term in the data (the two-column response form is
+not accepted). Formulas may only list variables explicitly defined in the
+\code{data}. That means that you should bind interaction and transformed terms
+to your data before invoking the function.
+
+Categorical (factor) variables in the data must be represented as strings. They
+will be encoded as treatment-style contrast variables with the first listed
+value set to the baseline value. No other automated contrast encodings are
+available yet (you are free to build your own model matrix and use
+\code{glm.fit} for that). All other variables will be coerced to
+double-precision values.
+
+Use the \code{model_scidb} function to build a model matrix from a formula and
+a \code{scidbdf} data.frame-like SciDB array.  The matrix is returned as a
+sparse SciDB matrix of class \code{scidb} with character string variables
+encoded as treatment contrasts as described above.
+}
 \author{
 B. W. Lewis<blewis@paradigm4.com>
 }
@@ -62,8 +97,23 @@ B. W. Lewis<blewis@paradigm4.com>
 }
 \examples{
 \dontrun{
+# Using glm.fit
 x <- as.scidb(matrix(rnorm(5000*20),nrow=5000))
 y <- as.scidb(rnorm(5000))
 M <- glm.fit(x, y)
-print(coef(M))
+coef(M)[]
+
+# Using glm_scidb (similar to glm)
+# From the 'glm' help:
+## Dobson (1990) Page 93: Randomized Controlled Trial :
+counts <- c(18,17,15,20,10,20,25,13,12)
+outcome <- gl(3,1,9)
+treatment <- gl(3,3)
+d.AD <- data.frame(treatment, outcome, counts)
+glm.D93 <- glm(counts ~ outcome + treatment, family = poisson(),data=d.AD)
+summary(glm.D93)
+# Compare with:
+x = as.scidb(d.AD)
+glm.D93_sci = glm_scidb(counts ~ outcome + treatment, family = poisson(), data=d.AD)
+summary(glm.D93_sci)
 }}
