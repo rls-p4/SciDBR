@@ -112,8 +112,9 @@ treatment <- gl(3,3)
 d.AD <- data.frame(treatment, outcome, counts)
 glm.D93 <- glm(counts ~ outcome + treatment, family = poisson(),data=d.AD)
 summary(glm.D93)
+
 # Compare with:
-x = as.scidb(d.AD)
-glm.D93_sci = glm_scidb(counts ~ outcome + treatment, family = poisson(), data=d.AD)
+d.AD_sci = as.scidb(d.AD)
+glm.D93_sci = glm_scidb(counts ~ outcome + treatment, family = poisson(), data=d.AD_sci)
 summary(glm.D93_sci)
 }}
