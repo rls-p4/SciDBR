@@ -785,7 +785,9 @@ compare_versions = function(x,y)
 origin = function(x)
 {
   N = paste(rep("null",2*length(dimensions(x))),collapse=",")
-  query = sprintf("sg(subarray(%s,%s),1,-1)",x@name,N)
+  GEMM.BUG = ifelse(is.logical(options("scidb.gemm_bug")[[1]]),options("scidb.gemm_bug")[[1]],FALSE)
+  if(GEMM.BUG) query = sprintf("sg(subarray(%s,%s),1,-1)",x@name,N)
+  else query = sprintf("subarray(%s,%s)",x@name,N)
   .scidbeval(query,`eval`=FALSE,depend=list(x),gc=TRUE)
 }
 

@@ -56,6 +56,9 @@ SIG_TRP = 2L # A custom signal handler (see scidb.c)
 # Default shim port
   options(scidb.default_shim_port=8080L)
   options(scidb.default_shim_host="localhost")
+# There was a bad gemm/gesvd/subarray bug until 14.3. When TRUE, this option
+# puts a reliable work-around in place (inserting sg everywhere).
+  options(scidb.gemm_bug=TRUE)
 # Make it harder to remove arrays. When this option is TRUE, users
 # have to specify scidbrm(array, force=TRUE) to remove arrays that do not
 # begin with "R_array".

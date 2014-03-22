@@ -51,6 +51,7 @@ scidbmultiply = function(e1,e2)
 # As of SciDB version 13.12, SciDB exhibits nasty bugs when gemm is nested
 # within other SciDB operators, in particular subarray. We use sg to avoid
 # this problem.
+  GEMM.BUG = ifelse(is.logical(options("scidb.gemm_bug")[[1]]),options("scidb.gemm_bug")[[1]],FALSE)
   `eval` = FALSE
 # Check for availability of spgemm
   SPGEMM = length(grep("spgemm",.scidbenv$ops[,2]))>0
@@ -111,11 +112,13 @@ scidbmultiply = function(e1,e2)
   l1 = length(dim(e1))
   lb = paste(rep("null",l1),collapse=",")
   ub = paste(rep("null",l1),collapse=",")
-  op1 = sprintf("sg(subarray(%s,%s,%s),1,-1)",e1@name,lb,ub)
+  if(GEMM.BUG) op1 = sprintf("sg(subarray(%s,%s,%s),1,-1)",e1@name,lb,ub)
+  else op1 = sprintf("subarray(%s,%s,%s)",e1@name,lb,ub)
   l2 = length(dim(e2))
   lb = paste(rep("null",l2),collapse=",")
   ub = paste(rep("null",l2),collapse=",")
-  op2 = sprintf("sg(subarray(%s,%s,%s),1,-1)",e2@name,lb,ub)
+  if(GEMM.BUG) op2 = sprintf("sg(subarray(%s,%s,%s),1,-1)",e2@name,lb,ub)
+  else op2 = sprintf("subarray(%s,%s,%s)",e2@name,lb,ub)
 
   if(!SPARSE)
   {
@@ -149,10 +152,14 @@ scidbmultiply = function(e1,e2)
     stop("Sparse matrix multiplication not supported")
   }
   else if (SPARSE && SPGEMM)
+  {
     query = sprintf("spgemm(%s, %s)", op1, op2)
+  }
   else
-    query = sprintf("sg(gemm(%s, %s, %s),1,-1)",op1,op2,op3)
-# XXX Note: sg required as of SciDB v 13.12 to handle serious bugs when gemm is composed with other operators.
+  {
+    query = sprintf("gemm(%s, %s, %s)",op1,op2,op3)
+    if(GEMM.BUG) query = sprintf("sg(gemm(%s, %s, %s),1,-1)",op1,op2,op3)
+  }
   ans = .scidbeval(query,gc=TRUE,eval=eval,depend=list(e1,e2))
   ans
 }
@@ -199,16 +206,19 @@ scidbmultiply = function(e1,e2)
   l1 = length(dim(e1))
   lb = paste(rep("null",l1),collapse=",")
   ub = paste(rep("null",l1),collapse=",")
+  GEMM.BUG = ifelse(is.logical(options("scidb.gemm_bug")[[1]]),options("scidb.gemm_bug")[[1]],FALSE)
   if(inherits(e1,"scidb"))
   {
-    q1 = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",e1@name,e1a,lb,ub)
+    if(GEMM.BUG) q1 = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",e1@name,e1a,lb,ub)
+    else q1 = sprintf("subarray(project(%s,%s),%s,%s)",e1@name,e1a,lb,ub)
   }
   l = length(dim(e2))
   lb = paste(rep("null",l),collapse=",")
   ub = paste(rep("null",l),collapse=",")
   if(inherits(e2,"scidb"))
   {
-    q2 = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",e2@name,e2a,lb,ub)
+    if(GEMM.BUG) q2 = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",e2@name,e2a,lb,ub)
+    else q2 = sprintf("subarray(project(%s,%s),%s,%s)",e2@name,e2a,lb,ub)
   }
 # Adjust the 2nd array to be schema-compatible with the 1st:
   if(l==2 && l1==2)
