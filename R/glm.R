@@ -193,7 +193,10 @@ summary.glm_scidb = function(object, ...)
 # names:    The names of the model variables corresponding to the
 #           columns of 'model'
 # intercept: TRUE if an intercept term is present
-model_scidb = function(formula, data)
+# factors: A named list of factor index_lookup SciDB arrays corresponding to
+#          the factors in the model. We need this for prediction to make sure
+#          that the factor encoding and baseline are reproducible.
+model_scidb = function(formula, data, vars=NULL, factors=NULL)
 {
   tryCatch(iquery("load_library('collate')"),
     error=function(e) stop("This function requires the collate operator.\n See https://github.com/Paradigm4/collate"))
@@ -223,8 +226,8 @@ model_scidb = function(formula, data)
   }
   types = scidb:::scidb_types(data)
   a = scidb_attributes(data)
-  factors = c()  # Will contain a list of factor variables
-  vars = c()     # Will contain a list of continuous variables
+  # factors (see input arguments) will contain a list of factor variables
+  # vars (see input) will contain a list of continuous variables
 # Check for unsupported formulae and warn.
   ok = v %in% data@attributes
   if(!all(ok))
@@ -235,6 +238,19 @@ model_scidb = function(formula, data)
   }
   w = which(data@attributes %in% c(v,iname))
   if(length(w)<1) stop("No variables to model on")
+# Check to see if a list of factors was provided. If not we need to build one.
+# If so, we check to make sure that the string variables in data match our
+# list of provided factors (error otherwise).
+  build_factors = TRUE
+  if(!is.null(factors))
+  {
+    build_factors = FALSE
+    data_factor_idx = which(types %in% "string")
+    if(any(data_factor_idx) && ! all(names(factors) %in% data@attributes[data_factor_idx]))
+    {
+      stop("Missing variables in input data! Please make sure your data contain all the variables in the model.")
+    }
+  }
   for(j in w)
   {
     if(types[j]=="string")
@@ -246,7 +262,7 @@ model_scidb = function(formula, data)
     }
     if(types[j]!="double")
     {
-# Coerce to a double value
+# Coerce to a double value XXX HOMER XXX 
       d = scidb:::make.unique_(a, sprintf("%s_double",a[j]))
       expr = sprintf("double(%s)", a[j])
       data = bind(data, d, expr)
@@ -260,7 +276,10 @@ model_scidb = function(formula, data)
   query = sprintf("collate(project(%s,%s))",data@name,varsstr)
   M = scidb:::.scidbeval(query,gc=TRUE,eval=TRUE)
 
-  if(length(factors)<1) return(list(formula=formula,model=M,response=response,names=vars,intercept=(i==1)))
+  if(length(factors)<1)
+  {
+    return(list(formula=formula,model=M,response=response,names=vars,intercept=(i==1)),factors=factors)
+  }
 
 # Repartition to accomodate the factor contrasts, subtracting one
 # if an intercept term is present (i).
@@ -284,7 +303,7 @@ model_scidb = function(formula, data)
   varnames = vars
   for(j in 1:length(factors))
   {
-    dn = scidb:::make.unique_(dimensions(data), "i")    # Naming conflicts are a big PITA
+    dn = scidb:::make.unique_(dimensions(data), "i")
     n  = names(factors)[j]
     idx = sprintf("%s_index",n)
     idx = scidb:::make.unique_(data@attributes, idx)
@@ -314,5 +333,5 @@ model_scidb = function(formula, data)
     M = merge(M,y,merge=TRUE) # eval this?
   }
 
-  return(list(formula=formula,model=M,response=response,names=varnames,intercept=(i==1)))
+  return(list(formula=formula,model=M,response=response,names=varnames,intercept=(i==1)),factors=factors)
 }

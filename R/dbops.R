@@ -76,7 +76,11 @@ unpack_scidb = function(x, `eval`=FALSE)
 attribute_rename = function(x, old, `new`, `eval`=FALSE)
 {
   atr = scidb_attributes(x)
-  old = ifelse(is.numeric(old),atr[which(atr %in% old)], old)
+# Positional attributes
+  if(is.numeric(old))
+  {
+    old = atr[old]
+  }
   query = sprintf("attribute_rename(%s,%s)",x@name,
     paste(paste(old,new,sep=","),collapse=","))
   .scidbeval(query,eval,depend=list(x))
