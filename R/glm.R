@@ -94,12 +94,16 @@ glm.fit_scidb = function(x,y,weights=NULL,family=gaussian(),intercept)
     x = x
   )
 # BUG HERE IN SCIDB GLM AFFECTING binomial and poisson families?
-# THIS WILL BE FIXED IN 14.3 XXX XXX
-if(dist=="binomial" || dist=="poisson")
-{
-  ans$scidb_pval = ans$pval
-  ans$pval = 2*pnorm(-abs(ans$tval[]))
-}
+# FIXED IN SciDB 14.3
+  if(compare_versions(options("scidb.version")[[1]],14.3))
+  {
+    return (ans)
+  }
+  if(dist=="binomial" || dist=="poisson")
+  {
+    ans$scidb_pval = ans$pval
+    ans$pval = 2*pnorm(-abs(ans$tval[]))
+  }
   ans
 }
 

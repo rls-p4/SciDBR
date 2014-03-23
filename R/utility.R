@@ -58,7 +58,7 @@ scidb = function(name, gc, `data.frame`)
   {
     return(.scidbeval(name@name, eval=FALSE, gc=gc, `data.frame`=`data.frame`, depend=list(name)))
   }
-  query = sprintf("show('%s as array','afl')",gsub("'","\\\\'",name,perl=TRUE))
+  query = sprintf("show('filter(%s,true)','afl')",gsub("'","\\\\'",name,perl=TRUE))
   schema = gsub("^.*<","<",iquery(query,`return`=1)$schema, perl=TRUE)
   obj = scidb_from_schemastring(schema, name, `data.frame`)
   if(gc)
