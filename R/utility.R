@@ -783,7 +783,11 @@ is.nullable = function(x)
 # Returns TRUE if version string x is greater than or equal to than version y
 compare_versions = function(x,y)
 {
- as.logical(prod(as.numeric(strsplit(as.character(x),"\\.")[[1]]) >= as.numeric(strsplit(as.character(y),"\\.")[[1]])))
+  b = as.numeric(strsplit(as.character(x),"\\.")[[1]])
+  a = as.numeric(strsplit(as.character(y),"\\.")[[1]])
+  ans = b[1] > a[1]
+  if(b[1] == a[1]) ans = b[2] >= a[2]
+  ans
 }
 
 # Reset array coordinate system to zero-indexed origin
