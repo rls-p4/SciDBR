@@ -90,7 +90,11 @@ dimension_rename = function(x, old, `new`, `eval`=FALSE)
 {
   if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
   dnames = dimensions(x)
-  idx = ifelse(is.numeric(old),old,which(dnames %in% old))
+  if(!is.numeric(old))
+  {
+    old = which(dnames %in% old)
+  }
+  idx = old
   dnames[idx] = `new`
   if(length(idx)!=1) stop("Invalid old dimension name specified")
   query = sprintf("cast(%s, %s%s)", x@name, build_attr_schema(x),
@@ -336,6 +340,8 @@ count = function(x)
 project = function(X,attributes,`eval`=FALSE)
 {
   xname = X
+  if(is.logical(attributes))
+    attributes = X@attributes[which(attributes)]
   if(is.numeric(attributes))
     attributes = X@attributes[attributes]
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name

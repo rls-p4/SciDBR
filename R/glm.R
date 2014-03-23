@@ -27,6 +27,22 @@
 # END_COPYRIGHT
 #
 
+# A really basic prototype glm function, limited to simple formulas and
+# treatment contrast encoding. cf glm.
+glm_scidb = function(formula, data, family=gaussian(), weights=NULL)
+{
+  if(!is.scidbdf(data)) stop("data must be a scidbdf object")
+  if(is.character(formula)) formula=as.formula(formula)
+  M = model_scidb(formula, data)
+  ans = glm.fit(M$model, M$response, weights=weights, family=family,intercept=M$intercept)
+  ans$formula = M$formula
+  ans$coefficient_names = M$names
+  ans$factors = M$factors
+  ans$call = match.call()
+  class(ans) = "glm_scidb"
+  ans
+}
+
 # cf glm.fit
 glm.fit_scidb = function(x,y,weights=NULL,family=gaussian(),intercept)
 {
@@ -107,23 +123,7 @@ glm.fit_scidb = function(x,y,weights=NULL,family=gaussian(),intercept)
   ans
 }
 
-
-
-# A really basic prototype glm function, limited to simple formulas and
-# treatment contrast encoding. cf glm.
-glm_scidb = function(formula, data, family=gaussian(), weights=NULL)
-{
-  if(!is.scidbdf(data)) stop("data must be a scidbdf object")
-  if(is.character(formula)) formula=as.formula(formula)
-  M = model_scidb(formula, data)
-  ans = glm.fit(M$model, M$response, weights=weights, family=family,intercept=M$intercept)
-  ans$formula = M$formula
-  ans$coefficient_names = M$names
-  ans$call = match.call()
-  class(ans) = "glm_scidb"
-  ans
-}
-
+# internally used formatting utility
 .format = function(x)
 {
   o = options(digits=4)
@@ -196,7 +196,7 @@ summary.glm_scidb = function(object, ...)
 # factors: A named list of factor index_lookup SciDB arrays corresponding to
 #          the factors in the model. We need this for prediction to make sure
 #          that the factor encoding and baseline are reproducible.
-model_scidb = function(formula, data, vars=NULL, factors=NULL)
+model_scidb = function(formula, data, factors=NULL)
 {
   tryCatch(iquery("load_library('collate')"),
     error=function(e) stop("This function requires the collate operator.\n See https://github.com/Paradigm4/collate"))
@@ -227,7 +227,7 @@ model_scidb = function(formula, data, vars=NULL, factors=NULL)
   types = scidb:::scidb_types(data)
   a = scidb_attributes(data)
   # factors (see input arguments) will contain a list of factor variables
-  # vars (see input) will contain a list of continuous variables
+  vars = NULL # vars will contain a list of continuous variables
 # Check for unsupported formulae and warn.
   ok = v %in% data@attributes
   if(!all(ok))
@@ -255,6 +255,7 @@ model_scidb = function(formula, data, vars=NULL, factors=NULL)
   {
     if(types[j]=="string")
     {
+      if(!build_factors) next
 # Create a factor
       factors = c(factors,unique(project(data,j)))
       names(factors)[length(factors)] = a[j]
@@ -262,12 +263,11 @@ model_scidb = function(formula, data, vars=NULL, factors=NULL)
     }
     if(types[j]!="double")
     {
-# Coerce to a double value XXX HOMER XXX 
+# Coerce to double, preserving name
       d = scidb:::make.unique_(a, sprintf("%s_double",a[j]))
       expr = sprintf("double(%s)", a[j])
       data = bind(data, d, expr)
-      vars = c(vars, d)
-      next
+      data = attribute_rename(data, old=c(d,a[j]),new=c(a[j],d))
     }
     vars = c(vars, a[j])
   }
@@ -278,7 +278,7 @@ model_scidb = function(formula, data, vars=NULL, factors=NULL)
 
   if(length(factors)<1)
   {
-    return(list(formula=formula,model=M,response=response,names=vars,intercept=(i==1)),factors=factors)
+    return(list(formula=formula,model=M,response=response,names=vars,intercept=(i==1),factors=factors))
   }
 
 # Repartition to accomodate the factor contrasts, subtracting one
@@ -333,5 +333,38 @@ model_scidb = function(formula, data, vars=NULL, factors=NULL)
     M = merge(M,y,merge=TRUE) # eval this?
   }
 
-  return(list(formula=formula,model=M,response=response,names=varnames,intercept=(i==1)),factors=factors)
+  return(list(formula=formula,model=M,response=response,names=varnames,intercept=(i==1),factors=factors))
+}
+
+
+# cf predict.glm
+predict.glm_scidb = function(object, newdata=NULL, type=c("link","response"), se.fit=FALSE)
+{
+  type = match.arg(type)
+  if(is.null(newdata))
+  {
+    M = object$x
+  } else
+  {
+    M = model_scidb(formula=object$formula, data=newdata, factors=object$factors)$model
+  }
+  linear_predictors = M %*% coef(object)
+  se = NULL
+  if(se.fit)
+  {
+# Compute se.fit XXX add this
+    warning("Not yet implemented")
+  }
+  if(type=="link") return(linear_predictors) # XXX modify to maybe return se
+  pred = switch(object$family$link,
+           "logit" = project(bind(linear_predictors,"fit","exp(multiply)/(1+exp(multiply))"),"fit"),
+           "identity" = linear_predictors,
+           "cauchit" = stop("Not yet supported"),
+           "cloglog" = stop("Not yet supported"),
+           "probit" = project(bind(linear_predictors,"fit","normcdf(multiply,0,1)"),"fit"),
+           "inverse" = project(bind(linear_predictors,"fit","1/multiply"),"fit"),
+           "sqrt" = project(bind(linear_predictors,"fit","multiply*multiply"),"fit"),
+           "log" = project(bind(linear_predictors,"fit","exp(multiply)"),"fit")
+        )
+  pred # XXX modify to return se
 }

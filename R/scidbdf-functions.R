@@ -166,6 +166,7 @@ length.scidbdf = function(x) ncol(x)
 scidbdf_subset = function(x, i, drop=FALSE)
 {
   attribute_range = i[[2]]
+  if(is.logical(attribute_range)) attribute_range = which(attribute_range)
   if(is.null(attribute_range)) attribute_range = x@attributes
   if(is.numeric(attribute_range))
   {
