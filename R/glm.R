@@ -214,8 +214,13 @@ model_scidb = function(formula, data)
     iname = scidb:::make.unique_(data@attributes,"intercept")
     data = bind(data, iname, "double(1)")
   }
-
-  response = project(data,rownames(f)[r])
+# If the response is not present in the data, set to NA
+  response_name = rownames(f)[r]
+  response = NA
+  if(response_name %in% data@attributes)
+  {
+    response = project(data,rownames(f)[r])
+  }
   types = scidb:::scidb_types(data)
   a = scidb_attributes(data)
   factors = c()  # Will contain a list of factor variables
