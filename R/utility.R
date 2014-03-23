@@ -913,10 +913,27 @@ persist = function(x, remove=FALSE)
 {
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
+  if(!(is.scidb(x) || is.scidbdf(x))) return(invisible())
   for(y in x@gc$depend)
   {
     if(DEBUG) cat("Persisting ",y@name,"\n")
     y@gc$remove = remove
     if(!is.null(y@gc$depend)) persist(y)
+  }
+}
+
+# A special persist function for complicated model objects
+persist.glm_scidb = function(x, remove=FALSE)
+{
+  persist(x$coefficients, remove)
+  persist(x$stderr, remove)
+  persist(x$tval, remove)
+  persist(x$pval, remove)
+  persist(x$weights, remove)
+  persist(x$x, remove)
+  persist(x$y, remove)
+  for(a in x$factors)
+  {
+    persist(a, remove)
   }
 }

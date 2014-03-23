@@ -156,8 +156,10 @@ summary.scidb = function(x)
 `[.scidb` = function(x, ...)
 {
   M = match.call()
-  drop = ifelse(is.null(M$drop),TRUE,M$drop)
-  eval = ifelse(is.null(M$eval),FALSE,M$eval)
+  if(is.null(M$drop)) drop=TRUE
+  else drop=M$drop
+  if(is.null(M$eval)) eval=FALSE
+  else eval=M$eval
   M = M[3:length(M)]
   if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","eval"))]
 # i shall contain a list of requested index values

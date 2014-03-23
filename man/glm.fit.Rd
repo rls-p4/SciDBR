@@ -15,7 +15,7 @@ matrix and response vector. \code{glm_scidb} is a simplified interface for
 \usage{
 \S4method{glm.fit}{scidb}(x,y,weights=NULL,family=gaussian())
 glm_scidb(formula, data, family=gaussian(), weights=NULL)
-model_scidb(formula, data)
+model_scidb(formula, data, factors=NULL)
 }
 \arguments{
   \item{x}{a model matrix of dimension 'n * p'.}
@@ -29,6 +29,7 @@ model_scidb(formula, data)
   \item{family}{a description of the error distribution and link function to
           be used in the model, supplied as the result of a call to
           a family function.}
+  \item{factors}{a list of factor encodings to use in the model matrix. See details.}
 }
 \value{
 The \code{glm.fit} and \code{glm_scidb} functions return
@@ -63,15 +64,19 @@ and \code{summary} methods.
 \item{\emph{family}}{  model family function.}
 \item{\emph{y}}{  response vector (SciDB array).}
 \item{\emph{x}}{  model matrix (SciDB array).}
+\item{\emph{factors}}{  a list of factor variable levels (SciDB arrays)
+                        or NULL if no factors are present in the data.}
 }
 
 \code{model_scidb}  returns an output list with:
 \itemize{
-\item{\emph{formula}}{The model forumual}
-\item{\emph{model}}{The model matrix (SciDB array)}
-\item{\emph{response}}{The model response vector (SciDB array)}
-\item{\emph{names}}{An R character vector of variable names in the model matrix}
-\item{\emph{intercept}}{A logical value; if TRUE the model includes an intercept term}
+\item{\emph{formula}}{  the model forumual.}
+\item{\emph{model}}{  the model matrix (SciDB array).}
+\item{\emph{response}}{  the model response vector (SciDB array).}
+\item{\emph{names}}{  an R character vector of variable names in the model matrix.}
+\item{\emph{intercept}}{  a logical value; if TRUE the model includes an intercept term.}
+\item{\emph{factors}}{  a list of factor variable levels (SciDB arrays)
+                        or NULL if no factors are present in the data.}
 }
 
 }
@@ -98,14 +103,16 @@ Use the \code{model_scidb} function to build a model matrix from a formula and
 a \code{scidbdf} data frame-like SciDB array.  The matrix is returned within an
 output list as a sparse SciDB matrix of class \code{scidb} with character
 string variables encoded as treatment contrasts as described above.
-
-
+If you already have a list of factor-level codes for categorical variables
+(for example from the output of \code{glm_scidb}, you can supply that in the
+factor argument. See help for \code{predict} for an example.
 }
 \author{
 B. W. Lewis<blewis@paradigm4.com>
 }
 \seealso{
   \code{\link{scidb}}
+  \code{\link{predict}}
 }
 \examples{
 \dontrun{

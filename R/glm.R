@@ -338,9 +338,15 @@ model_scidb = function(formula, data, factors=NULL)
 
 
 # cf predict.glm
-predict.glm_scidb = function(object, newdata=NULL, type=c("link","response"), se.fit=FALSE)
+predict.glm_scidb = function(object, ...) #newdata=NULL, type=c("link","response"), se.fit=FALSE)
 {
-  type = match.arg(type)
+  C = match.call()
+  if(is.null(C$newdata)) newdata=NULL
+  if(is.null(C$type)) type="link"
+  else type=C$type
+  if(is.null(C$se.fit)) se.fit=FALSE
+  else se.fit=C$se.fit
+  if(!type %in% c("link","response")) stop("type must be one of 'link' or 'response'")
   if(is.null(newdata))
   {
     M = object$x
