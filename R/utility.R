@@ -323,7 +323,7 @@ scidbls = function(...) scidblist(...)
 # Basic low-level query. Returns query id. This is an internal function.
 # query: a character query string
 # afl: TRUE indicates use AFL, FALSE AQL
-# async: TRUE=Ignore return value and return immediately, FALSE=wait for return
+# async: Does not do anything right now. Maybe in the future.
 # save: Save format query string or NULL. If async=TRUE, save is ignored.
 # release: Set to zero preserve web session until manually calling release_session
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
@@ -351,54 +351,38 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
     cat(query, "\n")
     t1=proc.time()
   }
-  if(async)
-  {
-    ans =tryCatch(
-     {
-      GET("/execute_query",list(id=sessionid,release=release,
-          query=query,async='1',afl=as.integer(afl)),async=TRUE, interrupt=interrupt)
-      }, error=function(e)
-      {
-# User cancel?
-        GET("/cancel", list(id=sessionid))
-        GET("/release_session", list(id=sessionid))
-        "HTTP/1.0 206 ERROR"
-      })
-  } else
-  {
-    ans = tryCatch(
-      {
-        if(is.null(save))
-          GET("/execute_query",list(id=sessionid,release=release,
-               query=query,afl=as.integer(afl)),
-               interrupt=interrupt)
-        else
-          GET("/execute_query",list(id=sessionid,release=release,
-              save=save,query=query,afl=as.integer(afl)), 
-              interrupt=interrupt)
-      }, error=function(e)
-      {
+  ans = tryCatch(
+    {
+      if(is.null(save))
+        GET("/execute_query",list(id=sessionid,release=release,
+             query=query,afl=as.integer(afl)),
+             interrupt=interrupt)
+      else
+        GET("/execute_query",list(id=sessionid,release=release,
+            save=save,query=query,afl=as.integer(afl)), 
+            interrupt=interrupt)
+    }, error=function(e)
+    {
 # User cancel? Note not interruptable.
-        GET("/cancel", list(id=sessionid,async='1'), async=TRUE)
-        GET("/release_session", list(id=sessionid))
-        "HTTP/1.0 206 ERROR"
-      }, interrupt=function(e)
-      {
-        GET("/cancel", list(id=sessionid,async='1'), async=TRUE)
-        GET("/release_session", list(id=sessionid))
-        "HTTP/1.0 206 ERROR"
-      })
-    w = ans
-    err = 200
-    if(nchar(w)>9)
-      err = as.integer(strsplit(substr(w,1,20)," ")[[1]][[2]])
-    if(err==206)
+      GET("/cancel", list(id=sessionid,async='1'), async=TRUE)
+      GET("/release_session", list(id=sessionid))
+      "HTTP/1.0 206 ERROR"
+    }, interrupt=function(e)
     {
-      stop("HTTP request canceled\n")
-    } else if(err>206)
-    {
-      stop(strsplit(w,"\r\n\r\n")[[1]][[2]])
-    }
+      GET("/cancel", list(id=sessionid,async='1'), async=TRUE)
+      GET("/release_session", list(id=sessionid))
+      "HTTP/1.0 206 ERROR"
+    })
+  w = ans
+  err = 200
+  if(nchar(w)>9)
+    err = as.integer(strsplit(substr(w,1,20)," ")[[1]][[2]])
+  if(err==206)
+  {
+    stop("HTTP request canceled\n")
+  } else if(err>206)
+  {
+    stop(strsplit(w,"\r\n\r\n")[[1]][[2]])
   }
   if(DEBUG) print(proc.time()-t1)
   if(resp) return(list(session=sessionid, response=ans))
@@ -411,23 +395,28 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
 # error (function): error handler. Use stop or warn, for example.
 # async (optional boolean): If TRUE use expermental shim async option for speed
 # force (optional boolean): If TRUE really remove this array, even if scidb.safe_remove=TRUE
+# deep (optional boolean): If TRUE, recursively remove this array and its dependency graph
 # Output:
 # null
-scidbremove = function(x, error=warning, async, force, warn=TRUE) UseMethod("scidbremove")
-scidbremove.default = function(x, error=warning, async, force, warn=TRUE)
+scidbremove = function(x, error=warning, async, force, warn=TRUE, deep=FALSE) UseMethod("scidbremove")
+scidbremove.default = function(x, error=warning, async, force, warn=TRUE, deep=FALSE)
 {
   if(is.null(x)) return(invisible())
   if(missing(async)) async=FALSE
   if(missing(force)) force=FALSE
-  if(inherits(x,"scidb")) x = x@name
-  if(inherits(x,"scidbdf")) x = x@name
-  if(!inherits(x,"character")) stop("Invalid argument. Perhaps you meant to quote the variable name(s)?")
+
   safe = options("scidb.safe_remove")[[1]]
   if(is.null(safe)) safe = TRUE
   if(!safe) force=TRUE
   uid = get("uid",envir=.scidbenv)
-  for(y in x)
+  for(y in list(x))
   {
+# Depth-first, a bad way to traverse this XXX improve
+    if(deep && (is.scidb(y) || is.scidbdf(y)) && !is.null(unlist(y@gc$depend)))
+    {
+      for(z in y@gc$depend) scidbremove(z,error,async,force,warn,deep)
+    }
+    if(is.scidb(y) || is.scidbdf(y)) y = y@name
     if(grepl("\\(",y)) next  # Not a stored array
     if(grepl(sprintf("^R_array.*%s$",uid),y,perl=TRUE))
     {
@@ -919,12 +908,12 @@ persist.default = function(x, remove=FALSE, ...)
   if(!(is.scidb(x) || is.scidbdf(x))) return(invisible())
   if(DEBUG) cat("Persisting ",x@name,"\n")
   x@gc$remove = remove
-  if(is.null(x@gc$depend)) return()
+  if(is.null(unlist(x@gc$depend))) return()
   for(y in x@gc$depend)
   {
     if(DEBUG) cat("Persisting ",y@name,"\n")
     y@gc$remove = remove
-    if(!is.null(y@gc$depend)) persist(y)
+    if(!is.null(y@gc$depend)) persist(y, remove=remove)
   }
 }
 
@@ -934,7 +923,7 @@ persist.glm_scidb = function(x, remove=FALSE, ...)
   .traverse.glm_scidb(x, persist, remove)
 }
 # A special remove function for complicated model objects
-scidbremove.glm_scidb = function(x, error=warning, async, force, warn=TRUE)
+scidbremove.glm_scidb = function(x, error=warning, async, force, warn=TRUE, deep=TRUE)
 {
-  .traverse.glm_scidb(x, scidbremove, error, async, force, warn)
+  .traverse.glm_scidb(x, scidbremove, error, async, force, warn, deep)
 }

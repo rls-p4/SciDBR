@@ -8,7 +8,7 @@ Remove an array.
 Remove (delete) an array from SciDB.
 }
 \usage{
-scidbremove(x, error = warning, async, force, warn=TRUE)
+scidbremove(x, error = warning, async, force, warn=TRUE, deep=FALSE)
 }
 \arguments{
   \item{x}{
@@ -22,6 +22,8 @@ may also be a vector of names to remove.
   \item{force}{(Optional) logical: If TRUE, force removal of specified array,
                even if the \code{scidb.safe_remove} option is set to \code{TRUE}.}
   \item{warn}{(Optional) logical: Set to FALSE to disable warnings during removal.}
+  \item{deep}{(Optional) logical: If true, remove the entire dependency graph of
+               this array from SciDB.}
 }
 \value{
 NULL is invisibly returned. SciDB errors are returned as
@@ -38,6 +40,12 @@ temporary arrays associated with the current R session can be removed without
 also setting the \code{force} option.  Specify \code{force=TRUE} to remove any
 specified array, or optionally set the \code{options(scidb.safe_remove=FALSE)}
 to disable this safety check.
+
+The \code{async} option does not really do anything yet. It will in a future
+version.
+
+Only use \code{deep=TRUE} with great care. It recursively calls \code{scidbremove}
+on the entire dependency graph of an array object.
 }
 \author{
 B. W. Lewis<blewis@paradigm4.com>
