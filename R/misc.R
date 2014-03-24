@@ -1,3 +1,7 @@
+# This is a catch-all container file for useful miscellaneous functions. They
+# tend to be newer and somewhat more experimental than the other functions, and
+# maybe not quite as fully baked.
+
 na.locf_scidb = function(object, along=dimensions(object)[1],`eval`=FALSE)
 {
   dnames = dimensions(object)
@@ -69,4 +73,117 @@ hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `eval`=FALSE,
   if(!`plot`) return (ans)
   plot(ans, ...)
   ans
+}
+
+
+# Several nice functions contributed by Alex Poliakov follow...
+
+# Return TRUE if array1 has the same dimensions, same attributes and types and
+# same data at the same coordinates False otherwise
+all.equal.scidbdf = function ( target, current , ...)
+{
+  all.equal.scidb( target, current )
+}
+all.equal.scidb = function ( target, current , ...)
+{
+  array1 = target
+  array2 = current
+  if ( length(array1@attributes) != length(array2@attributes) )
+  {
+    return (FALSE)
+  }
+  if ( !all(scidb_types(array1) == scidb_types(array2) ))
+  {
+    return (FALSE)
+  }
+  a1dims = dimensions(array1)
+  a2dims = dimensions(array2)
+  if ( length(a1dims) != length(a2dims) )
+  {
+    return (FALSE)
+  }
+  a1count = count(array1)
+  a2count = count(array2)
+  if ( a1count != a2count )
+  {
+    return (FALSE)
+  }
+  new_a1_attributes = sprintf( "a_%d", c(1:length(array1@attributes)))
+  new_a2_attributes = sprintf( "b_%d", c(1:length(array2@attributes)))
+  for ( i in 1:length(array1@attributes))
+  {
+    array1 = attribute_rename(array1, array1@attributes[i], new_a1_attributes[i])
+    array2 = attribute_rename(array2, array2@attributes[i], new_a2_attributes[i])
+  }
+  join = merge(array1, array2)
+  jcount = tryCatch(count(join), error=function(e) {-1})
+  if ( jcount != a1count)
+  {
+    return (FALSE)
+  }
+  filter_expr = paste( sprintf("%s <> %s", new_a1_attributes, new_a2_attributes), collapse = " or ")
+  jcount = count (subset(join,filter_expr))
+  if ( jcount != 0)
+  {
+    return (FALSE)
+  }
+  return(TRUE)
+}
+
+# Given two arrays of same dimensionality, return any coordinates that do NOT
+# join. For all coordinates, the single attribute shall equal to 1 if those
+# coordinates exist in array1, or 2 if those coordinates exist in array2.
+antijoin = function(array1, array2)
+{
+  a1dims = dimensions(array1)
+  a2dims = dimensions(array2)
+  if ( length(a1dims) != length(a2dims) )
+  {
+    stop("Incompatible dimensions")
+  }
+  a1count = count(array1)
+  a2count = count(array2)
+  join = merge(array1,array2)
+  jcount = count(join)
+  if(jcount == a1count && jcount == a2count)
+  {
+    return(NULL)
+  }
+  flag_name = make.unique_(join@attributes, "source_array_id")
+  jf = scidbeval(project(bind(join, name = flag_name, "0"), flag_name))
+  lf = project(bind(array1, flag_name, "1"), flag_name)
+  rf = project(bind(array2, flag_name, "2"), flag_name)
+  merger = scidb(sprintf("merge(%s, %s, %s)", jf@name, lf@name, rf@name))
+  subset(merger, sprintf("%s <> 0", flag_name))
+}
+
+#An R function to compute grand quantiles for an array
+#Turns out to run MUCH faster than SciDB's quantile
+#num_buckets is at least 2 shall include the the min and max 
+#(0th and 100th percentile)
+quantile = function( array, num_buckets = 101, attribute_no = 1)
+{
+  if (num_buckets <= 2)
+  {
+    stop("Invalid num_buckets")
+  }
+  attribute = array@attributes[attribute_no]
+  datatype = array@types[attribute_no]
+  count = count(array)
+  buckets = 0;
+  num_buckets = num_buckets-1
+  for ( i in 1:(num_buckets - 1))
+  {
+    bucket = (count-1) * i / num_buckets
+    buckets = c(buckets, bucket)
+  }
+  buckets = c(buckets, count-1)
+  #Choose elements from a SciDB array using an R array 
+  result = sort(project(array, attribute))[buckets] 
+  
+  result = attribute_rename(result, attribute, "quantile")
+  result = dimension_rename(result, dimensions(result)[1], "i")
+  pname = scidb:::make.unique_(result@attributes, "percentile")
+  result = bind(result, name=pname, FUN=sprintf("i / (%i * 1.0)", num_buckets))
+  return(result)
 }
