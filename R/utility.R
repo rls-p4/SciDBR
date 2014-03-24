@@ -395,11 +395,11 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
 # error (function): error handler. Use stop or warn, for example.
 # async (optional boolean): If TRUE use expermental shim async option for speed
 # force (optional boolean): If TRUE really remove this array, even if scidb.safe_remove=TRUE
-# deep (optional boolean): If TRUE, recursively remove this array and its dependency graph
+# recursive (optional boolean): If TRUE, recursively remove this array and its dependency graph
 # Output:
 # null
-scidbremove = function(x, error=warning, async, force, warn=TRUE, deep=FALSE) UseMethod("scidbremove")
-scidbremove.default = function(x, error=warning, async, force, warn=TRUE, deep=FALSE)
+scidbremove = function(x, error=warning, async, force, warn=TRUE, recursive=FALSE) UseMethod("scidbremove")
+scidbremove.default = function(x, error=warning, async, force, warn=TRUE, recursive=FALSE)
 {
   if(is.null(x)) return(invisible())
   if(missing(async)) async=FALSE
@@ -413,9 +413,9 @@ scidbremove.default = function(x, error=warning, async, force, warn=TRUE, deep=F
   for(y in x)
   {
 # Depth-first, a bad way to traverse this XXX improve
-    if(deep && (is.scidb(y) || is.scidbdf(y)) && !is.null(unlist(y@gc$depend)))
+    if(recursive && (is.scidb(y) || is.scidbdf(y)) && !is.null(unlist(y@gc$depend)))
     {
-      for(z in y@gc$depend) scidbremove(z,error,async,force,warn,deep)
+      for(z in y@gc$depend) scidbremove(z,error,async,force,warn,recursive)
     }
     if(is.scidb(y) || is.scidbdf(y)) y = y@name
     if(grepl("\\(",y)) next  # Not a stored array
@@ -423,11 +423,11 @@ scidbremove.default = function(x, error=warning, async, force, warn=TRUE, deep=F
     if(grepl(sprintf("^R_array.*%s$",uid),y,perl=TRUE))
     {
       tryCatch( scidbquery(query,async=async, release=1),
-                error=function(e) print(e))
+                error=function(e) if(!recursive)print(e))
     } else if(force)
     {
       tryCatch( scidbquery(query,async=async, release=1),
-                error=function(e) print(e))
+                error=function(e) if(!recursive)print(e))
     } else if(warn)
     {
       warning("The array ",y," is protected from easy removal. Specify force=TRUE if you really want to remove it.")
@@ -925,7 +925,7 @@ persist.glm_scidb = function(x, remove=FALSE, ...)
   .traverse.glm_scidb(x, persist, remove)
 }
 # A special remove function for complicated model objects
-scidbremove.glm_scidb = function(x, error=warning, async=FALSE, force=FALSE, warn=TRUE, deep=TRUE)
+scidbremove.glm_scidb = function(x, error=warning, async=FALSE, force=FALSE, warn=TRUE, recursive=TRUE)
 {
-  .traverse.glm_scidb(x, scidbremove, error, async, force, warn, deep)
+  .traverse.glm_scidb(x, scidbremove, error, async, force, warn, recursive)
 }

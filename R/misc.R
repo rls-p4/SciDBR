@@ -157,20 +157,21 @@ antijoin = function(array1, array2)
   subset(merger, sprintf("%s <> 0", flag_name))
 }
 
-#An R function to compute grand quantiles for an array
-#Turns out to run MUCH faster than SciDB's quantile
-#num_buckets is at least 2 shall include the the min and max 
-#(0th and 100th percentile)
-quantile = function( array, num_buckets = 101, attribute_no = 1)
+# An R function to compute grand quantiles for an array
+# Turns out to run MUCH faster than SciDB's quantile
+# num_buckets is at least 2 shall include the the min and max 
+# (0th and 100th percentile)
+
+quantile = function(x, num_buckets = 101, attribute_no = 1)
 {
   if (num_buckets <= 2)
   {
     stop("Invalid num_buckets")
   }
-  attribute = array@attributes[attribute_no]
-  datatype = array@types[attribute_no]
-  count = count(array)
-  buckets = 0;
+  attribute = x@attributes[attribute_no]
+  datatype = scidb_types(x)[attribute_no]
+  count = count(x)
+  buckets = 0
   num_buckets = num_buckets-1
   for ( i in 1:(num_buckets - 1))
   {
@@ -179,7 +180,7 @@ quantile = function( array, num_buckets = 101, attribute_no = 1)
   }
   buckets = c(buckets, count-1)
   #Choose elements from a SciDB array using an R array 
-  result = sort(project(array, attribute))[buckets] 
+  result = sort(project(x, attribute))[buckets] 
   
   result = attribute_rename(result, attribute, "quantile")
   result = dimension_rename(result, dimensions(result)[1], "i")

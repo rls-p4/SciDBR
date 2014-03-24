@@ -8,7 +8,7 @@ Remove an array.
 Remove (delete) an array from SciDB.
 }
 \usage{
-scidbremove(x, error = warning, async, force, warn=TRUE, deep=FALSE)
+scidbremove(x, error = warning, async, force, warn=TRUE, recursive=FALSE)
 }
 \arguments{
   \item{x}{
@@ -23,7 +23,7 @@ object.
   \item{force}{(Optional) logical: If TRUE, force removal of specified array,
                even if the \code{scidb.safe_remove} option is set to \code{TRUE}.}
   \item{warn}{(Optional) logical: Set to FALSE to disable warnings during removal.}
-  \item{deep}{(Optional) logical: If true, remove the entire dependency graph of
+  \item{recursive}{(Optional) logical: If true, remove the entire dependency graph of
                this array from SciDB.}
 }
 \value{
@@ -45,7 +45,7 @@ to disable this safety check.
 The \code{async} option does not really do anything yet. It will in a future
 version.
 
-Only use \code{deep=TRUE} with great care. It recursively calls \code{scidbremove}
+Use \code{recursive=TRUE} with great care. It recursively calls \code{scidbremove}
 on the entire dependency graph of an array object.
 }
 \author{
