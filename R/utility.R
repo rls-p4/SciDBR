@@ -423,11 +423,11 @@ scidbremove.default = function(x, error=warning, async, force, warn=TRUE, recurs
     if(grepl(sprintf("^R_array.*%s$",uid),y,perl=TRUE))
     {
       tryCatch( scidbquery(query,async=async, release=1),
-                error=function(e) if(!recursive)print(e))
+                error=function(e) if(!recursive && warn)print(e))
     } else if(force)
     {
       tryCatch( scidbquery(query,async=async, release=1),
-                error=function(e) if(!recursive)print(e))
+                error=function(e) if(!recursive && warn)print(e))
     } else if(warn)
     {
       warning("The array ",y," is protected from easy removal. Specify force=TRUE if you really want to remove it.")
