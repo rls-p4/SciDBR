@@ -12,8 +12,9 @@ scidbremove(x, error = warning, async, force, warn=TRUE, deep=FALSE)
 }
 \arguments{
   \item{x}{
-The name of the SciDB array to remove (character). This
-may also be a vector of names to remove.
+The name of the SciDB array to remove (character), or 
+a vector of array names to remove, or a \code{scidb} or \code{scidbdf}
+object.
 }
   \item{error}{Error handling function.}
   \item{async}{(Optional) logical: If TRUE, use async option in newer

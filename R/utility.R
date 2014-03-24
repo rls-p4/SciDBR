@@ -409,7 +409,8 @@ scidbremove.default = function(x, error=warning, async, force, warn=TRUE, deep=F
   if(is.null(safe)) safe = TRUE
   if(!safe) force=TRUE
   uid = get("uid",envir=.scidbenv)
-  for(y in list(x))
+  if(is.scidb(x) || is.scidbdf(x)) x = list(x)
+  for(y in x)
   {
 # Depth-first, a bad way to traverse this XXX improve
     if(deep && (is.scidb(y) || is.scidbdf(y)) && !is.null(unlist(y@gc$depend)))
@@ -418,14 +419,15 @@ scidbremove.default = function(x, error=warning, async, force, warn=TRUE, deep=F
     }
     if(is.scidb(y) || is.scidbdf(y)) y = y@name
     if(grepl("\\(",y)) next  # Not a stored array
+    query = sprintf("remove(%s)",y)
     if(grepl(sprintf("^R_array.*%s$",uid),y,perl=TRUE))
     {
-      tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=async, release=1),
-                error=function(e) error(e))
+      tryCatch( scidbquery(query,async=async, release=1),
+                error=function(e) print(e))
     } else if(force)
     {
-      tryCatch( scidbquery(paste("remove(",y,")",sep=""),async=async, release=1),
-                error=function(e) error(e))
+      tryCatch( scidbquery(query,async=async, release=1),
+                error=function(e) print(e))
     } else if(warn)
     {
       warning("The array ",y," is protected from easy removal. Specify force=TRUE if you really want to remove it.")
@@ -923,7 +925,7 @@ persist.glm_scidb = function(x, remove=FALSE, ...)
   .traverse.glm_scidb(x, persist, remove)
 }
 # A special remove function for complicated model objects
-scidbremove.glm_scidb = function(x, error=warning, async, force, warn=TRUE, deep=TRUE)
+scidbremove.glm_scidb = function(x, error=warning, async=FALSE, force=FALSE, warn=TRUE, deep=TRUE)
 {
   .traverse.glm_scidb(x, scidbremove, error, async, force, warn, deep)
 }
