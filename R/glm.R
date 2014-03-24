@@ -374,3 +374,22 @@ predict.glm_scidb = function(object, ...) #newdata=NULL, type=c("link","response
         )
   pred # XXX modify to return se
 }
+
+
+# This is an internally-used utility that traverses the SciDB elements of
+# a glm_scidb object, applying the function f with optional arguments ...
+# to each. It's used by persist.glm_scidb and others.
+.traverse.glm_scidb = function(x,f,...)
+{
+  f(x$coefficients, ...)
+  f(x$stderr, ...)
+  f(x$tval, ...)
+  if(is.scidb(x$pval) || is.scidbdf(x$pval)) f(x$pval, ...)
+  f(x$weights, ...)
+  f(x$x, ...)
+  f(x$y, ...)
+  for(a in x$factors)
+  {
+    f(a, ...)
+  }
+}

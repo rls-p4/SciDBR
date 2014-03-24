@@ -413,7 +413,8 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
 # force (optional boolean): If TRUE really remove this array, even if scidb.safe_remove=TRUE
 # Output:
 # null
-scidbremove = function(x, error=warning, async, force, warn=TRUE)
+scidbremove = function(x, error=warning, async, force, warn=TRUE) UseMethod("scidbremove")
+scidbremove.default = function(x, error=warning, async, force, warn=TRUE)
 {
   if(is.null(x)) return(invisible())
   if(missing(async)) async=FALSE
@@ -909,11 +910,16 @@ curl_signal_trap = function(down,up)
 }
 
 # Walk the dependency graph, setting all upstreams array to persist
-persist = function(x, remove=FALSE)
+# Define a generic persist
+persist = function(x, remove=FALSE, ...) UseMethod("persist")
+persist.default = function(x, remove=FALSE, ...)
 {
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
   if(!(is.scidb(x) || is.scidbdf(x))) return(invisible())
+  if(DEBUG) cat("Persisting ",x@name,"\n")
+  x@gc$remove = remove
+  if(is.null(x@gc$depend)) return()
   for(y in x@gc$depend)
   {
     if(DEBUG) cat("Persisting ",y@name,"\n")
@@ -923,17 +929,12 @@ persist = function(x, remove=FALSE)
 }
 
 # A special persist function for complicated model objects
-persist.glm_scidb = function(x, remove=FALSE)
+persist.glm_scidb = function(x, remove=FALSE, ...)
 {
-  persist(x$coefficients, remove)
-  persist(x$stderr, remove)
-  persist(x$tval, remove)
-  persist(x$pval, remove)
-  persist(x$weights, remove)
-  persist(x$x, remove)
-  persist(x$y, remove)
-  for(a in x$factors)
-  {
-    persist(a, remove)
-  }
+  .traverse.glm_scidb(x, persist, remove)
+}
+# A special remove function for complicated model objects
+scidbremove.glm_scidb = function(x, error=warning, async, force, warn=TRUE)
+{
+  .traverse.glm_scidb(x, scidbremove, error, async, force, warn)
 }

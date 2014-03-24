@@ -8,11 +8,12 @@ Mark a \code{scidb} or \code{scidbdf} object and any SciDB arrays in its
 dependency graph persistent.
 }
 \usage{
-persist(x, remove = FALSE)
+persist(x, remove = FALSE, ...)
 }
 \arguments{
-  \item{x}{A scidb or scidbdf object}
-  \item{remove}{A logical value. See details.}
+  \item{x}{ A scidb or scidbdf object}
+  \item{remove}{ A logical value. See details.}
+  \item{...}{ Optional arguments not used by the default method, but reserved for future use.}
 }
 \value{
 NULL is invisibly returned. Use this function for its side effects.

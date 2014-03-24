@@ -112,7 +112,7 @@ B. W. Lewis<blewis@paradigm4.com>
 }
 \seealso{
   \code{\link{scidb}}
-  \code{\link{predict}}
+  \code{\link{predict.glm_scidb}}
 }
 \examples{
 \dontrun{
