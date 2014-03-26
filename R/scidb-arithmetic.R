@@ -210,9 +210,14 @@ scidbmultiply = function(e1,e2)
   {
     e2 = project(e2,e2a)
     if(op=="^")
+    {  
       op = sprintf("pow(%s)",paste(c(sprintf("%.15f",e1), e2a),collapse=","))
+      if(e1<0) e2 = merge(e2,build(0,e2),merge=TRUE)
+    }
     else
+    {
       op = paste(c(sprintf("%.15f",e1),e2a),collapse=op)
+    }
     if(fill) return(project(bind(merge(e2,build(0,e2),merge=TRUE),v,op),v))
     return(project(bind(e2,v,op),v))
   }
@@ -220,9 +225,12 @@ scidbmultiply = function(e1,e2)
   {
     e1 = project(e1,e1a)
     if(op=="^")
-      op = sprintf("pow(%s)",paste(c(sprintf("%.15f",e2), e1a),collapse=","))
+    {
+      op = sprintf("pow(%s)",paste(c(e1a,sprintf("%.15f",e2)),collapse=","))
+      if(e2<0) e1 = merge(e1,build(0,e1),merge=TRUE)
+    }
     else
-      op = paste(c(sprintf("%.15f",e2),e1a),collapse=op)
+      op = paste(c(e1a, sprintf("%.15f",e2)),collapse=op)
     if(fill) return(project(bind(merge(e1,build(0,e1),merge=TRUE),v,op),v))
     else return(project(bind(e1,v,op),v))
   }

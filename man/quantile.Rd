@@ -12,8 +12,10 @@ Compute sample quantiles of a single-attribute SciDB array.
 \method{quantile}{scidbdf}(x, probs=seq(0,1,0.25), type=7, ...)
 }
 \arguments{
-  \item{target}{ a \code{scidb} or \code{scidbdf} object.}
-  \item{current}{ a \code{scidb} or \code{scidbdf} object.}
+  \item{x}{ a \code{scidb} or \code{scidbdf} object.}
+  \item{probs}{ a numeric vector of probabilities with value in [0,1].}
+  \item{type}{ either 1 or 7, selecting the two available quantile algorithms
+               (see help for \code{\link{quantile}} for more details).}
   \item{...}{ optional arguments that might be used in a future version.}
 }
 \value{

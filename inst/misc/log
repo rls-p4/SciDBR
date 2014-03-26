@@ -1,3 +1,15 @@
+commit cc387696336d79c21458416ca111e4a5bfee66b1
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Mar 25 23:41:34 2014 -0400
+
+    Added show_github_log utility function
+
+commit 845197dd9df2ee75e00989d17666508ec1e95635
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Mar 25 23:33:52 2014 -0400
+
+    Added doc for quantile
+
 commit b5f5a34c0da6f518f75d492179bd13c8c6755d9d
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue Mar 25 23:14:04 2014 -0400

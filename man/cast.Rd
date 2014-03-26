@@ -25,6 +25,8 @@ B. W. Lewis <blewis@paradigm4.com>
 }
 \seealso{
   \code{\link{scidb}}
+  \code{\link{attribute_rename}}
+  \code{\link{dimension_rename}}
 }
 \examples{
 \dontrun{

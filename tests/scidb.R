@@ -58,12 +58,31 @@ if(nchar(host)>0)
   w = w + 2*w
   check(sum(D-w), 0)
 
+# some binary operations
+# XXX ADD **lots** more tests here
+  a = as.scidb(Matrix::sparseMatrix(
+               sample(10,100,replace=TRUE),sample(10,100,replace=TRUE),x=runif(100)))
+  b = build(pi,c(10,10),names=c("a","b","c"),chunksize=c(3,2))
+  check(sum(a*b - a[]*b[]), 0)
+  check(sum(a+b - a[]+b[]), 0)
+  check(sum(a+2 - a[]+2), 0)
+  a*apply(a,2,mean)
+  apply(a,2,mean)*a
+
+
 # Aggregation
   check( sweep(B,MARGIN=2,apply(B,2,mean)),
          sweep(Y,MARGIN=2,apply(Y,2,mean))[])
 
 # Join
   check(project(bind(merge(Y,diag(Y),by.x="i",by.y="i_1"),"v","val*val_1"),"v")[], diag(B)*B)
+
+# On different dimensions
+  x = as.scidb(rnorm(5))
+  a = as.scidb(data.frame(p=1:5))
+  merge(x,a,by.x=dimensions(x),by.y=dimensions(a))
+
+# Add many more join/merge checks here...
 
 # Sparse upload, count
   S = Matrix::sparseMatrix(sample(100,200,replace=TRUE),sample(100,200,replace=TRUE),x=runif(200))
