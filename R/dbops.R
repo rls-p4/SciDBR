@@ -76,6 +76,7 @@ unpack_scidb = function(x, `eval`=FALSE)
 attribute_rename = function(x, old, `new`, `eval`=FALSE)
 {
   atr = scidb_attributes(x)
+  if(missing(old)) old=x@attributes
 # Positional attributes
   if(is.numeric(old))
   {
@@ -89,6 +90,7 @@ attribute_rename = function(x, old, `new`, `eval`=FALSE)
 dimension_rename = function(x, old, `new`, `eval`=FALSE)
 {
   if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
+  if(missing(old)) old = dimensions(x)
   dnames = dimensions(x)
   if(!is.numeric(old))
   {

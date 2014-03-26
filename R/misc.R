@@ -172,7 +172,7 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
   np      = length(probs)
   qs      = NULL
 
-  if(length(x@attributes>1))
+  if(length(x@attributes)>1)
   {
     warning("The SciDB array contains more than one attribute. Using the first one: ",x@attributes[1])
     x = project(x,x@attributes[1])
@@ -199,12 +199,15 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
   }
   if(type==7)
   {
-    index = 1 + (n - 1) * probs
+    index = start_index + (n - 1) * probs
     lo    = floor(index)
     hi    = ceiling(index)
     i     = index > lo
     gamma = (index - lo)*i + lo*(!i)
-    qs    = (1 - gamma)*x[lo] + gamma*x[hi]
+    xlo   = x[lo][]
+    xhi   = x[hi][]
+    qs    = as.scidb((1 - gamma)*xlo + gamma*xhi)
   }
-  qs
+  p = attribute_rename(as.scidb(probs),new="probs")
+  merge(p,qs)
 }

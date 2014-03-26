@@ -171,6 +171,12 @@ scidbmultiply = function(e1,e2)
   e2a = "scalar"
   dnames = c()
   depend = c()
+# Handle unary minus
+  if(missing(e2) && op=="-")
+  {
+    e2 = -1
+    op = "*"
+  }
 # Check for non-scalar, non-scidb object arguments and convert to scidb
   if(!inherits(e1,"scidb") && length(e1)>1)
   {
