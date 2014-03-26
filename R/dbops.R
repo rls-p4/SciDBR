@@ -149,6 +149,7 @@ subarray = function(x, limits, schema, between=FALSE, `eval`=FALSE)
     if(!is.character(schema)) schema = schema(schema)
     limits = paste(between_coordinate_bounds(schema),collapse=",")
   }
+  limits = gsub("\\*",.scidb_DIM_MAX,limits)
   if(between)
     query = sprintf("between(%s,%s)",x@name,limits)
   else

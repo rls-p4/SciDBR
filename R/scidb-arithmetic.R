@@ -167,24 +167,21 @@ scidbmultiply = function(e1,e2)
 # Element-wise binary operations
 .binop = function(e1,e2,op)
 {
-  e1s = e1
-  e2s = e2
   e1a = "scalar"
   e2a = "scalar"
   dnames = c()
   depend = c()
-# Check for non-scidb object arguments and convert to scidb
-  if(!inherits(e1,"scidb") && length(e1)>1) {
-    x = tmpnam()
-    e1 = as.scidb(e1,name=x,gc=TRUE)
+# Check for non-scalar, non-scidb object arguments and convert to scidb
+  if(!inherits(e1,"scidb") && length(e1)>1)
+  {
+    e1 = as.scidb(e1)
   }
-  if(!inherits(e2,"scidb") && length(e2)>1) {
-    x = tmpnam()
-    e2 = as.scidb(e2,name=x,gc=TRUE)
+  if(!inherits(e2,"scidb") && length(e2)>1)
+  {
+    e2 = as.scidb(e2)
   }
   if(inherits(e1,"scidb"))
   {
-#    e1 = scidbeval(e1,gc=TRUE)
     e1 = make_nullable(e1)
     e1a = .get_attribute(e1)
     depend = c(depend, e1)
@@ -192,105 +189,100 @@ scidbmultiply = function(e1,e2)
   }
   if(inherits(e2,"scidb"))
   {
-#    e2 = scidbeval(e2,gc=TRUE)
     e2 = make_nullable(e2)
     e2a = .get_attribute(e2)
     depend = c(depend, e2)
     dnames = c(dnames, dimensions(e2))
   }
-# OK, we've got two scidb arrays, op them. v holds the new attribute name.
+# Determines if we need to fill in sparse entries or not:
+  fill = op %in% c("+","-","/")
+  fill_div = op %in% "/"
+# v holds new attribute name
   v = make.unique_(c(e1a,e2a,dnames),"v")
+# Handle special scalar multiplication cases, including sparse cases:
+  if(is.null(dim(e1)))
+  {
+    e2 = project(e2,e2a)
+    if(op=="^")
+      op = sprintf("pow(%s)",paste(c(sprintf("%.15f",e1), e2a),collapse=","))
+    else
+      op = paste(c(sprintf("%.15f",e1),e2a),collapse=op)
+    if(fill) return(project(bind(merge(e2,build(0,e2),merge=TRUE),v,op),v))
+    return(project(bind(e2,v,op),v))
+  }
+  if(is.null(dim(e2)))
+  {
+    e1 = project(e1,e1a)
+    if(op=="^")
+      op = sprintf("pow(%s)",paste(c(sprintf("%.15f",e2), e1a),collapse=","))
+    else
+      op = paste(c(sprintf("%.15f",e2),e1a),collapse=op)
+    if(fill) return(project(bind(merge(e1,build(0,e1),merge=TRUE),v,op),v))
+    else return(project(bind(e1,v,op),v))
+  }
 
-# We use subarray to handle starting index mismatches...
-  q1 = q2 = ""
+# OK, we've got two scidb arrays, op them.
   l1 = length(dim(e1))
-  lb = paste(rep("null",l1),collapse=",")
-  ub = paste(rep("null",l1),collapse=",")
-  GEMM.BUG = ifelse(is.logical(options("scidb.gemm_bug")[[1]]),options("scidb.gemm_bug")[[1]],FALSE)
-  if(inherits(e1,"scidb"))
-  {
-    if(GEMM.BUG) q1 = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",e1@name,e1a,lb,ub)
-    else q1 = sprintf("subarray(project(%s,%s),%s,%s)",e1@name,e1a,lb,ub)
-  }
-  l = length(dim(e2))
-  lb = paste(rep("null",l),collapse=",")
-  ub = paste(rep("null",l),collapse=",")
-  if(inherits(e2,"scidb"))
-  {
-    if(GEMM.BUG) q2 = sprintf("sg(subarray(project(%s,%s),%s,%s),1,-1)",e2@name,e2a,lb,ub)
-    else q2 = sprintf("subarray(project(%s,%s),%s,%s)",e2@name,e2a,lb,ub)
-  }
-# Adjust the 2nd array to be schema-compatible with the 1st:
-  if(l==2 && l1==2)
-  {
-    e2names = dimensions(e2)
-    bounds  = scidb_coordinate_bounds(e2)
-    e2end = bounds$end
-    e1chunk = scidb_coordinate_chunksize(e1)
-    e1overlap = scidb_coordinate_overlap(e1)
-    schema = sprintf(
-       "%s[%s=0:%s,%s,%s,%s=0:%s,%s,%s]",
-       build_attr_schema(e2,I=1),
-       e2names[1], noE(e2end[1]), noE(e1chunk[1]), noE(e1overlap[1]),
-       e2names[2], noE(e2end[2]), noE(e1chunk[2]), noE(e1overlap[2]))
-    q2 = sprintf("repart(%s, %s)", q2, schema)
+  l2  = length(dim(e2))
 
-# Handle sparsity by cross-merging data (full outer join):
-    if(l==l1)
+# Re-write op in a form compatible with SciDB apply
+  rewrite_op = function(A, op)
+  {
+    if(op=="^")
     {
-      if(is.sparse(e1))
-      {
-        q1 = sprintf("merge(%s,cast(project(apply(%s,__zero__,%s(0)),__zero__),<__zero__:%s null>%s))",q1,q2,scidb_types(e1),scidb_types(e1), build_dim_schema(e1))
-      }
-      if(is.sparse(e2))
-      {
-        q2 = sprintf("merge(%s,cast(project(apply(%s,__zero__,%s(0)),__zero__),<__zero__:%s null>%s))",q2,q1,scidb_types(e2),scidb_types(e2), build_dim_schema(e2))
-      }
+      op=sprintf("pow(%s)",paste(A@attributes,collapse=","))
+    } else
+    {
+       op = paste(A@attributes, collapse=op)
     }
   }
-  p1 = p2 = ""
-# Syntax sugar for exponetiation (map the ^ infix operator to pow):
-  if(op=="^")
+# We can't avoid fully dense fills with "/"
+  if(fill_div)
   {
-    p1 = "pow("
-    op = ","
-    p2 = ")"
+    e1 = merge(e1,build(0,e1),merge=TRUE)
+    e2 = merge(e2,build(0,e2),merge=TRUE)
   }
-# Handle special scalar multiplication case:
-  if(length(e1s)==1)
-    Q = sprintf("apply(%s,%s, %s %.15f %s %s %s)",q2,v,p1,e1s,op,e2a,p2)
-  else if(length(e2s)==1)
-    Q = sprintf("apply(%s,%s,%s %s %s %.15f %s)",q1,v,p1,e1a,op,e2s,p2)
-  else if(l1==1 && l==2)
+# Handle conformable-dimension case
+  if(l1 == l2)
+  {
+# Note that we use outer join here with the special fillin option.
+    M = merge(e1,e2,by.x=dimensions(e1),by.y=dimensions(e2),all=TRUE,fillin=0)
+    v = make.unique_(c(M@attributes),"v")
+    op = rewrite_op(M, op)
+    return(project(bind(M,v,op), v))
+  }
+
+# Left now with very special vector-recycling cases.
+  if(l1==1)
   {
 # Handle special case similar to, but a bit different than vector recylcing.
 # This case requires a dimensional match along the 1st dimensions, and it's
 # useful for matrix row scaling. This is limited to vectors that match the
 # number of rows of the array.
-# First, conformably redimension e1
-    newschema = build_dim_schema(e2,I=1,newnames=dimensions(e1)[1])
-    re1 = sprintf("redimension(%s,%s%s)",q1,build_attr_schema(e1),newschema)
-    Q = sprintf("cross_join(%s as e2, %s as e1, e2.%s, e1.%s)", q2, re1, dimensions(e2)[1], dimensions(e1)[1])
-    Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
-  }
-  else if(l1==2 && l==1)
-  {
+# 
+# The default case:
 # Handle special case similar to, but a bit different than vector recylcing.
 # This case requires a dimensional match along the 2nd dimension, and it's
 # useful for matrix column scaling. This is not R standard but very useful.
-# First, conformably redimension e2.
-    newschema = build_dim_schema(e1,I=2,newnames=dimensions(e2)[1])
-    re2 = sprintf("redimension(%s,%s%s)",q2,build_attr_schema(e2),newschema)
-    Q = sprintf("cross_join(%s as e1, %s as e2, e1.%s, e2.%s)", q1, re2, dimensions(e1)[2], dimensions(e2)[1])
-    Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
-  }
-  else
+    x  = e1
+    e1 = e2
+    e2 = x
+    newschema = build_dim_schema(e1,I=1,newnames=dimensions(e2)[1])
+    newschema = sprintf("%s%s",build_attr_schema(e2),newschema)
+    e2 = reshape(e2, newschema)
+    along = dimensions(e1)[1]
+  } else
   {
-    Q = sprintf("join(%s as e1, %s as e2)", q1, q2)
-    Q = sprintf("apply(%s, %s, %s e1.%s %s e2.%s %s)", Q,v,p1,e1a,op,e2a,p2)
+    newschema = build_dim_schema(e1,I=2,newnames=dimensions(e2)[1])
+    newschema = sprintf("%s%s",build_attr_schema(e2),newschema)
+    e2 = reshape(e2, newschema)
+    along = dimensions(e1)[2]
   }
-  Q = sprintf("project(%s, %s)",Q,v)
-  .scidbeval(Q, eval=FALSE, gc=TRUE, depend=depend)
+  if(fill) e1 = merge(e1, build(0,e1), merge=TRUE)
+  M = merge(e1,e2,by.x=along,by.y=dimensions(e2))
+  v = make.unique_(c(M@attributes),"v")
+  op = rewrite_op(M,op)
+  project(bind(M, v, op), v)
 }
 
 # Very basic comparisons. See also filter.

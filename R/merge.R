@@ -48,10 +48,12 @@
   by.x = by.y = NULL
   `all` = FALSE
   scidbmerge = FALSE
+  fillin = "(null)"
   if(!is.null(mc$all)) `all` = mc$all
   if(!is.null(mc$by.x)) by.x = mc$by.x
   if(!is.null(mc$by.y)) by.y = mc$by.y
   if(!is.null(mc$merge)) scidbmerge = mc$merge
+  if(!is.null(mc$fillin)) fillin = sprintf("(%s)",mc$fillin)
   `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
   xname = x@name
   yname = y@name
@@ -131,11 +133,11 @@
       z = make_nullable(z)
 # Form a null-valued version of each array in the alternate array coordinate system
       xnames = make.unique_(c(dimensions(z),scidb_attributes(z)),scidb_attributes(x))
-      vals = paste(scidb_types(x), rep("(null)",length(scidb_types(x))))
-      xnull = attribute_rename(project(bind(z,xnames,vals),xnames),xnames,scidb_attributes(x))
+      vals = paste(scidb_types(x), rep(fillin,length(scidb_types(x))))
+      xnull = make_nullable(attribute_rename(project(bind(z,xnames,vals),xnames),xnames,scidb_attributes(x)))
       znames = make.unique_(c(dimensions(x),scidb_attributes(x)),scidb_attributes(z))
-      vals = paste(scidb_types(z), rep("(null)",length(scidb_types(z))))
-      znull = attribute_rename(project(bind(x,znames,vals),znames),znames,scidb_attributes(z))
+      vals = paste(scidb_types(z), rep(fillin,length(scidb_types(z))))
+      znull = make_nullable(attribute_rename(project(bind(x,znames,vals),znames),znames,scidb_attributes(z)))
 # Merge each array with its nullified counterpart, then join:
       query = sprintf("join(merge(%s,%s),merge(%s,%s))",x@name,xnull@name,z@name,znull@name)
     }
@@ -172,7 +174,7 @@
 
 # Join on dimensions.
   query = sprintf("cross_join(%s as __X, %s as __Y", xname, z@name)
-  cterms = paste(c("__X","__Y"), as.vector(rbind(by.x,by.y)), sep=".")
+  cterms = unique(paste(c("__X","__Y"), as.vector(rbind(by.x,by.y)), sep="."))
   cterms = paste(cterms,collapse=",")
   query  = paste(query,",",cterms,")",sep="")
   ans = .scidbeval(query,eval,depend=list(x,y))

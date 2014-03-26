@@ -157,34 +157,54 @@ antijoin = function(array1, array2)
   subset(merger, sprintf("%s <> 0", flag_name))
 }
 
-# An R function to compute grand quantiles for an array
-# Turns out to run MUCH faster than SciDB's quantile
-# num_buckets is at least 2 shall include the the min and max 
-# (0th and 100th percentile)
 
-quantile = function(x, num_buckets = 101, attribute_no = 1)
+quantile.scidbdf = function(x, probs=seq(0,1,0.25), type=7, ...)
 {
-  if (num_buckets <= 2)
+  quantile.scidb(x,probs,type,...)
+}
+quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
+{
+  np      = length(probs)
+  probs   = pmax(0, pmin(1,probs))  # Filter bogus probabilities out
+  if(length(probs)!=np) warning("Probabilities outside [0,1] have been removed.")
+  n       = length(x)
+  x       = sort(x) # Full sort is wasteful! Only really need a partial sort.
+  np      = length(probs)
+  qs      = NULL
+
+  if(length(x@attributes>1))
   {
-    stop("Invalid num_buckets")
+    warning("The SciDB array contains more than one attribute. Using the first one: ",x@attributes[1])
+    x = project(x,x@attributes[1])
   }
-  attribute = x@attributes[attribute_no]
-  datatype = scidb_types(x)[attribute_no]
-  count = count(x)
-  buckets = 0
-  num_buckets = num_buckets-1
-  for ( i in 1:(num_buckets - 1))
+# Check numeric type and quantile type
+  ty    = scidb_types(x)[1]
+  num   = grepl("int",ty) || grep("float",ty) || grep("double",ty)
+  if(!num && type!=1)
   {
-    bucket = (count-1) * i / num_buckets
-    buckets = c(buckets, bucket)
+    type = 1
+    warning("Setting quantile type to 1 to handle non-numeric values")
   }
-  buckets = c(buckets, count-1)
-  #Choose elements from a SciDB array using an R array 
-  result = sort(project(x, attribute))[buckets] 
-  
-  result = attribute_rename(result, attribute, "quantile")
-  result = dimension_rename(result, dimensions(result)[1], "i")
-  pname = scidb:::make.unique_(result@attributes, "percentile")
-  result = bind(result, name=pname, FUN=sprintf("i / (%i * 1.0)", num_buckets))
-  return(result)
+  start_index = as.numeric(scidb_coordinate_bounds(x)$start)
+
+  if(type==1)
+  {
+    m       = 0
+    j       = floor(n*probs + m)
+    g       = n*probs + m - j
+    gamma   = as.numeric(g!=0)
+    idx     = (1-gamma)*pmax(j,1) + gamma*pmin(j+1,n)
+    idx     = idx + start_index - 1
+    return(x[idx])
+  }
+  if(type==7)
+  {
+    index = 1 + (n - 1) * probs
+    lo    = floor(index)
+    hi    = ceiling(index)
+    i     = index > lo
+    gamma = (index - lo)*i + lo*(!i)
+    qs    = (1 - gamma)*x[lo] + gamma*x[hi]
+  }
+  qs
 }
