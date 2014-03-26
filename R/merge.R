@@ -124,7 +124,10 @@
     castschema = sprintf("%s%s", newas, newds)
     reschema = sprintf("%s%s", newas,build_dim_schema(x))
 # Cast and redimension y conformably with x:
-    z = redimension(cast(y,castschema),reschema)
+# XXX    z = redimension(cast(y,castschema),reschema)
+# XXX IS THIS A MIS-USE OF RESHAPE? Redimension is not enough here, and rehspae
+# seems to work.
+    z = reshape(cast(y,castschema),reschema)
     if(all)
     {
 # Experimental outer join XXX XXX
