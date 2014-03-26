@@ -195,7 +195,7 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
     gamma   = as.numeric(g!=0)
     idx     = (1-gamma)*pmax(j,1) + gamma*pmin(j+1,n)
     idx     = idx + start_index - 1
-    return(x[idx])
+    qs      = x[idx]
   }
   if(type==7)
   {
@@ -208,6 +208,6 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
     xhi   = x[hi][]
     qs    = as.scidb((1 - gamma)*xlo + gamma*xhi)
   }
-  p = attribute_rename(as.scidb(probs),new="probs")
-  merge(p,qs)
+  p = as.scidb(data.frame(probs=probs))
+  merge(p,qs,by.x=dimensions(p),by.y=dimensions(qs))
 }

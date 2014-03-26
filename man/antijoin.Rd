@@ -21,7 +21,7 @@ single attribute shall equal to 1 if those coordinates exist only in
 \code{array1}, or 2 if those coordinates exist only in \code{array2}.
 }
 \author{
-A. Polyiakov <apoliakov@paradigm4.com>
+A. Poliakov <apoliakov@paradigm4.com>
 }
 \seealso{
   \code{\link{scidb}}

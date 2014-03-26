@@ -46,11 +46,11 @@ If \code{by} or each of \code{by.x} and \code{by.y} list a single dimension
 name, the indicated attributes will be lexicographically ordered as categorical
 variables and SciDB will redimension each array along new coordinate systems
 defined by the attributes, and then those redimensioned arrays will be joined.
-This method presently limits joins along attributes to a single attribute from
+This method limits joins along attributes to a single attribute from
 each array. The output array will contain additional columns showing the
 attribute factor levels used to join the arrays.
 
-This method is presently limited to SQL-like `natural joins`, a special
+This method is limited to SQL-like `natural joins`, a special
 case of inner joins corresponding to the \code{all=FALSE} case in
 the standard R \code{merge} function. A future version of this package
 will include additional join cases.

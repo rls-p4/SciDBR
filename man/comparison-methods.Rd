@@ -44,7 +44,7 @@ SciDB arrays.
   \item{y}{A scalar value.}
 }
 \details{
-The comparisons outlined here are presently limited to scalars. A future
+The comparisons outlined here are limited to scalars. A future
 version will include element-wise comparison between arrays. For now,
 use the \code{bind} and \code{merge} functions to manually perform
 element-wise comparisons.
