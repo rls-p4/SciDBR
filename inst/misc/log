@@ -1,3 +1,15 @@
+commit 7a8e0853c2f9c6c9093416e1476f2bd46e5f24e2
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Mar 26 00:04:39 2014 -0400
+
+    Fixed bug with sparse arrays and negative exponents
+
+commit 5f2f582f4406af90dff6c98cdc4a6b1d0537a132
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Mar 25 23:45:38 2014 -0400
+
+    Added show_github_log utility function
+
 commit cc387696336d79c21458416ca111e4a5bfee66b1
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue Mar 25 23:41:34 2014 -0400
