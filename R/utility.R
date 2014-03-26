@@ -929,3 +929,13 @@ scidbremove.glm_scidb = function(x, error=warning, async=FALSE, force=FALSE, war
 {
   .traverse.glm_scidb(x, scidbremove, error, async, force, warn, recursive)
 }
+
+# Show the repository log (not in namespace)
+show_github_log()
+{
+  log = system.file("misc/log",package="scidb")
+  if(file.exists(log))
+  {
+    file.show(log)
+  }
+}
