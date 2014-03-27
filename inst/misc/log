@@ -1,3 +1,15 @@
+commit 079ec9b5e48613cb328b85015f62e900c0c81a9a
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 27 11:58:56 2014 -0400
+
+    Work-around for schema bug in spgemm
+
+commit b633f65ba0acc6c43921188e3bbf4dd36b191322
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 27 11:45:52 2014 -0400
+
+    Fixed a bug in rename
+
 commit 2c15a1780fae89f18facad8d5c65d5dde2bfb3f3
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Thu Mar 27 11:29:00 2014 -0400
