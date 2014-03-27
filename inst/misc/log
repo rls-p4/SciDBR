@@ -1,3 +1,9 @@
+commit 2c15a1780fae89f18facad8d5c65d5dde2bfb3f3
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 27 11:29:00 2014 -0400
+
+    Fixed a bug in rename
+
 commit f211328dc2d697c21e29036c33486d9caff621ca
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Thu Mar 27 08:55:24 2014 -0400

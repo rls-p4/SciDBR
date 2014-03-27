@@ -161,6 +161,12 @@ scidbmultiply = function(e1,e2)
     if(GEMM.BUG) query = sprintf("sg(gemm(%s, %s, %s),1,-1)",op1,op2,op3)
   }
   ans = .scidbeval(query,gc=TRUE,eval=eval,depend=list(e1,e2))
+# Some SciDB array operators produce invalid-named output. Here is a fix:
+  if(length(unique(dimensions(ans))) != length(dimensions(ans)))
+  {
+    new_dimension_names = make.unique_(c(dimensions(ans),ans@attributes),dimensions(ans))
+    ans = dimension_rename(ans, new=new_dimension_names)
+  }
   ans
 }
 

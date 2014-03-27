@@ -98,8 +98,8 @@ dimension_rename = function(x, old, `new`, `eval`=FALSE)
     old = which(dnames %in% old)
   }
   idx = old
+  if(length(idx)!=length(new)) stop("Invalid old dimension name specified")
   dnames[idx] = `new`
-  if(length(idx)!=1) stop("Invalid old dimension name specified")
   query = sprintf("cast(%s, %s%s)", x@name, build_attr_schema(x),
              build_dim_schema(x, newnames=dnames))
   .scidbeval(query,eval,depend=list(x))
