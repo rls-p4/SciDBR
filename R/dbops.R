@@ -63,7 +63,7 @@ rename = function(A, name=A@name, gc)
   if(!(inherits(A,"scidb") || inherits(A,"scidbdf"))) stop("`A` must be a scidb object.")
   if(missing(gc)) gc = FALSE
   query = sprintf("rename(%s,%s)",A@name, name)
-  .scidbeval(query,eval=TRUE,gc=gc)
+  .scidbeval(query,eval=FALSE,gc=gc)
 }
 
 unpack_scidb = function(x, `eval`=FALSE)
