@@ -63,9 +63,9 @@ if(nchar(host)>0)
   a = as.scidb(Matrix::sparseMatrix(
                sample(10,100,replace=TRUE),sample(10,100,replace=TRUE),x=runif(100)))
   b = build(pi,c(10,10),names=c("a","b","c"),chunksize=c(3,2))
-  check(sum(a*b - a[]*b[]), 0)
-  check(sum(a+b - a[]+b[]), 0)
-  check(sum(a+2 - a[]+2), 0)
+  check(sum((a*b)[] - a[]*b[]), 0)
+  check(sum((a+b)[] - (a[]+b[])), 0)
+  check(sum((a+2)[] - (a[]+2)), 0)
   a*apply(a,2,mean)
   apply(a,2,mean)*a
 
