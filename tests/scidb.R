@@ -89,6 +89,9 @@ if(nchar(host)>0)
   Z = as.scidb(S)
   check(count(Z), Matrix::nnzero(S))
 
+# Check that image does not fail
+  image(Z,plot=FALSE)
+
 # spgemm
   got = length(grep("spgemm",scidbls(type="operators")))>0
   if(got)

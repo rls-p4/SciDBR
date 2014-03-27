@@ -374,7 +374,13 @@ function(x, grid=c(500,500), op=sprintf("sum(%s)", .get_attribute(x)), na=0, ...
 {
   if(length(dim(x))!=2) stop("Sorry, array must be two-dimensional")
   if(length(grid)!=2) stop("The grid parameter must contain two values")
-  blocks = as.numeric(scidb_coordinate_length(x))
+  el = list(...)
+  if("plot" %in% names(el))
+  {
+    plot = as.logical(el$plot)
+  }
+  else plot=TRUE
+  blocks = as.numeric(scidb_coordinate_bounds(x)$length)
   blocks = blocks/grid
   if(any(blocks<1)) blocks[which(blocks<1)] = 1
   query = sprintf("regrid(project(%s,%s),%.0f,%.0f,%s)",x@name,.get_attribute(x),blocks[1],blocks[2],op)
@@ -384,6 +390,7 @@ function(x, grid=c(500,500), op=sprintf("sum(%s)", .get_attribute(x)), na=0, ...
   n = max(A[,2]) + 1
   B = matrix(0,m,n)
   B[A[,1] + A[,2]*m + 1] = A[,3]
+  if(!plot) return (B)
   xlbl=(1:ncol(B))*blocks[2]
   xat=seq(from=0,to=1,length.out=ncol(B))
   ylbl=(nrow(B):1)*blocks[1]

@@ -1,3 +1,9 @@
+commit 82d4c41411bbaa3407a2632b633193af2466540f
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Mar 26 00:05:36 2014 -0400
+
+    Fixed bug with sparse arrays and negative exponents
+
 commit 7a8e0853c2f9c6c9093416e1476f2bd46e5f24e2
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Wed Mar 26 00:04:39 2014 -0400
