@@ -1,3 +1,15 @@
+commit cb9d0a0b35cb458377dfe19bc9e19dcd9c96f27c
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 27 12:20:38 2014 -0400
+
+    Work-around for schema bug in spgemm
+
+commit f938a9dd3de95ee8c0e78222da3394dce0887574
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 27 11:59:14 2014 -0400
+
+    Work-around for schema bug in spgemm
+
 commit 079ec9b5e48613cb328b85015f62e900c0c81a9a
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Thu Mar 27 11:58:56 2014 -0400
