@@ -167,9 +167,13 @@
       } else
       {
         k = sum(msk.y[1:j])
-        d = build_dim_schema(x,I=idx.x[k],newnames=dimensions(y)[j],bracket=FALSE)
+        if(k>length(idx.x))
+          d = build_dim_schema(y,I=j,bracket=FALSE)
+        else
+          d = build_dim_schema(x,I=idx.x[k],newnames=dimensions(y)[j],bracket=FALSE)
       }
     })
+  newds = newds[!unlist(lapply(newds,is.null))]
   newds = sprintf("[%s]",paste(newds,collapse=","))
   reschema = sprintf("%s%s", build_attr_schema(y),newds)
   castschema = sprintf("%s%s",newas,newds)
@@ -177,6 +181,9 @@
 
 # Join on dimensions.
   query = sprintf("cross_join(%s as __X, %s as __Y", xname, z@name)
+  k = min(length(by.x),length(by.y))
+  by.x = by.x[1:k]
+  by.y = by.y[1:k]
   cterms = unique(paste(c("__X","__Y"), as.vector(rbind(by.x,by.y)), sep="."))
   cterms = paste(cterms,collapse=",")
   query  = paste(query,",",cterms,")",sep="")

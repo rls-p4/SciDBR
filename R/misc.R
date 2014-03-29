@@ -108,20 +108,16 @@ all.equal.scidb = function ( target, current , ...)
   {
     return (FALSE)
   }
-  new_a1_attributes = sprintf( "a_%d", c(1:length(array1@attributes)))
-  new_a2_attributes = sprintf( "b_%d", c(1:length(array2@attributes)))
-  for ( i in 1:length(array1@attributes))
-  {
-    array1 = attribute_rename(array1, array1@attributes[i], new_a1_attributes[i])
-    array2 = attribute_rename(array2, array2@attributes[i], new_a2_attributes[i])
-  }
-  join = merge(array1, array2)
-  jcount = tryCatch(count(join), error=function(e) {-1})
+  array1 = attribute_rename(array1, new=sprintf("a_%s",scidb_attributes(array1)))
+  array2 = attribute_rename(array2, new=sprintf("b_%s",scidb_attributes(array2)))
+
+  join = merge(array1, array2, by.x=dimensions(array1), by.y=dimensions(array2), all=TRUE)
+  jcount = tryCatch(count(join), error=function(e) {return(FALSE)})
   if ( jcount != a1count)
   {
     return (FALSE)
   }
-  filter_expr = paste( sprintf("%s <> %s", new_a1_attributes, new_a2_attributes), collapse = " or ")
+  filter_expr = paste( sprintf("%s <> %s", scidb_attributes(array1),scidb_attributes(array2)), collapse = " or ")
   jcount = count (subset(join,filter_expr))
   if ( jcount != 0)
   {
