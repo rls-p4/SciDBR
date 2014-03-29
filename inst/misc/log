@@ -1,3 +1,15 @@
+commit 3710561e5f57b7be125c3830c943036caa72d680
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sat Mar 29 09:51:35 2014 -0400
+
+    Fixed a bug in the cross_join merge case; improved all.equal
+
+commit 8efed3c0907bdd798ce9de12f7383a1149e92de6
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 27 12:20:53 2014 -0400
+
+    Work-around for schema bug in spgemm
+
 commit cb9d0a0b35cb458377dfe19bc9e19dcd9c96f27c
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Thu Mar 27 12:20:38 2014 -0400
