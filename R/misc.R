@@ -111,7 +111,7 @@ all.equal.scidb = function ( target, current , ...)
   array1 = attribute_rename(array1, new=sprintf("a_%s",scidb_attributes(array1)))
   array2 = attribute_rename(array2, new=sprintf("b_%s",scidb_attributes(array2)))
 
-  join = merge(array1, array2, by.x=dimensions(array1), by.y=dimensions(array2), all=TRUE)
+  join = merge(array1, array2, by.x=dimensions(array1), by.y=dimensions(array2))
   jcount = tryCatch(count(join), error=function(e) {return(FALSE)})
   if ( jcount != a1count)
   {
