@@ -1,3 +1,15 @@
+commit 8099b427296d58402c2ad9dc280836ffd7a2757e
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sat Mar 29 19:31:16 2014 -0400
+
+    Added $ operator as shorthand for project to n-d arrays. Why not?
+
+commit 0e8a8e4770e36bd6cbd5a041cdd3b4a226cb2bb4
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sat Mar 29 10:06:19 2014 -0400
+
+    removed full outer join from all.equal (more efficient to use count)
+
 commit 369cc91ffb0dbe41080987958d0616fcc9378818
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Sat Mar 29 10:06:04 2014 -0400
