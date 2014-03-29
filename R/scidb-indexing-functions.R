@@ -49,6 +49,12 @@ between = function(a,b)
   function() list(a,b)
 }
 
+`$.scidb` = function(x, ...)
+{
+  M = match.call()
+  a = as.character(M[3])
+  project(x, a)
+}
 
 # dimfilter: The workhorse array subsetting function
 # INPUT

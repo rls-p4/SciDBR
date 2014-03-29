@@ -81,6 +81,7 @@ S3method("cbind",scidb)
 S3method("solve",scidb)
 S3method("all.equal",scidb)
 S3method("quantile",scidb)
+S3method("$",scidb)
 
 S3method("Ops",scidbdf)
 S3method("[",scidbdf)
