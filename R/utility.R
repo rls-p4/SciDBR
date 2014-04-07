@@ -150,9 +150,12 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 # Use the query ID from a query as a unique ID for automated
 # array name generation.
   x = scidbquery(query="setopt('precision','16')",release=1,resp=TRUE)
-  id = strsplit(x$response, split="\\r\\n")[[1]]
-  id = id[[length(id)]]
-  assign("uid",id,envir=.scidbenv)
+  if(is.null(.scidbenv$uid))
+  {
+    id = strsplit(x$response, split="\\r\\n")[[1]]
+    id = id[[length(id)]]
+    assign("uid",id,envir=.scidbenv)
+  }
 # Try to load the dense_linear_algebra library
   tryCatch(
     scidbquery(query="load_library('dense_linear_algebra')",
