@@ -934,7 +934,7 @@ scidbremove.glm_scidb = function(x, error=warning, async=FALSE, force=FALSE, war
 }
 
 # Show the repository log (not in namespace)
-show_github_log = function()
+show_commit_log = function()
 {
   log = system.file("misc/log",package="scidb")
   if(file.exists(log))
