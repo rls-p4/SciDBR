@@ -1,3 +1,27 @@
+commit b8a07a7ed470f60d853ae6070d5a3ccb1a3d05a2
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Apr 7 22:45:29 2014 -0400
+
+    Disabled ssl.verifyhost
+
+commit b3b2acdae4649331671b53d405d58d733c3b60bf
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Apr 7 20:57:39 2014 -0400
+
+    Renamed show_github_log to show_commit_log and promoted it to a function in the package namespace
+
+commit 1f1200b10edbec7b4cbc85039b27783ac85988c4
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Apr 7 19:49:08 2014 -0400
+
+    Fixed https://github.com/Paradigm4/SciDBR/issues/36
+
+commit 17c3947a3e1281d1cc02845bb374cc9343030834
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sat Mar 29 19:31:29 2014 -0400
+
+    Added $ operator as shorthand for project to n-d arrays. Why not?
+
 commit 8099b427296d58402c2ad9dc280836ffd7a2757e
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Sat Mar 29 19:31:16 2014 -0400
