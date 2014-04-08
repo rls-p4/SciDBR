@@ -1,3 +1,15 @@
+commit 1f1200b10edbec7b4cbc85039b27783ac85988c4
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Apr 7 19:49:08 2014 -0400
+
+    Fixed https://github.com/Paradigm4/SciDBR/issues/36
+
+commit 17c3947a3e1281d1cc02845bb374cc9343030834
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sat Mar 29 19:31:29 2014 -0400
+
+    Added $ operator as shorthand for project to n-d arrays. Why not?
+
 commit 8099b427296d58402c2ad9dc280836ffd7a2757e
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Sat Mar 29 19:31:16 2014 -0400
