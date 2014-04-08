@@ -281,12 +281,12 @@ GET = function(resource, args=list(), header=TRUE, async=FALSE, interrupt=FALSE)
   if(async)
   {
     getURI(url=uri,
-      .opts=list(header=header,'ssl.verifypeer'=0,
+      .opts=list(header=header,'ssl.verifyhost'=0,'ssl.verifypeer'=0,
                  noprogress=!interrupt, progressfunction=curl_signal_trap),
       async=TRUE)
     return(NULL)
   }
-  getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0,
+  getURI(url=uri, .opts=list(header=header,'ssl.verifyhost'=0,'ssl.verifypeer'=0,
                          noprogress=!interrupt, progressfunction=curl_signal_trap))
 }
 
@@ -523,7 +523,7 @@ df2scidb = function(X,
 
 # Post the input string to the SciDB http service
   uri = URI("upload_file",list(id=session))
-  tmp = postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=c(Expect=""),'ssl.verifypeer'=0))
+  tmp = postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=c(Expect=""),'ssl.verifyhost'=0,'ssl.verifypeer'=0))
   tmp = tmp[[1]]
   tmp = gsub("\r","",tmp)
   tmp = gsub("\n","",tmp)
@@ -574,7 +574,7 @@ df2scidb = function(X,
   bytes = writeBin(.Call("scidb_raw",as.vector(t(matrix(c(X@i + start[[1]],j + start[[2]], X@x),length(X@x)))),PACKAGE="scidb"),con=fn)
   url = URI("/upload_file",list(id=session))
   ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
-                 .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0))
+                 .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifyhost'=0,'ssl.verifypeer'=0))
   unlink(fn)
   ans = ans[[1]]
   ans = gsub("\r","",ans)

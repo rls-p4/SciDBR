@@ -323,7 +323,7 @@ materialize = function(x, drop=FALSE)
   sigint(SIG_TRP)
   BUF = tryCatch(
         {
-          getBinaryURL(r, .opts=list('ssl.verifypeer'=0, noprogress=FALSE, progressfunction=curl_signal_trap))
+          getBinaryURL(r, .opts=list('ssl.verifyhost'=0,'ssl.verifypeer'=0, noprogress=FALSE, progressfunction=curl_signal_trap))
         }, error=function(e)
         {
           GET("/release_session",list(id=sessionid))
