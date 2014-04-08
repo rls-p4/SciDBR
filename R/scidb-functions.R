@@ -275,7 +275,7 @@ as.scidb = function(X,
   bytes = writeBin(.Call("scidb_raw",as.vector(t(X)),PACKAGE="scidb"),con=fn)
   url = URI("upload_file",list(id=session))
   ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
-           .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0,'ssl.verifyhost'=0))
+           .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0,'ssl.verifyhost'=as.integer(options("scidb.verifyhost"))))
   unlink(fn)
   ans = ans[[1]]
   ans = gsub("\r","",ans)
