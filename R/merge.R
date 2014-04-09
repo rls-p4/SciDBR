@@ -73,7 +73,10 @@
       length(`by`)==0 && is.null(by.x) && is.null(by.y))
   {
     if(scidbmerge) stop("SciDB merge not supported in this context")
-    query = sprintf("cross_join(%s, %s)",xname,yname)
+# New attribute schema for y that won't conflict with x:
+    newas = build_attr_schema(y,newnames=make.unique_(x@attributes,y@attributes))
+    y = cast(y,sprintf("%s%s",newas,build_dim_schema(y)))
+    query = sprintf("cross_join(%s, %s)",xname,y@name)
     return(.scidbeval(query,eval,depend=list(x,y)))
   }
 
