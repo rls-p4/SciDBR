@@ -108,8 +108,15 @@ dimnames.scidb = function(x)
   value = lapply(1:length(value), function(j)
     {
       v = value[[j]]
-      if(is.scidb(v) || is.scidbdf(v) || is.null(v))
+      if(is.null(v)) return(v)
+      if(is.scidb(v) || is.scidbdf(v))
       {
+        check = scidb_coordinate_start(x)[j] == scidb_coordinate_start(v)[1] &&
+                scidb_coordinate_chunksize(x)[j] == scidb_coordinate_chunksize(v)[1]
+        if(!check)
+        {
+          v = reshape_scidb(v,shape=dim(v),start=as.numeric(scidb_coordinate_start(x)[j]),chunks=as.numeric(scidb_coordinate_chunksize(x)[j]))
+        }
         return(v);
       }
       as.scidb(data.frame(label=v)[,1,drop=FALSE],

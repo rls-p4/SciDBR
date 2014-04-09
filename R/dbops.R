@@ -36,6 +36,7 @@ reshape_scidb = function(data, schema, shape, dimnames, start, chunks, `eval`=FA
 {
   if(!missing(schema))
   {
+    if(is.scidb(schema)||is.scidbdf(schema)) schema=schema(schema)
     query = sprintf("reshape(%s,%s)",data@name,schema)
     return(.scidbeval(query,eval,depend=list(data)))
   }
