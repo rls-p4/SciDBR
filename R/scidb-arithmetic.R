@@ -340,19 +340,25 @@ scidbmultiply = function(e1,e2)
   stop("Yikes! Not implemented yet...")
 }
 
-tsvd = function(x,nu,tol=0.0001,maxit=20)
+tsvd = function(x,nu,tol=0.0001,maxit=20,tx)
 {
   m = ceiling(1e6/nrow(x))
   n = ceiling(1e6/ncol(x))
-  schema = sprintf("[%s=0:%s,%s,0,%s=0:%s,%s,0]",
-                     dimensions(x)[1], noE(nrow(x)-1), noE(m),
-                     dimensions(x)[2], noE(ncol(x)-1), noE(ncol(x)))
-  tschema = sprintf("[%s=0:%s,%s,0,%s=0:%s,%s,0]",
-                     dimensions(x)[2], noE(ncol(x)-1), noE(n),
-                     dimensions(x)[1], noE(nrow(x)-1), noE(nrow(x)))
-  schema = sprintf("%s%s",build_attr_schema(x), schema)
-  tschema = sprintf("%s%s",build_attr_schema(x), tschema)
-  query  = sprintf("tsvd(redimension(unpack(%s,row),%s), redimension(unpack(transpose(%s),row),%s), %.0f, %f, %.0f)", x@name, schema, x@name, tschema, nu,tol,maxit)
+  if(!missing(tx))
+  {
+    query  = sprintf("tsvd(%s, %s, %.0f, %f, %.0f)", x@name, tx@name, nu,tol,maxit)
+  } else
+  {
+    schema = sprintf("[%s=0:%s,%s,0,%s=0:%s,%s,0]",
+                       dimensions(x)[1], noE(nrow(x)-1), noE(m),
+                       dimensions(x)[2], noE(ncol(x)-1), noE(ncol(x)))
+    tschema = sprintf("[%s=0:%s,%s,0,%s=0:%s,%s,0]",
+                       dimensions(x)[2], noE(ncol(x)-1), noE(n),
+                       dimensions(x)[1], noE(nrow(x)-1), noE(nrow(x)))
+    schema = sprintf("%s%s",build_attr_schema(x), schema)
+    tschema = sprintf("%s%s",build_attr_schema(x), tschema)
+    query  = sprintf("tsvd(redimension(unpack(%s,row),%s), redimension(unpack(transpose(%s),row),%s), %.0f, %f, %.0f)", x@name, schema, x@name, tschema, nu,tol,maxit)
+  }
   narray = .scidbeval(query, eval=TRUE, gc=TRUE)
   ans = list(u=slice(narray, "matrix", 0,eval=FALSE)[,between(0,nu-1)],
              d=slice(narray, "matrix", 1,eval=FALSE)[between(0,nu-1),between(0,nu-1)],
