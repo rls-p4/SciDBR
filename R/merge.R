@@ -80,7 +80,11 @@
     chunkx   = scidb_coordinate_chunksize(x)
     chunk_elements = prod(c(as.numeric(chunky),as.numeric(chunkx)))
 # Only compute these counts if we need to
-    if(chunk_elements>1e6 && prod(dim(x))==count(x) && prod(dim(y))==count(y))
+    pdx = prod(dim(x))
+    if(is.scidbdf(x)) pdx = dim(x)[1]
+    pdy = prod(dim(y))
+    if(is.scidbdf(y)) pdy = dim(y)[1]
+    if(chunk_elements>1e6 && pdx==count(x) && pdy==count(y))
     {
       NC = length(chunkx) + length(chunky)
       NS = 1e6^(1/NC)
