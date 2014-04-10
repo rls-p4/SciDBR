@@ -1,3 +1,69 @@
+commit f54757520dc16227babfea142f7e2434729165da
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 9 23:35:43 2014 -0400
+
+    Added new tsvd option (low-level)
+
+commit cee26e39c9c6c38eccaa959914b8cfae0bf82459
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 9 23:23:48 2014 -0400
+
+    More merge fixes
+
+commit 730edb0be56e381dd1fb41887947bd68f7b0b9fb
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 9 22:56:35 2014 -0400
+
+    Experimental redim flag on bracket function for scidb objects
+
+commit ba96b00d04f26e7d3402e5a6eb7787f908cbe8ad
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 9 22:48:56 2014 -0400
+
+    merge cross case enforces sane chunk sizes in dense case
+
+commit a6493a6812408ba78c2e3723d05ca2e22cc822d8
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 9 22:09:20 2014 -0400
+
+    Generic head problem
+
+commit ac09cf73e4453a0f72cdb63d0c8dd886b365a46e
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 9 19:53:03 2014 -0400
+
+    More bugs in the merge full cross case
+
+commit a6d494e90d5e84a9091010927a7444bfa7429677
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 9 19:01:29 2014 -0400
+
+    Fixed attribute name conflict in merge cross case
+
+commit 200c2b2ca9dfa8461758ed4f7676cf7f6803362e
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 9 18:03:04 2014 -0400
+
+    Fixed a damn bug in build_attr_schema
+
+commit b977f2992cc937777faccf6d6b2023809e074dfd
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 9 08:55:03 2014 -0400
+
+    Improved dimname assignment (added reshape, but I'm wary about overuse of reshape...)
+
+commit 848ba2713ad66d3928189e7c5ce181f87a42d264
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Apr 7 22:58:14 2014 -0400
+
+    New package option: scidb.verifyhost. Still need to doc this
+
+commit ccce0005365878bf5cb01f9969d2cef766f56012
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Apr 7 22:46:54 2014 -0400
+
+    We disabled ssl.verifyhost because Amazon EC2 hostnames usually don't match their DNS host names, preventing us from talking on encrypted session to EC2 (where we need them most).
+
 commit b8a07a7ed470f60d853ae6070d5a3ccb1a3d05a2
 Author: bwlewis <blewis@illposed.net>
 Date:   Mon Apr 7 22:45:29 2014 -0400
