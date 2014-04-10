@@ -224,3 +224,4 @@ setMethod("%==%",signature(x="scidbdf", y="ANY"),
   },
   valueClass="scidbdf"
 )
+setGeneric("head")
