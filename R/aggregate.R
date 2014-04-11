@@ -161,7 +161,6 @@
     {
 # Use index_lookup to factorize non-integer indices, creating new enumerated
 # attributes to sort by. It's probably not a great idea to have too many.
-#      unpack = TRUE
       idx = which(nonint)
       oldatr = x@attributes
       for(j in idx)
@@ -183,43 +182,15 @@
     n = x@attributes[a]
 # XXX EXPERIMENTAL
 # We estimate rational chunk sizes here.
-# Step 1. Get approximate counts of the attributes we're aggregating along.
     app = paste(paste("ApproxDC(",n,")",sep=""),collapse=",")
     aq = sprintf("aggregate(project(%s,%s),%s)",x@name,paste(n,collapse=","),app)
     acounts = iquery(aq,return=TRUE,n=Inf)  # acounts[2],acounts[3],...
-
-# Step 2. Figure chunk sizes
-    chunk1 = as.numeric(scidb_coordinate_chunksize(x))
-    chunk2 = acounts[-1]  # Place holder
-    uniform_chunk = ceiling(1e6^(1/(length(chunk1) + length(chunk2))))
-    chunk1_small = chunk1<uniform_chunk
-    chunk2_small = chunk2<uniform_chunk
-    nsmall = sum(c(chunk1_small, chunk2_small))
-    if(nsmall<1)
-    {
-# Use uniform chunk sizes, boring
-      redim = paste(paste(n,"=0:",.scidb_DIM_MAX,",",noE(uniform_chunk),",0",sep=""), collapse=",")
-      newchunk1 = rep(noE,uniform_chunk,length(chunk1))
-      D = paste(build_dim_schema(x,bracket=FALSE,newchunk=newchunk1),redim,sep=",")
-    } else
-    {
-# Account for smallish chunks
-      chunk_p = prod(c(chunk1[chunk1_small], chunk2[chunk2_small]))
-      notsmall = length(chunk1) + length(chunk2) - nsmall
-      new_unif = ceiling((1e6/chunk_p)^(1/notsmall))
-      newchunk1 = chunk1
-      newchunk1[!chunk1_small] = new_unif
-      newchunk2 = chunk2
-      newchunk2[!chunk2_small] = new_unif
-      newchunk1 = noE(newchunk1)
-      newchunk2 = noE(newchunk2)
-      redim = paste(paste(n,"=0:",.scidb_DIM_MAX,",",newchunk2,",0",sep=""), collapse=",")
-      D = paste(build_dim_schema(x,bracket=FALSE,newchunk=newchunk1),redim,sep=",")
-    }
-
+    chunka = acounts[-1]
+    dima = paste(paste(n,"=0:",.scidb_DIM_MAX,",",noE(chunka),",0",sep=""), collapse=",")
+    D = paste(build_dim_schema(x,bracket=FALSE),dima,sep=",")
     S = build_attr_schema(x, I=!a)
     D = sprintf("[%s]",D)
-    query = sprintf("redimension(substitute(%s,build(<v:int64>[_i=0:0,1,0],-1),%s),%s%s)",x@name,paste(n,collapse=","),S,D)
+    query = sprintf("redimension(%s,%s%s)",x@name,S,D)
   }
   along = paste(b,collapse=",")
 
