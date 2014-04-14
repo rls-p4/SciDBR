@@ -37,9 +37,9 @@ SUM\tab m = x + b\tab n = a + c\tab \cr
 The \code{x} input value specifies the name of the SciDB array attribute that
 indicates the number of 'yes' events in both classifications.
 The \code{m} input value specifies the name of the SciDB array attribute that
-indicates the marginal sum of the first column (sum of both classification 'yes' values).
+indicates the marginal sum of the first column.
 The \code{n} input value specifies the name of the SciDB array attribute that
-indicates the marginal sum of the second column (sum of both classification 'no' values).
+indicates the marginal sum of the second column.
 The \code{k} input value specifies the name of the SciDB array attribute that
 indicates the marginal sum of the first row.
 }
