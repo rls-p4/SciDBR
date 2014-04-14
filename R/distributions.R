@@ -20,3 +20,17 @@ setMethod("qhyper", signature(x="scidb_or_scidbdf"),
     query = sprintf("ihygecdf(%s,%s,%s,%s)",p,m,n,k)
     bind(x, new, query, `eval`=eval)
   })
+
+# Input
+# a: SciDB array (scidb or scidbdf object)
+# x: YES/YES count
+# m,n,k: Marginal counts (see doc)
+# alternative: {"two.sided", "greater", "less"}
+scidb_fisher.test = function(a,x="x",m="m",n="n",k="k",alternative="two.sided", `eval`=FALSE)
+{
+  pvalname = make.unique_(a@attributes, "pval")
+  oddsname = make.unique_(a@attributes, "estimate")
+  query = sprintf("apply(%s, %s, fisher_test_p_value(%s,%s,%s,%s,'%s'), %s, fisher_test_odds_ratio(%s,%s,%s,%s))",
+           a@name, pvalname, x,m,n,k,alternative, oddsname,x,m,n,k)
+  .scidbeval(query,depend=list(a),`eval`=eval,gc=TRUE)
+}
