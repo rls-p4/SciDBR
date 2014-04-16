@@ -32,8 +32,25 @@ this project here:
 
 https://github.com/Paradigm4/SciDBR/wiki/_pages
 
+This project also has a pretty web page on Github here:
+
+https://Paradigm4.github.io/SciDBR
+
 New features
 ===
+
+## Database-related updates
+
+* Support for SciDB 14.3, untested support for older SciDB releases
+* Dropping arrays from other R sessions requires a non-default option facilitating multiple-user settings.
+* Queries can be canceled with R user interrupts now (for example with CTRL + C or ESC).
+
+## More functions
+
+* Support for Paradigm4 glm and a basic in-database model matrix builder
+* Support for Paradigm4 truncated SVD routine
+* Added hist, quantile, all.equal, antijoin, c (SciDB concat-like) function and many others
+
 
 ## Better handling of missing values
 
