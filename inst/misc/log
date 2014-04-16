@@ -1,3 +1,15 @@
+commit 64acd2e87e9dc1e6046c488d39be2612223485c7
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 11:19:14 2014 -0400
+
+    Updated README
+
+commit 89bf0bc77c73a8931d96f1f0cc1453bac59e9f25
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 11:14:01 2014 -0400
+
+    updated log
+
 commit f74215dde7e93d6c56e5cabb5afa4e9cc0a1fdf9
 Merge: ac7fa99 0746e04
 Author: bwlewis <blewis@illposed.net>
