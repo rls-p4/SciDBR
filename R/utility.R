@@ -760,10 +760,12 @@ noE = function(w) sapply(w,
   })
 
 # If a scidb object has the "sparse" attribute set, return that. Otherwise
-# interrogate the backing array to determine if it's sparse or not.
-is.sparse = function(x)
+# interrogate the backing array to determine if it's sparse or not.  Set
+# count=FALSE to skip the count and return TRUE if the attribute is not set.
+is.sparse = function(x, count=TRUE)
 {
   ans = attr(x,"sparse")
+  if(is.null(ans) && !count) return(TRUE)
   if(is.null(ans))
   {
     return(count(x) < prod(dim(x)))
