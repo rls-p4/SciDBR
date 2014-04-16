@@ -214,7 +214,7 @@ model_scidb = function(formula, data, factors=NULL)
   if(i==1)
   {
 # Add an intercept term
-    iname = scidb:::make.unique_(data@attributes,"intercept")
+    iname = make.unique_(data@attributes,"intercept")
     data = bind(data, iname, "double(1)")
   }
 # If the response is not present in the data, set to NA
@@ -224,7 +224,7 @@ model_scidb = function(formula, data, factors=NULL)
   {
     response = project(data,rownames(f)[r])
   }
-  types = scidb:::scidb_types(data)
+  types = scidb_types(data)
   a = scidb_attributes(data)
   # factors (see input arguments) will contain a list of factor variables
   vars = NULL # vars will contain a list of continuous variables
@@ -264,7 +264,7 @@ model_scidb = function(formula, data, factors=NULL)
     if(types[j]!="double")
     {
 # Coerce to double, preserving name
-      d = scidb:::make.unique_(a, sprintf("%s_double",a[j]))
+      d = make.unique_(a, sprintf("%s_double",a[j]))
       expr = sprintf("double(%s)", a[j])
       data = bind(data, d, expr)
       data = attribute_rename(data, old=c(d,a[j]),new=c(a[j],d))
@@ -274,7 +274,7 @@ model_scidb = function(formula, data, factors=NULL)
 
   varsstr = paste(vars, collapse=",")
   query = sprintf("collate(project(%s,%s))",data@name,varsstr)
-  M = scidb:::.scidbeval(query,gc=TRUE,eval=TRUE)
+  M = .scidbeval(query,gc=TRUE,eval=TRUE)
 
   if(length(factors)<1)
   {
@@ -293,8 +293,8 @@ model_scidb = function(formula, data, factors=NULL)
   newend = c(nrow(M)-1, newdim - 1)
   newchunk = c(ceiling(1e6/newdim),newdim)
 
-  schema = sprintf("%s%s",scidb:::build_attr_schema(M),
-    scidb:::build_dim_schema(M,newstart=c(0,0),newend=newend,newchunk=newchunk))
+  schema = sprintf("%s%s",build_attr_schema(M),
+    build_dim_schema(M,newstart=c(0,0),newend=newend,newchunk=newchunk))
   M = reshape(M, shape=c(nrow(M), ncol(M)))  # Reset origin without moving data
   M = redimension(M,schema=schema)           # Redimension to get extra columns
 
@@ -303,13 +303,13 @@ model_scidb = function(formula, data, factors=NULL)
   varnames = vars
   for(j in 1:length(factors))
   {
-    dn = scidb:::make.unique_(dimensions(data), "i")
+    dn = make.unique_(dimensions(data), "i")
     n  = names(factors)[j]
     idx = sprintf("%s_index",n)
-    idx = scidb:::make.unique_(data@attributes, idx)
+    idx = make.unique_(data@attributes, idx)
     y = project(index_lookup(data, factors[[j]], n, idx), idx)
-    one = scidb:::make.unique_(y@attributes, "val")
-    column = scidb:::make.unique_(y@attributes, "j")
+    one = make.unique_(y@attributes, "val")
+    column = make.unique_(y@attributes, "j")
     N = sprintf("%s%s",names(factors)[j],iquery(factors[[j]],return=TRUE)[,2])
     if(i>0)
     {
@@ -326,8 +326,8 @@ model_scidb = function(formula, data, factors=NULL)
       col = col + length(N)
     }
     schema = sprintf("%s%s",
-             scidb:::build_attr_schema(y,newnames=c("index","val","j")),
-             scidb:::build_dim_schema(y,newnames="i"))
+             build_attr_schema(y,newnames=c("index","val","j")),
+             build_dim_schema(y,newnames="i"))
     y = redimension(reshape(cast(y,schema),shape=nrow(y)),M)
 # ... merge into M
     M = merge(M,y,merge=TRUE) # eval this?
