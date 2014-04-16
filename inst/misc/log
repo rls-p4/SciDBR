@@ -1,3 +1,39 @@
+commit b7308ade9e60e28f42d0f505ccea8e94fb1315f1
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 08:51:28 2014 -0400
+
+    Removed dist function from namespace pending performance improvements
+
+commit 6b22ae9f5ddd574fadd4def3f5c4cf047927b9bd
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Apr 14 10:14:48 2014 -0400
+
+    typos
+
+commit 7a94377347ad1211ac21cf8abcf2164957ef03dc
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Apr 14 09:48:04 2014 -0400
+
+    Added scidb_fisher.test
+
+commit 5be619612a2b7f455137f82c3146ce983b6814b3
+Author: bwlewis <blewis@illposed.net>
+Date:   Fri Apr 11 09:50:11 2014 -0400
+
+    More aggregate changes for performance
+
+commit 5e8c684fa6099241462164dcbd1ee90a160dad56
+Author: bwlewis <blewis@illposed.net>
+Date:   Thu Apr 10 08:55:09 2014 -0400
+
+    Added an experimental attempt to rationally pick chunk sizes in aggregate when aggregating by attributes. This needs improvement.
+
+commit 005ad22a43784f29a19bfb6e61c9fa1428fafd32
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 9 23:37:35 2014 -0400
+
+    log update
+
 commit f54757520dc16227babfea142f7e2434729165da
 Author: bwlewis <blewis@illposed.net>
 Date:   Wed Apr 9 23:35:43 2014 -0400
