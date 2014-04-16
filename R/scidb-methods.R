@@ -74,6 +74,9 @@ setMethod("unpack",signature(x="scidb"),unpack_scidb)
 setOldClass("reshape")
 setGeneric("reshape", function(data,...) stats::reshape(data,...))
 
+setOldClass("dist")
+setGeneric("dist")
+
 setOldClass("svd")
 setGeneric("svd")
 
@@ -406,6 +409,7 @@ setMethod("sweep", signature(x="scidb"), sweep_scidb)
 setMethod("apply", signature(X = "scidb"), apply_scidb)
 setMethod("unpack",signature(x="scidb"),unpack_scidb)
 setMethod("reshape", signature(data="scidb"), reshape_scidb)
+setMethod("dist", signature(x="scidb"), dist_scidb)
 setMethod("svd", signature(x="scidb"), svd_scidb)
 setMethod("glm.fit", signature(x="scidb",y="ANY",weights="MNSN"), glm.fit_scidb)
 
@@ -497,4 +501,9 @@ setMethod("abs",signature(x="scidb"),
   function(x)
   {
     fn_scidb(x, "abs")
+  })
+setMethod("sqrt",signature(x="scidb"),
+  function(x)
+  {
+    fn_scidb(x, "sqrt")
   })

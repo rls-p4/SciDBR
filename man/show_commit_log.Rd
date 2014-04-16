@@ -1,17 +1,14 @@
 \name{show_commit_log}
+\alias{show_commit_log}
 \title{
-Display the package change log
+Display the package software repository commit log
 }
 \description{
-Display the fine-grained code commit log
-for the currently installed version of the package.
+Display the package software repository commit log
 }
 \usage{
 show_commit_log()
 }
-\value{
-Prints the change log to standard output. Nothing is returned.
-}
 \author{
-B. W. Lewis<blewis@paradigm4.com>
+B. W. Lewis <blewis@paradigm4.com>
 }

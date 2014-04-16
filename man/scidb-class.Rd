@@ -20,6 +20,7 @@
 \alias{t,scidb-method}
 \alias{sin,scidb-method}
 \alias{abs,scidb-method}
+\alias{sqrt,scidb-method}
 \alias{cos,scidb-method}
 \alias{tan,scidb-method}
 \alias{asin,scidb-method}
@@ -99,6 +100,7 @@ Display a heatmap-like image of the 2-d scidb array reference object \code{x}.
     \item{sin}{\code{signature(x = "scidb")}: \code{sin(x)}
       Return an array with the sine of each element of the array \code{x}. The active attribute is used and should be numeric. The returned array contains a new attibute with "_sin" appended containing the result. Other trig functions (\code{cos, tan, asin, acos, atan}) act similarly.
     }
+    \item{abs}{\code{signature(x = "scidb")}: \code{cos(x)} See doc. for \code{sin}.}
     \item{abs}{\code{signature(x = "scidb")}: \code{cos(x)} See doc. for \code{sin}.}
     \item{cos}{\code{signature(x = "scidb")}: \code{cos(x)} See doc. for \code{sin}.}
     \item{tan}{\code{signature(x = "scidb")}: \code{tan(x)} See doc. for \code{sin}.}

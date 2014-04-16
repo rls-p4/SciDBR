@@ -3,12 +3,13 @@
 # maybe not quite as fully baked.
 
 # Limited distance function (Euclidean only)
-#dist.scidb(x)
-#{
-#  s = apply(x*x,1,sum)
-#  u = s %*% matrix(1, nrow=1, ncol=m)
-#  sqrt(abs(u + t(u) - 2 * x %*% t(x)))
-#}
+# The performance is amazingly horrible!!
+dist_scidb = function(x)
+{
+  s = apply(x*x,1,sum)
+  u = s %*% matrix(1, nrow=1, ncol=nrow(x))
+  sqrt(abs(u + t(u) - 2 * x %*% t(x)))
+}
 
 na.locf_scidb = function(object, along=dimensions(object)[1],`eval`=FALSE)
 {
