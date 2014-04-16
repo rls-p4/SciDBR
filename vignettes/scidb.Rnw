@@ -96,7 +96,7 @@ blewis@paradigm4.com}
 
 \thispagestyle{empty}
 
-\vbox{}
+%%\vbox{}
 %%\vspace{0.25\textheight}
 %%\begin{tikzpicture}[remember picture,overlay]
 %%\node[anchor=west,scale=2, inner sep=0pt, outer sep=0pt] (title) at (-1cm,0) 
@@ -124,7 +124,6 @@ blewis@paradigm4.com}
 \maketitle
 \tableofcontents
 
-\newpage
 \section{Introduction}
 
 SciDB is an open-source database that organizes data in $n$-dimensional arrays.
@@ -348,7 +347,7 @@ bulk data load utility as outlined in the SciDB documentation instead.
 > str(v)
 \end{Sinput}
 \begin{Soutput}
-SciDB expression:  R_array2ac96949ae401101070050967
+SciDB expression:  R_array2bb317c6889d1101074813220
 SciDB schema:  <val:double NULL DEFAULT null> [i=0:4,5,0,j=0:4,5,0]
 
 Attributes:
@@ -363,24 +362,24 @@ Dimensions:
 > crossprod( v[] )              # Compute t(v) %*% v using R
 \end{Sinput}
 \begin{Soutput}
-          [,1]      [,2]       [,3]       [,4]       [,5]
-[1,] 12.299727 -3.769699 -1.4969814 -5.9699867 -2.5572547
-[2,] -3.769699  1.928862 -1.2901277  2.1277546  0.7356010
-[3,] -1.496981 -1.290128  4.3571417  0.3573435 -0.1344038
-[4,] -5.969987  2.127755  0.3573435  7.4767952 -2.7608614
-[5,] -2.557255  0.735601 -0.1344038 -2.7608614  4.4991707
+          [,1]      [,2]      [,3]      [,4]      [,5]
+[1,]  9.532370 -7.472959  4.952529  3.736609  1.464429
+[2,] -7.472959  8.079816 -2.546614 -2.024801 -2.133998
+[3,]  4.952529 -2.546614  3.895251  2.868848  1.625864
+[4,]  3.736609 -2.024801  2.868848  2.218813  1.237344
+[5,]  1.464429 -2.133998  1.625864  1.237344  5.295838
 \end{Soutput}
 \begin{Sinput}
 > # Now compute using SciDB, and materialize the result to R:
 > crossprod(v)[]
 \end{Sinput}
 \begin{Soutput}
-          [,1]      [,2]       [,3]       [,4]       [,5]
-[1,] 12.299727 -3.769699 -1.4969814 -5.9699867 -2.5572547
-[2,] -3.769699  1.928862 -1.2901277  2.1277546  0.7356010
-[3,] -1.496981 -1.290128  4.3571417  0.3573435 -0.1344038
-[4,] -5.969987  2.127755  0.3573435  7.4767952 -2.7608614
-[5,] -2.557255  0.735601 -0.1344038 -2.7608614  4.4991707
+          [,1]      [,2]      [,3]      [,4]      [,5]
+[1,]  9.532370 -7.472959  4.952529  3.736609  1.464429
+[2,] -7.472959  8.079816 -2.546614 -2.024801 -2.133998
+[3,]  4.952529 -2.546614  3.895251  2.868848  1.625864
+[4,]  3.736609 -2.024801  2.868848  2.218813  1.237344
+[5,]  1.464429 -2.133998  1.625864  1.237344  5.295838
 \end{Soutput}
 \end{Schunk}
 
@@ -892,7 +891,7 @@ Here is an example:
 > C@name
 \end{Sinput}
 \begin{Soutput}
-[1] "R_array2ac91f98417f1101070050967"
+[1] "R_array2bb38c448db1101074813220"
 \end{Soutput}
 \begin{Sinput}
 > C@schema

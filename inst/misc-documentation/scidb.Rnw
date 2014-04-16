@@ -96,7 +96,7 @@ blewis@paradigm4.com}
 
 \thispagestyle{empty}
 
-\vbox{}
+%%\vbox{}
 %%\vspace{0.25\textheight}
 %%\begin{tikzpicture}[remember picture,overlay]
 %%\node[anchor=west,scale=2, inner sep=0pt, outer sep=0pt] (title) at (-1cm,0) 
@@ -124,7 +124,6 @@ blewis@paradigm4.com}
 \maketitle
 \tableofcontents
 
-\newpage
 \section{Introduction}
 
 SciDB is an open-source database that organizes data in $n$-dimensional arrays.
