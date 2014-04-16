@@ -347,7 +347,7 @@ bulk data load utility as outlined in the SciDB documentation instead.
 > str(v)
 \end{Sinput}
 \begin{Soutput}
-SciDB expression:  R_array2bb317c6889d1101074813220
+SciDB expression:  R_array2daf705d0f141101088968161
 SciDB schema:  <val:double NULL DEFAULT null> [i=0:4,5,0,j=0:4,5,0]
 
 Attributes:
@@ -362,24 +362,24 @@ Dimensions:
 > crossprod( v[] )              # Compute t(v) %*% v using R
 \end{Sinput}
 \begin{Soutput}
-          [,1]      [,2]      [,3]      [,4]      [,5]
-[1,]  9.532370 -7.472959  4.952529  3.736609  1.464429
-[2,] -7.472959  8.079816 -2.546614 -2.024801 -2.133998
-[3,]  4.952529 -2.546614  3.895251  2.868848  1.625864
-[4,]  3.736609 -2.024801  2.868848  2.218813  1.237344
-[5,]  1.464429 -2.133998  1.625864  1.237344  5.295838
+           [,1]       [,2]      [,3]      [,4]       [,5]
+[1,]  5.6415470 -0.5485588 -1.532228 -3.642843 -1.2289314
+[2,] -0.5485588  1.8833609 -1.321107  2.171887  0.4058398
+[3,] -1.5322275 -1.3211075  3.825912 -3.120297 -1.0790013
+[4,] -3.6428426  2.1718875 -3.120297  7.593978  3.3668064
+[5,] -1.2289314  0.4058398 -1.079001  3.366806  4.2484199
 \end{Soutput}
 \begin{Sinput}
 > # Now compute using SciDB, and materialize the result to R:
 > crossprod(v)[]
 \end{Sinput}
 \begin{Soutput}
-          [,1]      [,2]      [,3]      [,4]      [,5]
-[1,]  9.532370 -7.472959  4.952529  3.736609  1.464429
-[2,] -7.472959  8.079816 -2.546614 -2.024801 -2.133998
-[3,]  4.952529 -2.546614  3.895251  2.868848  1.625864
-[4,]  3.736609 -2.024801  2.868848  2.218813  1.237344
-[5,]  1.464429 -2.133998  1.625864  1.237344  5.295838
+           [,1]       [,2]      [,3]      [,4]       [,5]
+[1,]  5.6415470 -0.5485588 -1.532228 -3.642843 -1.2289314
+[2,] -0.5485588  1.8833609 -1.321107  2.171887  0.4058398
+[3,] -1.5322275 -1.3211075  3.825912 -3.120297 -1.0790013
+[4,] -3.6428426  2.1718875 -3.120297  7.593978  3.3668064
+[5,] -1.2289314  0.4058398 -1.079001  3.366806  4.2484199
 \end{Soutput}
 \end{Schunk}
 
@@ -891,7 +891,7 @@ Here is an example:
 > C@name
 \end{Sinput}
 \begin{Soutput}
-[1] "R_array2bb38c448db1101074813220"
+[1] "R_array2daf7bdb4f9a1101088968161"
 \end{Soutput}
 \begin{Sinput}
 > C@schema
@@ -957,27 +957,27 @@ they include their right-hand endpoint, but not their left one.
 
 \subsection{Last-value imputation}
 
-The \code{na.locf} function is a generic function for replacing each missing or
+The \verb+na.locf+ function is a generic function for replacing each missing or
 empty value with the most recent non-missing value prior to it.
 
-Unlike the usual \code{na.locf} function from the \code{zoo} package, the SciDB
-\code{na.locf} function fills in both missing (SciDB \code{null} values) and
+Unlike the usual \verb+na.locf+ function from the \verb+zoo+ package, the SciDB
+\verb+na.locf+ function fills in both missing (SciDB \verb+null+ values) and
 empty (SciDB sparse) values with the last non-missing and non-sparse value
 along the indicated dimension.
 
-Time series represented in SciDB are often sparse arrays. The \code{na.locf}
+Time series represented in SciDB are often sparse arrays. The \verb+na.locf+
 function defines a conveniet way to  fill in all missing values along the time
 coordinate axis down to the time resolution.
 
 Caution! The output array is a mostly dense, filled-in version of the input
 array. If the time resolution is very fine and the input array very sparse,
-then the output array can be huge. Consider using \code{regrid} first on
+then the output array can be huge. Consider using \verb+regrid+ first on
 very fine time scales to reduce their resolution.
 
-The default \code{na.locf} method in the \code{zoo} package unforunately
-overrides this function (it uses \code{ANY} in its method signature). If
-you need to use SciDB arrays and the \code{zoo} package, prefix SciDB's
-version with \code{scidb::na.locf(...)}.
+The default \verb+na.locf+ method in the \verb+zoo+ package unforunately
+overrides this function (it uses \verb+ANY+ in its method signature). If
+you need to use SciDB arrays and the \verb+zoo+ package, prefix SciDB's
+version with \verb+scidb::na.locf(...)+.
 
 
 
