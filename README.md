@@ -41,7 +41,7 @@ New features
 
 ## Database-related updates
 
-* Support for SciDB version 14.3--also supports for older SciDB releases, but not actively tested
+* Support for SciDB version 14.3--also supports older SciDB releases, but not actively tested
 * Dropping arrays from other R sessions requires a non-default option facilitating multiple-user settings.
 * Queries can be canceled with R user interrupts now (for example with CTRL + C or ESC).
 
