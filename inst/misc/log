@@ -1,3 +1,21 @@
+commit e535509d45ad978876840274bae731693310972a
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 10:33:05 2014 -0400
+
+    Improved labeled indexing to try to automatically handle index arrays with more than one dimension by just using the first one; also improved slice
+
+commit 01e375486495c8d5358cddd262fbb3531fce672a
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 09:05:53 2014 -0400
+
+    Added count argument to internal is.sparse function
+
+commit e5534806a6523be14c95715873234396e7e42d4b
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 08:51:50 2014 -0400
+
+    log record update
+
 commit b7308ade9e60e28f42d0f505ccea8e94fb1315f1
 Author: bwlewis <blewis@illposed.net>
 Date:   Wed Apr 16 08:51:28 2014 -0400
