@@ -161,7 +161,6 @@
     {
 # Use index_lookup to factorize non-integer indices, creating new enumerated
 # attributes to sort by. It's probably not a great idea to have too many.
-#      unpack = TRUE
       idx = which(nonint)
       oldatr = x@attributes
       for(j in idx)
@@ -181,14 +180,17 @@
 # Reset in case things changed above
     a = x@attributes %in% b
     n = x@attributes[a]
-# XXX XXX XXX
-# XXX What about chunk sizes? Also insert reasonable upper bound instead of *? XXX Take care of all these issues...
-# XXX XXX XXX
-    redim = paste(paste(n,"=0:",.scidb_DIM_MAX,",1000,0",sep=""), collapse=",")
-    D = paste(build_dim_schema(x,FALSE),redim,sep=",")
+# XXX EXPERIMENTAL
+# We estimate rational chunk sizes here.
+    app = paste(paste("ApproxDC(",n,")",sep=""),collapse=",")
+    aq = sprintf("aggregate(project(%s,%s),%s)",x@name,paste(n,collapse=","),app)
+    acounts = iquery(aq,return=TRUE,n=Inf)  # acounts[2],acounts[3],...
+    chunka = acounts[-1]
+    dima = paste(paste(n,"=0:",.scidb_DIM_MAX,",",noE(chunka),",0",sep=""), collapse=",")
+    D = paste(build_dim_schema(x,bracket=FALSE),dima,sep=",")
     S = build_attr_schema(x, I=!a)
     D = sprintf("[%s]",D)
-    query = sprintf("redimension(substitute(%s,build(<v:int64>[_i=0:0,1,0],-1),%s),%s%s)",x@name,paste(n,collapse=","),S,D)
+    query = sprintf("redimension(%s,%s%s)",x@name,S,D)
   }
   along = paste(b,collapse=",")
 

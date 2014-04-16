@@ -158,21 +158,22 @@ authentication. Users are defined by the operating system users on the SciDB
 coordinator instance.  The shim service can be configured to support either
 open/unencrypted or encrypted/authenticated ports, or both.
 
+<<eval=TRUE,echo=FALSE>>=
+library("scidb")
+scidbconnect(Sys.getenv("SCIDB_TEST_HOST")[1])
+tryCatch(scidbrm(scidbls()),error=invisible)
+@
 {\bf Connect to localhost by default on unencrypted port 8080:}
-\begin{Schunk}
-\begin{Sinput}
-> library("scidb")
-> scidbconnect()
-\end{Sinput}
-\end{Schunk}
+<<eval=FALSE>>=
+library("scidb")
+scidbconnect()
+@
 
 {\bf Connect to SciDB on an encrypted port 8083 with example authentication:}
-\begin{Schunk}
-\begin{Sinput}
-> scidbconnect(host="localhost", port=8083,
-+              username="scidbuser", password="test")
-\end{Sinput}
-\end{Schunk}
+<<eval=FALSE>>=
+scidbconnect(host="localhost", port=8083,
+             username="scidbuser", password="test")
+@
 We recommend using only encrypted/authenticated sessions when communicating
 with SciDB over public networks.
 
@@ -247,39 +248,16 @@ uses the special empty-bracket notation, \verb+[]+, to indicate that data
 should be materialized to R as an R data frame. Illustrations are provided in
 the examples.
 
-\begin{Schunk}
-\begin{Sinput}
-> # Upload the Michelson-Morley experiment data to SciDB,
-> # returning a scidbdf data frame-like object:
-> X <- as.scidb(morley, name="morely")
-> str(X)
-\end{Sinput}
-\begin{Soutput}
-SciDB expression:  morely
-SciDB schema:  <Expt:int32 NULL DEFAULT null,Run:int32 NULL DEFAULT null,Speed:int32 NULL DEFAULT null> [row=1:100,100,0]
+<<>>=
+# Upload the Michelson-Morley experiment data to SciDB,
+# returning a scidbdf data frame-like object:
+X <- as.scidb(morley, name="morely")
+str(X)
 
-Attributes:
-  attribute  type nullable
-1      Expt int32     TRUE
-2       Run int32     TRUE
-3     Speed int32     TRUE
-Dimension: 
-  dimension start end chunk
-1       row     1 100   100
-\end{Soutput}
-\begin{Sinput}
-> # Materialize the first four rows of X and the "Run" and "Speed"
-> # columns to R (using [] to return results to R):
-> X[1:4, c("Run","Speed")][]
-\end{Sinput}
-\begin{Soutput}
-  Run Speed
-1   1   850
-2   2   740
-3   3   900
-4   4  1070
-\end{Soutput}
-\end{Schunk}
+# Materialize the first four rows of X and the "Run" and "Speed"
+# columns to R (using [] to return results to R):
+X[1:4, c("Run","Speed")][]
+@
 %%\caption*{Example of a scidbdf object}
 
 
@@ -300,32 +278,19 @@ zero-indexed). Data from {\tt scidb} array objects are not materialized to R
 until extracted with the empty indexing function, \verb+[]+.  Additional notes
 and examples about indexing appear in the next section.
 
-\begin{Schunk}
-\begin{Sinput}
-> # Upload the iris data to SciDB storing it in an array named `iris`
-> # and create a data frame-like object `df` that refers to it:
-> df <- as.scidb(iris)
-> dim(df)
-\end{Sinput}
-\begin{Soutput}
-[1] 150   5
-\end{Soutput}
-\begin{Sinput}
-> # Alternatively, make a SciDB 1-d array object.
-> x <- scidb(df, data.frame=FALSE)
-> dim(x)
-\end{Sinput}
-\begin{Soutput}
-[1] 150
-\end{Soutput}
-\begin{Sinput}
-> # List all available attributes in the SciDB array:
-> x@attributes
-\end{Sinput}
-\begin{Soutput}
-[1] "Sepal_Length" "Sepal_Width"  "Petal_Length" "Petal_Width"  "Species"     
-\end{Soutput}
-\end{Schunk}
+<<>>=
+# Upload the iris data to SciDB storing it in an array named `iris`
+# and create a data frame-like object `df` that refers to it:
+df <- as.scidb(iris)
+dim(df)
+
+# Alternatively, make a SciDB 1-d array object.
+x <- scidb(df, data.frame=FALSE)
+dim(x)
+
+# List all available attributes in the SciDB array:
+x@attributes
+@
 
 
 
@@ -342,47 +307,14 @@ We generally use {\tt as.scidb} for convenience--it's far from the most
 efficient way to import data into SciDB. For very large data, use the SciDB
 bulk data load utility as outlined in the SciDB documentation instead.
 
-\begin{Schunk}
-\begin{Sinput}
-> v <- as.scidb(matrix(rnorm(25),5))
-> str(v)
-\end{Sinput}
-\begin{Soutput}
-SciDB expression:  R_array2ac96949ae401101070050967
-SciDB schema:  <val:double NULL DEFAULT null> [i=0:4,5,0,j=0:4,5,0]
+<<>>=
+v <- as.scidb(matrix(rnorm(25),5))
+str(v)
+crossprod( v[] )              # Compute t(v) %*% v using R
 
-Attributes:
-  attribute   type nullable
-1       val double     TRUE
-Dimensions: 
-  dimension start end chunk
-1         i     0   4     5
-2         j     0   4     5
-\end{Soutput}
-\begin{Sinput}
-> crossprod( v[] )              # Compute t(v) %*% v using R
-\end{Sinput}
-\begin{Soutput}
-          [,1]      [,2]       [,3]       [,4]       [,5]
-[1,] 12.299727 -3.769699 -1.4969814 -5.9699867 -2.5572547
-[2,] -3.769699  1.928862 -1.2901277  2.1277546  0.7356010
-[3,] -1.496981 -1.290128  4.3571417  0.3573435 -0.1344038
-[4,] -5.969987  2.127755  0.3573435  7.4767952 -2.7608614
-[5,] -2.557255  0.735601 -0.1344038 -2.7608614  4.4991707
-\end{Soutput}
-\begin{Sinput}
-> # Now compute using SciDB, and materialize the result to R:
-> crossprod(v)[]
-\end{Sinput}
-\begin{Soutput}
-          [,1]      [,2]       [,3]       [,4]       [,5]
-[1,] 12.299727 -3.769699 -1.4969814 -5.9699867 -2.5572547
-[2,] -3.769699  1.928862 -1.2901277  2.1277546  0.7356010
-[3,] -1.496981 -1.290128  4.3571417  0.3573435 -0.1344038
-[4,] -5.969987  2.127755  0.3573435  7.4767952 -2.7608614
-[5,] -2.557255  0.735601 -0.1344038 -2.7608614  4.4991707
-\end{Soutput}
-\end{Schunk}
+# Now compute using SciDB, and materialize the result to R:
+crossprod(v)[]
+@
 
 Basic matrix/vector arithmetic operations on SciDB arrays (addition,
 subtraction, matrix and matrix vector products, scalar products,
@@ -473,24 +405,13 @@ whose values not meeting the condition are masked as empty (preserving
 the values that do meet the condition).
 
 The difference is illustrated in the following example.
-\begin{Schunk}
-\begin{Sinput}
-> x <- as.scidb(head(iris))
-> # Standard R-style logical comparison:
-> (x$Petal_Length > 1.4 )[]
-\end{Sinput}
-\begin{Soutput}
-[1] FALSE FALSE FALSE  TRUE FALSE  TRUE
-\end{Soutput}
-\begin{Sinput}
-> # Special SciDB-style masked comparison:
-> (x$Petal_Length %>% 1.4)[]
-\end{Sinput}
-\begin{Soutput}
-sparse vector (nnz/length = 2/6) of class "dsparseVector"
-[1]   .   .   . 1.5   . 1.7
-\end{Soutput}
-\end{Schunk}
+<<>>=
+x <- as.scidb(head(iris))
+# Standard R-style logical comparison:
+(x$Petal_Length > 1.4 )[]
+# Special SciDB-style masked comparison:
+(x$Petal_Length %>% 1.4)[]
+@
 
 Comparison results can be used as filters in scidb and scidbdf objects.
 This works mostly like R, except that such filters may only be applied
@@ -498,33 +419,24 @@ along coordinate axes. (That is, R's special single-index indexing mode
 is not supported.)
 
 Additional examples showing dimension labels and filtering follow.
-\begin{Schunk}
-\begin{Sinput}
-> # Example of labeling indices with a label array.
-> set.seed(1)
-> X <- as.scidb( matrix(rnorm(20),nrow=5) )
-> # SciDB matrix objects like X default to zero-based indexing.
-> # It's important that the label array have the same starting index:
-> rownames(X) <- as.scidb( data.frame(letters[1:5]), start=0)
-> X[c("b","a","d"), ]
-\end{Sinput}
-\begin{Soutput}
-A reference to a  3x4 SciDB array
-\end{Soutput}
-\end{Schunk}
+<<>>=
+# Example of labeling indices with a label array.
+set.seed(1)
+X <- as.scidb( matrix(rnorm(20),nrow=5) )
+# SciDB matrix objects like X default to zero-based indexing.
+# It's important that the label array have the same starting index:
+rownames(X) <- as.scidb( data.frame(letters[1:5]), start=0)
 
-\begin{Schunk}
-\begin{Sinput}
-> # Example of indexing by a condition on an auxiliary array.
-> # Determine a subset of the rownames of X (another SciDB array):
-> idx <- rownames(X) > "b"
-> # Subset X by the condition on its rows:
-> X[idx, ]
-\end{Sinput}
-\begin{Soutput}
-A reference to a  3x4 SciDB array
-\end{Soutput}
-\end{Schunk}
+X[c("b","a","d"), ]
+@
+
+<<>>=
+# Example of indexing by a condition on an auxiliary array.
+# Determine a subset of the rownames of X (another SciDB array):
+idx <- rownames(X) > "b"
+# Subset X by the condition on its rows:
+X[idx, ]
+@
 
 
 \section{Data manipulation functions}
@@ -540,25 +452,22 @@ available for \verb+scidb+ and \verb+scidbdf+ objects. The SciDB
 aggregation function is supplied as a string and references the array
 attributes. The next example uses \verb+apply+ together with \verb+sweep+
 to center the columns of a matrix.
-\begin{Schunk}
-\begin{Sinput}
-> # Create an example matrix and upload to SciDB. Its single numeric array
-> # attribute will be called "val" be default.
-> A <- as.scidb( matrix(rnorm(100), nrow=10) )
-> # Create a centered version of the matrix by computing its column means
-> # with apply and subtracting them with sweep. Note that apply uses a
-> # SciDB expression. We specify `eval=TRUE` below to compute and cache
-> # the result of  sweep, improving the efficiency of the subsequent
-> # crossprod operation.
-> 
-> A0 <- sweep(A, 2, apply(A, 2, "avg(val)"), eval=TRUE)
-> # The covariance matrix of A:
-> crossprod(A0)/(nrow(A) - 1)
-\end{Sinput}
-\begin{Soutput}
-A reference to a  10x10 SciDB array
-\end{Soutput}
-\end{Schunk}
+<<>>=
+# Create an example matrix and upload to SciDB. Its single numeric array
+# attribute will be called "val" be default.
+A <- as.scidb( matrix(rnorm(100), nrow=10) )
+
+# Create a centered version of the matrix by computing its column means
+# with apply and subtracting them with sweep. Note that apply uses a
+# SciDB expression. We specify `eval=TRUE` below to compute and cache
+# the result of  sweep, improving the efficiency of the subsequent
+# crossprod operation.
+
+A0 <- sweep(A, 2, apply(A, 2, "avg(val)"), eval=TRUE)
+
+# The covariance matrix of A:
+crossprod(A0)/(nrow(A) - 1)
+@
 %%\caption*{Compute a covariance matrix}
 
 More general aggregation and data manipulation functions are outlined
@@ -570,16 +479,11 @@ computing finite differences along vectors and matrices.
 Use the \verb+cumulate+  function to compute running operations along data, for
 example cumulative sums. The operation to be performed must be a valid SciDB
 aggregation function expressed as a character string. Here is a simple example:
-\begin{Schunk}
-\begin{Sinput}
-> x <- as.scidb(iris)
-> y <- cumulate(x, "sum(Petal_Width)")
-> print(head(y, n=4))
-\end{Sinput}
-\begin{Soutput}
-[1] 0.2 0.4 0.6 0.8
-\end{Soutput}
-\end{Schunk}
+<<>>=
+x <- as.scidb(iris)
+y <- cumulate(x, "sum(Petal_Width)")
+print(head(y, n=4))
+@
 
 The \verb+count+ function applied to a {\tt scidb} array object returns the
 count of non-empty cells in in the backing SciDB array.
@@ -603,18 +507,11 @@ this function uses the SciDB \verb+filter+ operator--the function name
 The \verb+subset+ function requires two arguments, a SciDB array reference
 and a valid SciDB logical expression represented as a string.
 Here is a simple example:
-\begin{Schunk}
-\begin{Sinput}
-> df <- as.scidb(iris)
-> subset(df,"Petal_Width > 2.4")[]
-\end{Sinput}
-\begin{Soutput}
-    Sepal_Length Sepal_Width Petal_Length Petal_Width   Species
-101          6.3         3.3          6.0         2.5 virginica
-110          7.2         3.6          6.1         2.5 virginica
-145          6.7         3.3          5.7         2.5 virginica
-\end{Soutput}
-\end{Schunk}
+<<>>=
+df <- as.scidb(iris)
+
+subset(df,"Petal_Width > 2.4")[]
+@
 
 The \verb+subset+ function applied to arrays returns a sparse SciDB array with
 entries not meeting the filter condition omitted. This behavior differs from
@@ -622,33 +519,16 @@ the standard R \verb+subset+ function, which can only operate on rows and
 columns.  The \verb+scidb+ class also supports a short-hand notation for
 \verb+subset+ for infix comparison operations.
 
-\begin{Schunk}
-\begin{Sinput}
-> # Upload a 5x5 matrix to SciDB. Its single numeric attribute name
-> # defaults to 'val' (see help for as.scidb):
-> set.seed(1)
-> A <- as.scidb( matrix(rnorm(9),nrow=3) )
-> # Apply a filter to the SciDB array and return the results to R:
-> subset(A, "val>0")[]
-\end{Sinput}
-\begin{Soutput}
-3 x 3 sparse Matrix of class "dgCMatrix"
-                                  
-[1,] .         1.5952808 0.4874291
-[2,] 0.1836433 0.3295078 0.7383247
-[3,] .         .         0.5757814
-\end{Soutput}
-\begin{Sinput}
-> # Alternatively, achieve the same filter with an infix comparison:
-> (A > 0)[]
-\end{Sinput}
-\begin{Soutput}
-      [,1]  [,2] [,3]
-[1,] FALSE  TRUE TRUE
-[2,]  TRUE  TRUE TRUE
-[3,] FALSE FALSE TRUE
-\end{Soutput}
-\end{Schunk}
+<<>>=
+# Upload a 5x5 matrix to SciDB. Its single numeric attribute name
+# defaults to 'val' (see help for as.scidb):
+set.seed(1)
+A <- as.scidb( matrix(rnorm(9),nrow=3) )
+# Apply a filter to the SciDB array and return the results to R:
+subset(A, "val>0")[]
+# Alternatively, achieve the same filter with an infix comparison:
+(A > 0)[]
+@
 %%\caption*{Example of array value filtering with subset}
 
 
@@ -659,42 +539,30 @@ The package supports a limited form of the R \verb+merge+ function, enabling a
 number of database join-like operations on SciDB array objects. See
 \verb+help("merge",package="scidb")+ function for detailed help.  Here is an
 example that performs an inner join on array attributes:
-\begin{Schunk}
-\begin{Sinput}
-> authors <-
-+   data.frame(
-+     surname = c("Tukey", "Venables", "Tierney", "Ripley", "McNeil"),
-+     nationality = c("US", "Australia", "US", "UK", "Australia"),
-+     deceased = c("yes", rep("no", 4)),
-+     stringsAsFactors=FALSE)
-> books <-
-+   data.frame(
-+     name = c("Tukey", "Venables", "Tierney",
-+              "Ripley", "Ripley", "McNeil", "R Core"),
-+     title = c("Exploratory Data Analysis",
-+               "Modern Applied Statistics ...",
-+               "LISP-STAT", "Spatial Statistics", "Stochastic Simulation",
-+               "Interactive Data Analysis", "An Introduction to R"),
-+     other.author = c(NA, "Ripley", NA, NA, NA, NA, "Venables & Smith"),
-+     stringsAsFactors=FALSE)
-> a <- as.scidb(authors)
-> b <- as.scidb(books)
-> merge(a,b,by.x="surname",by.y="name")[,4:8][]
-\end{Sinput}
-\begin{Soutput}
-  nationality deceased     name                         title other_author
-0   Australia       no   McNeil     Interactive Data Analysis         <NA>
-1          UK       no   Ripley            Spatial Statistics         <NA>
-2          UK       no   Ripley         Stochastic Simulation         <NA>
-3          US       no  Tierney                     LISP-STAT         <NA>
-4          US      yes    Tukey     Exploratory Data Analysis         <NA>
-5   Australia       no Venables Modern Applied Statistics ...       Ripley
-\end{Soutput}
-\begin{Sinput}
-> # cf. The standard R data.frame merge function:
-> # merge(authors,books,by.x="surname",by.y="name")
-\end{Sinput}
-\end{Schunk}
+<<>>=
+authors <-
+  data.frame(
+    surname = c("Tukey", "Venables", "Tierney", "Ripley", "McNeil"),
+    nationality = c("US", "Australia", "US", "UK", "Australia"),
+    deceased = c("yes", rep("no", 4)),
+    stringsAsFactors=FALSE)
+books <-
+  data.frame(
+    name = c("Tukey", "Venables", "Tierney",
+             "Ripley", "Ripley", "McNeil", "R Core"),
+    title = c("Exploratory Data Analysis",
+              "Modern Applied Statistics ...",
+              "LISP-STAT", "Spatial Statistics", "Stochastic Simulation",
+              "Interactive Data Analysis", "An Introduction to R"),
+    other.author = c(NA, "Ripley", NA, NA, NA, NA, "Venables & Smith"),
+    stringsAsFactors=FALSE)
+a <- as.scidb(authors)
+b <- as.scidb(books)
+
+merge(a,b,by.x="surname",by.y="name")[,4:8][]
+# cf. The standard R data.frame merge function:
+# merge(authors,books,by.x="surname",by.y="name")
+@
 
 The \verb+merge+ implementation has some limitations outlined in its man page.
 Joins on attributes (instead of along coordinate axes) are presently the most
@@ -708,19 +576,11 @@ and/or array attributes very similarly to standard R aggregation syntax, except
 that aggregation functions must be valid SciDB aggregate expressions,
 represented as strings.
 
-\begin{Schunk}
-\begin{Sinput}
-> # Aggregation example
-> df <- as.scidb(iris)
-> aggregate(df, by="Species", FUN="avg(Petal_Length), stdev(Petal_Width)")[]
-\end{Sinput}
-\begin{Soutput}
-  Petal_Length_avg Petal_Width_stdev    Species
-0            1.462         0.1053856     setosa
-1            4.260         0.1977527 versicolor
-2            5.552         0.2746501  virginica
-\end{Soutput}
-\end{Schunk}
+<<>>=
+# Aggregation example
+df <- as.scidb(iris)
+aggregate(df, by="Species", FUN="avg(Petal_Length), stdev(Petal_Width)")[]
+@
 
 Although limited support for aggregation by data frame column is available (see
 the example in this section), the \verb+aggregate+ function performs best along
@@ -735,18 +595,10 @@ similar to the R \verb+cbind+ function for data frames.  However, \verb+bind+
 can also operate on higher-dimensional arrays. The example below adds a
 variable named `prod` to the SciDB array \verb+df+ defined in the last example.
 
-\begin{Schunk}
-\begin{Sinput}
-> y  <- bind(df, "prod", "Petal_Length * Petal_Width")
-> head(y, n=3)
-\end{Sinput}
-\begin{Soutput}
-  Sepal_Length Sepal_Width Petal_Length Petal_Width Species prod
-1          5.1         3.5          1.4         0.2  setosa 0.28
-2          4.9         3.0          1.4         0.2  setosa 0.28
-3          4.7         3.2          1.3         0.2  setosa 0.26
-\end{Soutput}
-\end{Schunk}
+<<>>=
+y  <- bind(df, "prod", "Petal_Length * Petal_Width")
+head(y, n=3)
+@
 
 
 \subsection{Sorting and enumerating factors}
@@ -765,43 +617,19 @@ Examples follow. Note that we use the SciDB \verb+project+ function in one
 example. \verb+project+ presents an alternative syntax to the functionally
 equivalent column subset selection of variables using brackets.
 
-\begin{Schunk}
-\begin{Sinput}
-> x <- as.scidb(iris)
-> # Sort x by Petal_Width and Species
-> a <- sort(x, attributes=c("Petal_Width","Species"))
-> head(a, n=3)
-\end{Sinput}
-\begin{Soutput}
-  Sepal_Length Sepal_Width Petal_Length Petal_Width Species
-1          4.9         3.1          1.5         0.1  setosa
-2          4.9         3.6          1.4         0.1  setosa
-3          4.8         3.0          1.4         0.1  setosa
-\end{Soutput}
-\begin{Sinput}
-> # Find unique values of Species:
-> unique(x$Species)[]
-\end{Sinput}
-\begin{Soutput}
-     Species
-0     setosa
-1 versicolor
-2  virginica
-\end{Soutput}
-\begin{Sinput}
-> # Add a new variable that enumerates factor levels of Species:
-> head(index_lookup(x, unique(x$Species), "Species"))
-\end{Sinput}
-\begin{Soutput}
-  Sepal_Length Sepal_Width Petal_Length Petal_Width Species Species_index
-1          5.1         3.5          1.4         0.2  setosa             0
-2          4.9         3.0          1.4         0.2  setosa             0
-3          4.7         3.2          1.3         0.2  setosa             0
-4          4.6         3.1          1.5         0.2  setosa             0
-5          5.0         3.6          1.4         0.2  setosa             0
-6          5.4         3.9          1.7         0.4  setosa             0
-\end{Soutput}
-\end{Schunk}
+<<>>=
+x <- as.scidb(iris)
+
+# Sort x by Petal_Width and Species
+a <- sort(x, attributes=c("Petal_Width","Species"))
+head(a, n=3)
+
+# Find unique values of Species:
+unique(x$Species)[]
+
+# Add a new variable that enumerates factor levels of Species:
+head(index_lookup(x, unique(x$Species), "Species"))
+@
 
 
 \subsection{Indexing details and missing values}
@@ -849,58 +677,30 @@ promise can be evaluated. The environment is slot is named \verb+@gc+ in the
 array objects and the dependency list is \verb+@gc$depend+.
 
 Here is an example:
-\begin{Schunk}
-\begin{Sinput}
-> # Create a 5x4 SciDB matrix named 'test' in the database. We set `gc=TRUE`
-> # so that the SciDB array `test` will be deleted by R's garbage collector
-> # for us automatically:
-> A <- as.scidb(matrix(rnorm(20),nrow=5), name="test", gc=TRUE)
-> A@name
-\end{Sinput}
-\begin{Soutput}
-[1] "test"
-\end{Soutput}
-\begin{Sinput}
-> # Assign the third row of the transpose to a scidb object B:
-> B <- t(A)[3,]
-> # B is a promise object--it's name is an (unevaluated) SciDB query expression
-> # that depends on A. But it has a valid output schema, and we also see that
-> # it depends ultimately on the SciDB array `test`:
-> B@name
-\end{Sinput}
-\begin{Soutput}
-[1] "redimension(redimension(between(transpose(test),3,null,3,null), <val:double NULL>[j=3:3,4,0,i=0:4,5,0]), <val:double NULL>[i=0:4,5,0])"
-\end{Soutput}
-\begin{Sinput}
-> B@schema
-\end{Sinput}
-\begin{Soutput}
-[1] "<val:double NULL DEFAULT null> [i=0:4,5,0]"
-\end{Soutput}
-\begin{Sinput}
-> B@gc$depend[[1]]@gc$depend[[1]]@name
-\end{Sinput}
-\begin{Soutput}
-[1] "transpose(test)"
-\end{Soutput}
-\begin{Sinput}
-> # We can use `scidbeval` to force B's evaluation and storage inside SciDB:
-> C <- scidbeval(B)
-> # C has the same schema as B, but is now evaluated and stored inside SciDB
-> # using an automatically-generated name. Unlike B, C does not depend on
-> # the `test` array any more.
-> C@name
-\end{Sinput}
-\begin{Soutput}
-[1] "R_array2ac91f98417f1101070050967"
-\end{Soutput}
-\begin{Sinput}
-> C@schema
-\end{Sinput}
-\begin{Soutput}
-[1] "<val:double NULL DEFAULT null> [i=0:4,5,0]"
-\end{Soutput}
-\end{Schunk}
+<<>>=
+# Create a 5x4 SciDB matrix named 'test' in the database. We set `gc=TRUE`
+# so that the SciDB array `test` will be deleted by R's garbage collector
+# for us automatically:
+A <- as.scidb(matrix(rnorm(20),nrow=5), name="test", gc=TRUE)
+A@name
+
+# Assign the third row of the transpose to a scidb object B:
+B <- t(A)[3,]
+# B is a promise object--it's name is an (unevaluated) SciDB query expression
+# that depends on A. But it has a valid output schema, and we also see that
+# it depends ultimately on the SciDB array `test`:
+B@name
+B@schema
+B@gc$depend[[1]]@gc$depend[[1]]@name
+
+# We can use `scidbeval` to force B's evaluation and storage inside SciDB:
+C <- scidbeval(B)
+# C has the same schema as B, but is now evaluated and stored inside SciDB
+# using an automatically-generated name. Unlike B, C does not depend on
+# the `test` array any more.
+C@name
+C@schema
+@
 
 
 \section{SciDB-specific functions}
@@ -1005,22 +805,15 @@ integers. The \verb+iquery+ function supports
 standard R \verb+read.table+ parameter options to facilitate type conversion.
 
 The following code example illustrates basic use of \verb+iquery+.
-\begin{Schunk}
-\begin{Sinput}
-> # Manually build a 1-d SciDB array named "P:"
-> iquery("store(build(<x:double>[i=0:99,100,0],asin(1)*i/25),P)")
-> # Return a query as a data.frame, manually specifying returned column classes:
-> S <- iquery("apply(P,y,sin(x))",return=TRUE,
-+             colClasses=c("integer","double","complex"))
-> head(S, n=3)
-\end{Sinput}
-\begin{Soutput}
-  i          x             y
-1 0 0.00000000 0.00000000+0i
-2 1 0.06283185 0.06279052+0i
-3 2 0.12566371 0.12533323+0i
-\end{Soutput}
-\end{Schunk}
+<<>>=
+# Manually build a 1-d SciDB array named "P:"
+iquery("store(build(<x:double>[i=0:99,100,0],asin(1)*i/25),P)")
+
+# Return a query as a data.frame, manually specifying returned column classes:
+S <- iquery("apply(P,y,sin(x))",return=TRUE,
+            colClasses=c("integer","double","complex"))
+head(S, n=3)
+@
 
 
 \subsection{Iterating over query results}
@@ -1035,36 +828,19 @@ by the \verb+iterators+ package. Their data may be directly accessed with the
 \verb+iterators+ and \verb+foreach+ packages for many examples and further
 documentation of their use. 
 
-\begin{Schunk}
-\begin{Sinput}
-> # Build a small 1-d SciDB test array:
-> iquery("store(build(<x:double>[i=1:10,10,0],i/10.0),A)")
-> # Return the result of a SciDB apply operator in an R iterator with a
-> # block size of at most 7 rows at a time:
-> library("iterators")
-> it <- iquery("apply(A,y,sqrt(x))", return=TRUE, iterative=TRUE, n=7)
-> nextElem(it)
-\end{Sinput}
-\begin{Soutput}
-  i   x         y
-1 1 0.1 0.3162278
-2 2 0.2 0.4472136
-3 3 0.3 0.5477226
-4 4 0.4 0.6324555
-5 5 0.5 0.7071068
-6 6 0.6 0.7745967
-\end{Soutput}
-\begin{Sinput}
-> nextElem(it)
-\end{Sinput}
-\begin{Soutput}
-   i   x         y
-1  7 0.7 0.8366600
-2  8 0.8 0.8944272
-3  9 0.9 0.9486833
-4 10 1.0 1.0000000
-\end{Soutput}
-\end{Schunk}
+<<>>=
+# Build a small 1-d SciDB test array:
+iquery("store(build(<x:double>[i=1:10,10,0],i/10.0),A)")
+
+# Return the result of a SciDB apply operator in an R iterator with a
+# block size of at most 7 rows at a time:
+library("iterators")
+it <- iquery("apply(A,y,sqrt(x))", return=TRUE, iterative=TRUE, n=7)
+
+nextElem(it)
+
+nextElem(it)
+@
 
 
 \section{Error handling}

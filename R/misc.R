@@ -2,6 +2,15 @@
 # tend to be newer and somewhat more experimental than the other functions, and
 # maybe not quite as fully baked.
 
+# Limited distance function (Euclidean only)
+# The performance is amazingly horrible!!
+dist_scidb = function(x)
+{
+  s = apply(x*x,1,sum)
+  u = s %*% matrix(1, nrow=1, ncol=nrow(x))
+  sqrt(abs(u + t(u) - 2 * x %*% t(x)))
+}
+
 na.locf_scidb = function(object, along=dimensions(object)[1],`eval`=FALSE)
 {
   dnames = dimensions(object)

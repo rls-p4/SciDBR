@@ -281,12 +281,14 @@ GET = function(resource, args=list(), header=TRUE, async=FALSE, interrupt=FALSE)
   if(async)
   {
     getURI(url=uri,
-      .opts=list(header=header,'ssl.verifypeer'=0,
+      .opts=list(header=header,
+                 'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),
+                 'ssl.verifypeer'=0,
                  noprogress=!interrupt, progressfunction=curl_signal_trap),
       async=TRUE)
     return(NULL)
   }
-  getURI(url=uri, .opts=list(header=header,'ssl.verifypeer'=0,
+  getURI(url=uri, .opts=list(header=header,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0,
                          noprogress=!interrupt, progressfunction=curl_signal_trap))
 }
 
@@ -523,7 +525,7 @@ df2scidb = function(X,
 
 # Post the input string to the SciDB http service
   uri = URI("upload_file",list(id=session))
-  tmp = postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=c(Expect=""),'ssl.verifypeer'=0))
+  tmp = postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=c(Expect=""),'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0))
   tmp = tmp[[1]]
   tmp = gsub("\r","",tmp)
   tmp = gsub("\n","",tmp)
@@ -574,7 +576,7 @@ df2scidb = function(X,
   bytes = writeBin(.Call("scidb_raw",as.vector(t(matrix(c(X@i + start[[1]],j + start[[2]], X@x),length(X@x)))),PACKAGE="scidb"),con=fn)
   url = URI("/upload_file",list(id=session))
   ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
-                 .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0))
+                 .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0))
   unlink(fn)
   ans = ans[[1]]
   ans = gsub("\r","",ans)
@@ -758,10 +760,12 @@ noE = function(w) sapply(w,
   })
 
 # If a scidb object has the "sparse" attribute set, return that. Otherwise
-# interrogate the backing array to determine if it's sparse or not.
-is.sparse = function(x)
+# interrogate the backing array to determine if it's sparse or not.  Set
+# count=FALSE to skip the count and return TRUE if the attribute is not set.
+is.sparse = function(x, count=TRUE)
 {
   ans = attr(x,"sparse")
+  if(is.null(ans) && !count) return(TRUE)
   if(is.null(ans))
   {
     return(count(x) < prod(dim(x)))
@@ -934,7 +938,7 @@ scidbremove.glm_scidb = function(x, error=warning, async=FALSE, force=FALSE, war
 }
 
 # Show the repository log (not in namespace)
-show_github_log = function()
+show_commit_log = function()
 {
   log = system.file("misc/log",package="scidb")
   if(file.exists(log))

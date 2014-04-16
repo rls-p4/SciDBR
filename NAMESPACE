@@ -2,13 +2,14 @@ useDynLib(scidb)
 import("methods")
 importFrom("Matrix",nnzero, sparseMatrix, unpack, sparseVector)
 importFrom("utils", head, tail)
-importFrom("stats", aggregate, sd, var, reshape, glm.fit, phyper, qhyper, quantile)
+importFrom("stats", aggregate, sd, var, reshape, glm.fit, phyper, qhyper, quantile, dist)
 importFrom("graphics", image, hist)
 import("RCurl", iterators)
 importFrom("zoo", na.locf)
 
 # Functions
 export("antijoin")
+export("scidb_fisher.test")
 export("glm_scidb")
 export("model_scidb")
 export("persist")
@@ -41,10 +42,11 @@ export("count")
 export("attribute_rename")
 export("dimension_rename")
 export("index_lookup")
+export("show_commit_log")
 
 # S4 methods
 exportClasses("scidb","scidbdf")
-exportMethods("%<%","%>%","%<=%","%>=%","%==%","%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,median,mean,sd,var,min,max,t,abs,sin,cos,tan,asin,acos,atan,unpack,reshape,regrid,svd,xgrid,glm.fit,lag,Filter,na.locf,hist,phyper,qhyper,c)
+exportMethods("%<%","%>%","%<=%","%>=%","%==%","%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,median,mean,sd,var,min,max,t,sqrt,abs,sin,cos,tan,asin,acos,atan,unpack,reshape,regrid,svd,xgrid,glm.fit,lag,Filter,na.locf,hist,phyper,qhyper,c)
 
 # S3 methods
 S3method("summary",glm_scidb)

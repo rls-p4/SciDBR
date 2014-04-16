@@ -73,7 +73,29 @@
       length(`by`)==0 && is.null(by.x) && is.null(by.y))
   {
     if(scidbmerge) stop("SciDB merge not supported in this context")
-    query = sprintf("cross_join(%s, %s)",xname,yname)
+# New attribute schema for y that won't conflict with x:
+    newas = build_attr_schema(y,newnames=make.unique_(x@attributes,y@attributes))
+# Impose a reasonable chunk size for dense arrays
+    chunky = scidb_coordinate_chunksize(y)
+    chunkx   = scidb_coordinate_chunksize(x)
+    chunk_elements = prod(c(as.numeric(chunky),as.numeric(chunkx)))
+# Only compute these counts if we need to
+    pdx = prod(dim(x))
+    if(is.scidbdf(x)) pdx = dim(x)[1]
+    pdy = prod(dim(y))
+    if(is.scidbdf(y)) pdy = dim(y)[1]
+    if(chunk_elements>1e6 && pdx==count(x) && pdy==count(y))
+    {
+      NC = length(chunkx) + length(chunky)
+      NS = 1e6^(1/NC)
+      chunky = rep(noE(NS), length(chunky))
+      chunkx = rep(noE(NS), length(chunkx))
+      x = redimension(x,sprintf("%s%s",build_attr_schema(x), build_dim_schema(x,newchunk=chunkx)))
+      y = redimension(y,sprintf("%s%s",build_attr_schema(y), build_dim_schema(y,newchunk=chunkx)))
+    }
+    newds = build_dim_schema(y,newnames=make.unique_(x@dimensions,y@dimensions))
+    y = cast(y,sprintf("%s%s",newas,newds))
+    query = sprintf("cross_join(%s, %s)",x@name,y@name)
     return(.scidbeval(query,eval,depend=list(x,y)))
   }
 

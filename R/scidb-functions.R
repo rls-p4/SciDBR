@@ -108,8 +108,15 @@ dimnames.scidb = function(x)
   value = lapply(1:length(value), function(j)
     {
       v = value[[j]]
-      if(is.scidb(v) || is.scidbdf(v) || is.null(v))
+      if(is.null(v)) return(v)
+      if(is.scidb(v) || is.scidbdf(v))
       {
+        check = scidb_coordinate_start(x)[j] == scidb_coordinate_start(v)[1] &&
+                scidb_coordinate_chunksize(x)[j] == scidb_coordinate_chunksize(v)[1]
+        if(!check)
+        {
+          v = reshape_scidb(v,shape=dim(v),start=as.numeric(scidb_coordinate_start(x)[j]),chunks=as.numeric(scidb_coordinate_chunksize(x)[j]))
+        }
         return(v);
       }
       as.scidb(data.frame(label=v)[,1,drop=FALSE],
@@ -160,8 +167,10 @@ summary.scidb = function(x)
   else drop=M$drop
   if(is.null(M$eval)) eval=FALSE
   else eval=M$eval
+  if(is.null(M$redim)) redim=TRUE
+  else redim=M$redim
   M = M[3:length(M)]
-  if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","eval"))]
+  if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","eval","redim"))]
 # i shall contain a list of requested index values
   E = parent.frame()
   i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],E),error=function(e)c()))
@@ -170,7 +179,7 @@ summary.scidb = function(x)
     return(materialize(x,drop=drop))
 # Not materializing, return a SciDB array
   if(length(i)!=length(dim(x))) stop("Dimension mismatch")
-  dimfilter(x,i,eval,drop=drop)
+  dimfilter(x,i,eval,drop=drop,redim)
 }
 
 `dim<-.scidb` = function(x, value)
@@ -275,7 +284,7 @@ as.scidb = function(X,
   bytes = writeBin(.Call("scidb_raw",as.vector(t(X)),PACKAGE="scidb"),con=fn)
   url = URI("upload_file",list(id=session))
   ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
-           .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0))
+           .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0,'ssl.verifyhost'=as.integer(options("scidb.verifyhost"))))
   unlink(fn)
   ans = ans[[1]]
   ans = gsub("\r","",ans)

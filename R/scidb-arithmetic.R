@@ -171,6 +171,7 @@ scidbmultiply = function(e1,e2)
 }
 
 # Element-wise binary operations
+# These are terribly inefficient for various reasons.
 .binop = function(e1,e2,op)
 {
   e1a = "scalar"
@@ -209,6 +210,8 @@ scidbmultiply = function(e1,e2)
 # Determines if we need to fill in sparse entries or not:
   fill = op %in% c("+","-","/")
   fill_div = op %in% "/"
+  fill = fill && (is.sparse(e1,count=FALSE) || is.sparse(e2,count=FALSE))
+
 # v holds new attribute name
   v = make.unique_(c(e1a,e2a,dnames),"v")
 # Handle special scalar multiplication cases, including sparse cases:
@@ -224,7 +227,7 @@ scidbmultiply = function(e1,e2)
     {
       op = paste(c(sprintf("%.15f",e1),e2a),collapse=op)
     }
-    if(fill) return(project(bind(merge(e2,build(0,e2),merge=TRUE),v,op),v))
+    if(fill) return(project(bind(merge(e2,build(0,e2),merge=TRUE),v,op),v, eval=TRUE))
     return(project(bind(e2,v,op),v))
   }
   if(is.null(dim(e2)))
@@ -237,13 +240,13 @@ scidbmultiply = function(e1,e2)
     }
     else
       op = paste(c(e1a, sprintf("%.15f",e2)),collapse=op)
-    if(fill) return(project(bind(merge(e1,build(0,e1),merge=TRUE),v,op),v))
-    else return(project(bind(e1,v,op),v))
+    if(fill) return(project(bind(merge(e1,build(0,e1),merge=TRUE),v,op),v, eval=TRUE))
+    else return(project(bind(e1,v,op),v, eval=TRUE))
   }
 
 # OK, we've got two scidb arrays, op them.
   l1 = length(dim(e1))
-  l2  = length(dim(e2))
+  l2 = length(dim(e2))
 
 # Re-write op in a form compatible with SciDB apply
   rewrite_op = function(A, op)
@@ -256,7 +259,7 @@ scidbmultiply = function(e1,e2)
        op = paste(A@attributes, collapse=op)
     }
   }
-# We can't avoid fully dense fills with "/"
+# We *can't* avoid fully dense fills with "/"
   if(fill_div)
   {
     e1 = merge(e1,build(0,e1),merge=TRUE)
@@ -266,10 +269,10 @@ scidbmultiply = function(e1,e2)
   if(l1 == l2)
   {
 # Note that we use outer join here with the special fillin option.
-    M = merge(e1,e2,by.x=dimensions(e1),by.y=dimensions(e2),all=TRUE,fillin=0)
+    M = merge(e1,e2,by.x=dimensions(e1),by.y=dimensions(e2),all=fill,fillin=0)
     v = make.unique_(c(M@attributes),"v")
     op = rewrite_op(M, op)
-    return(project(bind(M,v,op), v))
+    return(project(bind(M,v,op), v, eval=TRUE)) # see note at end
   }
 
 # Left now with very special vector-recycling cases.
@@ -302,7 +305,8 @@ scidbmultiply = function(e1,e2)
   M = merge(e1,e2,by.x=along,by.y=dimensions(e2))
   v = make.unique_(c(M@attributes),"v")
   op = rewrite_op(M,op)
-  project(bind(M, v, op), v)
+# XXX We eval here because this is so inefficient...
+  project(bind(M, v, op), v, eval=TRUE)
 }
 
 # Very basic comparisons. See also filter.
@@ -340,19 +344,25 @@ scidbmultiply = function(e1,e2)
   stop("Yikes! Not implemented yet...")
 }
 
-tsvd = function(x,nu,tol=0.0001,maxit=20)
+tsvd = function(x,nu,tol=0.0001,maxit=20,tx)
 {
   m = ceiling(1e6/nrow(x))
   n = ceiling(1e6/ncol(x))
-  schema = sprintf("[%s=0:%s,%s,0,%s=0:%s,%s,0]",
-                     dimensions(x)[1], noE(nrow(x)-1), noE(m),
-                     dimensions(x)[2], noE(ncol(x)-1), noE(ncol(x)))
-  tschema = sprintf("[%s=0:%s,%s,0,%s=0:%s,%s,0]",
-                     dimensions(x)[2], noE(ncol(x)-1), noE(n),
-                     dimensions(x)[1], noE(nrow(x)-1), noE(nrow(x)))
-  schema = sprintf("%s%s",build_attr_schema(x), schema)
-  tschema = sprintf("%s%s",build_attr_schema(x), tschema)
-  query  = sprintf("tsvd(redimension(unpack(%s,row),%s), redimension(unpack(transpose(%s),row),%s), %.0f, %f, %.0f)", x@name, schema, x@name, tschema, nu,tol,maxit)
+  if(!missing(tx))
+  {
+    query  = sprintf("tsvd(%s, %s, %.0f, %f, %.0f)", x@name, tx@name, nu,tol,maxit)
+  } else
+  {
+    schema = sprintf("[%s=0:%s,%s,0,%s=0:%s,%s,0]",
+                       dimensions(x)[1], noE(nrow(x)-1), noE(m),
+                       dimensions(x)[2], noE(ncol(x)-1), noE(ncol(x)))
+    tschema = sprintf("[%s=0:%s,%s,0,%s=0:%s,%s,0]",
+                       dimensions(x)[2], noE(ncol(x)-1), noE(n),
+                       dimensions(x)[1], noE(nrow(x)-1), noE(nrow(x)))
+    schema = sprintf("%s%s",build_attr_schema(x), schema)
+    tschema = sprintf("%s%s",build_attr_schema(x), tschema)
+    query  = sprintf("tsvd(redimension(unpack(%s,row),%s), redimension(unpack(transpose(%s),row),%s), %.0f, %f, %.0f)", x@name, schema, x@name, tschema, nu,tol,maxit)
+  }
   narray = .scidbeval(query, eval=TRUE, gc=TRUE)
   ans = list(u=slice(narray, "matrix", 0,eval=FALSE)[,between(0,nu-1)],
              d=slice(narray, "matrix", 1,eval=FALSE)[between(0,nu-1),between(0,nu-1)],

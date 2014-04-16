@@ -62,6 +62,7 @@ between = function(a,b)
 # i: a list of index expressions
 # eval: (logical) if TRUE, return a new SciDB array, otherwise just a promise
 # drop: (logical) if TRUE, delete dimensions of an array with only one level
+# redim: (logical) default TRUE, if false the supress bounding redimension
 # OUTPUT
 # a scidb object
 #
@@ -72,8 +73,9 @@ between = function(a,b)
 # 'ui' not specified range (everything, by R convention)
 # 'ci' other, for example c(3,1,2,5) or c(1,1)
 #
-dimfilter = function(x, i, eval, drop)
+dimfilter = function(x, i, eval, drop, redim)
 {
+  if(missing(redim)) redim=TRUE
 # Partition the indices into class:
 # Identify sequential, numeric indices
   si = sapply(i, checkseq)
@@ -127,8 +129,11 @@ dimfilter = function(x, i, eval, drop)
     {
       newend[ina] = scidb_coordinate_end(x)[ina]
     }
-    q = sprintf("redimension(%s, %s%s)", q, build_attr_schema(x),
+    if(redim)
+    {
+      q = sprintf("redimension(%s, %s%s)", q, build_attr_schema(x),
           build_dim_schema(x,newend=newend,newstart=newstart))
+    }
   }
 # Return a new scidb array reference
   ans = .scidbeval(q,eval=FALSE,gc=TRUE,`data.frame`=FALSE,depend=x)
@@ -214,6 +219,11 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
       {
 # Case 2: character labels, consult a lookup array if possible
          lkup = substitute(x@gc$dimnames[[j]])
+         if(length(dim(lkup))>1)
+         {
+# Hmmm. The lookup array has more than one dimension! Let's just use the first.
+           lkup = slice(lkup,2:length(dim(lkup)),scidb_coordinate_start(lkup)[-1])
+         }
          tmp = data.frame(i[[j]], stringsAsFactors=FALSE)
          names(tmp) = N
          tmp_1 = as.scidb(tmp, types="string", dimlabel=dimlabel,
@@ -323,7 +333,7 @@ materialize = function(x, drop=FALSE)
   sigint(SIG_TRP)
   BUF = tryCatch(
         {
-          getBinaryURL(r, .opts=list('ssl.verifypeer'=0, noprogress=FALSE, progressfunction=curl_signal_trap))
+          getBinaryURL(r, .opts=list('ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=FALSE, progressfunction=curl_signal_trap))
         }, error=function(e)
         {
           GET("/release_session",list(id=sessionid))

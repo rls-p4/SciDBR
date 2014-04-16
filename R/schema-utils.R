@@ -178,7 +178,7 @@ build_attr_schema = function(A, prefix="", I, newnames, nullable)
   if(missing(I) || length(I)==0) I = rep(TRUE,length(scidb_attributes(A)))
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   if(is.logical(I)) I = which(I)
-  N = rep("", length(I))
+  N = rep("", length(scidb_nullable(A)[I]))
   N[scidb_nullable(A)[I]] = " NULL"
   if(!missing(nullable))
   {

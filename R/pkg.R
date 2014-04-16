@@ -63,6 +63,12 @@ SIG_TRP = 2L # A custom signal handler (see scidb.c)
 # have to specify scidbrm(array, force=TRUE) to remove arrays that do not
 # begin with "R_array".
   options(scidb.safe_remove=TRUE)
+# Disable SSL certificate host name checking by default. This is important mostly
+# for Amazon EC2 where hostnames rarely match their DNS names. If you enable this
+# then the shim SSL certificate CN entry *must* match the server host name for the
+# encrypted session to work. Set this TRUE for stronger security (help avoid MTM)
+# in SSL connections.
+  options(scidb.verifyhost=FALSE)
 }
 
 .onUnload = function(libpath)

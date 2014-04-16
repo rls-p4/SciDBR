@@ -1,3 +1,32 @@
+CHANGES IN scidb 1.1-2:
+
+  SCIDB SUPPORT
+
+    o Support for SciDB 14.3, untested support for older SciDB releases
+
+    o Dropping arrays from other R sessions requires a non-default option
+      facilitating multiple-user settings.
+
+    o Queries can be canceled with R user interrupts now (for example with
+      CTRL + C or ESC).
+
+  IMPROVEMENTS
+
+    o Many improvements to merge and aggregate functions
+
+    o N-d arrays with multiple attributes can now index with `$`
+
+    o Improved R save/load of R data files containing SciDB objects
+
+  NEW FEATURES
+
+    o Support for Paradigm4 glm and a simple glm model matrix builder
+
+    o Support for Paradigm4 truncated SVD routine
+
+    o Added hist, quantile, all.equal, antijoin, a `c` (SciDB concat-like)
+      function and many others
+
 CHANGES IN scidb 1.1-1:
 
   WINDOWED AGGREGATES
