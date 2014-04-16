@@ -219,6 +219,11 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
       {
 # Case 2: character labels, consult a lookup array if possible
          lkup = substitute(x@gc$dimnames[[j]])
+         if(length(dim(lkup))>1)
+         {
+# Hmmm. The lookup array has more than one dimension! Let's just use the first.
+           lkup = slice(lkup,2:length(dim(lkup)),scidb_coordinate_start(lkup)[-1])
+         }
          tmp = data.frame(i[[j]], stringsAsFactors=FALSE)
          names(tmp) = N
          tmp_1 = as.scidb(tmp, types="string", dimlabel=dimlabel,

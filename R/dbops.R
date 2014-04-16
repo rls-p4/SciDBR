@@ -110,7 +110,6 @@ slice = function(x, d, n, `eval`=FALSE)
 {
   if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
   N = length(dimensions(x))
-  limits = rep("null",N)
   i = d
   if(is.character(d))
   {
@@ -120,8 +119,7 @@ slice = function(x, d, n, `eval`=FALSE)
   {
     stop("Invalid dimension specified")
   }
-  limits[i] = noE(n)
-  query = sprintf("slice(%s, %s)",x@name,paste(paste(d,n,sep=","),collapse=","))
+  query = sprintf("slice(%s, %s)",x@name,paste(paste(x@dimensions[i],noE(n),sep=","),collapse=","))
   .scidbeval(query,eval,depend=list(x))
 }
 

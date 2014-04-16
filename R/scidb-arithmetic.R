@@ -210,6 +210,8 @@ scidbmultiply = function(e1,e2)
 # Determines if we need to fill in sparse entries or not:
   fill = op %in% c("+","-","/")
   fill_div = op %in% "/"
+  fill = fill && (is.sparse(e1,count=FALSE) || is.sparse(e2,count=FALSE))
+
 # v holds new attribute name
   v = make.unique_(c(e1a,e2a,dnames),"v")
 # Handle special scalar multiplication cases, including sparse cases:
@@ -257,7 +259,7 @@ scidbmultiply = function(e1,e2)
        op = paste(A@attributes, collapse=op)
     }
   }
-# We can't avoid fully dense fills with "/"
+# We *can't* avoid fully dense fills with "/"
   if(fill_div)
   {
     e1 = merge(e1,build(0,e1),merge=TRUE)
@@ -267,7 +269,7 @@ scidbmultiply = function(e1,e2)
   if(l1 == l2)
   {
 # Note that we use outer join here with the special fillin option.
-    M = merge(e1,e2,by.x=dimensions(e1),by.y=dimensions(e2),all=TRUE,fillin=0)
+    M = merge(e1,e2,by.x=dimensions(e1),by.y=dimensions(e2),all=fill,fillin=0)
     v = make.unique_(c(M@attributes),"v")
     op = rewrite_op(M, op)
     return(project(bind(M,v,op), v, eval=TRUE)) # see note at end
