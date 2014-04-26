@@ -126,23 +126,23 @@ scidbmultiply = function(e1,e2)
     dnames = make.names_(c(dimensions(e1)[[1]],dimensions(e2)[[2]]))
     CHUNK_SIZE = options("scidb.gemm_chunk_size")[[1]]
     op1 = sprintf("repart(%s,<%s:%s>[%s=0:%s,%s,0,%s=0:%s,%s,0])",op1,a1,scidb_types(e1)[1],
-            dimensions(e1)[1],noE(as.numeric(scidb_coordinate_end(e1)[1])),noE(CHUNK_SIZE),
-            dimensions(e1)[2],noE(as.numeric(scidb_coordinate_end(e1)[2])),noE(CHUNK_SIZE))
+            dimensions(e1)[1],noE(as.numeric(scidb_coordinate_bounds(e1)$length[1])-1),noE(CHUNK_SIZE),
+            dimensions(e1)[2],noE(as.numeric(scidb_coordinate_bounds(e1)$length[2])-1),noE(CHUNK_SIZE))
     op2 = sprintf("repart(%s,<%s:%s>[%s=0:%s,%s,0,%s=0:%s,%s,0])",op2,a2,scidb_types(e2)[1],
-            dimensions(e2)[1],noE(as.numeric(scidb_coordinate_end(e2)[1])),noE(CHUNK_SIZE),
-            dimensions(e2)[2],noE(as.numeric(scidb_coordinate_end(e2)[2])),noE(CHUNK_SIZE))
+            dimensions(e2)[1],noE(as.numeric(scidb_coordinate_bounds(e2)$length[1])-1),noE(CHUNK_SIZE),
+            dimensions(e2)[2],noE(as.numeric(scidb_coordinate_bounds(e2)$length[2])-1),noE(CHUNK_SIZE))
     osc = sprintf("<%s:%s>[%s=0:%s,%s,0,%s=0:%s,%s,0]",a1,scidb_types(e1)[1],
-              dnames[[1]],noE(as.numeric(scidb_coordinate_end(e1)[1])),noE(CHUNK_SIZE),
-              dnames[[2]],noE(as.numeric(scidb_coordinate_end(e2)[2])),noE(CHUNK_SIZE))
+              dnames[[1]],noE(as.numeric(scidb_coordinate_bounds(e1)$length[1])-1),noE(CHUNK_SIZE),
+              dnames[[2]],noE(as.numeric(scidb_coordinate_bounds(e2)$length[2])-1),noE(CHUNK_SIZE))
     op3 = sprintf("build(%s,0)",osc)
   } else
   {
 # Adjust array partitions as required by spgemm
     op2 = sprintf("repart(%s, <%s:%s>[%s=0:%s,%s,0,%s=0:%s,%s,0])",
             op2, a2, scidb_types(e2)[1],
-            dimensions(e2)[1],noE(as.numeric(scidb_coordinate_end(e2)[1])),
+            dimensions(e2)[1],noE(as.numeric(scidb_coordinate_bounds(e2)$length[1])-1),
                               noE(scidb_coordinate_chunksize(e1)[2]),
-            dimensions(e2)[2], noE(as.numeric(scidb_coordinate_end(e2)[2])),
+            dimensions(e2)[2], noE(as.numeric(scidb_coordinate_bounds(e2)$length[2])-1),
                               noE(scidb_coordinate_chunksize(e2)[2]))
   }
 
