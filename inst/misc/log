@@ -1,3 +1,51 @@
+commit 0b7d7668895ff85ade35ab31fa18f1a03b2372d5
+Author: bwlewis <blewis@illposed.net>
+Date:   Fri Apr 25 22:15:26 2014 -0400
+
+    Fixed serious bugs in matrix multiplication affecting non-zero-indexed arrays
+
+commit 9d7eb253489225f06eb5148d86762ef8d38999c7
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 13:53:44 2014 -0400
+
+    Improved doc list.functions script
+
+commit ab46e2147afa32cee66f767a2033bb0494221cee
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 12:47:45 2014 -0400
+
+    Updated vignette
+
+commit 78fcb6b8efa53baa468981ce30f22746e76b80a9
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 11:40:25 2014 -0400
+
+    Omit explicit namespace use in glm to silence CRAN NOTEs
+
+commit 0e1525180ca20e23b7073513b2edd3e8339da0ac
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 11:28:46 2014 -0400
+
+    Updated vignette
+
+commit d7f1e9ab29ba1587515061538fc5b353dcebe188
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 11:21:32 2014 -0400
+
+    Updated README
+
+commit 51045ce439bf95400f1e20d058ba4874882526ac
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 11:21:18 2014 -0400
+
+    Updated README
+
+commit af1d3038c73c34c89616b00f1d08d8ccf32cc22a
+Author: bwlewis <blewis@illposed.net>
+Date:   Wed Apr 16 11:19:33 2014 -0400
+
+    Updated README
+
 commit 64acd2e87e9dc1e6046c488d39be2612223485c7
 Author: bwlewis <blewis@illposed.net>
 Date:   Wed Apr 16 11:19:14 2014 -0400
