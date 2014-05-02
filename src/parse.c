@@ -110,6 +110,7 @@ SEXP scidb_type_vector (const char *type, int len)
  * nullable is an integer, 0 meaning not nullable 1 nullable.
  * vec is the output vector of appropriate R type from scidb_type_vector
  * i is the position in vec to place the converted value
+ * This is effective but gross! Someone, please improve!
  */
 void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
 {
@@ -127,20 +128,126 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
   {
     long long ll = (long long)*((long long *)*p);
     (*p)+=8;
-//printf("val %lld\n",ll);
     if(isnull)
     {
       REAL(vec)[i] = NA_REAL;
       return;
     }
-// XXX CHECK BOUNDS HERE XXX
+    REAL(vec)[i] = (double)ll; // XXX CHECK BOUNDS HERE XXX
+    return;
+  }
+  else if(scmp(type,"uint64"))
+  {
+    unsigned long long ll = (unsigned long long)*((unsigned long long *)*p);
+    (*p)+=8;
+    if(isnull)
+    {
+      REAL(vec)[i] = NA_REAL;
+      return;
+    }
+    REAL(vec)[i] = (double)ll; // XXX CHECK BOUNDS HERE XXX
+    return;
+  }
+  else if(scmp(type,"uint32"))
+  {
+    unsigned int ll = (unsigned int)*((unsigned int *)*p);
+    (*p)+=4;
+    if(isnull)
+    {
+      REAL(vec)[i] = NA_REAL;
+      return;
+    }
     REAL(vec)[i] = (double)ll;
     return;
-  } else if(scmp(type,"double"))
+  }
+  else if(scmp(type,"int32"))
+  {
+    int ll = (int)*((int *)*p);
+    (*p)+=4;
+    if(isnull)
+    {
+      INTEGER(vec)[i] = NA_INTEGER;
+      return;
+    }
+    INTEGER(vec)[i] = ll;
+    return;
+  }
+  else if(scmp(type,"int16"))
+  {
+    short ll = (short)*((short *)*p);
+    (*p)+=2;
+    if(isnull)
+    {
+      INTEGER(vec)[i] = NA_INTEGER;
+      return;
+    }
+    INTEGER(vec)[i] = (int)ll;
+    return;
+  }
+  else if(scmp(type,"uint16"))
+  {
+    unsigned short ll = (unsigned short)*((unsigned short *)*p);
+    (*p)+=2;
+    if(isnull)
+    {
+      INTEGER(vec)[i] = NA_INTEGER;
+      return;
+    }
+    INTEGER(vec)[i] = (int)ll;
+    return;
+  }
+  else if(scmp(type,"int8"))
+  {
+    char ll = (char)*((char *)*p);
+    (*p)+=1;
+    if(isnull)
+    {
+      INTEGER(vec)[i] = NA_INTEGER;
+      return;
+    }
+    INTEGER(vec)[i] = (int)ll;
+    return;
+  }
+  else if(scmp(type,"uint8"))
+  {
+    unsigned char ll = (unsigned char)*((unsigned char *)*p);
+    (*p)+=1;
+    if(isnull)
+    {
+      INTEGER(vec)[i] = NA_INTEGER;
+      return;
+    }
+    INTEGER(vec)[i] = (int)ll;
+    return;
+  }
+  else if(scmp(type,"bool"))
+  {
+    unsigned char ll = (unsigned char)*((unsigned char *)*p);
+    (*p)+=1;
+    if(isnull)
+    {
+      LOGICAL(vec)[i] = NA_LOGICAL;
+      return;
+    }
+    LOGICAL(vec)[i] = (int)ll;
+    return;
+  }
+  else if(scmp(type,"float"))
+  {
+    float d = (float)*((float *)*p);
+    (*p)+=4;
+    if(isnull)
+    {
+      REAL(vec)[i] = NA_REAL;
+      return;
+    }
+    REAL(vec)[i] = (double)d;
+    return;
+  }
+  else if(scmp(type,"double"))
   {
     double d = (double)*((double *)*p);
     (*p)+=8;
-//printf("val %f\n",d);
     if(isnull)
     {
       REAL(vec)[i] = NA_REAL;
@@ -148,7 +255,8 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     }
     REAL(vec)[i] = d;
     return;
-  } else if(scmp(type,"string"))
+  }
+  else if(scmp(type,"string"))
   {
     unsigned int len = (unsigned int)*((unsigned int*)*p);
     (*p)+=4;
@@ -168,7 +276,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     free(buf);
     return;
   }
-  error("Unsupported type: ",type);
+  error("Unsupported type %s",type);
 }
 
 /*
