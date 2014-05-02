@@ -114,16 +114,13 @@ SEXP scidb_type_vector (const char *type, int len)
  */
 void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
 {
-//printf("scidb_value ");
-  int isnull = 0;
+  unsigned int isnull = 0;
   if(nullable)
   {
-    isnull = (int)(char)*((char *)*p);
+    isnull = (unsigned int)(unsigned char)*((unsigned char *)*p);
     isnull = isnull<127;
     (*p)++;
   }
-//printf("type %s ",type);
-//printf("isnull %d ",isnull);
   if(scmp(type,"int64"))
   {
     long long ll = (long long)*((long long *)*p);
@@ -260,7 +257,6 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
   {
     unsigned int len = (unsigned int)*((unsigned int*)*p);
     (*p)+=4;
-//printf("len %d ",len);
     if(isnull)
     {
       (*p)+=len;
@@ -271,7 +267,6 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     char *buf = (char *)calloc(len,1);
     memcpy(buf, *p, len);
     (*p)+=len;
-//printf("%s\n",buf);
     SET_STRING_ELT(vec,i,mkChar(buf));
     free(buf);
     return;
