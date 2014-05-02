@@ -4,47 +4,53 @@
 \description{Issue SciDB queries and optionally return output in a data frame.}
 \usage{
 iquery(query, `return` = FALSE, afl = TRUE,
-       iterative = FALSE, n = 10000, excludecol, binary = FALSE, ...)
+       iterative = FALSE, n = 10000, excludecol,
+       binary = FALSE, ...)
 }
 \arguments{
-  \item{query}{A SciDB query string (character). Separate multiple queries with semicolons. }
-  \item{return}{Set to TRUE to return output. Otherwise don't return query output.
-                Only available when \code{afl=TRUE}}
+  \item{query}{A SciDB query string (character). Separate multiple queries
+               with semicolons. }
+  \item{return}{Set to TRUE to return output. Otherwise don't return
+                query output. Only available when \code{afl=TRUE}}
   \item{afl}{TRUE indicates query is in AFL form, FALSE indicates AQL. }
-  \item{iterative}{Set to TRUE to return a result iterator. FALSE returns entire result at once.}
+  \item{iterative}{Set to TRUE to return a result iterator. FALSE returns
+                   entire result at once.}
   \item{n}{Maximum number of rows to return when iterating through results.
            Set to \code{Inf} to return everything. Ignored when binary=TRUE.}
   \item{excludecol}{An optional numeric range of columns to exclude from
                     iterative results (only applies when iterative=TRIE).}
-  \item{binary}{Set to TRUE to use a more efficient binary transfer method. Default FALSE.}
-  \item{...}{Options passed on to \code{read.table} used to parse results. See details.}
+  \item{binary}{Set to TRUE to use a more efficient binary transfer method.}
+  \item{...}{Options passed on to \code{read.table} used to parse results.
+             See details.}
 }
 \details{
-The \code{iquery} function is an analog of the command-line
-SciDB \code{iquery} program. Use it to issue arbitrary SciDB queries.
+The \code{iquery} function is an analog of the command-line SciDB \code{iquery}
+program. Use it to issue arbitrary SciDB queries.
 
-Several return options are available. Select \code{binary=TRUE} to bring
-the entire result of the query to R using an efficient binary transfer.
-Note that for now, selecting \code{binary=TRUE} implies \code{n=Inf}--that is,
-the whole result comes back at once.
+Several return options are available. Select \code{binary=TRUE} to bring the
+entire result of the query to R using an efficient binary transfer.  Note that
+for now, selecting \code{binary=TRUE} implies \code{n=Inf}--that is, the whole
+result comes back at once.
 
 When \code{binary=TRUE} is selected, two optional arguments become available:
 
-\code{buffer=5000}:  The binary returned data will be parsed in chunks of at
-most \code{buffer} rows. Adjust this for performance.
-
-\code{row.names=NULL}: Similarly to R's \code{read.table} function, set this
-value to be a vector of row labels for the output, or optionally a single number indicating
-the output column to use as row names for the output data.frame.
-
 \itemize{
-\item Select \code{binary=FALSE} to use a delimited text transfer option. Data are transferred
-using delimited text and parsed through R's \code{read.table} function. When this option
-is selected, any \code{...} arguments are passed directly to \code{read.table}.
+\item \code{buffer=5000}:  The binary returned data will be parsed in chunks of
+at most \code{buffer} rows. Adjust this for performance.
 
-\item Select \code{iterative=TRUE} to return an iterator that iterators over \code{n} output
-rows at a time. This option only supports delimted text transfers.
+\item \code{row.names=NULL}: Similarly to R's \code{read.table} function, set
+this value to be a vector of row labels for the output, or optionally a single
+number indicating the output column to use as row names for the output
+data.frame.
 }
+
+Select \code{binary=FALSE} to use a delimited text transfer option. Data are
+transferred using delimited text and parsed through R's \code{read.table}
+function. When this option is selected, any \code{...} arguments are passed
+directly to \code{read.table}.
+
+Select \code{iterative=TRUE} to return an iterator that iterators over \code{n}
+output rows at a time. This option only supports delimted text transfers.
 }
 \value{
 If \code{return=TRUE}, return the query result in data frame form (similar to the
