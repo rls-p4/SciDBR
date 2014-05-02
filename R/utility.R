@@ -1007,7 +1007,7 @@ scidb_unpack_to_dataframe = function(query, ...)
       ans = ans[,-row_names,drop=FALSE]
     } else
     {
-      rownmaes(ans) = row_names
+      rownames(ans) = row_names
     }
   }
   ans

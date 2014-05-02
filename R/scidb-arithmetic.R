@@ -384,7 +384,7 @@ svd_scidb = function(x, nu=min(dim(x)), nv=nu)
     u = tmpnam()
     d = tmpnam()
     v = tmpnam()
-    xend = scidb_coordinate_end(x)
+    xend = as.numeric(scidb_coordinate_bounds(x)$length) - 1
     schema = sprintf("[%s=0:%s,1000,0,%s=0:%s,1000,0]",
                      dimensions(x)[1],noE(xend[1]),
                      dimensions(x)[2],noE(xend[2]))
