@@ -97,7 +97,7 @@ dimnames.scidbdf = function(x)
   eval(M)
 }
 
-# Flexible array subsetting wrapper.
+# data.frame subsetting wrapper.
 # x: A Scidbdf array object
 # ...: list of dimensions
 # iterative: return a data.frame iterator
@@ -121,9 +121,7 @@ dimnames.scidbdf = function(x)
     }
     else
     {
-      ans = iquery(sprintf("%s",x@name),`return`=TRUE,n=Inf, colClasses=scidbdfcc(x))
-      rownames(ans)= ans[,1]
-      ans = ans[,-1,drop=FALSE]
+      ans = iquery(sprintf("%s",x@name),`return`=TRUE,binary=TRUE,buffer=nrow(x),row.names=1)
       return(ans)
     }
 # Not materializing, return a SciDB array

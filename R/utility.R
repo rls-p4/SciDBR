@@ -590,7 +590,7 @@ df2scidb = function(X,
 
 iquery = function(query, `return`=FALSE,
                   afl=TRUE, iterative=FALSE,
-                  n=10000, excludecol, ...)
+                  n=10000, excludecol, binary=FALSE, ...)
 {
   if(!afl && `return`) stop("return=TRUE may only be used with AFL statements")
   if(iterative && !`return`) stop("Iterative result requires return=TRUE")
@@ -606,8 +606,13 @@ iquery = function(query, `return`=FALSE,
   if(n==Inf) n = -1    # Indicate to shim that we want all the lines of output
   for(query in qsplit)
   {
+# Only return the last query, mimicking command-line iquery.
     if(`return` && m==length(qsplit))
     {
+      if(binary)
+      {
+        return(scidb_unpack_to_dataframe(query,...))
+      }
       ans = tryCatch(
        {
         sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0, interrupt=TRUE)
@@ -945,4 +950,65 @@ show_commit_log = function()
   {
     file.show(log)
   }
+}
+
+
+scidb_unpack_to_dataframe = function(query, ...)
+{
+  buffer=5000L
+  row_names = NULL
+  args = list(...)
+  if(!is.null(args$buffer)) buffer=as.integer(args$buffer)
+  if(!is.null(args$row.names)) row_names = args$row.names
+  x = scidb(sprintf("unpack(%s,row)",query), data.frame=TRUE)
+  N = scidb_nullable(x)
+  TYPES = scidb_types(x)
+  ns = rep("",length(N))
+  ns[N] = "null"
+  format_string = paste(paste(TYPES,ns),collapse=",")
+  format_string = sprintf("(%s)",format_string)
+  sessionid = scidbquery(x@name, save=format_string, async=FALSE, release=0, interrupt=TRUE)
+# Release the session on exit
+  on.exit( GET("/release_session",list(id=sessionid)) ,add=TRUE)
+
+  r = URI("/read_bytes",list(id=sessionid,n=0))
+  sigint(SIG_TRP)
+  BUF = tryCatch(
+        { 
+          getBinaryURL(r, .opts=list('ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=FALSE, progressfunction=curl_signal_trap))
+        }, error=function(e)
+        { 
+          GET("/release_session",list(id=sessionid))
+          sigint(SIG_DFL)
+          stop("canceled")
+        })
+  sigint(SIG_DFL)
+  len = length(BUF)
+  p = 0
+  ans = c()
+  n = ncol(x)
+  cnames = c(names(x),"lines","p")
+  while(p<len)
+  {
+    tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, N, BUF, as.double(p))
+    names(tmp) = cnames
+    lines = tmp[[n+1]]
+    p     = tmp[[n+2]]
+    if(lines>0)
+    {
+      ans   = rbind(ans,data.frame(tmp[1:n])[1:lines,])
+    }
+  }
+  if(!is.null(row_names))
+  {
+    if(is.numeric(row_names) && length(row_names)==1)
+    {
+      rownames(ans) = ans[,row_names]
+      ans = ans[,-row_names,drop=FALSE]
+    } else
+    {
+      rownmaes(ans) = row_names
+    }
+  }
+  ans
 }
