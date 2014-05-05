@@ -142,14 +142,23 @@ substitute = function(x, value, `attribute`, `eval`=FALSE)
   .scidbeval(query, `eval`, depend=list(x))
 }
 
-subarray = function(x, limits, schema, between=FALSE, `eval`=FALSE)
+subarray = function(x, limits, between=FALSE, `eval`=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   if(missing(limits)) limits=paste(rep("null",2*length(dimensions(x))),collapse=",")
-  if(!missing(schema))
+  else if(is.character(limits))
   {
-    if(!is.character(schema)) schema = schema(schema)
-    limits = paste(between_coordinate_bounds(schema),collapse=",")
+# Assume user has supplied a schema string
+    limits = paste(between_coordinate_bounds(limits),collapse=",")
+  } else if(is.scidb(limits) || is.scidbdf(limits))
+  {
+# User has supplied an array
+    limits = paste(between_coordinate_bounds(schema(limits)),collapse=",")
+  } else
+  {
+# Assume a vector of limits
+    if(length(limits)!=2*length(dimensions(x))) stop("Mismatched bounds length")
+    limits = paste(noE(limits),collapse=",")
   }
   limits = gsub("\\*",.scidb_DIM_MAX,limits)
   if(between)

@@ -81,7 +81,9 @@ if(nchar(host)>0)
          sweep(Y,MARGIN=2,apply(Y,2,mean))[])
 
 # Join
-  check(project(bind(merge(Y,diag(Y),by.x="i",by.y="i_1"),"v","val*val_1"),"v")[], diag(B)*B)
+# We need 'subarray' here to reset the origin of Y to zero to match
+# diag(Y)--diag always returns a zero indexed vector.
+  check(project(bind(merge(subarray(Y),diag(Y),by.x="i",by.y="i_1"),"v","val*val_1"),"v")[], diag(B)*B)
 
 # On different dimensions
   x = as.scidb(rnorm(5))
