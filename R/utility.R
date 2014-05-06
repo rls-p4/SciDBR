@@ -955,10 +955,15 @@ show_commit_log = function()
 
 scidb_unpack_to_dataframe = function(query, ...)
 {
-  buffer=5000L
+  buffer = 100000L
   row_names = NULL
   args = list(...)
-  if(!is.null(args$buffer)) buffer=as.integer(args$buffer)
+  if(!is.null(args$buffer))
+  {
+    argsbuf = as.integer(args$buffer)
+# Potential problem here if args$buffer is bogus
+    if(!is.na(argsbuf) && argsbuf < 100e6) buffer = as.integer(argsbuf)
+  }
   if(!is.null(args$row.names)) row_names = args$row.names
   x = scidb(sprintf("unpack(%s,row)",query), data.frame=TRUE)
   N = scidb_nullable(x)
@@ -996,7 +1001,7 @@ scidb_unpack_to_dataframe = function(query, ...)
     p     = tmp[[n+2]]
     if(lines>0)
     {
-      ans   = rbind(ans,data.frame(tmp[1:n])[1:lines,])
+      ans   = rbind(ans,data.frame(tmp[1:n],stringsAsFactors=FALSE)[1:lines,])
     }
   }
   if(!is.null(row_names))

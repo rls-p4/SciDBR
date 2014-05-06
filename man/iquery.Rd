@@ -19,9 +19,11 @@ iquery(query, `return` = FALSE, afl = TRUE,
            Set to \code{Inf} to return everything. Ignored when binary=TRUE.}
   \item{excludecol}{An optional numeric range of columns to exclude from
                     iterative results (only applies when iterative=TRIE).}
-  \item{binary}{Set to TRUE to use a more efficient binary transfer method.}
-  \item{...}{Options passed on to \code{read.table} used to parse results.
-             See details.}
+  \item{binary}{TRUE indicates efficient binary transfer method. Set to
+                FALSE to use read.table and UTF8 encoded text transfer, parsed
+                by \code{read.table} (more flexible parsing for unusual types).}
+  \item{...}{Options passed on to \code{read.table} used to parse results when
+             \code{binary=FALSE}.  See details.}
 }
 \details{
 The \code{iquery} function is an analog of the command-line SciDB \code{iquery}
@@ -35,7 +37,7 @@ result comes back at once.
 When \code{binary=TRUE} is selected, two optional arguments become available:
 
 \itemize{
-\item \code{buffer=5000}:  The binary returned data will be parsed in chunks of
+\item \code{buffer=100000}:  The binary returned data will be parsed in chunks of
 at most \code{buffer} rows. Adjust this for performance.
 
 \item \code{row.names=NULL}: Similarly to R's \code{read.table} function, set
@@ -47,7 +49,8 @@ data.frame.
 Select \code{binary=FALSE} to use a delimited text transfer option. Data are
 transferred using delimited text and parsed through R's \code{read.table}
 function. When this option is selected, any \code{...} arguments are passed
-directly to \code{read.table}.
+directly to \code{read.table}. You can limit the number of returned results
+to \code{n} when this option is set.
 
 Select \code{iterative=TRUE} to return an iterator that iterators over \code{n}
 output rows at a time. This option only supports delimted text transfers.
