@@ -12,18 +12,21 @@ subarray(x, limits, between=FALSE, `eval`=FALSE)
 }
 \arguments{
   \item{x}{A \code{scidb} or \code{scidbdf} object.}
-  \item{limits}{Either a vector of coordinate bounds in \code{c(low1,low2,...,upper1,upper2,...)
+  \item{limits}{Either a vector of coordinate bounds in \code{c(low1,low2,...,upper1,upper2,...)}
                 form, or a character string schema, or a SciDB array object. See details.}
   \item{between}{If TRUE, form a SciDB between-style query, otherwise use subarray.}
   \item{eval}{If TRUE, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \details{
 The \code{limits} argument can take one of three forms:
+
 \itemize{
 \item A vector of coordinate bounds listing the lower bounds for each dimension first
 followed by the upper bounds for each dimension, in order (see examples).
+
 \item A character string schema that contains a SciDB schema with the same dimensions
 as \code{x}. Limits will be taken from the schema dimension bounds.
+
 \item A \code{scidb} or \code{scidbdf} object. Limits will be taken from the object's
 dimension bounds.
 }
