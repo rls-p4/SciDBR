@@ -88,7 +88,7 @@ Objects can be created by calls of the form \code{new("scidb", ...)},
     \item{image}{\code{signature(x = "scidb")}: \code{image(x, grid=c(m,n), op="sum(attribute)")}
 Display a heatmap-like image of the 2-d scidb array reference object \code{x}.
 \code{grid(m,n)} specifies the repartitioned array block sizes and \code{op} is a valid SciDB aggregation function applied to the repartitioned chunks. }
-    \item{diag}{\code{signature(x = "scidb")}: Return the diagonal of a SciDB matrix as a new 1d SciDB array (a vector).}
+    \item{diag}{\code{signature(x = "scidb")}: Return the diagonal of a SciDB matrix as a new 1d SciDB array (a vector). NOTE that the result vector is zero-indexed.}
     \item{show}{\code{signature(object = "scidb")}: ... }
     \item{t}{\code{signature(x = "scidb")}: \code{t(x)}
       Return the transpose of the matrix \code{x}.

@@ -384,14 +384,14 @@ svd_scidb = function(x, nu=min(dim(x)), nv=nu)
     u = tmpnam()
     d = tmpnam()
     v = tmpnam()
-    xend = scidb_coordinate_end(x)
+    xend = as.numeric(scidb_coordinate_bounds(x)$length) - 1
     schema = sprintf("[%s=0:%s,1000,0,%s=0:%s,1000,0]",
                      dimensions(x)[1],noE(xend[1]),
                      dimensions(x)[2],noE(xend[2]))
     schema = sprintf("%s%s",build_attr_schema(x),schema)
-    iquery(sprintf("store(gesvd(repart(%s,%s),'left'),%s)",x@name,schema,u))
-    iquery(sprintf("store(gesvd(repart(%s,%s),'values'),%s)",x@name,schema,d))
-    iquery(sprintf("store(transpose(gesvd(repart(%s,%s),'right')),%s)",x@name,schema,v))
+    iquery(sprintf("store(gesvd(reshape(%s,%s),'left'),%s)",x@name,schema,u))
+    iquery(sprintf("store(gesvd(reshape(%s,%s),'values'),%s)",x@name,schema,d))
+    iquery(sprintf("store(transpose(gesvd(reshape(%s,%s),'right')),%s)",x@name,schema,v))
     ans = list(u=scidb(u,gc=TRUE),d=scidb(d,gc=TRUE),v=scidb(v,gc=TRUE))
     attr(ans$u,"sparse") = FALSE
     attr(ans$d,"sparse") = FALSE

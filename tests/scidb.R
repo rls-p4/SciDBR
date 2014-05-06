@@ -15,6 +15,12 @@ if(nchar(host)>0)
 {
   scidbconnect(host)
   options(scidb.debug=TRUE)
+  oplist = scidbls(type="operators")
+  got = function(op)
+  {
+    length(grep(op,oplist))>0
+  }
+
 # Upload dense matrix to SciDB
   set.seed(1)
   A = matrix(rnorm(50*40),50)
@@ -46,8 +52,8 @@ if(nchar(host)>0)
   check(svd(A)$d, as.vector(svd(X)$d[]))
 
 # Numeric array subsetting
-  check((X %*% X[0,,drop=TRUE])[,drop=FALSE], A %*% A[1,])
-  check(X[c(5,15,1),c(25,12,11)][], A[c(6,16,2),c(26,13,12)])
+  check((X %*% X[1,,drop=TRUE])[,drop=FALSE], A %*% A[1,])
+  check(X[c(6,16,2),c(25,12,11)][], A[c(6,16,2),c(26,13,12)])
   check(as.vector(diag(Y)[]), diag(B))
 
 # Filtering
@@ -75,7 +81,9 @@ if(nchar(host)>0)
          sweep(Y,MARGIN=2,apply(Y,2,mean))[])
 
 # Join
-  check(project(bind(merge(Y,diag(Y),by.x="i",by.y="i_1"),"v","val*val_1"),"v")[], diag(B)*B)
+# We need 'subarray' here to reset the origin of Y to zero to match
+# diag(Y)--diag always returns a zero indexed vector.
+  check(project(bind(merge(subarray(Y),diag(Y),by.x="i",by.y="i_1"),"v","val*val_1"),"v")[], diag(B)*B)
 
 # On different dimensions
   x = as.scidb(rnorm(5))
@@ -86,15 +94,14 @@ if(nchar(host)>0)
 
 # Sparse upload, count
   S = Matrix::sparseMatrix(sample(100,200,replace=TRUE),sample(100,200,replace=TRUE),x=runif(200))
-  Z = as.scidb(S)
+  Z = as.scidb(S,start=c(1,5))
   check(count(Z), Matrix::nnzero(S))
 
 # Check that image does not fail
   image(Z,plot=FALSE)
 
 # spgemm
-  got = length(grep("spgemm",scidbls(type="operators")))>0
-  if(got)
+  if(got("spgemm"))
   {
     x = crossprod(Z)
   }
@@ -145,8 +152,7 @@ if(nchar(host)>0)
   check(s[i][], sort(a[]))
 
 # GLM (requires SciDB p4 plugin)
-  got = length(grep("glm",scidbls(type="operators")))>0
-  if(got)
+  if(got("glm"))
   {
     x = as.scidb(matrix(rnorm(5000*20),nrow=5000))
     y = as.scidb(rnorm(5000))
