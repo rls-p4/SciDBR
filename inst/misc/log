@@ -1,3 +1,82 @@
+commit 00cf8ad01101c5bf6e180dd73a4be60c25c80a4e
+Merge: 653222b b57d497
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue May 6 09:31:39 2014 -0400
+
+    Merge branch 'laboratory'
+
+commit b57d4970c35bd362a809b536186a12bb2e56dcae
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue May 6 09:27:52 2014 -0400
+
+    Fixed doc
+
+commit d2b6a17608472f7b70296d0ee4f7d2cad36b7b93
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue May 6 09:24:44 2014 -0400
+
+    Fixed doc
+
+commit fe8e3d4861177b80d5b70fdb41d68a196c128dd0
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue May 6 09:19:33 2014 -0400
+
+    Fixed problems in data.frame parsing in new binary transer method
+
+commit b8d8bec237f5892e2f4671e2054826648cde4d85
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon May 5 12:49:19 2014 -0400
+
+    Fixed a test issue with subarray and diag; improved subarray argument handling and documentation
+
+commit 9e05b94894749efb4c07b19c7a79dab8a7a4f60f
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon May 5 09:01:15 2014 -0400
+
+    misc-documentation files for vignette generation
+
+commit af070f6becd65ab2c813146956658640049752a8
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri May 2 16:13:36 2014 -0400
+
+    Fixed an issue with SciDB null value detection
+
+commit 3238180544770f9ee76300a6bf4693540128f98b
+Author: bwlewis <blewis@illposed.net>
+Date:   Fri May 2 15:16:01 2014 -0400
+
+    Expanded types for new binary transfer
+
+commit 324ab26ad1f8606c4f45ab38f09ca39fbd663530
+Author: bwlewis <blewis@illposed.net>
+Date:   Fri May 2 14:25:50 2014 -0400
+
+    Test typo
+
+commit 2c7dd0760361e58227758e6fd6c9cf6822e98973
+Author: bwlewis <blewis@illposed.net>
+Date:   Fri May 2 14:03:52 2014 -0400
+
+    Fixed svd array indexing issue, added iquery doc
+
+commit e8c1c8dca2bb0e5d445911ae144f8e13862c2bfb
+Author: bwlewis <blewis@illposed.net>
+Date:   Fri May 2 13:59:33 2014 -0400
+
+    Fixed svd array indexing issue, added iquery doc
+
+commit 73bd55a24cf282e73a0f037435d43d724e8835cd
+Author: bwlewis <blewis@illposed.net>
+Date:   Fri May 2 13:06:44 2014 -0400
+
+    Experimental binary transfer for data frames; added binary option to iquery; still need tests and help
+
+commit 653222b9f99db5bd7d1a1982047dae3174b0e723
+Author: bwlewis <blewis@illposed.net>
+Date:   Fri Apr 25 22:19:48 2014 -0400
+
+    Merged serious bug fix for matrix multiply into master branch
+
 commit 0b7d7668895ff85ade35ab31fa18f1a03b2372d5
 Author: bwlewis <blewis@illposed.net>
 Date:   Fri Apr 25 22:15:26 2014 -0400
