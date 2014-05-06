@@ -955,6 +955,8 @@ show_commit_log = function()
 
 scidb_unpack_to_dataframe = function(query, ...)
 {
+  DEBUG = FALSE
+  if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
   buffer = 100000L
   row_names = NULL
   args = list(...)
@@ -993,17 +995,24 @@ scidb_unpack_to_dataframe = function(query, ...)
   ans = c()
   n = ncol(x)
   cnames = c(names(x),"lines","p")
+  dt1 = proc.time()
   while(p<len)
   {
     tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, N, BUF, as.double(p))
+    dt1 = proc.time()
     names(tmp) = cnames
     lines = tmp[[n+1]]
+    p_old = p
     p     = tmp[[n+2]]
     if(lines>0)
     {
+# Let's adaptively re-estimate a buffer size
+      avg_bytes_per_line = ceiling((p - p_old)/lines)
+      buffer = ceiling(1.3*(len - p)/avg_bytes_per_line) # Engineering factor
       ans   = rbind(ans,data.frame(tmp[1:n],stringsAsFactors=FALSE)[1:lines,])
     }
   }
+  if(DEBUG) cat("R parsing time",(proc.time()-dt1)[3],"\n")
   if(!is.null(row_names))
   {
     if(is.numeric(row_names) && length(row_names)==1)
