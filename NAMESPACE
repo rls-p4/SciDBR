@@ -10,7 +10,6 @@ importFrom("zoo", na.locf)
 # Functions
 export("antijoin")
 export("scidb_fisher.test")
-export("glm_scidb")
 export("model_scidb")
 export("persist")
 export("scidb")
