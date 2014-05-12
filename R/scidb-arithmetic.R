@@ -265,6 +265,17 @@ scidbmultiply = function(e1,e2)
     e1 = merge(e1,build(0,e1),merge=TRUE)
     e2 = merge(e2,build(0,e2),merge=TRUE)
   }
+# Check special case row/column vector and orinary vector dim mismatch
+  if(l1>l2 && dim(e1)[1] == dim(e2)[1] && dim(e1)[2] == 1)
+  {
+    e1 = reshape(e1,e2)
+    l1 = length(dim(e1))
+  }
+  if(l2>l1 && dim(e2)[1] == dim(e1)[1] && dim(e2)[2] == 1)
+  {
+    e2 = reshape(e2,e1)
+    l2 = length(dim(e2))
+  }
 # Handle conformable-dimension case
   if(l1 == l2)
   {
@@ -296,9 +307,7 @@ scidbmultiply = function(e1,e2)
     along = dimensions(e1)[1]
   } else
   {
-    didx = which(dim(e1)==dim(e2)[1])
-    didx[length(didx)]
-    newschema = build_dim_schema(e1,I=didx,newnames=dimensions(e2)[1])
+    newschema = build_dim_schema(e1,I=2,newnames=dimensions(e2)[1])
     newschema = sprintf("%s%s",build_attr_schema(e2),newschema)
     e2 = reshape(e2, newschema)
     along = dimensions(e1)[2]
