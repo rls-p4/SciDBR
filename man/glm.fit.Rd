@@ -3,9 +3,8 @@
 \alias{glm}
 \alias{model_scidb}
 \alias{glm.fit,scidb-method}
-\alias{glm,scidb-method}
 \alias{glm.fit,scidb,ANY,MNSN-method}
-\alias{glm,ANY,ANY,scidb,scidbdf-method}
+\alias{glm,ANY,ANY,scidbdf-method}
 \title{
 Fitting generalized linear models
 }
@@ -16,7 +15,7 @@ matrix and response vector. \code{glm} is a simplified interface for
 }
 \usage{
 \S4method{glm.fit}{scidb}(x,y,weights=NULL,family=gaussian())
-\S4method{glm}{ANY,ANY,scidb}(formula, family=gaussian(), data, weights=NULL)
+\S4method{glm}{ANY,ANY,scidbdf}(formula, family=gaussian(), data, weights=NULL)
 model_scidb(formula, data, factors=NULL)
 }
 \arguments{

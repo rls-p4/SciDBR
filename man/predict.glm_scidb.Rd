@@ -1,5 +1,6 @@
 \name{predict}
 \alias{predict}
+\alias{predict.glm_scidb}
 \title{
 Prediction for SciDB GLM fits
 }
