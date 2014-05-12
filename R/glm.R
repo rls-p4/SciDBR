@@ -346,12 +346,12 @@ predict.glm_scidb = function(object, ...) #newdata=NULL, type=c("link","response
     newdata = NULL
   } else
   {
-    newdata = eval(C$newdata)
+    newdata = eval(C$newdata,envir=parent.frame())
   }
   if(is.null(C$type)) type="link"
-  else type = eval(C$type)
+  else type = eval(C$type,envir=parent.frame())
   if(is.null(C$se.fit)) se.fit=FALSE
-  else se.fit=eval(C$se.fit)
+  else se.fit=eval(C$se.fit,envir=parent.frame())
   if(!type %in% c("link","response")) stop("type must be one of 'link' or 'response'")
   if(is.null(newdata))
   {
