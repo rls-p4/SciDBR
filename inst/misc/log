@@ -1,3 +1,27 @@
+commit 861d5706d0eb8451e97f99736280f41af9f9b179
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon May 12 02:05:23 2014 -0400
+
+    Fixed another binop issue with mismatched vector dimensions
+
+commit 26e8657f94c2913460aaab1e11a4c1b883da5733
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon May 12 01:42:52 2014 -0400
+
+    Fixed a bug in predict.glm_scidb
+
+commit 3cc33370de631573ee537dc00425db62feb0e549
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon May 12 01:27:58 2014 -0400
+
+    Added method dispatch to glm function; fixed bug in vector arithmetic when one of them was a column vector and the other not; fixed predict.glm bugs; added missing %!=% infix operator
+
+commit ba0ea3c5229fd451c216364e3a59c4a7adc528d5
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue May 6 12:22:28 2014 -0400
+
+    log update
+
 commit 2ea241a427123878be49e49c1f91517eacb61479
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue May 6 12:09:52 2014 -0400
