@@ -29,7 +29,7 @@
 
 # A really basic prototype glm function, limited to simple formulas and
 # treatment contrast encoding. cf glm.
-glm_scidb = function(formula, data, family=gaussian(), weights=NULL)
+glm_scidb = function(formula, family=gaussian(), data, weights=NULL)
 {
   if(!is.scidbdf(data)) stop("data must be a scidbdf object")
   if(is.character(formula)) formula=as.formula(formula)
@@ -341,11 +341,17 @@ model_scidb = function(formula, data, factors=NULL)
 predict.glm_scidb = function(object, ...) #newdata=NULL, type=c("link","response"), se.fit=FALSE)
 {
   C = match.call()
-  if(is.null(C$newdata)) newdata=NULL
+  if(is.null(C$newdata))
+  {
+    newdata = NULL
+  } else
+  {
+    newdata = eval(C$newdata)
+  }
   if(is.null(C$type)) type="link"
-  else type=C$type
+  else type = eval(C$type)
   if(is.null(C$se.fit)) se.fit=FALSE
-  else se.fit=C$se.fit
+  else se.fit=eval(C$se.fit)
   if(!type %in% c("link","response")) stop("type must be one of 'link' or 'response'")
   if(is.null(newdata))
   {

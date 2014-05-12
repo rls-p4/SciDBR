@@ -33,6 +33,11 @@ setGeneric("%>%", def=function(x,y){NULL})
 setGeneric("%<=%", def=function(x,y){NULL})
 setGeneric("%>=%", def=function(x,y){NULL})
 setGeneric("%==%", def=function(x,y){NULL})
+setGeneric("%!=%", def=function(x,y){NULL})
+
+setOldClass("glm")
+setGeneric("glm")
+setMethod("glm", signature(formula="ANY", family="ANY", data="scidbdf"), glm_scidb)
 
 setOldClass("crossprod")
 setGeneric("crossprod")
@@ -125,6 +130,13 @@ setMethod("%==%",signature(x="scidb", y="ANY"),
   function(x,y)
   {
     .compare(x,y,"==",traditional=FALSE)
+  },
+  valueClass="scidb"
+)
+setMethod("%!=%",signature(x="scidb", y="ANY"),
+  function(x,y)
+  {
+    .compare(x,y,"!=",traditional=FALSE)
   },
   valueClass="scidb"
 )

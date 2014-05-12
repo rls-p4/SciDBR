@@ -252,6 +252,7 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
         dependencies = c(dependencies, tmp)
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", tmp@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as _cazart1, %s as _cazart2, _cazart1.%s, _cazart2.%s)",query, Q1, N, N)
+# Note start=0 comes from the sort...
         swap = c(swap, list(list(old=N, new=dimlabel, length=cnt, start=0)))
       }
     } else # No special index in this coordinate

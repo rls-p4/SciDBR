@@ -229,4 +229,11 @@ setMethod("%==%",signature(x="scidbdf", y="ANY"),
   },
   valueClass="scidbdf"
 )
+setMethod("%!=%",signature(x="scidbdf", y="ANY"),
+  function(x,y)
+  {
+    .compare(x,y,"!=",traditional=FALSE)
+  },
+  valueClass="scidbdf"
+)
 setGeneric("head")

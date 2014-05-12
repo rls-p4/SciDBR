@@ -296,7 +296,9 @@ scidbmultiply = function(e1,e2)
     along = dimensions(e1)[1]
   } else
   {
-    newschema = build_dim_schema(e1,I=2,newnames=dimensions(e2)[1])
+    didx = which(dim(e1)==dim(e2)[1])
+    didx[length(didx)]
+    newschema = build_dim_schema(e1,I=didx,newnames=dimensions(e2)[1])
     newschema = sprintf("%s%s",build_attr_schema(e2),newschema)
     e2 = reshape(e2, newschema)
     along = dimensions(e1)[2]
@@ -323,6 +325,7 @@ scidbmultiply = function(e1,e2)
   if(!(inherits(e1,"scidb") || inherits(e1,"scidbdf"))) stop("Sorry, not yet implemented.")
   if(inherits(e2,"scidb")) return(.joincompare(e1,e2,op))
   op = gsub("==","=",op,perl=TRUE)
+  op = gsub("!=","<>",op,perl=TRUE)
 # Automatically quote characters
   if(is.character(e2)) e2 = sprintf("'%s'",e2)
   q1 = paste(paste(e1@attributes,op,e2),collapse=" and ")
