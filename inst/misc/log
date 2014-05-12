@@ -1,3 +1,21 @@
+commit da7093ec5a32202eddee63d710eebb8ec3bf24f9
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon May 12 09:16:38 2014 -0400
+
+    More doc issues fixed
+
+commit d060ca1a8888dbfb5e0c80682516cc53b8639643
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon May 12 09:07:04 2014 -0400
+
+    Fixed several doc issues
+
+commit a37862fddc57937ea0b6b1f3773a19c73a53f514
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon May 12 02:06:25 2014 -0400
+
+    Fixed another binop issue with mismatched vector dimensions
+
 commit 861d5706d0eb8451e97f99736280f41af9f9b179
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Mon May 12 02:05:23 2014 -0400
