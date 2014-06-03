@@ -1,3 +1,27 @@
+commit e7be821977cc8587b4c848f2fe6fdbaae07cf2eb
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Jun 3 17:22:12 2014 -0400
+
+    Fixed several bugs in sparse dataframe indexing/materialization operations introduced by the new binary transfer schemes
+
+commit c3d4d14ba3e4b914fb263b90d728554f98bb93c5
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Jun 3 10:15:49 2014 -0400
+
+    Added fill_sparse option to na.locf
+
+commit fc590922929af357538dbc473f098d00e60b8b60
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Jun 3 10:14:13 2014 -0400
+
+    Added fill_sparse option to na.locf
+
+commit 95bc1369c561d8aaa096658ed7642adcac343582
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Jun 2 23:17:14 2014 -0400
+
+    Merged new instrumentation
+
 commit 01596bce95ced542103b288e5b6e201477c4168f
 Merge: dd13ff0 38b6300
 Author: B. W. Lewis <blewis@illposed.net>
