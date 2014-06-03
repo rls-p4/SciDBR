@@ -592,6 +592,8 @@ iquery = function(query, `return`=FALSE,
                   afl=TRUE, iterative=FALSE,
                   n=10000, excludecol, binary=FALSE, ...)
 {
+  DEBUG = FALSE
+  if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
   if(!afl && `return`) stop("return=TRUE may only be used with AFL statements")
   if(iterative && !`return`) stop("Iterative result requires return=TRUE")
   if(is.scidb(query) || is.scidbdf(query))  query=query@name
@@ -613,6 +615,7 @@ iquery = function(query, `return`=FALSE,
       {
         return(scidb_unpack_to_dataframe(query,...))
       }
+      dt1 = proc.time()
       ans = tryCatch(
        {
         sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0, interrupt=TRUE)
@@ -629,6 +632,8 @@ iquery = function(query, `return`=FALSE,
              stop(e)
           })
         GET("/release_session",list(id=sessionid))
+        if(DEBUG) cat("Data transfer time",(proc.time()-dt1)[3],"\n")
+        dt1 = proc.time()
 # Handle escaped quotes
         result = gsub("\\\\'","''",result, perl=TRUE)
         result = gsub("\\\\\"","''",result, perl=TRUE)
@@ -642,6 +647,7 @@ iquery = function(query, `return`=FALSE,
                 read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,...)},
                 error=function(e){ warning(e);c()})
         close(val)
+        if(DEBUG) cat("R parsing time",(proc.time()-dt1)[3],"\n")
         ret
        }, error = function(e)
            {
@@ -978,6 +984,7 @@ scidb_unpack_to_dataframe = function(query, ...)
 # Release the session on exit
   on.exit( GET("/release_session",list(id=sessionid)) ,add=TRUE)
 
+  dt2 = proc.time()
   r = URI("/read_bytes",list(id=sessionid,n=0))
   sigint(SIG_TRP)
   BUF = tryCatch(
@@ -990,39 +997,47 @@ scidb_unpack_to_dataframe = function(query, ...)
           stop("canceled")
         })
   sigint(SIG_DFL)
+  if(DEBUG) cat("Data transfer time",(proc.time()-dt2)[3],"\n")
+  dt1 = proc.time()
   len = length(BUF)
   p = 0
   ans = c()
   n = ncol(x)
   cnames = c(names(x),"lines","p")
-  dt1 = proc.time()
   while(p<len)
   {
+dt2 = proc.time()
     tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, N, BUF, as.double(p))
-    dt1 = proc.time()
     names(tmp) = cnames
     lines = tmp[[n+1]]
     p_old = p
     p     = tmp[[n+2]]
+if(DEBUG) cat("  R buffer ",p,"/",len," bytes parsing time",(proc.time()-dt2)[3],"\n")
+dt2 = proc.time()
     if(lines>0)
     {
 # Let's adaptively re-estimate a buffer size
       avg_bytes_per_line = ceiling((p - p_old)/lines)
       buffer = ceiling(1.3*(len - p)/avg_bytes_per_line) # Engineering factor
-      ans   = rbind(ans,data.frame(tmp[1:n],stringsAsFactors=FALSE)[1:lines,])
+# Assemble the data frame
+      if(is.null(ans)) ans = data.frame(tmp[1:n],stringsAsFactors=FALSE)
+      else ans = rbind(ans,data.frame(tmp[1:n],stringsAsFactors=FALSE))
     }
+if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
   }
-  if(DEBUG) cat("R parsing time",(proc.time()-dt1)[3],"\n")
+dt2 = proc.time()
   if(!is.null(row_names))
   {
     if(is.numeric(row_names) && length(row_names)==1)
     {
-      rownames(ans) = ans[,row_names]
+#      rownames(ans) = ans[,row_names] # XXX Restore this? Or is it not needed?
       ans = ans[,-row_names,drop=FALSE]
     } else
     {
       rownames(ans) = row_names
     }
   }
+if(DEBUG) cat("  R rownames assignment",(proc.time()-dt2)[3],"\n")
+  if(DEBUG) cat("Total R parsing time",(proc.time()-dt1)[3],"\n")
   ans
 }
