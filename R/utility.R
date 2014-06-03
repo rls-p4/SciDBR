@@ -969,7 +969,8 @@ scidb_unpack_to_dataframe = function(query, ...)
   if(!is.null(args$buffer))
   {
     argsbuf = as.integer(args$buffer)
-# Potential problem here if args$buffer is bogus
+# Potential problem here if args$buffer is bogus or '*' or whatever.
+# Deal with it.
     if(!is.na(argsbuf) && argsbuf < 100e6) buffer = as.integer(argsbuf)
   }
   if(!is.null(args$row.names)) row_names = args$row.names
@@ -1002,11 +1003,12 @@ scidb_unpack_to_dataframe = function(query, ...)
   len = length(BUF)
   p = 0
   ans = c()
-  n = ncol(x)
   cnames = c(names(x),"lines","p")
+  rnames = c()
   while(p<len)
   {
 dt2 = proc.time()
+    n = ncol(x)
     tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, N, BUF, as.double(p))
     names(tmp) = cnames
     lines = tmp[[n+1]]
@@ -1016,6 +1018,17 @@ if(DEBUG) cat("  R buffer ",p,"/",len," bytes parsing time",(proc.time()-dt2)[3]
 dt2 = proc.time()
     if(lines>0)
     {
+      len_out = length(tmp[[1]])
+      if(!is.null(row_names))
+      {
+        if(is.numeric(row_names) && length(row_names)==1)
+        {
+          rnames = c(rnames,tmp[[row_names]][1:lines])
+          tmp = tmp[-row_names]
+          n = n -1
+        }
+      }
+      if(lines < len_out) tmp = lapply(tmp[1:n],function(x) x[1:lines])
 # Let's adaptively re-estimate a buffer size
       avg_bytes_per_line = ceiling((p - p_old)/lines)
       buffer = ceiling(1.3*(len - p)/avg_bytes_per_line) # Engineering factor
@@ -1030,8 +1043,7 @@ dt2 = proc.time()
   {
     if(is.numeric(row_names) && length(row_names)==1)
     {
-#      rownames(ans) = ans[,row_names] # XXX Restore this? Or is it not needed?
-      ans = ans[,-row_names,drop=FALSE]
+      rownames(ans) = rnames
     } else
     {
       rownames(ans) = row_names

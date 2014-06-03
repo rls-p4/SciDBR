@@ -63,6 +63,7 @@ Like the related \code{scidb} class, the \code{scidbdf} class represents
 SciDB arrays as R objects. The \code{scidbdf} class presents 1-D SciDB arrays,
 potentially with many SciDB attributes (variables), as a data.frame-like object.
 
+Use the special empty-bracket index \code{[]} to return data from SciDB to R.
 }
 \author{
 B. W. Lewis <blewis@paradigm4.com>

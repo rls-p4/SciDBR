@@ -103,12 +103,15 @@ dimnames.scidbdf = function(x)
 # iterative: return a data.frame iterator
 # n: if iterative, how many rows to return
 # 
-`[.scidbdf` = function(x, ..., iterative=FALSE, n=1000)
+`[.scidbdf` = function(x, ..., iterative=FALSE, n=Inf, row.names)
 {
   M = match.call()
+  if(missing(row.names)) row.names=1
+  else row.names = M[["row.names"]]
   drop = ifelse(is.null(M$drop),TRUE,M$drop)
+# Passing along a NULL argument is harder than it should be...
   M = M[3:length(M)]
-  if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","iterative","n"))]
+  if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","iterative","n","row.names"))]
 # i shall contain a list of requested index values
   E = parent.frame()
   i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],E),error=function(e)c()))
@@ -121,7 +124,7 @@ dimnames.scidbdf = function(x)
     }
     else
     {
-      ans = iquery(sprintf("%s",x@name),`return`=TRUE,binary=TRUE,buffer=nrow(x),row.names=1)
+      ans = iquery(sprintf("%s",x@name),`return`=TRUE,binary=TRUE,buffer=nrow(x),row.names=row.names)
       return(ans)
     }
 # Not materializing, return a SciDB array
