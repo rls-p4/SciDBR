@@ -11,7 +11,7 @@ dist_scidb = function(x)
   sqrt(abs(u + t(u) - 2 * x %*% t(x)))
 }
 
-na.locf_scidb = function(object, along=dimensions(object)[1],`eval`=FALSE)
+na.locf_scidb = function(object, along=dimensions(object)[1],fill_sparse=FALSE, `eval`=FALSE)
 {
   dnames = dimensions(object)
   i = which(dnames == along)
@@ -35,10 +35,16 @@ na.locf_scidb = function(object, along=dimensions(object)[1],`eval`=FALSE)
     vals = paste(scidb_types(object)[-1],"(null)",sep="")
     N = sprintf("apply(%s, %s)", N, paste(paste(object@attributes[-1],vals,sep=","),collapse=","))
   }
-  query = sprintf("merge(%s,%s)",object@name, N)
+  if(fill_sparse)
+  {
+    query = sprintf("merge(%s as ___A, %s as ___B)",object@name, N)
+  } else
+  {
+    query = sprintf("join(%s as ___A, %s as ___B)",object@name, N)
+  }
 
 # Run the na.locf
-  impute = paste(paste("last_value(",object@attributes,") as ", object@attributes ,sep=""),collapse=",")
+  impute = paste(paste("last_value(___A.",object@attributes,") as ", object@attributes ,sep=""),collapse=",")
   query = sprintf("cumulate(%s, %s, %s)", query, impute, along)
   .scidbeval(query,depend=list(object),`eval`=eval,gc=TRUE)
 }
