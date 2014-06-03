@@ -121,7 +121,7 @@ dimnames.scidbdf = function(x)
     }
     else
     {
-      ans = iquery(sprintf("%s",x@name),`return`=TRUE,binary=TRUE,buffer=nrow(x),row.names=NULL)
+      ans = iquery(sprintf("%s",x@name),`return`=TRUE,binary=TRUE,buffer=nrow(x),row.names=1)
       return(ans)
     }
 # Not materializing, return a SciDB array

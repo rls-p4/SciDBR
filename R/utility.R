@@ -1012,30 +1012,32 @@ dt2 = proc.time()
     lines = tmp[[n+1]]
     p_old = p
     p     = tmp[[n+2]]
-if(DEBUG) cat("R buffer ",p,"/",len," bytes parsing time",(proc.time()-dt2)[3],"\n")
+if(DEBUG) cat("  R buffer ",p,"/",len," bytes parsing time",(proc.time()-dt2)[3],"\n")
 dt2 = proc.time()
     if(lines>0)
     {
 # Let's adaptively re-estimate a buffer size
       avg_bytes_per_line = ceiling((p - p_old)/lines)
       buffer = ceiling(1.3*(len - p)/avg_bytes_per_line) # Engineering factor
-      ans   = rbind(ans,data.frame(tmp[1:n],stringsAsFactors=FALSE)[1:lines,])
+# Assemble the data frame
+      if(is.null(ans)) ans = data.frame(tmp[1:n],stringsAsFactors=FALSE)
+      else ans = rbind(ans,data.frame(tmp[1:n],stringsAsFactors=FALSE))
     }
-if(DEBUG) cat("R rbind time",(proc.time()-dt2)[3],"\n")
+if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
   }
 dt2 = proc.time()
   if(!is.null(row_names))
   {
     if(is.numeric(row_names) && length(row_names)==1)
     {
-      rownames(ans) = ans[,row_names]
+#      rownames(ans) = ans[,row_names] # XXX Restore this? Or is it not needed?
       ans = ans[,-row_names,drop=FALSE]
     } else
     {
       rownames(ans) = row_names
     }
   }
-if(DEBUG) cat("R rownames assignment",(proc.time()-dt2)[3],"\n")
+if(DEBUG) cat("  R rownames assignment",(proc.time()-dt2)[3],"\n")
   if(DEBUG) cat("Total R parsing time",(proc.time()-dt1)[3],"\n")
   ans
 }
