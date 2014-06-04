@@ -11,6 +11,7 @@ dist_scidb = function(x)
   sqrt(abs(u + t(u) - 2 * x %*% t(x)))
 }
 
+# Note fill_sparse=TRUE is not yet supported but will be...
 na.locf_scidb = function(object, along=dimensions(object)[1],fill_sparse=FALSE, `eval`=FALSE)
 {
   dnames = dimensions(object)
@@ -29,26 +30,13 @@ na.locf_scidb = function(object, along=dimensions(object)[1],fill_sparse=FALSE, 
   object = redimension(object, reschema)
 
 # Build a null-merge array
-  N = sprintf("build(%s%s,null)",build_attr_schema(object,I=1), build_dim_schema(object))
-  if(length(object@attributes)>1)
-  {
-    vals = paste(scidb_types(object)[-1],"(null)",sep="")
-    N = sprintf("apply(%s, %s)", N, paste(paste(object@attributes[-1],vals,sep=","),collapse=","))
-  }
-  if(fill_sparse)
-  {
-    query = sprintf("merge(%s as ___A, %s as ___B)",object@name, N)
-  } else
-  {
-    query = sprintf("join(%s as ___A, %s as ___B)",object@name, N)
-  }
+  object = merge(object, project(merge(build("null",dim=object,type="double"),apply(object,1,min), merge=fill_sparse),1:length(object@attributes)),merge=TRUE)
 
 # Run the na.locf
-  impute = paste(paste("last_value(___A.",object@attributes,") as ", object@attributes ,sep=""),collapse=",")
-  query = sprintf("cumulate(%s, %s, %s)", query, impute, along)
+  impute = paste(paste("last_value(",object@attributes,") as ", object@attributes ,sep=""),collapse=",")
+  query = sprintf("cumulate(%s, %s, %s)", object@name, impute, along)
   .scidbeval(query,depend=list(object),`eval`=eval,gc=TRUE)
 }
-
 
 hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `eval`=FALSE, `plot`=TRUE, ...)
 {
