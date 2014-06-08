@@ -90,8 +90,8 @@
       NS = 1e6^(1/NC)
       chunky = rep(noE(NS), length(chunky))
       chunkx = rep(noE(NS), length(chunkx))
-      x = redimension(x,sprintf("%s%s",build_attr_schema(x), build_dim_schema(x,newchunk=chunkx)))
-      y = redimension(y,sprintf("%s%s",build_attr_schema(y), build_dim_schema(y,newchunk=chunkx)))
+      x = repart(x,sprintf("%s%s",build_attr_schema(x), build_dim_schema(x,newchunk=chunkx)))
+      y = repart(y,sprintf("%s%s",build_attr_schema(y), build_dim_schema(y,newchunk=chunkx)))
     }
     newds = build_dim_schema(y,newnames=make.unique_(x@dimensions,y@dimensions))
     y = cast(y,sprintf("%s%s",newas,newds))
