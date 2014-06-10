@@ -30,7 +30,8 @@ na.locf_scidb = function(object, along=dimensions(object)[1],fill_sparse=FALSE, 
   object = redimension(object, reschema)
 
 # Build a null-merge array
-  object = merge(object, project(merge(build("null",dim=object,type="double"),apply(object,1,min), merge=fill_sparse),1:length(object@attributes)),merge=TRUE)
+#  object = merge(object, project(merge(build("null",dim=object,type="double"),apply(object,1,min), merge=fill_sparse),1:length(object@attributes)),merge=TRUE)
+  object = merge(object,project(merge(bind(attribute_rename(apply(object,1,min),new=paste(object@attributes,"___",sep="")),"price","double(null)"),apply(object,2,min)),object@attributes),merge=TRUE)
 
 # Run the na.locf
   impute = paste(paste("last_value(",object@attributes,") as ", object@attributes ,sep=""),collapse=",")
