@@ -810,8 +810,25 @@ origin = function(x)
   .scidbeval(query,`eval`=FALSE,depend=list(x),gc=TRUE)
 }
 
-chunk_map = function()
+
+chunk_map = function(`array`)
 {
+  if(!missing(`array`))
+  {
+  if(is.scidb(`array`) || is.scidbdf(`array`))
+  {
+    `array` = schema(`array`)
+  }
+  q1="redimension(
+      apply(list('chunk map'), element_count, int64(nelem), iid, int64(inst), aid, int64(arrid)),
+      <element_count:int64, iid:int64>[i=0:*,1000,0,aid=0:*,1000,0])"
+  q2=sprintf("redimension(
+      filter(apply( list('arrays', true), aid, int64(id), match, regex(name,'a@*[0-9]*')), match=true), <name: string null> [aid = 0:*,1000,0])", `array`)
+  query=sprintf("project( cross_join(%s as X, %s as Y, X.aid, Y.aid), element_count, iid)", q1, q2)
+    return(iquery(query,`return`=TRUE)[,2:4])
+  }
+
+
 iquery("
 project(
  cross_join(

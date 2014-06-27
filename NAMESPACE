@@ -8,6 +8,7 @@ import("RCurl", iterators)
 importFrom("zoo", na.locf)
 
 # Functions
+export("chunk_map")
 export("antijoin")
 export("scidb_fisher.test")
 export("model_scidb")
