@@ -821,9 +821,9 @@ chunk_map = function(`array`)
   }
   q1="redimension(
       apply(list('chunk map'), element_count, int64(nelem), iid, int64(inst), aid, int64(arrid)),
-      <element_count:int64, iid:int64>[i=0:*,1000,0,aid=0:*,1000,0])"
+      <element_count:int64, iid:int64>[aid=0:*,1000,0,i=0:*,1000000000])"
   q2=sprintf("redimension(
-      filter(apply( list('arrays', true), aid, int64(id), match, regex(name,'a@*[0-9]*')), match=true), <name: string null> [aid = 0:*,1000,0])", `array`)
+      filter(apply( list('arrays', true), aid, int64(id), match, regex(name,'%s@*[0-9]*')), match=true), <name: string null> [aid = 0:*,1000,0])", `array`)
   query=sprintf("project( cross_join(%s as X, %s as Y, X.aid, Y.aid), element_count, iid)", q1, q2)
     return(iquery(query,`return`=TRUE)[,2:4])
   }
