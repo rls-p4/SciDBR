@@ -204,8 +204,8 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
     hi    = ceiling(index)
     i     = index > lo
     gamma = (index - lo)*i + lo*(!i)
-    xlo   = x[lo][]
-    xhi   = x[hi][]
+    xlo   = as.numeric(x[lo][]) # Needed to cast potential sparse vectors
+    xhi   = as.numeric(x[hi][])
     qs    = as.scidb((1 - gamma)*xlo + gamma*xhi)
   }
   p = as.scidb(data.frame(probs=probs))

@@ -169,6 +169,14 @@ if(nchar(host)>0)
 # hist
 # Write me!
 
+# quantile, from a failure test case reported by Alex
+  scidbrm("_qtest",force=TRUE)
+  iquery("create_array(_qtest,<value:double> [tumor_type_id=0:25,1,0,sample_id=0:17999,1000,0,illuminahiseq_rnaseq_probe_id=0:44999,1000,0]")
+  x = scidb("_qtest")
+  y = quantile(x)[]
+  scidbrm("_qtest",force=TRUE)
+
+
 # Another merge test courtesy Alex Polyiakov
   x = build(1,c(2,2))
   a = build(2,5,names=c("a","j"))
@@ -184,3 +192,4 @@ if(nchar(host)>0)
   check(nrow(X[idx, ]),3)
 }
 gc()
+
