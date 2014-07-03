@@ -389,7 +389,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
   {
     stop(strsplit(w,"\r\n\r\n")[[1]][[2]])
   }
-  if(DEBUG) print(proc.time()-t1)
+  if(DEBUG) cat("Query time",(proc.time()-t1)[3],"\n")
   if(resp) return(list(session=sessionid, response=ans))
   sessionid
 }
@@ -615,10 +615,10 @@ iquery = function(query, `return`=FALSE,
       {
         return(scidb_unpack_to_dataframe(query,...))
       }
-      dt1 = proc.time()
       ans = tryCatch(
        {
         sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0, interrupt=TRUE)
+        dt1 = proc.time()
         result = tryCatch(
           {
             GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE,interrupt=TRUE)

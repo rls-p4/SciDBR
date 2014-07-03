@@ -270,6 +270,9 @@ as.scidb = function(X,
   }
   if(!is.matrix(X)) stop ("X must be a matrix or a vector")
 
+  DEBUG = FALSE
+  if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
+  td1 = proc.time()
 # Obtain a session from shim for the upload process
   session = getSession()
   on.exit( GET("/release_session",list(id=session)) ,add=TRUE)
@@ -289,6 +292,10 @@ as.scidb = function(X,
   ans = ans[[1]]
   ans = gsub("\r","",ans)
   ans = gsub("\n","",ans)
+  if(DEBUG)
+  {
+    cat("Data upload time",(proc.time()-td1)[3],"\n")
+  }
 
 # Load query
   query = sprintf("store(reshape(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)

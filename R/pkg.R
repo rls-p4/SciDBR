@@ -53,7 +53,7 @@ SIG_TRP = 2L # A custom signal handler (see scidb.c)
   options(scidb.version=13.9)
 # Set this to 32 for SciDB version 13.6
   options(scidb.gemm_chunk_size=1000)
-# Default shim port
+# Default shim port and host.
   options(scidb.default_shim_port=8080L)
   options(scidb.default_shim_host="localhost")
 # There was a bad gemm/gesvd/subarray bug until 14.3. When TRUE, this option
@@ -69,6 +69,8 @@ SIG_TRP = 2L # A custom signal handler (see scidb.c)
 # encrypted session to work. Set this TRUE for stronger security (help avoid MTM)
 # in SSL connections.
   options(scidb.verifyhost=FALSE)
+# Disable user-interruptable HTTP transactions.
+  options(scidb.interrupt=FALSE)
 }
 
 .onUnload = function(libpath)
@@ -80,6 +82,9 @@ SIG_TRP = 2L # A custom signal handler (see scidb.c)
   options(scidb.safe_remove=c())
   options(scidb.default_shim_port=c())
   options(scidb.default_shim_host=c())
+  options(scidb.gemm_bug=c())
+  options(scidb.verifyhost=c())
+  options(scidb.interrupt=c())
 }
 
 # scidb array object type map. We don't yet support strings in scidb array
