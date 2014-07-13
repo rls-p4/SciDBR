@@ -7,7 +7,7 @@
 dist_scidb = function(x)
 {
   s = apply(x*x,1,sum)
-  u = s %*% matrix(1, nrow=1, ncol=nrow(x))
+  u = s %*% build(1.0, c(1,nrow(x)), type="double")
   sqrt(abs(u + t(u) - 2 * x %*% t(x)))
 }
 
