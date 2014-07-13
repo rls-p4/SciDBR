@@ -69,8 +69,8 @@ SIG_TRP = 2L # A custom signal handler (see scidb.c)
 # encrypted session to work. Set this TRUE for stronger security (help avoid MTM)
 # in SSL connections.
   options(scidb.verifyhost=FALSE)
-# Disable user-interruptable HTTP transactions.
-  options(scidb.interrupt=FALSE)
+# Set to FALSE to disable user-interruptable HTTP transactions.
+  options(scidb.interrupt=TRUE)
 }
 
 .onUnload = function(libpath)

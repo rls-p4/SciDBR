@@ -324,6 +324,7 @@ materialize = function(x, drop=FALSE)
   N = "NULL"
 
   savestring = sprintf("(%s,%s %s)",i,scidb_types(x),N)
+  interrupt = scidb.interrupt()
 
   sessionid = scidbquery(query, save=savestring, async=FALSE, release=0, interrupt=TRUE)
 # Release the session on exit
@@ -334,7 +335,7 @@ materialize = function(x, drop=FALSE)
   sigint(SIG_TRP)
   BUF = tryCatch(
         {
-          getBinaryURL(r, .opts=list('ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=FALSE, progressfunction=curl_signal_trap))
+          getBinaryURL(r, .opts=list('ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=!interrupt, progressfunction=curl_signal_trap))
         }, error=function(e)
         {
           GET("/release_session",list(id=sessionid))

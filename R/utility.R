@@ -235,6 +235,15 @@ getSession = function()
   session
 }
 
+# Returns the eponymous package option setting used to globally overried
+# interrupt handling. TRUE means abide by interrupts, FALSE ignore.
+scidb.interrupt = function()
+{
+  ans = options("scidb.interrupt")[[1]]
+  if(is.null(ans)) ans=TRUE
+  tryCatch(as.logical(ans), error=function(e) TRUE)
+}
+
 # Supply the base SciDB URI from the global host, port and auth
 # parameters stored in the .scidbenv package environment.
 # Every function that needs to talk to the shim interface should use
@@ -270,6 +279,7 @@ GET = function(resource, args=list(), header=TRUE, async=FALSE, interrupt=FALSE)
   uri = gsub("\\+","%2B",uri,perl=TRUE)
   on.exit(sigint(SIG_DFL)) # Reset signal handler on exit
   callback = curl_signal_trap
+  interrupt = interrupt && scidb.interrupt()   # Check package override
   if(interrupt)
   {
     sigreset ()
@@ -980,6 +990,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   buffer = 100000L
   row_names = NULL
   args = list(...)
+  interrupt = scidb.interrupt()
   if(!is.null(args$buffer))
   {
     argsbuf = as.integer(args$buffer)
@@ -1004,7 +1015,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   sigint(SIG_TRP)
   BUF = tryCatch(
         { 
-          getBinaryURL(r, .opts=list('ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=FALSE, progressfunction=curl_signal_trap))
+          getBinaryURL(r, .opts=list('ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=!interrupt, progressfunction=curl_signal_trap))
         }, error=function(e)
         { 
           GET("/release_session",list(id=sessionid))
