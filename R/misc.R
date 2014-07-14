@@ -5,7 +5,7 @@
 # Limited distance function (Euclidean only)
 dist_scidb = function(x)
 {
-# Slow but concise approach (and more general):
+# Slow...
 #  u = apply(x*x,1,sum) %*% matrix(1.0,1,nrow(x))
 #  ans = sqrt(abs(u + t(u) - 2 * x %*% t(x)))
 
