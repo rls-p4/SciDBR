@@ -46,7 +46,7 @@ export("show_commit_log")
 
 # S4 methods
 exportClasses("scidb","scidbdf")
-exportMethods("%<%","%>%","%<=%","%>=%","%==%","%!=%","%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,median,mean,sd,var,min,max,t,sqrt,abs,sin,cos,tan,asin,acos,atan,unpack,reshape,regrid,svd,xgrid,glm,glm.fit,lag,Filter,na.locf,hist,phyper,qhyper,c)
+exportMethods("%<%","%>%","%<=%","%>=%","%==%","%!=%","%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,median,mean,sd,var,min,max,t,sqrt,abs,sin,cos,tan,asin,acos,atan,unpack,reshape,regrid,svd,xgrid,glm,glm.fit,lag,Filter,na.locf,hist,phyper,qhyper,c,dist)
 
 # S3 methods
 S3method("summary",glm_scidb)
