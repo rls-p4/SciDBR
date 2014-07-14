@@ -3,12 +3,27 @@
 # maybe not quite as fully baked.
 
 # Limited distance function (Euclidean only)
-# The performance is amazingly horrible!!
 dist_scidb = function(x)
 {
-  s = apply(x*x,1,sum)
-  u = s %*% build(1.0, c(1,nrow(x)), type="double")
-  sqrt(abs(u + t(u) - 2 * x %*% t(x)))
+# Slow but concise approach (and more general):
+#  u = apply(x*x,1,sum) %*% matrix(1.0,1,nrow(x))
+#  ans = sqrt(abs(u + t(u) - 2 * x %*% t(x)))
+
+# The following is faster:
+  n   = nrow(x)
+  x1  = merge(x,x)
+  p = scidb:::make.unique_(x1@attributes,"prod")
+  x2  = project(bind(x1,p,paste(x1@attributes,collapse="*")),p)
+  s = scidbeval(apply(x2, 1, sum)) # Cache this result
+  r = dimensions(s)
+
+  u  = project(merge(build(1,c(n,n),names=c("val",dimensions(x))),s,by=r),2)
+  tu = project(merge(build(1,c(n,n),names=c("val",dimensions(x))),s,by.x=dimensions(x)[2],by.y=r),2)
+
+  utu = merge(u,tu)
+  utu = project(bind(utu,"sum",paste(scidb_attributes(utu),collapse="+")),"sum")
+  xtx = scidb(sprintf("gemm(%s, transpose(%s), project(apply(%s,z,0.0),z))",x@name,x@name,x@name))
+  project(bind(merge(utu,xtx),"ans","sqrt(abs(sum - 2*gemm))"),"ans")
 }
 
 # Note fill_sparse=TRUE is not yet supported but will be...
