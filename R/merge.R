@@ -145,12 +145,7 @@
     newds = build_dim_schema(y,newnames=dimensions(x))
     castschema = sprintf("%s%s", newas, newds)
     reschema = sprintf("%s%s", newas,build_dim_schema(x))
-# XXX XXX PROBLEM HERE! What if reschema dim lengths don't match? Then reshape fails.
-# Cast and redimension y conformably with x:
-# XXX    z = redimension(cast(y,castschema),reschema)
-# XXX IS THIS A MIS-USE OF RESHAPE? Redimension is not enough here, and rehspae
-# seems to work.
-    z = reshape(cast(y,castschema),reschema)
+    z = redimension(cast(y,castschema),reschema)
     if(all)
     {
 # Experimental outer join XXX XXX
