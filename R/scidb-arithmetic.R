@@ -356,7 +356,7 @@ scidbmultiply = function(e1,e2)
   stop("Yikes! Not implemented yet...")
 }
 
-tsvd = function(x,nu,tol=0.1,maxit=20,tx,v)
+tsvd = function(x,nu,tol=0.1,maxit=20,tx,v,pca=FALSE)
 {
   m = ceiling(1e6/nrow(x))
   n = ceiling(1e6/ncol(x))
@@ -364,6 +364,11 @@ tsvd = function(x,nu,tol=0.1,maxit=20,tx,v)
   {
     v = build(1,ncol(x),type="double",chunksize=ncol(x))@name
   } else v=v@name
+  if(pca)
+  {
+    w = build(1,nrow(x),type="double",chunksize=m)@name
+    v = paste(c(v,sprintf("%s, substitute(project(apply(aggregate(%s,sum(%s) as colsum,count(%s) as colcount,%s),colmean,colsum/colcount),colmean),build(<v:double>[i=0:0,1,0],0))",w,x@name, x@attributes[1], x@attributes[1], dimensions(x)[2])),collapse=",")
+  }
   if(!missing(tx))
   {
     query  = sprintf("tsvd(%s, %s, %.0f, %f, %.0f, %s)", x@name, tx@name, nu,tol,maxit, v)
