@@ -82,6 +82,9 @@ setGeneric("reshape", function(data,...) stats::reshape(data,...))
 setOldClass("dist")
 setGeneric("dist")
 
+setOldClass("kmeans")
+setGeneric("kmeans")
+
 setOldClass("svd")
 setGeneric("svd")
 
@@ -422,6 +425,7 @@ setMethod("apply", signature(X = "scidb"), apply_scidb)
 setMethod("unpack",signature(x="scidb"),unpack_scidb)
 setMethod("reshape", signature(data="scidb"), reshape_scidb)
 setMethod("dist", signature(x="scidb"), dist_scidb)
+setMethod("kmeans", signature(x="scidb"), kmeans_scidb)
 setMethod("svd", signature(x="scidb"), svd_scidb)
 setMethod("glm.fit", signature(x="scidb",y="ANY",weights="MNSN"), glm.fit_scidb)
 

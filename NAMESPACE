@@ -2,7 +2,7 @@ useDynLib(scidb)
 import("methods")
 importFrom("Matrix",nnzero, sparseMatrix, unpack, sparseVector)
 importFrom("utils", head, tail)
-importFrom("stats", aggregate, sd, var, reshape, glm, glm.fit, phyper, qhyper, quantile, dist)
+importFrom("stats", aggregate, sd, var, reshape, glm, glm.fit, phyper, qhyper, quantile, dist, kmeans)
 importFrom("graphics", image, hist)
 import("RCurl", iterators)
 importFrom("zoo", na.locf)
@@ -46,7 +46,7 @@ export("show_commit_log")
 
 # S4 methods
 exportClasses("scidb","scidbdf")
-exportMethods("%<%","%>%","%<=%","%>=%","%==%","%!=%","%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,median,mean,sd,var,min,max,t,sqrt,abs,sin,cos,tan,asin,acos,atan,unpack,reshape,regrid,svd,xgrid,glm,glm.fit,lag,Filter,na.locf,hist,phyper,qhyper,c,dist)
+exportMethods("%<%","%>%","%<=%","%>=%","%==%","%!=%","%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,median,mean,sd,var,min,max,t,sqrt,abs,sin,cos,tan,asin,acos,atan,unpack,reshape,regrid,svd,xgrid,glm,glm.fit,lag,Filter,na.locf,hist,phyper,qhyper,c,dist,kmeans)
 
 # S3 methods
 S3method("summary",glm_scidb)

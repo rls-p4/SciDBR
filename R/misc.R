@@ -2,7 +2,46 @@
 # tend to be newer and somewhat more experimental than the other functions, and
 # maybe not quite as fully baked.
 
-# Limited distance function (Euclidean only)
+
+
+kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
+  algorithm="Lloyd")
+{
+  if(length(dim(x))!=2) stop("x must be a matrix")
+  if(nstart!=1 || algorithm!="Lloyd") stop("This version limited to Lloyd's method with nstart=1")
+  if(!is.scidb(x)) stop("x must be a scidb object")
+  x = project(x, x@attributes[1])
+  x = attribute_rename(x,new="val")
+  x = dimension_rename(x,new=c("i","j"))
+  expr = sprintf("random() %% %d", centers)
+  group = build(expr, nrow(x), names=c("group","i"), type="int64")
+  for(iter in 1:iter.max)
+  {
+    centers = aggregate(x, by=list(group, "j"), FUN=mean, eval=TRUE)
+    dist = aggregate(
+              bind(
+                merge(x, centers, by="j"),
+                "dist", "(val - val_avg)*(val - val_avg)"
+              ),
+              by=list("i","group"),
+              FUN="sum(dist) as dist", unpack=FALSE, eval=TRUE
+            )
+    oldgroup = group
+    group = redimension(
+               Filter("dist = min",
+                 merge(dist,
+                       aggregate(dist,by="i", FUN="min(dist) as min", unpack=FALSE),
+                       by="i")
+               ),group, eval=TRUE)
+    if(sum(abs(oldgroup - group)) < 1) break
+  }
+  if(iter==iter.max) waring("Reached maximum # iterations")
+  list(cluster = group,
+       centers = centers)
+}
+
+
+# Limited distance function (Euclidean only) SLOOOOOW!
 dist_scidb = function(x)
 {
 # Slow...
