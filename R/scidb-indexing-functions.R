@@ -198,6 +198,8 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
     }
     if(idx[[j]])
     {
+# Check for and try to adjust this akward case:
+      if(is.scidbdf(i[[j]])) i[[j]] = project(i[[j]],1)
       if(is.numeric(i[[j]]))
       {
 # Special index case 1: non-contiguous numeric indices
