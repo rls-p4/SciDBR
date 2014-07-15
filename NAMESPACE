@@ -44,6 +44,7 @@ export("attribute_rename")
 export("dimension_rename")
 export("index_lookup")
 export("show_commit_log")
+export("order_scidb")
 
 # S4 methods
 exportClasses("scidb","scidbdf")

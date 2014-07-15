@@ -472,7 +472,7 @@ sort_scidb = function(X, decreasing = FALSE, ...)
 # S3 methods
 `merge.scidb` = function(x,y,by=intersect(dimensions(x),dimensions(y)),...) merge_scidb(x,y,by,...)
 `merge.scidbdf` = function(x,y,by=intersect(dimensions(x),dimensions(y)),...) merge_scidb(x,y,by,...)
-`sort.scidb` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
+`sort.scidb` = function(...,na.last=TRUE,decreasing=FALSE) sort_scidb(...,decreasing)
 `sort.scidbdf` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `unique.scidb` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
 `unique.scidbdf` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)

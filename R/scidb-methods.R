@@ -85,6 +85,7 @@ setGeneric("dist")
 setOldClass("kmeans")
 setGeneric("kmeans")
 
+
 setOldClass("svd")
 setGeneric("svd")
 
