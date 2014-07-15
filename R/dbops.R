@@ -375,11 +375,6 @@ project = function(X,attributes,`eval`=FALSE)
   {
 # Case 1: single comparison and two attributes
     expr = paste(scidb_attributes(X), collapse=expr)
-  } else if( !any(sapply(scidb_attributes(X),function(z) length(grep(z,expr))>0)))
-  {
-# Case 2: attributes don't appear in expression (maybe throw an error here
-# in the multiple attribute case? XXX).
-    expr = paste(paste(scidb_attributes(X),expr),collapse=" and ")
   }
   query = sprintf("filter(%s,%s)", xname,expr)
   .scidbeval(query,eval,depend=list(X))

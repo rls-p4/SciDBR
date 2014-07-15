@@ -22,7 +22,10 @@ dist_scidb = function(x)
 
   utu = merge(u,tu)
   utu = project(bind(utu,"sum",paste(scidb_attributes(utu),collapse="+")),"sum")
-  xtx = scidb(sprintf("gemm(%s, transpose(%s), project(apply(%s,z,0.0),z))",x@name,x@name,x@name))
+
+  out = build(0,c(nrow(x),nrow(x)), type="double")
+
+  xtx = scidb(sprintf("gemm(%s, transpose(%s), %s)",x@name,x@name,out@name))
   project(bind(merge(utu,xtx),"ans","sqrt(abs(sum - 2*gemm))"),"ans")
 }
 
