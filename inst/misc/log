@@ -1,3 +1,123 @@
+commit e178962eca36171608be32da477cbb430c64771a
+Author: bwlewis <blewis@illposed.net>
+Date:   Tue Jul 15 08:54:20 2014 -0400
+
+    Added tsvd pca option
+
+commit 21b89e9d368abc1566f5bf3b4cd85d7106865528
+Author: bwlewis <blewis@illposed.net>
+Date:   Tue Jul 15 07:55:29 2014 -0400
+
+    Added initial vector option to tsvd, exposed it in namespace (still need explicit doc for it)
+
+commit 7feeb7090e63013481e3c7b23d0d83856f13e1fd
+Author: bwlewis <blewis@illposed.net>
+Date:   Tue Jul 15 00:38:08 2014 -0400
+
+    More bugs in dist, added kmeans
+
+commit 5428e9fcd3a2852c695439c526902d647a5a0af7
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Jul 14 23:29:20 2014 -0400
+
+    Fixed issue in dist with non-square input matrices
+
+commit ab49e3d8eff23a66b8e276d9fa37f4ce4430e853
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Jul 14 17:30:08 2014 -0400
+
+    Fixed reshape bug in merge
+
+commit b38184015190e3ab1ea4b45f40646dc8c51f0e71
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sun Jul 13 22:59:58 2014 -0400
+
+    Improved performance of Euclidean distance matrix function
+
+commit 612e441bfc2352a5b72468c0cef88aa2541c932f
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sun Jul 13 22:47:45 2014 -0400
+
+    Improved performance of Euclidean distance matrix function
+
+commit 746ab641b08c96adb02350fe68382c3735ba2679
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sun Jul 13 22:46:05 2014 -0400
+
+    Improved performance of Euclidean distance matrix function
+
+commit a902d92c33d337edd54828bb500ad2e393e640fa
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sun Jul 13 14:14:35 2014 -0400
+
+    Package option for disabling interrupt handling
+
+commit a0a79a853fbc4f84a41b32d729fda6dcebb0f127
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sun Jul 13 13:53:55 2014 -0400
+
+    Package option for disabling interrupt handling
+
+commit 11646818a19de4bd9b8621c11501909587e9012e
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sun Jul 13 11:51:59 2014 -0400
+
+    Minor improvement in distance matrix computation; more improvement warranted
+
+commit 4a250ffc8666c6d0b4c56962957c297404f14d6e
+Author: bwlewis <blewis@illposed.net>
+Date:   Thu Jul 3 20:08:57 2014 -0400
+
+    Bug in new chunk_map fixed
+
+commit 9c87eea07c94018ecb188dc63032dd4e26064b67
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Jul 3 11:17:03 2014 -0400
+
+    Start of experimental interrupt option
+
+commit a7aeac574f3707bfacdb6965f5437f5124305826
+Author: bwlewis <blewis@illposed.net>
+Date:   Tue Jul 1 17:02:36 2014 -0400
+
+    Fixed bug in quantile, added test
+
+commit c4dbd4ad16db45558e2d088b622f4fafcf88e254
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sat Jun 28 11:53:13 2014 -0400
+
+    chunk map redimension bug work-around
+
+commit 5f34c5a0dbfba5868d1bb24a4399f7d0c783569f
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Jun 27 15:26:08 2014 -0400
+
+    Added chunk_map to the namespace
+
+commit 50e9f64df0145a8b361e33e8b3a5c92d66ae7325
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Jun 10 14:55:21 2014 -0400
+
+    Performance improvement in na.locf thanks to Alex
+
+commit 7b9c25df84e7ee7976dbf7201fac0f413fc1bef4
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sun Jun 8 11:59:25 2014 -0400
+
+    Begin work on reducing excessive use of redimension in merge
+
+commit 9c67bc17f8f229f552e0110a418e880dbeb48111
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Jun 4 12:12:47 2014 -0400
+
+    Improved na.locf
+
+commit ff7c17e3628235ac38f47139d32193961e0bb9fe
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Jun 3 17:34:11 2014 -0400
+
+    Merged data frame fixes; tests passing
+
 commit e7be821977cc8587b4c848f2fe6fdbaae07cf2eb
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue Jun 3 17:22:12 2014 -0400
