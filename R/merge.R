@@ -68,6 +68,7 @@
     `by` = NULL
   }
 
+
 # Check for full cross case.
   if((is.null(`by`) && is.null(by.x) && is.null(by.y)) ||
       length(`by`)==0 && is.null(by.x) && is.null(by.y))
@@ -142,6 +143,8 @@
 # Check for join case (easy case)
   if((length(by.x) == length(by.y)) && all(dimensions(x) %in% by.x) && all(dimensions(y) %in% by.y))
   {
+# Check for valid starting coordinates (they must be identical)
+    if(!isTRUE(all.equal(scidb_coordinate_start(x),scidb_coordinate_start(y)))) stop("Mis-matched starting coordinates")
     newds = build_dim_schema(y,newnames=dimensions(x))
     castschema = sprintf("%s%s", newas, newds)
     reschema = sprintf("%s%s", newas,build_dim_schema(x))
@@ -192,11 +195,6 @@
       }
     })
   newds = newds[!unlist(lapply(newds,is.null))]
-
-# XXXXXXXXXXXXxxxxxxXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-#browser()
-
-
 
   newds = sprintf("[%s]",paste(newds,collapse=","))
   reschema = sprintf("%s%s", build_attr_schema(y),newds)

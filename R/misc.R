@@ -273,6 +273,6 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
     xhi   = as.numeric(x[hi][])
     qs    = as.scidb((1 - gamma)*xlo + gamma*xhi)
   }
-  p = as.scidb(data.frame(probs=probs))
+  p = as.scidb(data.frame(probs=probs),start=as.numeric(scidb_coordinate_start(qs)[[1]]))
   merge(p,qs,by.x=dimensions(p),by.y=dimensions(qs))
 }
