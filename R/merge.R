@@ -27,8 +27,8 @@
 # END_COPYRIGHT
 #
 
-# SciDB cross_join wrapper internal function to support merge on various
-# classes (scidb, scidbdf). This is an internal function to support
+# SciDB join, cross_join, and merge wrapper internal function to support merge
+# on various classes (scidb, scidbdf). This is an internal function to support
 # R's merge on various SciDB objects.
 #
 # X and Y are SciDB array references of any kind (scidb, scidbdf)
@@ -192,6 +192,12 @@
       }
     })
   newds = newds[!unlist(lapply(newds,is.null))]
+
+# XXXXXXXXXXXXxxxxxxXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#browser()
+
+
+
   newds = sprintf("[%s]",paste(newds,collapse=","))
   reschema = sprintf("%s%s", build_attr_schema(y),newds)
   castschema = sprintf("%s%s",newas,newds)

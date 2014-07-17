@@ -269,3 +269,37 @@ build_dim_schema = function(A, bracket=TRUE, I,
   if(length(a) > 1) stop("This function requires a single-attribute array. Consider using project.")
   a
 }
+
+
+# An internal function that compares schema of two scidb objects
+# or schema strings.
+compare_schema = function(s1, s2)
+{
+  if(is.character(s1)) s1 = scidb_from_schemastring(s1)
+  if(is.character(s2)) s2 = scidb_from_schemastring(s2)
+  if(!(class(s1) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  if(!(class(s2) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+
+  dimnames = isTRUE(all.equal(dimensions(s1),dimensions(s2)))
+  bounds = isTRUE(all.equal(scidb_coordinate_bounds(s1),scidb_coordinate_bounds(s2)))
+  chunks = isTRUE(all.equal(scidb_coordinate_chunksize(s1),scidb_coordinate_chunksize(s2)))
+  overlap = isTRUE(all.equal(scidb_coordinate_overlap(s1),scidb_coordinate_overlap(s2)))
+  attributes = isTRUE(all.equal(scidb_attributes(s1),scidb_attributes(s2)))
+  types = isTRUE(all.equal(scidb_types(s1),scidb_types(s2)))
+  nullable = isTRUE(all.equal(scidb_nullable(s1),scidb_nullable(s2)))
+
+  ans = dimnames && bounds && chunks && overlap && attributes && types && nullable
+
+# add a report if FALSE
+  if(!ans)
+  {
+    attr(ans,"equal") = list(dimnames=dimnames,
+                   bounds=bounds,
+                   chunks=chunks,
+                   overlap=overlap,
+                   attributes=attributes,
+                   types=types,
+                   nullable=nullable)
+  }
+  ans
+}

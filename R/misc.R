@@ -2,7 +2,6 @@
 # tend to be newer and somewhat more experimental than the other functions, and
 # maybe not quite as fully baked.
 
-
 order_scidb = function(x,decreasing=FALSE)
 {
   if(!is.scidb(x)) stop("x must be a scidb vector object")
@@ -10,9 +9,8 @@ order_scidb = function(x,decreasing=FALSE)
   p = scidb:::make.unique_(c(dimensions(x),scidb_attributes(x)),"p")
   a = bind(x,p,dimensions(x)[1])
   s = sort(a,attributes=scidb_attributes(x),decreasing=decreasing)
-  s[0:(length(x)-1),2]
+  s[between(0,'null'),2]
 }
-
 
 kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
   algorithm="Lloyd")

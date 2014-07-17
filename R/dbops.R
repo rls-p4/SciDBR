@@ -194,9 +194,10 @@ repart = function(x, schema, upper, chunk, overlap, `eval`=FALSE)
 }
 
 # SciDB redimension wrapper
-# Either supply s or dim. dim is a list of new dimensions made up
-# from the attributes and existing dimensions. FUN is a limited scidb
-# aggregation expression.
+#
+# Either supply schema or dim. dim is a list of new dimensions made up from the
+# attributes and existing dimensions. FUN is a limited scidb aggregation
+# expression.
 redimension = function(x, schema, dim, FUN, `eval`=FALSE)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
@@ -208,7 +209,7 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
   if(is.null(s) && is.null(dim) ||
     (!is.null(s) && !is.null(dim)))
   {
-    stop("Exactly one of s or dim must be specified")
+    stop("Exactly one of schema or dim must be specified")
   }
   if((class(s) %in% c("scidb","scidbdf"))) s = schema(s)
   if(!is.null(dim))
@@ -264,6 +265,13 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
       ds = ifelse(length(ds)>0,paste(ds,new,sep=","),new)
     }
     s = sprintf("%s[%s]",as,ds)
+  }
+# Check to see if the new schema is identical to the original schema.
+# If so, don't bother with redimension, and return the (possibly
+# evaluated) input.
+  if(isTRUE(compare_schema(x,s)))
+  {
+    return(.scidbeval(x, eval, depend=list(x)))
   }
   if(!missing(FUN))
   {
