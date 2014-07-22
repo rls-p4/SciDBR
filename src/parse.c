@@ -70,7 +70,7 @@ int scmp (const char *a, const char *b)
  * int16         integer
  * uint16        integer
  * int32         integer
- * string        string
+ * string        character
  *
  * Other types are not supported and will throw an error.
  */
@@ -97,7 +97,7 @@ SEXP scidb_type_vector (const char *type, int len)
     return ans;
   } else if(scmp(type,"string"))
   {
-    ans = NEW_STRING(len);
+    ans = NEW_CHARACTER(len);
     return ans;
   }
   error("Unsupported type");
@@ -231,7 +231,9 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
   }
   else if(scmp(type,"float"))
   {
+Rprintf("ABOUT TO FLOAT\n");
     float d = (float)*((float *)*p);
+Rprintf("FLOAT VALUE %f\n",d);
     (*p)+=4;
     if(isnull)
     {
@@ -257,6 +259,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
   {
     unsigned int len = (unsigned int)*((unsigned int*)*p);
     (*p)+=4;
+Rprintf("STRING LENgth %u\n",len);
     if(isnull)
     {
       (*p)+=len;
@@ -264,11 +267,15 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
       return;
     }
 // XXX bounds checks ? how long can a string be in SciDB?
+// XXX Use a stack buffer here unless the string exceeds a buffer length
+// XXX for efficiency's sake... XXX FIX ME
     char *buf = (char *)calloc(len,1);
     memcpy(buf, *p, len);
+Rprintf("STRING VALUE %s\n",buf);
     (*p)+=len;
     SET_STRING_ELT(vec,i,mkChar(buf));
     free(buf);
+Rprintf("ASSIGNED and free\n");
     return;
   }
   error("Unsupported type %s",type);

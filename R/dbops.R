@@ -124,7 +124,7 @@ slice = function(x, d, n, `eval`=FALSE)
 }
 
 # SciDB substitute wrapper. Default behavior strips nulls in a clever way.
-substitute = function(x, value, `attribute`, `eval`=FALSE)
+replaceNA = function(x, value, `attribute`, `eval`=FALSE, ...)
 {
   if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
   if(!any(scidb_nullable(x))) return(x)

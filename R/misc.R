@@ -43,7 +43,7 @@ kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
                ),group, eval=TRUE)
     if(sum(abs(oldgroup - group)) < 1) break
   }
-  if(iter==iter.max) waring("Reached maximum # iterations")
+  if(iter==iter.max) warning("Reached maximum # iterations")
   list(cluster = group,
        centers = centers)
 }
@@ -56,7 +56,7 @@ dist_scidb = function(x)
 #  u = apply(x*x,1,sum) %*% matrix(1.0,1,nrow(x))
 #  ans = sqrt(abs(u + t(u) - 2 * x %*% t(x)))
 
-# The following is faster:
+# The following is faster but still slow:
   n   = nrow(x)
   x1  = merge(x,x)
   p = scidb:::make.unique_(x1@attributes,"prod")

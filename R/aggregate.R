@@ -58,7 +58,7 @@
   {
     FUN = sprintf("%s %s %s",scidb_attributes(x), FUN, scidb_attributes(STATS))
   }
-  substitute(
+  replaceNA(
   attribute_rename(
     project(
       bind(
