@@ -6,7 +6,7 @@ order_scidb = function(x,decreasing=FALSE)
 {
   if(!is.scidb(x)) stop("x must be a scidb vector object")
   if(length(dim(x))>1) stop("x must be a scidb vector object")
-  p = scidb:::make.unique_(c(dimensions(x),scidb_attributes(x)),"p")
+  p = make.unique_(c(dimensions(x),scidb_attributes(x)),"p")
   a = bind(x,p,dimensions(x)[1])
   s = sort(a,attributes=scidb_attributes(x),decreasing=decreasing)
   s[between(0,'null'),2]
@@ -59,7 +59,7 @@ dist_scidb = function(x)
 # The following is faster but still slow:
   n   = nrow(x)
   x1  = merge(x,x)
-  p = scidb:::make.unique_(x1@attributes,"prod")
+  p = make.unique_(x1@attributes,"prod")
   x2  = project(bind(x1,p,paste(x1@attributes,collapse="*")),p)
   s = scidbeval(apply(x2, 1, sum)) # Cache this result
   r = dimensions(s)
