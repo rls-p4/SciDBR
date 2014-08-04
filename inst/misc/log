@@ -1,3 +1,21 @@
+commit 9c1cb7142cc75ab3ee6506c7d5bc7e2a25f84b65
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Aug 4 17:29:55 2014 -0400
+
+    Fixed serious parsing bug reported by JMQ; (misaligned casts)
+
+commit f23b3f5770e1cc14bec951f4d4a0993c916a2d6a
+Author: bwlewis <blewis@illposed.net>
+Date:   Tue Jul 22 12:15:09 2014 -0400
+
+    Added warning note about renaming the substitute function to replaceNA
+
+commit b2059e0b1ae17833b9122d80d930b5d45655f6a9
+Author: bwlewis <blewis@illposed.net>
+Date:   Tue Jul 22 10:09:32 2014 -0400
+
+    SciDB substitute is now replaceNA
+
 commit d2b8462b6136750d3cc29d116456cf2a9dc33ba2
 Author: bwlewis <blewis@illposed.net>
 Date:   Tue Jul 22 10:09:19 2014 -0400
