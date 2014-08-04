@@ -76,31 +76,22 @@ int scmp (const char *a, const char *b)
  */
 SEXP scidb_type_vector (const char *type, int len)
 {
-  SEXP ans;
   if(scmp(type,"bool"))
   {
-    ans = NEW_LOGICAL(len);
-    return ans;
-  } else if(scmp(type,"char"))
-  {
-    ans = NEW_CHARACTER(len);
-    return ans;
+    return NEW_LOGICAL(len);
   } else if(scmp(type,"datetime") || scmp(type,"datetimetz") || scmp(type,"float") ||
-            scmp(type,"double") || scmp(type,"int64") || scmp(type,"uint64") || scmp(type,"unit32"))
+            scmp(type,"double") || scmp(type,"int64") || scmp(type,"uint64") || scmp(type,"uint32"))
   {
-    ans = NEW_NUMERIC(len);
-    return ans;
+    return NEW_NUMERIC(len);
   } else if(scmp(type,"int8") || scmp(type,"uint8") || scmp(type,"int16") || scmp(type,"uint16") ||
             scmp(type,"int32"))
   {
-    ans = NEW_INTEGER(len);
-    return ans;
-  } else if(scmp(type,"string"))
+    return NEW_INTEGER(len);
+  } else if(scmp(type,"string") || scmp(type,"char"))
   {
-    ans = NEW_CHARACTER(len);
-    return ans;
+    return NEW_CHARACTER(len);
   }
-  error("Unsupported type");
+  error("Unsupported type %s", type);
   return R_NilValue;
 }
 
@@ -123,7 +114,8 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
   }
   if(scmp(type,"int64"))
   {
-    long long ll = (long long)*((long long *)*p);
+    long long ll;
+    memcpy(&ll, (long long *)*p, 8);
     (*p)+=8;
     if(isnull)
     {
@@ -135,7 +127,8 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
   }
   else if(scmp(type,"uint64"))
   {
-    unsigned long long ll = (unsigned long long)*((unsigned long long *)*p);
+    unsigned long long ll;
+    memcpy(&ll, (unsigned long long *)*p, 8);
     (*p)+=8;
     if(isnull)
     {
@@ -147,7 +140,8 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
   }
   else if(scmp(type,"uint32"))
   {
-    unsigned int ll = (unsigned int)*((unsigned int *)*p);
+    unsigned int ll;
+    memcpy(&ll, (unsigned int *)*p, 4);
     (*p)+=4;
     if(isnull)
     {
@@ -159,7 +153,8 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
   }
   else if(scmp(type,"int32"))
   {
-    int ll = (int)*((int *)*p);
+    int ll;
+    memcpy(&ll, (int *)*p, 4);
     (*p)+=4;
     if(isnull)
     {
@@ -171,7 +166,8 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
   }
   else if(scmp(type,"int16"))
   {
-    short ll = (short)*((short *)*p);
+    short ll;
+    memcpy(&ll, (short *)*p, 2);
     (*p)+=2;
     if(isnull)
     {
@@ -183,7 +179,8 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
   }
   else if(scmp(type,"uint16"))
   {
-    unsigned short ll = (unsigned short)*((unsigned short *)*p);
+    unsigned short ll;
+    memcpy(&ll, (unsigned short *)*p, 2);
     (*p)+=2;
     if(isnull)
     {
@@ -231,9 +228,8 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
   }
   else if(scmp(type,"float"))
   {
-Rprintf("ABOUT TO FLOAT\n");
-    float d = (float)*((float *)*p);
-Rprintf("FLOAT VALUE %f\n",d);
+    float d;
+    memcpy(&d, (float *)*p, 4);
     (*p)+=4;
     if(isnull)
     {
@@ -245,7 +241,8 @@ Rprintf("FLOAT VALUE %f\n",d);
   }
   else if(scmp(type,"double"))
   {
-    double d = (double)*((double *)*p);
+    double d;
+    memcpy(&d, (double *)*p, 8);
     (*p)+=8;
     if(isnull)
     {
@@ -255,11 +252,39 @@ Rprintf("FLOAT VALUE %f\n",d);
     REAL(vec)[i] = d;
     return;
   }
+  else if(scmp(type,"datetime") || scmp(type,"datetimetz"))
+  {
+    double d;
+    long long l;
+    memcpy(&l, (long long *)*p, 8);
+    (*p)+=8;
+    d = (double)l;
+    if(isnull)
+    {
+      REAL(vec)[i] = NA_REAL;
+      return;
+    }
+    REAL(vec)[i] = d;
+    return;
+  }
+  else if(scmp(type,"char"))
+  {
+    if(isnull)
+    {
+      SET_STRING_ELT(vec,i,NA_STRING);
+      return;
+    }
+    char *buf = (char *)calloc(2,1);
+    memcpy(buf, *p, sizeof(char));
+    (*p)+=sizeof(char);
+    SET_STRING_ELT(vec,i,mkChar(buf));
+    free(buf);
+    return;
+  }
   else if(scmp(type,"string"))
   {
     unsigned int len = (unsigned int)*((unsigned int*)*p);
     (*p)+=4;
-Rprintf("STRING LENgth %u\n",len);
     if(isnull)
     {
       (*p)+=len;
@@ -271,11 +296,9 @@ Rprintf("STRING LENgth %u\n",len);
 // XXX for efficiency's sake... XXX FIX ME
     char *buf = (char *)calloc(len,1);
     memcpy(buf, *p, len);
-Rprintf("STRING VALUE %s\n",buf);
     (*p)+=len;
     SET_STRING_ELT(vec,i,mkChar(buf));
     free(buf);
-Rprintf("ASSIGNED and free\n");
     return;
   }
   error("Unsupported type %s",type);

@@ -40,5 +40,36 @@ if(nchar(host)>0)
 # Aggregation by a non-integer attribute with a project thrown in
   check(aggregate(iris$Petal.Length,by=list(iris$Species),FUN=mean)[,2],
         aggregate(project(x,c('Petal_Length','Species')), by = 'Species', FUN='avg(Petal_Length)')[][,1])
+
+# Conversion tests
+ # bool          logical
+ # char          character
+ # datetime      double (aka real, numeric)
+ # datetimetz    double
+ # float         double
+ # double        double
+ # int64         double
+ # uint64        double
+ # uint32        double
+ # int8          integer
+ # uint8         integer
+ # int16         integer
+ # uint16        integer
+ # int32         integer
+ # string        character
+  x = scidb("apply(build(<b:bool>[i=0:0,1,0],true),
+             c, char('c'),
+             dt, datetime(i),
+             dz, datetime(i),
+             f, float(i),
+             d, double(i),
+             i64, int64(i),
+             ui64, uint64(i),
+             ui32, uint32(i),
+             i8, int8(i),
+             i16, int16(i),
+             ui16, uint16(i),
+             x, string(i))")
+  y = x[]
 }
 gc()

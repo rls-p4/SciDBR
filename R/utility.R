@@ -995,7 +995,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   {
     argsbuf = as.integer(args$buffer)
 # Potential problem here if args$buffer is bogus or '*' or whatever.
-# Deal with it.
+# Deal with it. XXX
     if(!is.na(argsbuf) && argsbuf < 100e6) buffer = as.integer(argsbuf)
   }
   if(!is.null(args$row.names)) row_names = args$row.names
