@@ -67,12 +67,12 @@ scidbmultiply = function(e1,e2)
   if(any(scidb_nullable(e1)))
   {
     warning(miswarn)
-    e1 = substitute(e1)
+    e1 = replaceNA(e1)
   }
   if(any(scidb_nullable(e2)))
   {
     warning(miswarn)
-    e2 = substitute(e2)
+    e2 = replaceNA(e2)
   }
 
 # Promote vectors to row- or column-vectors as required.

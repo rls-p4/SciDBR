@@ -67,9 +67,9 @@ glm.fit_scidb = function(x,y,weights=NULL,family=gaussian(),intercept)
   {
     stop("The Paradigm4 glm operator was not found.")
   }
-  x = substitute(x)
-  y = substitute(y)
-  `weights` = substitute(`weights`)
+  x = replaceNA(x)
+  y = replaceNA(y)
+  `weights` = replaceNA(`weights`)
   dist = family$family
   link = family$link
 # GLM has a some data partitioning requirements to look out for:

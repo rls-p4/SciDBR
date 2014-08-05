@@ -162,3 +162,57 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
   query = sprintf("redimension(%s,%s)",x@name,s)
   .scidbeval(query,eval,depend=list(x))
 }
+
+# Apply a heuristic method bring the schema of x and y into reasonable
+# conformance. The heuristic favors name matching, then resorts to
+# positional matching. Partial matches are allowed.
+conform = function(x, y, dimension.only=TRUE)
+{
+  if(!dimension.only) stop("Sorry, not yet supported")
+  if((class(x) %in% c("scidb","scidbdf"))) stop("x must be a scidb or scidbdf object")
+  if(!is.character(x)) stop("Invalid x")
+  if(!is.character(y)) stop("Invalid y")
+
+# Find attibute and dimension names in common
+  ai = intersect(scidb_attributes(x), scidb_attributes(y))
+  ad = intersect(dimensions(x), dimensions(y))
+
+# First work on bringing dimensions into agreement...
+  if(length(ad)>0) # by name
+  {
+    adx = which(dimensions(x) %in% ad)
+    ady = which(dimensions(y) %in% ad)
+    s   = lapply(1:length(dim(x)), function(i)
+            {
+              if(i %in% adx) scidb:::build_dim_schema(y,I=ady[i],bracket=FALSE)
+              else scidb:::build_dim_schema(x,I=i,bracket=FALSE)
+            })
+  } else # positional
+  {
+    s   = lapply(1:length(dim(x)), function(i)
+            {
+              if(i < length(dim(y))) scidb:::build_dim_schema(y,I=i,bracket=FALSE)
+              else scidb:::build_dim_schema(x,I=i,bracket=FALSE)
+            })
+  }
+  s1 = sprintf("%s[%s]",scidb:::build_attr_schema(x),paste(s,collapse=","))
+  s1b = lapply(scidb_coordinate_bounds(s1), as.numeric)
+  xb = lapply(scidb_coordinate_bounds(x), as.numeric)
+  s1b = lapply(s1b, function(x) {a=x;a[is.na(x)]=Inf;a})
+  xb = lapply(xb, function(x) {a=x;a[is.na(x)]=Inf;a})
+# Check for no  op.
+  if(isTRUE(compare_schema(x,s1)))
+  {
+    return(x)
+  }
+# Check to see if the new dimension bounds lie strictly within the old ones.
+# If so, we use reshape instead of redimension.
+  strict = all(s1b$start >= xb$start) && all(s1b$end <= xb$end)
+  if(strict)
+  {
+    query = sprintf("reshape(between(%s, %s), %s)", x@name,
+              scidb:::between_coordinate_bounds(s1), s1)
+    return(.scidbeval(query, eval=FALSE))
+  }
+# XXX ... still working on this...
+}

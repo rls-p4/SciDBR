@@ -1,6 +1,7 @@
 \name{order.scidb-methods}
 \docType{methods}
 \alias{order,scidb-method}
+\alias{order,ANY-method}
 \alias{order.scidb,scidb-method}
 \alias{order.scidb}
 \title{Methods for Function \code{order} in Package \pkg{scidb}}

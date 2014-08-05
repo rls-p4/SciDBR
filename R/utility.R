@@ -100,8 +100,7 @@ scidb = function(name, gc, `data.frame`)
 # A `scidb` or `scidbdf` array object.
 #
 # NOTE
-# SciDB versions up to 13.12 only support AFL here. As of SciDB version
-# 14.3, expression can be AFL or AQL.
+# Only AFL supported.
 `.scidbeval` = function(expr,eval,name,gc=TRUE, depend, `data.frame`)
 {
   ans = c()
