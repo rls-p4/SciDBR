@@ -44,11 +44,11 @@ export("attribute_rename")
 export("dimension_rename")
 export("index_lookup")
 export("show_commit_log")
-export("order.scidb")
+#export("order.scidb")
 
 # S4 methods
 exportClasses("scidb","scidbdf")
-exportMethods("%<%","%>%","%<=%","%>=%","%==%","%!=%","%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,median,mean,sd,var,min,max,t,sqrt,abs,sin,cos,tan,asin,acos,atan,unpack,reshape,regrid,svd,xgrid,glm,glm.fit,lag,Filter,na.locf,hist,phyper,qhyper,c,dist,kmeans,rank)
+exportMethods("%<%","%>%","%<=%","%>=%","%==%","%!=%","%*%",print,is.scidb,diag,show,head,tail,sum,image,crossprod,tcrossprod,is.scidbdf,aggregate,apply,sweep,median,mean,sd,var,min,max,t,sqrt,abs,sin,cos,tan,asin,acos,atan,unpack,reshape,regrid,svd,xgrid,glm,glm.fit,lag,Filter,na.locf,hist,phyper,qhyper,c,dist,kmeans,rank,order)
 
 # S3 methods
 S3method("summary",glm_scidb)
@@ -59,7 +59,6 @@ S3method("persist",glm_scidb)
 S3method("scidbremove",default)
 S3method("scidbremove",glm_scidb)
 
-S3method("order",scidb)
 S3method("Ops",scidb)
 S3method("[",scidb)
 #S3method("[<-",scidb)
