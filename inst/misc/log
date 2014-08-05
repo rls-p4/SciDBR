@@ -1,3 +1,105 @@
+commit 78952e0bac27ccf193401b77ee3f5b2e729a194c
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 15:46:02 2014 -0400
+
+    Added new quantile test case
+
+commit 378794b13c2c5c8b164b0761ef411d960d9b788d
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 15:42:50 2014 -0400
+
+    Fixed quantile bug reported by alex
+
+commit 1cc65ae6ab380a4b3146cb258790ccfc873dd31b
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 14:19:07 2014 -0400
+
+    Fixed $ indexing bug #46
+
+commit bbf2b07223ba072be0c20bd15611a3954fc64c6d
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 08:59:33 2014 -0400
+
+    Silence spurious warnings in unpack_to_dataframe
+
+commit d4848e6299b7234024a37b2ed1e899ced5e248db
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 02:11:36 2014 -0400
+
+    Merge needs common starting indices now
+
+commit ce88f9d3f836ae3c1c8949e51e9b1c6149a18904
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 02:05:04 2014 -0400
+
+    Fixed substitute/replaceNA bugs in multiply and elsewhere
+
+commit e0066520635f963b04b3a7205ec8f1268a4d27a0
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 00:00:23 2014 -0400
+
+    Fixed a reference counting bug in redimension
+
+commit 850de8a0fbdbc9cad92a967973edcbf458e7d69e
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Aug 4 23:38:26 2014 -0400
+
+    Exposed some more schema manipulation functions
+
+commit 13f8971568b8ed5fb6ce636d7edc4ff0a1d24ec4
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Aug 4 23:27:57 2014 -0400
+
+    Moved redimension, reshape, and repart to their own file
+
+commit 3496de4a39414e8ed346fa0a4fc57d71f723d4ed
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Aug 4 23:25:21 2014 -0400
+
+    Maybe order is ok now...
+
+commit 9dae85594cf338a233ace5ffe8fc95cec7351a52
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Aug 4 23:06:38 2014 -0400
+
+    Doc cleanup; still working on order
+
+commit 46955021bd160d1934a903391fab928cd1b0681f
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Aug 4 22:31:59 2014 -0400
+
+    Doc cleanup
+
+commit edc6d12107079b697a7229d90433e3336eb0b327
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Aug 4 22:04:42 2014 -0400
+
+    Doc cleanup
+
+commit 54279ea844e97eb2fa5617828a65debe3fb958ec
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Aug 4 22:03:46 2014 -0400
+
+    Doc cleanup
+
+commit 0ed2f6a831245871c29e6bbda2e3f2e577815668
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Aug 4 21:28:18 2014 -0400
+
+    rank and order.scidb methods
+
+commit dff470d332d6473a83d852cc105c5c1e3c3282e8
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Aug 4 17:47:13 2014 -0400
+
+    Got rid of superfluous namespace prefixes
+
+commit 298af766c0a8a599176e8fc8fddc6ba48c6d15d7
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Aug 4 17:30:21 2014 -0400
+
+    Fixed serious parsing bug reported by JMQ; (misaligned casts)
+
 commit 9c1cb7142cc75ab3ee6506c7d5bc7e2a25f84b65
 Author: bwlewis <blewis@illposed.net>
 Date:   Mon Aug 4 17:29:55 2014 -0400
