@@ -1,3 +1,15 @@
+commit 726e9b881411c8b017d04d0ba0fcdaec8c537d40
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 17:39:05 2014 -0400
+
+    Instructed tests to ignore tie-handling differences in order
+
+commit 3884e3af71b58c996486d91192474a3313709758
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 17:26:55 2014 -0400
+
+    updated log
+
 commit ada2ddf2f884aae487202d7ecf88f57a7c786fe2
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue Aug 5 17:25:32 2014 -0400
