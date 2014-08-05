@@ -992,7 +992,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   interrupt = scidb.interrupt()
   if(!is.null(args$buffer))
   {
-    argsbuf = as.integer(args$buffer)
+    argsbuf = tryCatch(as.integer(args$buffer),warning=invisible)
 # Potential problem here if args$buffer is bogus or '*' or whatever.
 # Deal with it. XXX
     if(!is.na(argsbuf) && argsbuf < 100e6) buffer = as.integer(argsbuf)
