@@ -51,6 +51,9 @@ setGeneric("na.locf")
 setOldClass("hist")
 setGeneric("hist")
 
+setOldClass("rank")
+setGeneric("rank")
+
 setGeneric("sum")
 setGeneric("mean")
 setGeneric("median")
@@ -85,6 +88,8 @@ setGeneric("dist")
 setOldClass("kmeans")
 setGeneric("kmeans")
 
+setOldClass("sort.list")
+setGeneric("sort.list")
 
 setOldClass("svd")
 setGeneric("svd")
@@ -211,10 +216,7 @@ setMethod("crossprod",signature(x="scidb", y="scidb"),
   valueClass="scidb"
 )
 
-setMethod("na.locf",signature(object="scidb"), na.locf_scidb)
-
-setMethod("hist",signature(x="scidb"), hist_scidb)
-
+setGeneric("tcrossprod")
 setMethod("tcrossprod",signature(x="scidb", y="scidb"),
   function(x,y)
   {
@@ -429,6 +431,11 @@ setMethod("dist", signature(x="scidb"), dist_scidb)
 setMethod("kmeans", signature(x="scidb"), kmeans_scidb)
 setMethod("svd", signature(x="scidb"), svd_scidb)
 setMethod("glm.fit", signature(x="scidb",y="ANY",weights="MNSN"), glm.fit_scidb)
+setMethod("na.locf",signature(object="scidb"), na.locf_scidb)
+setMethod("hist",signature(x="scidb"), hist_scidb)
+setMethod("sort.list",signature(x="scidb"), sort_list_scidb)
+setMethod("rank",signature(x="scidb"), rank_scidb)
+
 
 # Transpose a matrix or vector
 setMethod("t", signature(x="scidb"), 

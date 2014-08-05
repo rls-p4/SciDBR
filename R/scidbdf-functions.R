@@ -209,9 +209,10 @@ scidbdf_subset = function(x, i, drop=FALSE)
 
 betweenbound = function(x, m, n)
 {
-  ans = sprintf("between(%s, %.0f, %.0f)", x@name, m, n)
+  ans = sprintf("between(%s, %s, %s)", x@name, noE(m), noE(n))
 # Reset just the upper dimension index, use of redimension here is overkill
 # XXX FIX ME
-  schema = sprintf("%s%s",build_attr_schema(x), build_dim_schema(x,newstart=m,newend=n))
-  ans = sprintf("redimension(%s,%s)", ans, schema)
+#  schema = sprintf("%s%s",build_attr_schema(x), build_dim_schema(x,newstart=m,newend=n))
+#  ans = sprintf("redimension(%s,%s)", ans, schema)
+  ans
 }

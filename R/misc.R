@@ -2,14 +2,39 @@
 # tend to be newer and somewhat more experimental than the other functions, and
 # maybe not quite as fully baked.
 
-order_scidb = function(x,decreasing=FALSE)
+sort_list_scidb = function(x,partial=NULL,na.last=TRUE,decreasing=FALSE)
+{
+  if(!is.scidb(x)) stop("x must be a scidb vector object")
+  if(!is.null(partial)) stop("The partial argument is not yet supported for SciDB arrays.")
+  if(!na.last) stop("The na.last argument is not supported")
+  if(length(dim(x))>1) stop("x must be a scidb vector object")
+  a = bind(x,"p",dimensions(x)[1])
+  s = sort(a,attributes=scidb_attributes(a)[-length(scidb_attributes(a))],decreasing=decreasing)
+  project(s,length(scidb_attributes(s)))[0:count(s)]
+}
+order_scidb = function(x,na.last=TRUE,decreasing=FALSE)
+{
+  if(!is.scidb(x)) stop("x must be a scidb vector object")
+  if(!na.last) stop("The na.last argument is not supported")
+  if(length(dim(x))>1) stop("x must be a scidb vector object")
+  a = bind(x,"p",dimensions(x)[1])
+  s = sort(a,attributes=scidb_attributes(a)[-length(scidb_attributes(a))],decreasing=decreasing)
+  project(s,length(scidb_attributes(s)))[0:count(s)]
+}
+
+setGeneric("order")
+order.scidb = function(...,na.last=TRUE,decreasing=FALSE) order_scidb(x,na.last,decreasing)
+
+rank_scidb = function(x,na.last=TRUE,ties.method = c("average", "first", "random", "max", "min"))
 {
   if(!is.scidb(x)) stop("x must be a scidb vector object")
   if(length(dim(x))>1) stop("x must be a scidb vector object")
-  p = make.unique_(c(dimensions(x),scidb_attributes(x)),"p")
-  a = bind(x,p,dimensions(x)[1])
-  s = sort(a,attributes=scidb_attributes(x),decreasing=decreasing)
-  s[between(0,'null'),2]
+  attribute=scidb_attributes(x)[1]
+  dimension=""
+  ties.method = match.arg(ties.method)
+  op = ifelse(ties.method=="average","avg_rank","rank")
+  query = sprintf("%s(%s,%s%s)",op,x@name,attribute,dimension)
+  .scidbeval(query,depend=list(x),eval=TRUE)
 }
 
 kmeans_scidb = function(x, centers, iter.max=30, nstart=1,

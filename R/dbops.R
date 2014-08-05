@@ -410,8 +410,9 @@ bind = function(X, name, FUN, `eval`=FALSE)
 # Auto-generate names like X_n:
   if(missing(name))
   {
-    name = make.unique_(c(scidb_attributes(X),dimensions(X)), rep("X",length(FUN)))
+    name = rep("X",length(FUN))
   }
+  name = make.unique_(c(scidb_attributes(X),dimensions(X)), name)
   if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
   expr = paste(paste(name,FUN,sep=","),collapse=",")
   query = sprintf("apply(%s, %s)",aname, expr)
