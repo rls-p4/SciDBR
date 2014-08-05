@@ -1,3 +1,27 @@
+commit ada2ddf2f884aae487202d7ecf88f57a7c786fe2
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 17:25:32 2014 -0400
+
+    Fixed a typo in tests (order function name change)
+
+commit 12c890044a155d8b324ec471cb76530f441ce30b
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 17:22:11 2014 -0400
+
+    Fixed a regression introduced by a change to bind
+
+commit 0483bf12aa889c300e09e650e277247c7f99476f
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 17:08:24 2014 -0400
+
+    Fixed another regression due to renaming of substitute function
+
+commit 4b219ffbbfcd62d2395a1916285cd7247b407b5e
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 15:46:32 2014 -0400
+
+    Log update
+
 commit 78952e0bac27ccf193401b77ee3f5b2e729a194c
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue Aug 5 15:46:02 2014 -0400
