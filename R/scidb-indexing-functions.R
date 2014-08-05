@@ -220,7 +220,7 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
       } else if(is.character(i[[j]]))
       {
 # Case 2: character labels, consult a lookup array if possible
-         lkup = substitute(x@gc$dimnames[[j]])
+         lkup = replaceNA(x@gc$dimnames[[j]])
          if(length(dim(lkup))>1)
          {
 # Hmmm. The lookup array has more than one dimension! Let's just use the first.
