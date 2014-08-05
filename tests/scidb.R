@@ -184,7 +184,7 @@ if(nchar(host)>0)
   iquery("create_array(_qtest,<value:double> [tumor_type_id=0:25,1,0,sample_id=0:17999,1000,0,illuminahiseq_rnaseq_probe_id=0:44999,1000,0]")
   x = scidb("_qtest")
   y = quantile(x)[]
-  scidbrm("_qtest",force=TRUE)
+  scidbrm("_qtest",force=TRUE,error=invisible)
 
 # Another quantile failure case reported by Alex
 x = read.csv(file=textConnection('"tumor_type_id","sample_id","agilentg4502a_07_1_probe_id","value"
