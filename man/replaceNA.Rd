@@ -7,13 +7,14 @@ Replace SciDB NULL values with another value.
 Replace SciDB NULL (aka missing) values with another value.
 }
 \usage{
-replaceNA (x, value, `attribute`, `eval`=FALSE)
+replaceNA (x, value, `attribute`, `eval`=FALSE, ...)
 }
 \arguments{
   \item{x}{A \code{scidb}  or \code{scidbdf} object.}
   \item{value}{An optional scidb array containing the replacement value.}
   \item{attribute}{An optional attribute to restrict NULL replacement to.}
   \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
+  \item{...}{Optional arguments.}
 }
 \value{
 A new \code{scidb} or \code{scidbdf} object.
