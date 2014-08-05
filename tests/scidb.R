@@ -87,7 +87,7 @@ if(nchar(host)>0)
 
 # On different dimensions
   x = as.scidb(rnorm(5))
-  a = as.scidb(data.frame(p=1:5))
+  a = as.scidb(data.frame(p=1:5),start=0)
   merge(x,a,by.x=dimensions(x),by.y=dimensions(a))
 
 # Add many more join/merge checks here...
