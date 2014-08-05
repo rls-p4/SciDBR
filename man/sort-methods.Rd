@@ -22,10 +22,9 @@ Create a new array reference object that represents the sorted version of array
 \code{x}.  The output array reference has the same shape and number of
 attributes as \code{x} but the specified attributes appear in sorted order.
 The following SciDB-specific parameters are available:
-\itemize
-{
-  \item{attributes}{(Required) A character vector of attribute names from array \code{x} to sort on}
-  \item{eval}{(Optional) If true, execute the query and store the result array. Otherwise defer evaluation.}
+\itemize{
+\item{attributes}{(Required) A character vector of attribute names from array \code{x} to sort on}
+\item{eval}{(Optional) If true, execute the query and store the result array. Otherwise defer evaluation.}
 }
 }
 \value{A \code{scidb} or \code{scidbdf} reference object.}
