@@ -245,7 +245,8 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
         {
           i[[j]] = i[[j]] %==% TRUE
         }
-        tmp = sort(project(bind(i[[j]],N,dimensions(i[[j]])[1],eval=0),N,eval=0),eval=0)
+        tmp = bind(i[[j]],N,dimensions(i[[j]])[1],eval=FALSE)
+        tmp = sort(project(tmp, length(scidb_attributes(tmp)),eval=FALSE),eval=FALSE)
 # Insane scidb name conflict problems, check for and resolve them.
         tmpaname = make.unique_(dimlabel, scidb_attributes(tmp))
         cst = paste(build_attr_schema(tmp,newnames=tmpaname),build_dim_schema(tmp,newnames=dimlabel))
