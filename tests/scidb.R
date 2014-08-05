@@ -171,7 +171,10 @@ if(nchar(host)>0)
 
 # order
   x = build("random()%100", 100, type="double", eval=TRUE, start=1)
-  check(as.numeric(order(x)[]), order(x[]))
+  o1 = order(x)[]
+  o2 = order(x[])
+  xx = x[]
+  check(xx[o1], xx[o2])
 
 # rank
   check(rank(x)[,2][], rank(x[])) 
