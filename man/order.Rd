@@ -1,6 +1,5 @@
 \name{sort.list-methods}
 \docType{methods}
-\alias{sort.list}
 \alias{sort.list,scidb-method}
 \alias{order,scidb-method}
 \title{Methods for Function \code{sort.list} in Package \pkg{scidb}}

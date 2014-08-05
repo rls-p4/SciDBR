@@ -1,6 +1,5 @@
 \name{sort-methods}
 \docType{methods}
-\alias{sort}
 \alias{sort,scidb-method}
 \alias{sort,scidbdf-method}
 \title{Methods for Function \code{sort} in Package \pkg{scidb}}
@@ -9,8 +8,8 @@ Aggregate a SciDB array object grouped by a subset of its dimensions and/or attr
 }
 
 \usage{
-\S4method{sort}{scidb}(x, decreasing=FALSE, ...)
-\S4method{sort}{scidbdf}(x, decreasing=FALSE, ...)
+\S4method{sort}{scidb}(x, decreasing = FALSE, ...)
+\S4method{sort}{scidbdf}(x, decreasing = FALSE, ...)
 }
 \arguments{
   \item{x}{A \code{scidb} or \code{scidbdf} object.}

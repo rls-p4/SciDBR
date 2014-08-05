@@ -23,7 +23,7 @@ order_scidb = function(x,na.last=TRUE,decreasing=FALSE)
 }
 
 setGeneric("order")
-order.scidb = function(...,na.last=TRUE,decreasing=FALSE) order_scidb(x,na.last,decreasing)
+order.scidb = function(...,na.last=TRUE,decreasing=FALSE) order_scidb(...,na.last,decreasing)
 
 rank_scidb = function(x,na.last=TRUE,ties.method = c("average", "first", "random", "max", "min"))
 {
