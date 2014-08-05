@@ -247,7 +247,8 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
   np      = length(probs)
   probs   = pmax(0, pmin(1,probs))  # Filter bogus probabilities out
   if(length(probs)!=np) warning("Probabilities outside [0,1] have been removed.")
-  n       = length(x)
+  if(length(dim(x))>1) x = project(unpack(x),scidb_attributes(x)[1],eval=TRUE)
+  n = count(x) # * bounds are just wonderful
   x       = sort(x) # Full sort is wasteful! Only really need a partial sort.
   np      = length(probs)
   qs      = NULL
