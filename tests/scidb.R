@@ -181,12 +181,12 @@ if(nchar(host)>0)
 
 # quantile, from a failure test case reported by Alex
   scidbrm("_qtest",force=TRUE,error=invisible)
-  iquery("create_array(_qtest,<value:double> [tumor_type_id=0:25,1,0,sample_id=0:17999,1000,0,illuminahiseq_rnaseq_probe_id=0:44999,1000,0]")
+  iquery("create_array(_qtest,<value:double> [tumor_type_id=0:25,1,0,sample_id=0:17999,1000,0,illuminahiseq_rnaseq_probe_id=0:44999,1000,0])")
   x = scidb("_qtest")
   y = quantile(x)[]
   scidbrm("_qtest",force=TRUE,error=invisible)
 
-# Another quantile failure case reported by Alex
+# Another quantile failure case reported by Alex (bug #47)
 x = read.csv(file=textConnection('"tumor_type_id","sample_id","agilentg4502a_07_1_probe_id","value"
 7,2742,13317,1.1024545
 7,2963,8060,0.9827

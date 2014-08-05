@@ -280,7 +280,7 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
   }
   if(type==7)
   {
-    index = start_index + (n - 1) * probs
+    index = start_index + max((n - 1),0) * probs
     lo    = floor(index)
     hi    = ceiling(index)
     i     = index > lo
