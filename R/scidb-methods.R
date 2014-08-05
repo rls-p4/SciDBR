@@ -88,9 +88,6 @@ setGeneric("dist")
 setOldClass("kmeans")
 setGeneric("kmeans")
 
-setOldClass("sort.list")
-setGeneric("sort.list")
-
 setOldClass("svd")
 setGeneric("svd")
 
@@ -433,7 +430,6 @@ setMethod("svd", signature(x="scidb"), svd_scidb)
 setMethod("glm.fit", signature(x="scidb",y="ANY",weights="MNSN"), glm.fit_scidb)
 setMethod("na.locf",signature(object="scidb"), na.locf_scidb)
 setMethod("hist",signature(x="scidb"), hist_scidb)
-setMethod("sort.list",signature(x="scidb"), sort_list_scidb)
 setMethod("rank",signature(x="scidb"), rank_scidb)
 
 

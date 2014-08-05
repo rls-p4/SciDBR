@@ -2,16 +2,6 @@
 # tend to be newer and somewhat more experimental than the other functions, and
 # maybe not quite as fully baked.
 
-sort_list_scidb = function(x,partial=NULL,na.last=TRUE,decreasing=FALSE)
-{
-  if(!is.scidb(x)) stop("x must be a scidb vector object")
-  if(!is.null(partial)) stop("The partial argument is not yet supported for SciDB arrays.")
-  if(!na.last) stop("The na.last argument is not supported")
-  if(length(dim(x))>1) stop("x must be a scidb vector object")
-  a = bind(x,"p",dimensions(x)[1])
-  s = sort(a,attributes=scidb_attributes(a)[-length(scidb_attributes(a))],decreasing=decreasing)
-  project(s,length(scidb_attributes(s)))[0:count(s)]
-}
 order_scidb = function(x,na.last=TRUE,decreasing=FALSE)
 {
   if(!is.scidb(x)) stop("x must be a scidb vector object")
@@ -19,7 +9,7 @@ order_scidb = function(x,na.last=TRUE,decreasing=FALSE)
   if(length(dim(x))>1) stop("x must be a scidb vector object")
   a = bind(x,"p",dimensions(x)[1])
   s = sort(a,attributes=scidb_attributes(a)[-length(scidb_attributes(a))],decreasing=decreasing)
-  project(s,length(scidb_attributes(s)))[0:count(s)]
+  project(s,length(scidb_attributes(s)))[0:(count(s)-1)]
 }
 
 setGeneric("order")
