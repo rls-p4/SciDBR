@@ -180,7 +180,7 @@ if(nchar(host)>0)
   check(rank(x)[,2][], rank(x[])) 
 
 # quantile, from a failure test case reported by Alex
-  scidbrm("_qtest",force=TRUE)
+  scidbrm("_qtest",force=TRUE,error=invisible)
   iquery("create_array(_qtest,<value:double> [tumor_type_id=0:25,1,0,sample_id=0:17999,1000,0,illuminahiseq_rnaseq_probe_id=0:44999,1000,0]")
   x = scidb("_qtest")
   y = quantile(x)[]
