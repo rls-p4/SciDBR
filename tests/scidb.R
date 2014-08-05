@@ -183,6 +183,21 @@ if(nchar(host)>0)
   y = quantile(x)[]
   scidbrm("_qtest",force=TRUE)
 
+# Another quantile failure case reported by Alex
+x = read.csv(file=textConnection('"tumor_type_id","sample_id","agilentg4502a_07_1_probe_id","value"
+7,2742,13317,1.1024545
+7,2963,8060,0.9827
+7,2609,13709,-0.18572727
+7,2643,13772,0.56753844
+7,2629,2126,3.6668334
+7,2643,10996,0.35366666
+7,2594,10300,-0.534
+7,2680,4252,-0.842
+7,2678,17062,-1.1738
+7,2765,13244,-2.1102'))
+a = redimension(as.scidb(x,types=c("int64","int64","int64","double")), dim=names(x)[1:3], eval=TRUE)
+check(quantile(a)[][,2], quantile(x$value))
+
 
 # Another merge test courtesy Alex Polyiakov
   x = build(1,c(2,2))
