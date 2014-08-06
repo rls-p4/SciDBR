@@ -1,3 +1,22 @@
+commit 8b01b0c7b2c6d4f8d88e5fcf00fdb1fdde1cfc63
+Merge: c5e7594 e05c27e
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Aug 6 08:33:52 2014 -0400
+
+    Merge branch 'laboratory'
+
+commit e05c27e4e3457f4feb07f3119a3347bff4cc0aea
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Aug 6 08:33:17 2014 -0400
+
+    Minor vignette update
+
+commit c5e75947d261f01d3b236067583e4a56ca562d25
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 22:13:42 2014 -0400
+
+    Big merge of lab branch into master
+
 commit 87e51d5c7711cf9753159ebc09d581da0d666a8e
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue Aug 5 22:12:28 2014 -0400
