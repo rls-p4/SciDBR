@@ -160,7 +160,7 @@ open/unencrypted or encrypted/authenticated ports, or both.
 <<eval=TRUE,echo=FALSE>>=
 library("scidb")
 scidbconnect(Sys.getenv("SCIDB_TEST_HOST")[1])
-tryCatch(scidbrm(scidbls()),error=invisible)
+tryCatch(scidbrm(scidbls()),error=invisible,force=TRUE)
 @
 {\bf Connect to localhost by default on unencrypted port 8080:}
 <<eval=FALSE>>=
@@ -183,12 +183,14 @@ The \verb+scidblist+ function lists SciDB objects (arrays, instances, etc.),
 optionally showing detailed schema information for arrays. Returned
 results may be filtered using regular expression-style syntax.
 
-The \verb+scidbremove+ function removes a SciDB array, or optionally a
-set of SciDB arrays defined by regular expression. The function
-accepts a vector of array names, resulting in the removal of all the
-specified arrays. Combine this feature with the regular expression filtering
-output of \verb+scidblist+ to remove sets of arrays matching the filter.
-
+The \verb+scidbremove+ function removes a SciDB array, or optionally a set of
+SciDB arrays. The function accepts a vector of array names, resulting in the
+removal of all the specified arrays. Combine this feature with the regular
+expression filtering output of \verb+scidblist+ to remove sets of arrays
+matching the filter.  Array names not associated with a specific R session are
+protected from easy removal to provide a modicum of protection for multiple
+SciDB users.  Specify \verb+force=TRUE+ as indicated in the warning message to
+remove those arrays.
 
 
 
@@ -856,34 +858,52 @@ Here is a summary list of functions and methods defined by  the package.  See
 online help for examples and more information on each one.
 
 \begin{verbatim}
-$                 %<%               Filter            Ops
-[                 abs               acos              aggregate
-all.equal         antijoin          apply             as.scidb
-asin              atan              attribute_rename  between
-bind              build             c                 cast
-cbind             colnames          colnames<-        cos
-count             crossprod         cumulate          default
-df2scidb          diag              diff              dim
-dimension_rename  dimensions        dimnames          dimnames<-
-glm.fit           glm_scidb         head              hist
-image             index_lookup      iquery            is.scidb
-is.scidbdf        lag               length            log
-max               mean              median            merge
-min               model_scidb       na.locf           names
-names<-           ncol              nrow              persist
-phyper            predict           print             project
-qhyper            quantile          rbind             redimension
-regrid            rename            repart            reshape
-rownames          rownames<-        schema            scidb
-scidb_attributes  scidb_fisher.test scidbconnect      scidbdf
-scidbeval         scidblist         scidbls           scidbremove
-scidbrm           sd                show              show_commit_log
-sin               slice             solve             sort
-sqrt              str               subarray          subset
-substitute        sum               summary           svd
-sweep             t                 tail              tan
-tcrossprod        unique            unpack            var
-xgrid
+<                       <=                      ==
+>                       >=                      -
+!=                      /                       [
+$                       *                       %<=%
+%<%                     %==%                    %>=%
+%>%                     %*%                     +
+abs                     acos                    aggregate
+all.equal               antijoin                apply
+asin                    as.scidb                atan
+attribute_rename        between                 bind
+build                   c                       cast
+cbind                   chunk_map               colnames
+colnames<-              cos                     count
+crossprod               cumulate                default
+df2scidb                diag                    diff
+dim                     dimension_rename        dimensions
+dimnames                dimnames<-              dist
+Filter                  glm                     glm.fit
+glm_scidb               head                    hist
+image                   index_lookup            iquery
+is.scidb                is.scidbdf              kmeans
+lag                     length                  log
+max                     mean                    median
+merge                   min                     model_scidb
+na.locf                 names                   names<-
+ncol                    nrow                    Ops
+order                   persist                 phyper
+predict                 print                   project
+qhyper                  quantile                rank
+rbind                   redimension             regrid
+rename                  repart                  replaceNA
+reshape                 rownames                rownames<-
+schema                  scidb                   scidb_attributes
+scidbconnect            scidb_coordinate_bounds scidb_coordinate_chunks
+scidb_coordinate_end    scidb_coordinate_overla scidb_coordinate_start
+scidbdf                 scidbeval               scidb_fisher.test
+scidblist               scidbls                 scidb_nullable
+scidbremove             scidbrm                 scidb_types
+sd                      show                    show_commit_log
+sin                     slice                   solve
+sort                    sqrt                    str
+subarray                subset                  sum
+summary                 svd                     sweep
+t                       tail                    tan
+tcrossprod              tsvd                    unique
+unpack                  var                     xgrid
 \end{verbatim}
 
 

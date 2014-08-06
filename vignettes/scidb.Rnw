@@ -182,12 +182,14 @@ The \verb+scidblist+ function lists SciDB objects (arrays, instances, etc.),
 optionally showing detailed schema information for arrays. Returned
 results may be filtered using regular expression-style syntax.
 
-The \verb+scidbremove+ function removes a SciDB array, or optionally a
-set of SciDB arrays defined by regular expression. The function
-accepts a vector of array names, resulting in the removal of all the
-specified arrays. Combine this feature with the regular expression filtering
-output of \verb+scidblist+ to remove sets of arrays matching the filter.
-
+The \verb+scidbremove+ function removes a SciDB array, or optionally a set of
+SciDB arrays. The function accepts a vector of array names, resulting in the
+removal of all the specified arrays. Combine this feature with the regular
+expression filtering output of \verb+scidblist+ to remove sets of arrays
+matching the filter.  Array names not associated with a specific R session are
+protected from easy removal to provide a modicum of protection for multiple
+SciDB users.  Specify \verb+force=TRUE+ as indicated in the warning message to
+remove those arrays.
 
 
 
@@ -347,7 +349,7 @@ bulk data load utility as outlined in the SciDB documentation instead.
 > str(v)
 \end{Sinput}
 \begin{Soutput}
-SciDB expression:  R_array2daf705d0f141101088968161
+SciDB expression:  R_array1f22108720b51102362556990
 SciDB schema:  <val:double NULL DEFAULT null> [i=0:4,5,0,j=0:4,5,0]
 
 Attributes:
@@ -362,24 +364,24 @@ Dimensions:
 > crossprod( v[] )              # Compute t(v) %*% v using R
 \end{Sinput}
 \begin{Soutput}
-           [,1]       [,2]      [,3]      [,4]       [,5]
-[1,]  5.6415470 -0.5485588 -1.532228 -3.642843 -1.2289314
-[2,] -0.5485588  1.8833609 -1.321107  2.171887  0.4058398
-[3,] -1.5322275 -1.3211075  3.825912 -3.120297 -1.0790013
-[4,] -3.6428426  2.1718875 -3.120297  7.593978  3.3668064
-[5,] -1.2289314  0.4058398 -1.079001  3.366806  4.2484199
+           [,1]       [,2]       [,3]      [,4]       [,5]
+[1,]  5.8570613  1.8926438 -0.8527944 -2.047117 -3.8308630
+[2,]  1.8926438  8.1344908  2.1575689  1.465041 -0.7721987
+[3,] -0.8527944  2.1575689  2.9957945 -2.352881 -0.2971275
+[4,] -2.0471172  1.4650414 -2.3528807 19.093908  8.6459597
+[5,] -3.8308630 -0.7721987 -0.2971275  8.645960  5.5920499
 \end{Soutput}
 \begin{Sinput}
 > # Now compute using SciDB, and materialize the result to R:
 > crossprod(v)[]
 \end{Sinput}
 \begin{Soutput}
-           [,1]       [,2]      [,3]      [,4]       [,5]
-[1,]  5.6415470 -0.5485588 -1.532228 -3.642843 -1.2289314
-[2,] -0.5485588  1.8833609 -1.321107  2.171887  0.4058398
-[3,] -1.5322275 -1.3211075  3.825912 -3.120297 -1.0790013
-[4,] -3.6428426  2.1718875 -3.120297  7.593978  3.3668064
-[5,] -1.2289314  0.4058398 -1.079001  3.366806  4.2484199
+           [,1]       [,2]       [,3]      [,4]       [,5]
+[1,]  5.8570613  1.8926438 -0.8527944 -2.047117 -3.8308630
+[2,]  1.8926438  8.1344908  2.1575689  1.465041 -0.7721987
+[3,] -0.8527944  2.1575689  2.9957945 -2.352881 -0.2971275
+[4,] -2.0471172  1.4650414 -2.3528807 19.093908  8.6459597
+[5,] -3.8308630 -0.7721987 -0.2971275  8.645960  5.5920499
 \end{Soutput}
 \end{Schunk}
 
@@ -891,7 +893,7 @@ Here is an example:
 > C@name
 \end{Sinput}
 \begin{Soutput}
-[1] "R_array2daf7bdb4f9a1101088968161"
+[1] "R_array1f227fef79051102362556990"
 \end{Soutput}
 \begin{Sinput}
 > C@schema
@@ -1080,34 +1082,52 @@ Here is a summary list of functions and methods defined by  the package.  See
 online help for examples and more information on each one.
 
 \begin{verbatim}
-$                 %<%               Filter            Ops
-[                 abs               acos              aggregate
-all.equal         antijoin          apply             as.scidb
-asin              atan              attribute_rename  between
-bind              build             c                 cast
-cbind             colnames          colnames<-        cos
-count             crossprod         cumulate          default
-df2scidb          diag              diff              dim
-dimension_rename  dimensions        dimnames          dimnames<-
-glm.fit           glm_scidb         head              hist
-image             index_lookup      iquery            is.scidb
-is.scidbdf        lag               length            log
-max               mean              median            merge
-min               model_scidb       na.locf           names
-names<-           ncol              nrow              persist
-phyper            predict           print             project
-qhyper            quantile          rbind             redimension
-regrid            rename            repart            reshape
-rownames          rownames<-        schema            scidb
-scidb_attributes  scidb_fisher.test scidbconnect      scidbdf
-scidbeval         scidblist         scidbls           scidbremove
-scidbrm           sd                show              show_commit_log
-sin               slice             solve             sort
-sqrt              str               subarray          subset
-substitute        sum               summary           svd
-sweep             t                 tail              tan
-tcrossprod        unique            unpack            var
-xgrid
+<                       <=                      ==
+>                       >=                      -
+!=                      /                       [
+$                       *                       %<=%
+%<%                     %==%                    %>=%
+%>%                     %*%                     +
+abs                     acos                    aggregate
+all.equal               antijoin                apply
+asin                    as.scidb                atan
+attribute_rename        between                 bind
+build                   c                       cast
+cbind                   chunk_map               colnames
+colnames<-              cos                     count
+crossprod               cumulate                default
+df2scidb                diag                    diff
+dim                     dimension_rename        dimensions
+dimnames                dimnames<-              dist
+Filter                  glm                     glm.fit
+glm_scidb               head                    hist
+image                   index_lookup            iquery
+is.scidb                is.scidbdf              kmeans
+lag                     length                  log
+max                     mean                    median
+merge                   min                     model_scidb
+na.locf                 names                   names<-
+ncol                    nrow                    Ops
+order                   persist                 phyper
+predict                 print                   project
+qhyper                  quantile                rank
+rbind                   redimension             regrid
+rename                  repart                  replaceNA
+reshape                 rownames                rownames<-
+schema                  scidb                   scidb_attributes
+scidbconnect            scidb_coordinate_bounds scidb_coordinate_chunks
+scidb_coordinate_end    scidb_coordinate_overla scidb_coordinate_start
+scidbdf                 scidbeval               scidb_fisher.test
+scidblist               scidbls                 scidb_nullable
+scidbremove             scidbrm                 scidb_types
+sd                      show                    show_commit_log
+sin                     slice                   solve
+sort                    sqrt                    str
+subarray                subset                  sum
+summary                 svd                     sweep
+t                       tail                    tan
+tcrossprod              tsvd                    unique
+unpack                  var                     xgrid
 \end{verbatim}
 
 
