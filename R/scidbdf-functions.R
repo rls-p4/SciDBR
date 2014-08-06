@@ -212,8 +212,12 @@ betweenbound = function(x, m, n)
 {
   ans = sprintf("between(%s, %s, %s)", x@name, noE(m), noE(n))
 # Reset just the upper dimension index, use of redimension here is overkill
-# XXX FIX ME
-#  schema = sprintf("%s%s",build_attr_schema(x), build_dim_schema(x,newstart=m,newend=n))
-#  ans = sprintf("redimension(%s,%s)", ans, schema)
+# but WE NEED IT HERE in case users over or undershoot dimension bounds.
+  schema = sprintf("%s%s",build_attr_schema(x), build_dim_schema(x,newstart=m,newend=n))
+  ans = sprintf("redimension(%s,%s)", ans, schema)
+# seemingly more efficient but not general, sadly:
+# XXX FIX ME...put an if/then clause here to detect efficient cases... Argggh.
+#  s = subarray(x, c(m,n))
+#  ans = sprintf("repart(subarray(%s, %s, %s),%s)", x@name, noE(m), noE(n),schema)
   ans
 }
