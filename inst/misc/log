@@ -1,3 +1,33 @@
+commit e29914d3016df4e6e95886425a5405f30b7b4967
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 22:09:04 2014 -0400
+
+    Re-introduced heavy-handed use of redimension to fix a bug in betweenbound.
+
+commit 670508545c3f50596255a3959d60daf26ed320b1
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 19:47:52 2014 -0400
+
+    More quantile bug nonsense
+
+commit 54194a5a866d506874023589438958e8c6001ae9
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 17:45:48 2014 -0400
+
+    Another test typo fixed
+
+commit dc78f7e21511c2da7e762048c0ca066136bd28c8
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 17:44:26 2014 -0400
+
+    Another test typo fixed
+
+commit 095029dfde56dca25ba0372d74a884190d1f2719
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 17:39:21 2014 -0400
+
+    Log
+
 commit 726e9b881411c8b017d04d0ba0fcdaec8c537d40
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue Aug 5 17:39:05 2014 -0400
