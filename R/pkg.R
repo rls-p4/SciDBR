@@ -32,9 +32,9 @@ SIG_DFL = 0L # Default SIGINT signal handler
 SIG_IGN = 1L # Ignore SIGINT
 SIG_TRP = 2L # A custom signal handler (see scidb.c)
 
-.onLoad = function(libname,pkgname)
+.onAttach = function(libname,pkgname)
 {
-packageStartupMessage("NOTE: The 'substitute' function has been renamed to 'replaceNA'."    , domain = NULL, appendLF = TRUE)
+  packageStartupMessage("NOTE: The 'substitute' function has been renamed to 'replaceNA'."    , domain = NULL, appendLF = TRUE)
 
 # RStudio does not let us set up a custom signal handler, and this has also
 # been problematic to set up on non-Console Windows R processes.  We check for
