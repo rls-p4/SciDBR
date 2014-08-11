@@ -1,3 +1,21 @@
+commit 5523605bf7a271a085d1441542796ababcf4a35f
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Aug 11 14:23:10 2014 -0400
+
+    Fixed bug preventing use with RStudio
+
+commit e05c27e4e3457f4feb07f3119a3347bff4cc0aea
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Aug 6 08:33:17 2014 -0400
+
+    Minor vignette update
+
+commit 87e51d5c7711cf9753159ebc09d581da0d666a8e
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 5 22:12:28 2014 -0400
+
+    Log update
+
 commit e29914d3016df4e6e95886425a5405f30b7b4967
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue Aug 5 22:09:04 2014 -0400
