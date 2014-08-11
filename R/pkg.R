@@ -75,6 +75,9 @@ SIG_TRP = 2L # A custom signal handler (see scidb.c)
   options(scidb.verifyhost=FALSE)
 # Set to FALSE to disable user-interruptable HTTP transactions.
   options(scidb.interrupt=TRUE)
+# Set to TRUE to enable experimental shim stream protocol
+# (see https://github.com/Paradigm4/shim).
+  options(scidb.stream=FALSE)
 }
 
 .onUnload = function(libpath)
@@ -89,6 +92,7 @@ SIG_TRP = 2L # A custom signal handler (see scidb.c)
   options(scidb.gemm_bug=c())
   options(scidb.verifyhost=c())
   options(scidb.interrupt=c())
+  options(scidb.stream=c())
 }
 
 # scidb array object type map. We don't yet support strings in scidb array

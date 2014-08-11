@@ -352,7 +352,9 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
                       release=1, session=NULL, resp=FALSE, interrupt=FALSE)
 {
   DEBUG = FALSE
+  STREAM = 0L
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
+  if(!is.null(options("scidb.stream")[[1]]) && TRUE==options("scidb.stream")[[1]]) STREAM=1L
   sessionid=session
   if(is.null(session))
   {
@@ -373,7 +375,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
              interrupt=interrupt)
       else
         GET("/execute_query",list(id=sessionid,release=release,
-            save=save,query=query,afl=as.integer(afl)), 
+            save=save,query=query,afl=as.integer(afl),stream=STREAM), 
             interrupt=interrupt)
     }, error=function(e)
     {
