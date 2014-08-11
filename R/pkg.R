@@ -43,7 +43,9 @@ packageStartupMessage("NOTE: The 'substitute' function has been renamed to 'repl
   if(Sys.getenv("RSTUDIO")=="1" || "windows" %in% tolower(Sys.info()["sysname"]))
   {
     env = asNamespace(pkgname)
+    unlockBinding("SIG_TRP",env)
     assign("SIG_TRP",1L,envir=env)  # SIG_TRP = SIG_IGN
+    lockBinding("SIG_TRP",env)
   }
 # Maximum allowed sequential index limit (for larger, use between)
   options(scidb.index.sequence.limit=1000000)
