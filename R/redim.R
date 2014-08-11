@@ -184,18 +184,18 @@ conform = function(x, y, dimension.only=TRUE)
     ady = which(dimensions(y) %in% ad)
     s   = lapply(1:length(dim(x)), function(i)
             {
-              if(i %in% adx) scidb:::build_dim_schema(y,I=ady[i],bracket=FALSE)
-              else scidb:::build_dim_schema(x,I=i,bracket=FALSE)
+              if(i %in% adx) build_dim_schema(y,I=ady[i],bracket=FALSE)
+              else build_dim_schema(x,I=i,bracket=FALSE)
             })
   } else # positional
   {
     s   = lapply(1:length(dim(x)), function(i)
             {
-              if(i < length(dim(y))) scidb:::build_dim_schema(y,I=i,bracket=FALSE)
-              else scidb:::build_dim_schema(x,I=i,bracket=FALSE)
+              if(i < length(dim(y))) build_dim_schema(y,I=i,bracket=FALSE)
+              else build_dim_schema(x,I=i,bracket=FALSE)
             })
   }
-  s1 = sprintf("%s[%s]",scidb:::build_attr_schema(x),paste(s,collapse=","))
+  s1 = sprintf("%s[%s]",build_attr_schema(x),paste(s,collapse=","))
   s1b = lapply(scidb_coordinate_bounds(s1), as.numeric)
   xb = lapply(scidb_coordinate_bounds(x), as.numeric)
   s1b = lapply(s1b, function(x) {a=x;a[is.na(x)]=Inf;a})
@@ -211,7 +211,7 @@ conform = function(x, y, dimension.only=TRUE)
   if(strict)
   {
     query = sprintf("reshape(between(%s, %s), %s)", x@name,
-              scidb:::between_coordinate_bounds(s1), s1)
+              between_coordinate_bounds(s1), s1)
     return(.scidbeval(query, eval=FALSE))
   }
 # XXX ... still working on this...
