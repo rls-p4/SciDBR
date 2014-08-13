@@ -637,9 +637,7 @@ iquery = function(query, `return`=FALSE,
           },
           error=function(e)
           {
-# Not used yet. It will be important when shim is modified to stream
-# results back. XXX TODO
-#            GET("/cancel",list(id=sessionid))
+             GET("/cancel",list(id=sessionid))
              GET("/release_session",list(id=sessionid))
              stop(e)
           })
