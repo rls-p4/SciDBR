@@ -145,10 +145,19 @@
   {
 # Check for valid starting coordinates (they must be identical)
     if(!isTRUE(all.equal(scidb_coordinate_start(x),scidb_coordinate_start(y)))) stop("Mis-matched starting coordinates")
-    newds = build_dim_schema(y,newnames=dimensions(x))
-    castschema = sprintf("%s%s", newas, newds)
-    reschema = sprintf("%s%s", newas,build_dim_schema(x))
-    z = redimension(cast(y,castschema),reschema)
+# If the chunk sizes are identical, we're OK (join does not care about the
+# upper array bounds). Otherwise we need redimension.
+    if(!isTRUE(all.equal(scidb_coordinate_chunksize(x), scidb_coordinate_chunksize(y))))
+    {
+      newds = build_dim_schema(y,newnames=dimensions(x))
+      castschema = sprintf("%s%s", newas, newds)
+      reschema = sprintf("%s%s", newas,build_dim_schema(x))
+      z = redimension(cast(y,castschema),reschema)
+    } else
+    {
+      castschema = sprintf("%s%s", newas, build_dim_schema(y))
+      z = cast(y, castschema)
+    }
     if(all)
     {
 # Experimental outer join XXX XXX
@@ -196,10 +205,19 @@
     })
   newds = newds[!unlist(lapply(newds,is.null))]
 
-  newds = sprintf("[%s]",paste(newds,collapse=","))
-  reschema = sprintf("%s%s", build_attr_schema(y),newds)
-  castschema = sprintf("%s%s",newas,newds)
-  z = cast(redimension(subarray(y,limits=reschema,between=TRUE),reschema),castschema)
+# If the chunk sizes are identical, we're OK (join does not care about the
+# upper array bounds). Otherwise we need redimension.
+  if(isTRUE(compare_schema(x,y,ignore_attributes=TRUE,ignore_types=TRUE,ignore_nullable=TRUE,s1_dimension_index=idx.x, s2_dimension_index=which(msk.y), ignore_end=TRUE)))
+  {
+    castschema = sprintf("%s%s",newas,build_dim_schema(y))
+    z = cast(y, castschema)
+  } else
+  {
+    newds = sprintf("[%s]",paste(newds,collapse=","))
+    reschema = sprintf("%s%s", build_attr_schema(y),newds)
+    castschema = sprintf("%s%s",newas,newds)
+    z = cast(redimension(subarray(y,limits=reschema,between=TRUE),reschema),castschema)
+  }
 
 # Join on dimensions.
   query = sprintf("cross_join(%s as __X, %s as __Y", xname, z@name)

@@ -273,28 +273,46 @@ build_dim_schema = function(A, bracket=TRUE, I,
 
 # An internal function that compares schema of two scidb objects
 # or schema strings.
-compare_schema = function(s1, s2)
+compare_schema = function(s1, s2,
+  s1_attribute_index,
+  s1_dimension_index,
+  s2_attribute_index,
+  s2_dimension_index,
+  ignore_dimnames=FALSE,
+  ignore_start=FALSE,
+  ignore_end=FALSE,
+  ignore_chunksize=FALSE,
+  ignore_overlap=FALSE,
+  ignore_attributes=FALSE,
+  ignore_types=FALSE,
+  ignore_nullable=FALSE)
 {
   if(is.character(s1)) s1 = scidb_from_schemastring(s1)
   if(is.character(s2)) s2 = scidb_from_schemastring(s2)
   if(!(class(s1) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   if(!(class(s2) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  if(missing(s1_attribute_index)) s1_attribute_index=1:length(scidb_attributes(s1))
+  if(missing(s2_attribute_index)) s2_attribute_index=1:length(scidb_attributes(s2))
+  if(missing(s1_dimension_index)) s1_dimension_index=1:length(dimensions(s1))
+  if(missing(s2_dimension_index)) s2_dimension_index=1:length(dimensions(s2))
 
-  dimnames = isTRUE(all.equal(dimensions(s1),dimensions(s2)))
-  bounds = isTRUE(all.equal(scidb_coordinate_bounds(s1),scidb_coordinate_bounds(s2)))
-  chunks = isTRUE(all.equal(scidb_coordinate_chunksize(s1),scidb_coordinate_chunksize(s2)))
-  overlap = isTRUE(all.equal(scidb_coordinate_overlap(s1),scidb_coordinate_overlap(s2)))
-  attributes = isTRUE(all.equal(scidb_attributes(s1),scidb_attributes(s2)))
-  types = isTRUE(all.equal(scidb_types(s1),scidb_types(s2)))
-  nullable = isTRUE(all.equal(scidb_nullable(s1),scidb_nullable(s2)))
+  dimnames = ignore_dimnames || isTRUE(all.equal(dimensions(s1)[s1_dimension_index],dimensions(s2)[s2_dimension_index]))
+  bound_start = ignore_start || isTRUE(all.equal(scidb_coordinate_start(s1)[s1_dimension_index],scidb_coordinate_start(s2)[s2_dimension_index]))
+  bound_end = ignore_end || isTRUE(all.equal(scidb_coordinate_end(s1)[s1_dimension_index],scidb_coordinate_end(s2)[s2_dimension_index]))
+  chunks = ignore_chunksize || isTRUE(all.equal(scidb_coordinate_chunksize(s1)[s1_dimension_index],scidb_coordinate_chunksize(s2)[s2_dimension_index]))
+  overlap = ignore_overlap || isTRUE(all.equal(scidb_coordinate_overlap(s1)[s1_dimension_index],scidb_coordinate_overlap(s2)[s2_dimension_index]))
+  attributes = ignore_attributes || isTRUE(all.equal(scidb_attributes(s1)[s1_attribute_index],scidb_attributes(s2)[s1_attribute_index]))
+  types = ignore_types || isTRUE(all.equal(scidb_types(s1)[s1_attribute_index],scidb_types(s2)[s2_attribute_index]))
+  nullable = ignore_nullable || isTRUE(all.equal(scidb_nullable(s1)[s1_attribute_index],scidb_nullable(s2)[s2_attribute_index]))
 
-  ans = dimnames && bounds && chunks && overlap && attributes && types && nullable
+  ans = dimnames && bound_start && bound_end && chunks && overlap && attributes && types && nullable
 
 # add a report if FALSE
   if(!ans)
   {
     attr(ans,"equal") = list(dimnames=dimnames,
-                   bounds=bounds,
+                   bound_start=bound_start,
+                   bound_end=bound_end,
                    chunks=chunks,
                    overlap=overlap,
                    attributes=attributes,
