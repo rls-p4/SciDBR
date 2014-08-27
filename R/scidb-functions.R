@@ -163,14 +163,16 @@ summary.scidb = function(x)
 `[.scidb` = function(x, ...)
 {
   M = match.call()
-  if(is.null(M$drop)) drop=TRUE
+  if(is.null(M$drop)) drop=TRUE  # if TRUE follow R drop convention
   else drop=M$drop
-  if(is.null(M$eval)) eval=FALSE
+  if(is.null(M$eval)) eval=FALSE  # if TRUE eval (not really needed anymore)
   else eval=M$eval
-  if(is.null(M$redim)) redim=TRUE
+  if(is.null(M$redim)) redim=TRUE  # if FALSE don't reset coordinates
   else redim=M$redim
+# inverse of redim (same functionality) for user convenience
+  if(!is.null(M$between)) redim=!M$between
   M = M[3:length(M)]
-  if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","eval","redim"))]
+  if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","eval","redim","between"))]
 # i shall contain a list of requested index values
   E = parent.frame()
   i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],E),error=function(e)c()))
