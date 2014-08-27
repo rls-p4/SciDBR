@@ -240,7 +240,7 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
       } else if(is.scidb(i[[j]]))
       {
 # Case 3. A SciDB array, really just a densified cross_join selector.
-# If it's boolen, convert it to a sparse array for cross_join indexing
+# If it's Boolean, convert it to a sparse array for cross_join indexing
         if(scidb_types(i[[j]])[[1]] == "bool")
         {
           i[[j]] = i[[j]] %==% TRUE
@@ -248,6 +248,7 @@ special_index = function(x, query, i, idx, eval, drop=FALSE)
         tmp = bind(i[[j]],N,dimensions(i[[j]])[1],eval=FALSE)
         tmp = sort(project(tmp, length(scidb_attributes(tmp)),eval=FALSE),eval=FALSE)
 # Insane scidb name conflict problems, check for and resolve them.
+        tmp = attribute_rename(tmp, old=1, new=N)
         tmpaname = make.unique_(dimlabel, scidb_attributes(tmp))
         cst = paste(build_attr_schema(tmp,newnames=tmpaname),build_dim_schema(tmp,newnames=dimlabel))
         tmp = cast(tmp,cst,eval=0)

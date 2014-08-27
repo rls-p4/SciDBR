@@ -64,6 +64,11 @@ if(nchar(host)>0)
   w = w + 2*w
   check(sum(D-w), 0)
 
+# Indexing by other SciDB arrays
+  x = build("i",c(5,3),eval=TRUE, type="double")
+  a = as.scidb(c(1,5,1,5,1))
+  check(x[a %>% 2, ][], matrix(c(1,1,1,3,3,3),nrow=2,byrow=TRUE))
+
 # some binary operations
 # XXX ADD **lots** more tests here
   a = as.scidb(Matrix::sparseMatrix(
