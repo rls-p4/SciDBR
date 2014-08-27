@@ -1,3 +1,46 @@
+commit acb3bb6ee976a6c02454c554fb82afe6289529b1
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 09:20:32 2014 -0400
+
+    Fixed indexing by other SciDB array bug introduced by auto attribute name conflict resolution
+
+commit c7874a6a6a5e1c1f6eb0ed036cc4c0b4377dc979
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 08:39:30 2014 -0400
+
+    Added new internal (for now) function compare_schema and use it in merge to optimize out redimensions
+
+commit 47378b7f0ff9ba769fc13fcd265d3ff20d2fef8b
+Merge: a0ed98a e2a80a0
+Author: bwlewis <blewis@illposed.net>
+Date:   Tue Aug 26 16:41:13 2014 -0400
+
+    Merge branch 'master' into laboratory
+
+commit e2a80a017d12ca09958a3d5d539878dd642e29c1
+Author: bwlewis <blewis@illposed.net>
+Date:   Tue Aug 26 16:40:29 2014 -0400
+
+    Clarified instructions on README
+
+commit a0ed98abd3a7019787ac2796a38e6e91aac7709f
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 12 20:37:15 2014 -0400
+
+    More support for experimental streaming option
+
+commit 13520be5fbda92d768013b72699748da674dda87
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Aug 11 15:27:15 2014 -0400
+
+    Added scidb.stream option to support expermental shim streaming api
+
+commit 46e681cb4d02410790be0811a3c4266b96240156
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Aug 11 14:25:43 2014 -0400
+
+    Fixed bug preventing use with RStudio
+
 commit 845831c63b3c386ef7b9b18ada88c4320f48a722
 Merge: 52f62ec e825608
 Author: B. W. Lewis <blewis@illposed.net>
