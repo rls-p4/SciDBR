@@ -386,6 +386,14 @@ materialize = function(x, drop=FALSE)
   {
 # Don't know how to represent this in R!
     names(A)=c("values","coordinates")
+# Try to restore original SciDB coordinate system
+    orig = as.numeric(scidb_coordinate_start(x))
+    if(!all(as.character(orig) == scidb_coordinate_start(x)))
+    {
+      warning("Coordinate system too large for R")
+      return(A)
+    }
+    A[[2]] = A[[2]] + rep(orig,each=nrow(A[[2]]))
     return(A)
   }
   ans = array(NA, dim=dim(x))
