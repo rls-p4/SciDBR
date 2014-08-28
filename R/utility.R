@@ -282,7 +282,7 @@ GET = function(resource, args=list(), header=TRUE, async=FALSE, interrupt=FALSE)
   if(interrupt)
   {
     sigreset ()
-    sigint(SIG_TRP)          # Handle SIGINT
+    sigint(TRAP())          # Handle SIGINT
   } else
   {
     sigint(SIG_IGN)          # Ignore SIGINT
@@ -895,7 +895,7 @@ scidbdfcc = function(x)
 #
 # Here is an example:
 #
-#    sigint(SIG_TRP)
+#    sigint(TRAP())
 #    x=getBinaryURL(url,
 #        .opts=list(noprogress=FALSE, progressfunction=curl_signal_trap))
 #    sigint(SIG_DFL)
@@ -917,7 +917,7 @@ sigreset = function()
 curl_signal_trap = function(down,up)
 {
 # Unforunately, RStudio doesn't seem to let us set up custom signal handlers.
-  if(SIG_TRP == SIG_IGN)
+  if(TRAP() == SIG_IGN)
   {
     k = tryCatch(
     {
@@ -1012,7 +1012,7 @@ scidb_unpack_to_dataframe = function(query, ...)
 
   dt2 = proc.time()
   r = URI("/read_bytes",list(id=sessionid,n=0))
-  sigint(SIG_TRP)
+  sigint(TRAP())
   BUF = tryCatch(
         { 
           getBinaryURL(r, .opts=list('ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=!interrupt, progressfunction=curl_signal_trap))

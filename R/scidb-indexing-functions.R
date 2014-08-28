@@ -336,7 +336,7 @@ materialize = function(x, drop=FALSE)
   n = 0
 
   r = URI("/read_bytes",list(id=sessionid,n=n))
-  sigint(SIG_TRP)
+  sigint(TRAP())
   BUF = tryCatch(
         {
           getBinaryURL(r, .opts=list('ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=!interrupt, progressfunction=curl_signal_trap))
