@@ -198,8 +198,6 @@ summary.glm_scidb = function(object, ...)
 #          that the factor encoding and baseline are reproducible.
 model_scidb = function(formula, data, factors=NULL)
 {
-  tryCatch(iquery("load_library('collate')"),
-    error=function(e) stop("This function requires the collate operator.\n See https://github.com/Paradigm4/collate"))
   if(!is.scidbdf(data)) stop("data must be a scidbdf object")
   if(is.character(formula)) formula=as.formula(formula)
   dummy = data.frame(matrix(NA,ncol=length(scidb_attributes(data))))
@@ -273,7 +271,7 @@ model_scidb = function(formula, data, factors=NULL)
   }
 
   varsstr = paste(vars, collapse=",")
-  query = sprintf("collate(project(%s,%s))",data@name,varsstr)
+  query = sprintf("unfold(project(%s,%s))",data@name,varsstr)
   M = .scidbeval(query,gc=TRUE,eval=TRUE)
 
   if(length(factors)<1)
