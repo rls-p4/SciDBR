@@ -8,6 +8,7 @@ import("RCurl", iterators)
 importFrom("zoo", na.locf)
 
 # Functions
+export("bernoulli")
 export("replaceNA")
 export("chunk_map")
 export("antijoin")

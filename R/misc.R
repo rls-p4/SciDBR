@@ -2,6 +2,16 @@
 # tend to be newer and somewhat more experimental than the other functions, and
 # maybe not quite as fully baked.
 
+bernoulli = function (x, prob , seed=sample(2^32 - 1 - 2^31, 1))
+{
+  if ( prob <= 0 || prob > 1 )
+  {
+    stop("Invalid prob value")
+  }
+  query = sprintf("bernoulli(%s, %.16f, %d)", x@name, prob, seed)
+  return (scidb(query))
+}
+
 order_scidb = function(x,na.last=TRUE,decreasing=FALSE)
 {
 # XXX Does this dispatch properly to other methods for order?
