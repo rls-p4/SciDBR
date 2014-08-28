@@ -12,6 +12,11 @@ bernoulli = function (x, prob , seed=sample(2^32 - 1 - 2^31, 1))
   return (scidb(query))
 }
 
+peek = function(x, n=6L, prob=0.1,...)
+{
+  subarray(unpack(bernoulli(x,prob,...)),c(0,n-1))[]
+}
+
 order_scidb = function(x,na.last=TRUE,decreasing=FALSE)
 {
 # XXX Does this dispatch properly to other methods for order?

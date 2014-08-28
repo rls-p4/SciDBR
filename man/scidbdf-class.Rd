@@ -17,6 +17,9 @@
 \alias{acos,scidbdf-method}
 \alias{atan,scidbdf-method}
 \alias{Filter,character,scidbdf-method}
+\alias{unpack,scidbdf-method}
+\alias{regrid,scidbdf-method}
+\alias{xgrid,scidbdf-method}
 
 \title{Class \code{"scidbdf"}}
 \description{A class that represents 1D SciDB arrays similarly to R data.frames.}
@@ -55,6 +58,18 @@ Objects can be created by calls of the form \code{new("scidbdf", ...)},
     \item{asin}{\code{signature(x = "scidbdf")}: \code{asin(x)} See doc. for \code{sin}.}
     \item{acos}{\code{signature(x = "scidbdf")}: \code{acos(x)} See doc. for \code{sin}.}
     \item{atan}{\code{signature(x = "scidbdf")}: \code{atan(x)} See doc. for \code{sin}.}
+    \item{unpack}{\code{unpack(x = "scidbdf")}: \code{unpack(x)}
+      Return a 1-D representation of an array using the SciDB array unpack operator.
+    }
+    \item{regrid}{\code{signature(x = "scidbdf")}: \code{regrid(x, grid, expr)}
+      Decimate the n-d SciDB array \code{x} by binning its coordinate system according to the \code{grid} argument and applying the aggregate expression on each bin. The \code{grid} argument must be the same length as the dimension of the array \code{x}. For example if \code{x} is a 10x10 matrix, then \code{regrid(x, c(2,1))} returns a 5x10 matrix replacing the rows with the average of values along every two rows.
+    }
+    \item{xgrid}{\code{signature(x = "scidbdf")}: \code{xgrid(x, grid=c(m,...))}
+      Prolong the coordinate system of the n-d SciDB array \code{x} by replicating its values according to the \code{grid} parameter. In some cases, \code{xgrid} can be the inverse operation of \code{regrid}. For example if \code{x} is a 10x10 matrix, then \code{xgrid(x, c(2,1))} returns a 20x10 matrix, replicating values twice along the row dimension.
+    }
+
+
+
    }
 }
 \section{Notes}{

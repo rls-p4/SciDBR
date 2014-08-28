@@ -15,7 +15,7 @@ matrix and response vector. \code{glm} is a simplified interface for
 }
 \usage{
 \S4method{glm.fit}{scidb}(x,y,weights=NULL,family=gaussian())
-\S4method{glm}{ANY,ANY,scidbdf}(formula, family=gaussian(), data, weights=NULL)
+\S4method{glm}{ANY,ANY,scidbdf}(formula, family=gaussian(), data, weights)
 model_scidb(formula, data, factors=NULL)
 }
 \arguments{

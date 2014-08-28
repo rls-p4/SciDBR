@@ -96,6 +96,22 @@ setMethod('show', 'scidbdf',
         length(object@attributes),v))
   })
 
+setMethod("regrid", signature(x="scidbdf"),
+  function(x, grid, expr)
+  {
+    if(missing(expr)) expr = paste(sprintf("max(%s)",x@attributes),collapse=",")
+    query = sprintf("regrid(%s, %s, %s)",
+               x@name, paste(noE(grid),collapse=","), expr)
+    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
+  })
+setMethod("xgrid", signature(x="scidbdf"),
+  function(x, grid)
+  {
+    query = sprintf("xgrid(%s, %s)", x@name, paste(noE(grid),collapse=","))
+    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
+  })
+setMethod("unpack",signature(x="scidbdf"),unpack_scidb)
+
 setMethod("aggregate", signature(x="scidbdf"), aggregate_scidb)
 setMethod("reshape", signature(data="scidbdf"), reshape_scidb)
 

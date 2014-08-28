@@ -52,6 +52,7 @@ export("attribute_rename")
 export("dimension_rename")
 export("index_lookup")
 export("show_commit_log")
+export("peek")
 #export("order.scidb")
 
 # S4 methods
