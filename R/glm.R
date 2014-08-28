@@ -29,12 +29,14 @@
 
 # A really basic prototype glm function, limited to simple formulas and
 # treatment contrast encoding. cf glm.
-glm_scidb = function(formula, family=gaussian(), data, weights=NULL)
+glm_scidb = function(formula, family=gaussian(), `data`, `weights`)
 {
   if(!is.scidbdf(data)) stop("data must be a scidbdf object")
   if(is.character(formula)) formula=as.formula(formula)
+  wts = NULL
+  if(!missing(weights)) wts = weights
   M = model_scidb(formula, data)
-  ans = glm.fit(M$model, M$response, weights=weights, family=family,intercept=M$intercept)
+  ans = glm.fit(M$model, M$response, weights=wts, family=family,intercept=M$intercept)
   ans$formula = M$formula
   ans$coefficient_names = M$names
   ans$factors = M$factors
@@ -273,6 +275,7 @@ model_scidb = function(formula, data, factors=NULL)
   varsstr = paste(vars, collapse=",")
   query = sprintf("unfold(project(%s,%s))",data@name,varsstr)
   M = .scidbeval(query,gc=TRUE,eval=TRUE)
+  M = attribute_rename(dimension_rename(M,old=c(1,2),new=c("i","j")), old=1, new="val")
 
   if(length(factors)<1)
   {

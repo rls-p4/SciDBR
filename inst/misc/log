@@ -1,3 +1,33 @@
+commit 632b611692fb1d79c51fb7466d772c325856d04e
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 23:24:20 2014 -0400
+
+    Modified model_scidb to use new unfold operator instead of prototype collate operator (requires SciDB 14.8)
+
+commit 6b1e78551e82e19bc36c684d8d95801ed1a97f60
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 23:04:43 2014 -0400
+
+    Added bernoulli
+
+commit 8e9e9e44566aa76c9d84929c778632197028eea8
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 17:58:37 2014 -0400
+
+    Added between option w/same function as redim but better syntax to [ function
+
+commit 68563fd206d05f4fdf0d386cec463df96afe40b2
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 17:54:00 2014 -0400
+
+    Fixed coordinate index bug in >2d sparse materialize with redim=FALSE
+
+commit 59165e6ce13c1ddac28f55e1b58ad6e832c135b8
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 09:35:46 2014 -0400
+
+    Fixed indexing by other SciDB array bug introduced by auto attribute name conflict resolution
+
 commit acb3bb6ee976a6c02454c554fb82afe6289529b1
 Author: Bryan W Lewis <blewis@paradigm4.com>
 Date:   Wed Aug 27 09:20:32 2014 -0400
