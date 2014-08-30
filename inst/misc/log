@@ -1,3 +1,21 @@
+commit 946825e1b09cd2430fd4cd5185ab42b2e8a54f41
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Thu Aug 28 03:16:06 2014 -0400
+
+    Added peek
+
+commit 9decb8c01df895b8ee496550f8c0e765295010db
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Thu Aug 28 01:23:52 2014 -0400
+
+    Improved SIG_TRP setting, fixing a check note
+
+commit b7237dda670931c40bd18035e58578f10390fd30
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Thu Aug 28 00:57:39 2014 -0400
+
+    Modified model_scidb to use new unfold operator instead of prototype collate operator (requires SciDB 14.8)
+
 commit 632b611692fb1d79c51fb7466d772c325856d04e
 Author: Bryan W Lewis <blewis@paradigm4.com>
 Date:   Wed Aug 27 23:24:20 2014 -0400

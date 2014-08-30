@@ -164,6 +164,10 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
   tryCatch(
     scidbquery(query="load_library('example_udos')",release=1,resp=FALSE),
     error=invisible)
+# Try to load the superfunpack
+  tryCatch(
+    scidbquery(query="load_library('superfunpack')",release=1,resp=FALSE),
+    error=invisible)
 # Try to load the P4 library
   tryCatch(
     scidbquery(query="load_library('linear_algebra')",release=1,resp=FALSE),
