@@ -50,12 +50,25 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
 #     garbage collected? Default is FALSE.
 # data.frame (logical, optional): If true, return a data.frame-like object.
 #   Otherwise an array.
-scidb = function(name, gc, `data.frame`)
+# temp (logical, optional): If true, save expression as a temp array, copying
+#   existing arrays as needed.
+scidb = function(name, gc, `data.frame`, temp)
 {
   if(missing(name)) stop("array or expression must be specified")
   if(missing(gc)) gc=FALSE
+  if(missing(temp)) temp=FALSE
   if(is.scidb(name) || is.scidbdf(name))
   {
+    query = name@name
+    if(temp)
+    {
+# Copy this SciDB object into a new temporary array
+      newname = tmpnam()
+      query   = sprintf("create_array(%s, %s, 'TEMP')", newname, schema(name))
+      iquery(query, `return`=FALSE)
+      query   = sprintf("store(%s, %s)", name@name, newname)
+      return(.scidbeval(name@name, eval=TRUE, gc=gc, `data.frame`=`data.frame`))
+    }
     return(.scidbeval(name@name, eval=FALSE, gc=gc, `data.frame`=`data.frame`, depend=list(name)))
   }
   query = sprintf("show('filter(%s,true)','afl')",gsub("'","\\\\'",name,perl=TRUE))
@@ -76,6 +89,13 @@ scidb = function(name, gc, `data.frame`)
             }
         }, onexit = TRUE)
   } else obj@gc = new.env()
+  if(temp)
+  {
+# Copy this SciDB object into a new temporary array
+    if(missing(data.frame))
+      return(scidb(obj, gc, temp=TRUE))
+    return(scidb(obj, gc, `data.frame`, temp=TRUE))
+  }
   obj
 }
 
