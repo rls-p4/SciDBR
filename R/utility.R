@@ -129,13 +129,16 @@ is.temp = function(name)
   if(!is.list(depend)) depend=list(depend)
   if(`eval`)
   {
-    if(missing(name) || is.null(name)) newarray = tmpnam()
-    else newarray = name
-    if(temp)
+    if(missing(name) || is.null(name))
     {
-      query   = sprintf("create_array(%s, %s, 'TEMP')", newarray, schema)
-      iquery(query, `return`=FALSE)
+      newarray = tmpnam()
+      if(temp)
+      {
+        query   = sprintf("create_array(%s, %s, 'TEMP')", newarray, schema)
+        iquery(query, `return`=FALSE)
+      }
     }
+    else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
     scidbquery(query, interrupt=TRUE)
     ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)

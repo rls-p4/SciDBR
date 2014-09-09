@@ -45,9 +45,10 @@ rank_scidb = function(x,na.last=TRUE,ties.method = c("average", "first", "random
 kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
   algorithm="Lloyd")
 {
-temp=FALSE
   if(length(dim(x))!=2) stop("x must be a matrix")
   if(nstart!=1 || algorithm!="Lloyd") stop("This version limited to Lloyd's method with nstart=1")
+# If we have a recent enough SciDB version, use temp arrays.
+  temp = compare_versions(options("scidb.version")[[1]],14.8)
   if(!is.scidb(x)) stop("x must be a scidb object")
   x = project(x, x@attributes[1])
   x = attribute_rename(x,new="val")
@@ -55,6 +56,8 @@ temp=FALSE
   expr = sprintf("random() %% %d", centers)
   group = scidbeval(build(expr, nrow(x), names=c("group","i"), type="int64"), temp=temp)
   dist_name = NULL
+  k = centers
+  diff_name = NULL
   for(iter in 1:iter.max)
   {
     centers = aggregate(x, by=list(group, "j"), FUN=mean, eval=TRUE)
@@ -75,11 +78,15 @@ temp=FALSE
                        aggregate(dist,by="i", FUN="min(dist) as min", unpack=FALSE),
                        by="i")
                ),group), temp=temp)
-    if(sum(abs(oldgroup - group)) < 1) break
+# This is a too expensive operation, improve...
+    d = scidbeval(oldgroup - group, temp=TRUE, name=diff_name)
+    diff_name = d@name
+    if(sum(abs(d))[] < 1) break
   }
   if(iter==iter.max) warning("Reached maximum # iterations")
   list(cluster = group,
-       centers = centers)
+       centers = centers[0:(k-1),],
+       iter    = iter)
 }
 
 

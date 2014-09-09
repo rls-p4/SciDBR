@@ -1,3 +1,33 @@
+commit 03a8be5c1c20d213ab8ce7154b5e5262efb223d0
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Sep 8 22:26:52 2014 -0400
+
+    Important fix to binary arithmetic operations with mismatched coordinate systems, broken by recent performance changes to merge. Added a test to catch this.
+
+commit dbc3677f85490e8c6dcbad8a765316a4a2aca029
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Sep 8 20:55:26 2014 -0400
+
+    Moved temp array handling to scidbeval; added fix for bounds issue
+
+commit cf916812b7f1c682cebffafbac353f71e02bbf32
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Sep 8 15:17:33 2014 -0400
+
+    Added temp option to  function (requires SciDB >= 14.8)
+
+commit 873c6dfa26d70ba99411f67bf23092776c2a87d3
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Fri Aug 29 23:32:14 2014 -0400
+
+    Name change to avoid conflict with p4
+
+commit dc6585e95d3ff25c6a96c29dd60c7f50a4dda33b
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Fri Aug 29 23:09:54 2014 -0400
+
+    Changed names of fisher_ SciDB functions to avoid p4 conflict and use superfunpack if available
+
 commit 946825e1b09cd2430fd4cd5185ab42b2e8a54f41
 Author: Bryan W Lewis <blewis@paradigm4.com>
 Date:   Thu Aug 28 03:16:06 2014 -0400

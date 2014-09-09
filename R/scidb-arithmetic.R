@@ -292,7 +292,7 @@ scidbmultiply = function(e1,e2)
     M = merge(e1,e2,by.x=dimensions(e1),by.y=dimensions(e2),all=fill,fillin=0)
     v = make.unique_(c(M@attributes),"v")
     op = rewrite_op(M, op)
-    return(project(bind(M,v,op), v, eval=TRUE)) # see note at end
+    return(project(bind(M,v,op), v)) # see note at end
   }
 
 # Left now with very special vector-recycling cases.
