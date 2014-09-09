@@ -37,11 +37,12 @@
 # storing result to a SciDB array when eval=TRUE.
 # name: (character) optional SciDB array name to store to
 # gc: (logical) optional, when TRUE tie result to R garbage collector
-scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
+# temp (logical, optional): when TRUE store as a SciDB temp array
+scidbeval = function(expr, eval=TRUE, name, gc=TRUE, temp=FALSE)
 {
   ans = eval(expr)
   if(!(inherits(ans,"scidb") || inherits(ans,"scidbdf"))) return(ans)
-  .scidbeval(ans@name, `eval`=eval, name=name, gc=gc)
+  .scidbeval(ans@name, `eval`=eval, name=name, gc=gc, schema=ans@schema, temp=temp)
 }
 
 # Create a new scidb reference to an existing SciDB array.
@@ -50,25 +51,13 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE)
 #     garbage collected? Default is FALSE.
 # data.frame (logical, optional): If true, return a data.frame-like object.
 #   Otherwise an array.
-# temp (logical, optional): If true, save expression as a temp array, copying
-#   existing arrays as needed.
-scidb = function(name, gc, `data.frame`, temp)
+scidb = function(name, gc, `data.frame`)
 {
   if(missing(name)) stop("array or expression must be specified")
   if(missing(gc)) gc=FALSE
-  if(missing(temp)) temp=FALSE
   if(is.scidb(name) || is.scidbdf(name))
   {
     query = name@name
-    if(temp)
-    {
-# Copy this SciDB object into a new temporary array
-      newname = tmpnam()
-      query   = sprintf("create_array(%s, %s, 'TEMP')", newname, schema(name))
-      iquery(query, `return`=FALSE)
-      query   = sprintf("store(%s, %s)", name@name, newname)
-      return(.scidbeval(name@name, eval=TRUE, gc=gc, `data.frame`=`data.frame`))
-    }
     return(.scidbeval(name@name, eval=FALSE, gc=gc, `data.frame`=`data.frame`, depend=list(name)))
   }
   query = sprintf("show('filter(%s,true)','afl')",gsub("'","\\\\'",name,perl=TRUE))
@@ -89,14 +78,22 @@ scidb = function(name, gc, `data.frame`, temp)
             }
         }, onexit = TRUE)
   } else obj@gc = new.env()
-  if(temp)
-  {
-# Copy this SciDB object into a new temporary array
-    if(missing(data.frame))
-      return(scidb(obj, gc, temp=TRUE))
-    return(scidb(obj, gc, `data.frame`, temp=TRUE))
-  }
   obj
+}
+
+# TRUE if the SciDB object 'name' or character name of a SciDB array is
+# a temporary SciDB array, FALSE otherwise.
+is.temp = function(name)
+{
+  if(is.scidb(name) || is.scidbdf(name))
+  {
+    name = name@name
+  }
+  query = sprintf("filter(list('arrays'),name='%s')", name)
+  ans = iquery(query,re=TRUE)
+  if(nrow(ans)<1) return(FALSE)
+  if(is.null(ans$temporary)) return(FALSE)
+  ans$temporary == "true"
 }
 
 # An important internal convenience function that returns a scidb object.  If
@@ -115,24 +112,39 @@ scidb = function(name, gc, `data.frame`, temp)
 # data.frame: (optional, logical) If TRUE, return a data.frame object, false
 #             return a scidb object. Default is missing, in which case an
 #             automatic decision is made about the object return class.
+# schema, temp: (optional) used to create SciDB temp arrays
+#               (requires scidb >= 14.8)
 #
 # OUTPUT
 # A `scidb` or `scidbdf` array object.
 #
 # NOTE
 # Only AFL supported.
-`.scidbeval` = function(expr,eval,name,gc=TRUE, depend, `data.frame`)
+`.scidbeval` = function(expr,eval,name,gc=TRUE, depend, `data.frame`, schema, temp)
 {
   ans = c()
   if(missing(depend)) depend=c()
+  if(missing(schema)) schema=""
+  if(missing(temp)) temp=FALSE
   if(!is.list(depend)) depend=list(depend)
   if(`eval`)
   {
     if(missing(name)) newarray = tmpnam()
     else newarray = name
+    if(temp)
+    {
+      query   = sprintf("create_array(%s, %s, 'TEMP')", newarray, schema)
+      iquery(query, `return`=FALSE)
+    }
     query = sprintf("store(%s,%s)",expr,newarray)
     scidbquery(query, interrupt=TRUE)
     ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)
+# This is a fix for a SciDB issue that can unexpectedly change schema
+# bounds.
+    if(!compare_schema(ans, schema))
+    {
+      ans = repart(ans, schema)
+    }
   } else
   {
     ans = scidb(expr,gc=gc,`data.frame`=`data.frame`)
