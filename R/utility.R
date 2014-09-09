@@ -90,7 +90,7 @@ is.temp = function(name)
     name = name@name
   }
   query = sprintf("filter(list('arrays'),name='%s')", name)
-  ans = iquery(query,re=TRUE)
+  ans = iquery(query,return=TRUE)
   if(nrow(ans)<1) return(FALSE)
   if(is.null(ans$temporary)) return(FALSE)
   ans$temporary == "true"
