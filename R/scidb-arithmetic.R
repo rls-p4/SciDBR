@@ -279,6 +279,15 @@ scidbmultiply = function(e1,e2)
 # Handle conformable-dimension case
   if(l1 == l2)
   {
+# Handle mis-matched coordinates :/ arrggh
+    if(!compare_schema(e1,e2, ignore_dimnames=TRUE,
+                              ignore_attributes=TRUE,
+                              ignore_nullable=TRUE,
+                              ignore_types=TRUE))
+    {
+      schema = sprintf("%s%s",build_attr_schema(e2),build_dim_schema(e1))
+      e2 = reshape(e2,schema)
+    }
 # Note that we use outer join here with the special fillin option.
     M = merge(e1,e2,by.x=dimensions(e1),by.y=dimensions(e2),all=fill,fillin=0)
     v = make.unique_(c(M@attributes),"v")

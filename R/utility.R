@@ -129,7 +129,7 @@ is.temp = function(name)
   if(!is.list(depend)) depend=list(depend)
   if(`eval`)
   {
-    if(missing(name)) newarray = tmpnam()
+    if(missing(name) || is.null(name)) newarray = tmpnam()
     else newarray = name
     if(temp)
     {
@@ -141,7 +141,7 @@ is.temp = function(name)
     ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)
 # This is a fix for a SciDB issue that can unexpectedly change schema
 # bounds.
-    if(!compare_schema(ans, schema))
+    if(schema!="" && !compare_schema(ans, schema))
     {
       ans = repart(ans, schema)
     }

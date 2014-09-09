@@ -80,6 +80,8 @@ if(nchar(host)>0)
   a*apply(a,2,mean)
   apply(a,2,mean)*a
 
+# Make sure binary operations handle mismatched coordinates
+  x[1:2, 1] - x[2:3,1]
 
 # Aggregation
   check( sweep(B,MARGIN=2,apply(B,2,mean)),
