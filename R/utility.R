@@ -143,8 +143,9 @@ is.temp = function(name)
     scidbquery(query, interrupt=TRUE)
     ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)
 # This is a fix for a SciDB issue that can unexpectedly change schema
-# bounds.
-    if(schema!="" && !compare_schema(ans, schema))
+# bounds. And another fix to allow unexpected dimname and attribute name
+# changes. Oy.
+    if(schema!="" && !compare_schema(ans, schema, ignore_attributes=TRUE, ignore_dimnames=TRUE))
     {
       ans = repart(ans, schema)
     }
