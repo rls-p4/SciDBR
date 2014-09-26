@@ -196,8 +196,9 @@
         d = build_dim_schema(y,I=j,bracket=FALSE)
       } else
       {
-        k = sum(msk.y[1:j])
-        if(k>length(idx.x))
+#        k = sum(msk.y[1:j])
+        k = which(dimensions(x) == dimensions(y)[j])[1]
+        if(length(k)<1)
           d = build_dim_schema(y,I=j,bracket=FALSE)
         else
           d = build_dim_schema(x,I=idx.x[k],newnames=dimensions(y)[j],bracket=FALSE)
