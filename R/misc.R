@@ -79,7 +79,9 @@ kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
                        by="i")
                ),group), temp=temp)
 # This is a too expensive operation, improve...
-    d = scidbeval(oldgroup - group, temp=TRUE, name=diff_name)
+#    d = scidbeval(oldgroup - group, temp=TRUE, name=diff_name)
+# Faster:
+    d = project(bind(merge(oldgroup, group), "v", "group - group_1"), "v")
     diff_name = d@name
     if(sum(abs(d))[] < 1) break
   }
