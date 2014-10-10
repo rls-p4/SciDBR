@@ -127,6 +127,9 @@ is.temp = function(name)
   if(missing(schema)) schema=""
   if(missing(temp)) temp=FALSE
   if(!is.list(depend)) depend=list(depend)
+# Address bug #45. Try to cheaply determine if expr refers to a named array
+# or an AFL expression. If it's a named array, then eval must be set TRUE.
+  if(!grepl("\\(", expr, perl=TRUE)) eval = TRUE
   if(`eval`)
   {
     if(missing(name) || is.null(name))
@@ -144,7 +147,7 @@ is.temp = function(name)
     ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)
 # This is a fix for a SciDB issue that can unexpectedly change schema
 # bounds. And another fix to allow unexpected dimname and attribute name
-# changes. Oy.
+# changes. Arrgh.
     if(schema!="" && !compare_schema(ans, schema, ignore_attributes=TRUE, ignore_dimnames=TRUE))
     {
       ans = repart(ans, schema)
