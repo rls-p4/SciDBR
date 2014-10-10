@@ -222,6 +222,15 @@ check(quantile(a)[][,2], quantile(x$value))
   X[c("b","a","d"), ]
   idx = rownames(X) > "b"
   check(nrow(X[idx, ]),3)
+
+# Github issue #45
+  x = build(5.5,5,eval=TRUE)
+  a = scidbeval(x, eval=FALSE)
+  rm(a)
+  gc()
+  x[]
+
+
 }
 gc()
 
