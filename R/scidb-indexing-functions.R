@@ -315,13 +315,14 @@ materialize = function(x, drop=FALSE)
 # Set array index origin to zero. We need the zero origin here to reconstruct
 # array indices in R.
   d     = dim(x)
-  ndim  = length(d)
+  ndim  = length(dimensions(x))
   N     = paste(rep("null",2*ndim),collapse=",")
   query = sprintf("subarray(project(%s,%s),%s)",x@name,attr,N)
 
 # Unpack into a staging data frame
   data  = scidb_unpack_to_dataframe(query)
   nelem = nrow(data)
+  if(is.null(nelem)) nelem = 0
   p     = prod(d)
 # Adjust indexing origin
   data[,1:ndim] = data[,1:ndim] + 1
@@ -329,7 +330,7 @@ materialize = function(x, drop=FALSE)
 # Check for sparse matrix or sparse vector case. The tryCatch guards
 # against unsupported types in R's sparse Matrix package and returns the
 # raw data frames in bad cases.
-  if(ndim==2 && nelem<p)
+  if(ndim==2 && nelem < p)
   {
     ans = tryCatch(
             Matrix::sparseMatrix(i=data[,1],j=data[,2],x=data[,3],dims=d),
@@ -344,6 +345,7 @@ materialize = function(x, drop=FALSE)
   } else if(nelem < p)
   {
 # Don't know how to represent this in R! (R only knows sparse vectors or arrays)
+    warning("Note: R does not natively support sparse n-d objects for n>2. Returning data as a data frame.")
     return(data)
   }
 # OK, we have a dense array of some kind
