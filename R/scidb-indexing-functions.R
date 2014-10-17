@@ -96,7 +96,7 @@ dimfilter = function(x, i, eval, drop, redim)
       else if(si[j])
       {
 # sequential numeric or lookup-type range
-        c(min(i[j][[1]]),max(i[j][[1]]))
+        noE(c(min(i[j][[1]]),max(i[j][[1]])))
       }
       else
        {
@@ -116,8 +116,7 @@ dimfilter = function(x, i, eval, drop, redim)
   {
     newstart = unlist(lapply(ranges,function(z)z[1]))
     newstart[newstart=="null"] = NA
-    newstart = as.numeric(newstart)
-    ina = is.na(newstart)
+    ina = is.na(as.numeric(newstart))
     if(any(ina))
     {
       newstart[ina] = scidb_coordinate_start(x)[ina]

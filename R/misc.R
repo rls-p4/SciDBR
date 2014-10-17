@@ -95,6 +95,7 @@ kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
 # Limited distance function (Euclidean only) SLOOOOOW!
 dist_scidb = function(x)
 {
+  if(length(dim(x))!=2) stop("dist requires a numeric matrix")
 # Slow...
 #  u = apply(x*x,1,sum) %*% matrix(1.0,1,nrow(x))
 #  ans = sqrt(abs(u + t(u) - 2 * x %*% t(x)))
@@ -116,7 +117,8 @@ dist_scidb = function(x)
   out = build(0,c(nrow(x),nrow(x)), type="double")
 
   xtx = scidb(sprintf("gemm(%s, transpose(%s), %s)",x@name,x@name,out@name))
-  project(bind(merge(utu,xtx),"ans","sqrt(abs(sum - 2*gemm))"),"ans")
+  expr = paste(dimensions(xtx),collapse=">")
+  subset(project(bind(merge(utu,xtx),"ans","sqrt(abs(sum - 2*gemm))"),"ans"),expr)
 }
 
 # Note fill_sparse=TRUE is not yet supported but will be...

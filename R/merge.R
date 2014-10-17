@@ -221,11 +221,11 @@
   }
 
 # Join on dimensions.
-  query = sprintf("cross_join(%s as __X, %s as __Y", xname, z@name)
+  query = sprintf("cross_join(%s as x, %s as y", xname, z@name)
   k = min(length(by.x),length(by.y))
   by.x = by.x[1:k]
   by.y = by.y[1:k]
-  cterms = unique(paste(c("__X","__Y"), as.vector(rbind(by.x,by.y)), sep="."))
+  cterms = unique(paste(c("x","y"), as.vector(rbind(by.x,by.y)), sep="."))
   cterms = paste(cterms,collapse=",")
   query  = paste(query,",",cterms,")",sep="")
   ans = .scidbeval(query,eval,depend=list(x,y))
