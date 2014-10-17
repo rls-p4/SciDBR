@@ -21,7 +21,7 @@ if(nchar(host)>0)
     length(grep(op,oplist))>0
   }
 
-# Upload dense matrix to SciDB
+cat("# Upload dense matrix to SciDB\n")
   set.seed(1)
   A = matrix(rnorm(50*40),50)
   B = matrix(rnorm(40*40),40)
@@ -30,46 +30,46 @@ if(nchar(host)>0)
   check(X[],A)
   check(Y[],B)
 
-# n-d array
+cat("# n-d array\n")
   x = build("k",dim=c(3,3,3),names=c("x","i","j","k"), type="double")
   check(x[][,,2] , matrix(1,3,3))
 
-# Dense matrix multiplication
+cat("# Dense matrix multiplication\n")
   check(A%*%B, (X%*%Y)[])
-# Transpose
+cat("# Transpose\n")
   check(crossprod(A), (t(X)%*%X)[])
-# Crossprod, tcrossprod
+cat("# Crossprod, tcrossprod\n")
   check(crossprod(A), crossprod(X)[])
   check(tcrossprod(B), tcrossprod(B)[])
-# Arithmetic on mixed R/SciDB objects
+cat("# Arithmetic on mixed R/SciDB objects\n")
   x = rnorm(40);
   check((X%*%x)[,drop=FALSE], A%*%x)
-# Scalar multiplication
+cat("# Scalar multiplication\n")
   check(2*A, (2*X)[])
-# Elementwise addition
+cat("# Elementwise addition\n")
   check(A+A, (X+X)[])
-# SVD
+cat("# SVD\n")
   check(svd(A)$d, as.vector(svd(X)$d[]))
 
-# Numeric array subsetting
+cat("# Numeric array subsetting\n")
   check((X %*% X[1,,drop=TRUE])[,drop=FALSE], A %*% A[1,])
   check(X[c(6,16,2),c(25,12,11)][], A[c(6,16,2),c(26,13,12)])
   check(as.vector(diag(Y)[]), diag(B))
 
-# Filtering
+cat("# Filtering\n")
   W = subset(X,"val>0")
-# Sparse elementwise addition and scalar multiplication
+cat("# Sparse elementwise addition and scalar multiplication\n")
   D = (W + 2*W)[]
   w = W[]
   w = w + 2*w
   check(sum(D-w), 0)
 
-# Indexing by other SciDB arrays
+cat("# Indexing by other SciDB arrays\n")
   x = build("i",c(5,3),eval=TRUE, type="double")
   a = as.scidb(c(1,5,1,5,1))
   check(x[a %>% 2, ][], matrix(c(1,1,1,3,3,3),nrow=2,byrow=TRUE))
 
-# some binary operations
+cat("# some binary operations\n")
 # XXX ADD **lots** more tests here
   a = as.scidb(Matrix::sparseMatrix(
                sample(10,100,replace=TRUE),sample(10,100,replace=TRUE),x=runif(100)))
@@ -80,45 +80,46 @@ if(nchar(host)>0)
   a*apply(a,2,mean)
   apply(a,2,mean)*a
 
-# Make sure binary operations handle mismatched coordinates
+cat("# Make sure binary operations handle mismatched coordinates\n")
   x[1:2, 1] - x[2:3,1]
 
-# Aggregation
+cat("# Aggregation\n")
   check( sweep(B,MARGIN=2,apply(B,2,mean)),
          sweep(Y,MARGIN=2,apply(Y,2,mean))[])
 
-# Join
+
+cat("# Join\n")
 # We need 'subarray' here to reset the origin of Y to zero to match
 # diag(Y)--diag always returns a zero indexed vector.
   check(project(bind(merge(subarray(Y),diag(Y),by.x="i",by.y="i_1"),"v","val*val_1"),"v")[], diag(B)*B)
 
-# On different dimensions
+cat("# On different dimensions\n")
   x = as.scidb(rnorm(5))
   a = as.scidb(data.frame(p=1:5),start=0)
   merge(x,a,by.x=dimensions(x),by.y=dimensions(a))
 
-# Add many more join/merge checks here...
+# Add many more join/merge checks here... XXX
 
-# Sparse upload, count
+cat("# Sparse upload, count\n")
   S = Matrix::sparseMatrix(sample(100,200,replace=TRUE),sample(100,200,replace=TRUE),x=runif(200))
   Z = as.scidb(S,start=c(1,5))
   check(count(Z), Matrix::nnzero(S))
 
-# Check that image does not fail
+cat("# Check that image does not fail\n")
   image(Z,plot=FALSE)
 
-# spgemm
+cat("# spgemm\n")
   if(got("spgemm"))
   {
     x = crossprod(Z)
   }
 
-# Misc
+cat("# Misc\n")
   z = atan(tan(abs(acos(cos(asin(sin(Z)))))))
   s = atan(tan(abs(acos(cos(asin(sin(S)))))))
   check(sum(s-z[]), 0)
 
-# Labeled indices
+cat("# Labeled indices\n")
   L = c(letters,LETTERS)
   i = as.scidb(data.frame(L[1:nrow(X)]), start=0)
   j = as.scidb(data.frame(L[1:ncol(X)]), start=0)
@@ -128,7 +129,7 @@ if(nchar(host)>0)
   colnames(A) = L[1:ncol(A)]
   check(X[c("F","v","f"),c("N","a","A")][], A[c("F","v","f"),c("N","a","A")])
 
-# 4d labels and auto promotion of labels to SciDB arrays
+cat("# 4d labels and auto promotion of labels to SciDB arrays\n")
   X = build(0,dim=c(3,4,5,6))
   rownames(X) = letters[1:3]
   dimnames(X)[[2]] = letters[1:4]
@@ -137,28 +138,28 @@ if(nchar(host)>0)
   i = count(X[c("a","b"),"a",c("d","e"),"a"])
   check(i,4)
 
-# Indices not at the origin, and general ranged index check
+cat("# Indices not at the origin, and general ranged index check\n")
   a = build("random()",c(5,5),start=c(-3,-2), eval=TRUE)
   check(count(a[-3:-2,0:2]),6)
 
-# Pseudo-uint64 support! And also simplified aggregation function syntax
+cat("# Pseudo-uint64 support! And also simplified aggregation function syntax\n")
 # for apply.
   check(sum(apply(a,2,count)),25)
 
-# Aggregation, just trying to catch errors
+cat("# Aggregation, just trying to catch errors\n")
   A = build("random()%10",c(100,100))
   p = build("random()%2",100)
   aggregate(A,by=p,mean) # Aggregate by another array
   aggregate(A,by=2,mean) # Positional dimension index
   aggregate(A,FUN=mean)  # Grand aggregate
 
-# More special index tests, sort, apply, densify giant sparse sort result.
+cat("# More special index tests, sort, apply, densify giant sparse sort result.\n")
   a = build("i+j",c(5,5),type="double")
   s = sort(a)
   i = apply(s,1,count)
   check(s[i][], sort(a[]))
 
-# GLM (requires SciDB p4 plugin)
+cat("# GLM (requires SciDB p4 plugin)\n")
   if(got("glm"))
   {
     x = as.scidb(matrix(rnorm(5000*20),nrow=5000))
@@ -166,7 +167,7 @@ if(nchar(host)>0)
     M = glm.fit(x, y)
   }
 
-# slice
+cat("# slice\n")
   x = build("i+j+k",c(3,4,5),type="double")
   check(slice(x,c("i","j"),c(2,3))[0][], 5)
 
@@ -176,24 +177,24 @@ if(nchar(host)>0)
 # hist
 # Write me!
 
-# order
+cat("# order\n")
   x = build("random()%100", 100, type="double", eval=TRUE, start=1)
   o1 = order(x)[]
   o2 = order(x[])
   xx = x[]
   check(xx[o1], xx[o2])
 
-# rank
+cat("# rank\n")
   check(rank(x)[,2][], rank(x[])) 
 
-# quantile, from a failure test case reported by Alex
+cat("# quantile, from a failure test case reported by Alex\n")
   scidbrm("_qtest",force=TRUE,error=invisible)
   iquery("create_array(_qtest,<value:double> [tumor_type_id=0:25,1,0,sample_id=0:17999,1000,0,illuminahiseq_rnaseq_probe_id=0:44999,1000,0])")
   x = scidb("_qtest")
   y = quantile(x)[]
   scidbrm("_qtest",force=TRUE,error=invisible)
 
-# Another quantile failure case reported by Alex (bug #47)
+cat("# Another quantile failure case reported by Alex (bug #47)\n")
 x = read.csv(file=textConnection('"tumor_type_id","sample_id","agilentg4502a_07_1_probe_id","value"
 7,2742,13317,1.1024545
 7,2963,8060,0.9827
@@ -209,13 +210,13 @@ a = redimension(as.scidb(x,types=c("int64","int64","int64","double")), dim=names
 check(quantile(a)[][,2], quantile(x$value))
 
 
-# Another merge test courtesy Alex Polyiakov
+cat("# Another merge test courtesy Alex Polyiakov\n")
   x = build(1,c(2,2))
   a = build(2,5,names=c("a","j"))
   z = merge(x,a,by="j")
   check(count(z),4)
 
-# Complicated cross_join filtering
+cat("# Complicated cross_join filtering\n")
   set.seed(1)
   X = as.scidb( matrix(rnorm(20),nrow=5) )
   rownames(X) = as.scidb( data.frame(letters[1:5]), start=0)
@@ -223,14 +224,14 @@ check(quantile(a)[][,2], quantile(x$value))
   idx = rownames(X) > "b"
   check(nrow(X[idx, ]),3)
 
-# Github issue #45
+cat("# Github issue #45\n")
   x = build(5.5,5,eval=TRUE)
   a = scidbeval(x, eval=FALSE)
   rm(a)
   gc()
   x[]
 
-# Github issue #54
+cat("# Github issue #54\n")
   scidbremove("oh_no",error=invisible,force=TRUE)
   iquery("create_array(oh_no,<mask:bool>[variant_id=0:1109999,10000,0,pos=0:12000000,10000000,0,chrom_id=0:0,1,0])")
   x = scidb("oh_no")
@@ -238,4 +239,3 @@ check(quantile(a)[][,2], quantile(x$value))
 
 }
 gc()
-

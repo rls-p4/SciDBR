@@ -14,12 +14,12 @@ SciDB \code{merge}, \code{cross_join}, and \code{join} operations.
 \arguments{
   \item{x}{A \code{scidb} or \code{scidbdf}}
   \item{y}{A \code{scidb} or \code{scidbdf}}
-  \item{by}{(Optional) Vector of common dimension or attribute names
+  \item{by}{(Optional) Vector of common dimension or attribute names or dimension indices
             to join on. See details below.}
-  \item{by.x}{(Optional) Vector of dimension or attribute names of array
-              \code{x} to join on. See deails.}
-  \item{by.y}{(Optional) Vector of dimension or attribute names of array
-              \code{y} to join on. See deails.}
+  \item{by.x}{(Optional) Vector of dimension or attribute names or dimension indices
+                of array \code{x} to join on. See deails.}
+  \item{by.y}{(Optional) Vector of dimension or attribute names or dimension indices
+                   of array \code{y} to join on. See deails.}
   \item{merge}{(Optional) If TRUE, perform a SciDB merge operation instead
                of join.}
   \item{all}{(Optional) If TRUE, perform outer join. Defaults to inner join.}
@@ -29,7 +29,8 @@ Only one of either \code{by} or both \code{by.x} and \code{by.y} may be
 specified.  If none of the \code{by.x},\code{by.y} arguments are specified, and
 \code{by=NULL} the result is the Cartesian cross product of \code{x} and
 \code{y}.  The default value of \code{by} performs a \code{cross_join} or
-\code{join} along common array dimensions.
+\code{join} along common array dimensions. The \code{by} arguments may
+be specified by name or 1-based integer dimension index.
 
 If only \code{by} is specified, the dimension names or attribute name in
 \code{by} are assumed to be common across \code{x} and \code{y}.  Otherwise

@@ -141,6 +141,10 @@ merge_scidb_on_attributes = function(x,y,by.x,by.y)
     by.y = `by`
   }
 
+# Check for numeric `by` specification (dimension index)
+  if(is.numeric(by.x)) by.x = dimensions(x)[by.x]
+  if(is.numeric(by.y)) by.y = dimensions(y)[by.y]
+
 # Check for special join on attributes case (limited applicability)
 # In particular:
 # - join on only one attribute per array
@@ -214,14 +218,11 @@ merge_scidb_on_attributes = function(x,y,by.x,by.y)
       y_new = make.unique_(dimensions(x),y_dim)
       if(!msk.y[j])
       {
-        d = build_dim_schema(y,I=j,bracket=FALSE,newnames=y_new)
+        build_dim_schema(y,I=j,bracket=FALSE,newnames=y_new)
       } else
       {
-        k = which(dimensions(x) == dimensions(y)[j])[1]
-        if(length(k)<1)
-          d = build_dim_schema(y,I=j,bracket=FALSE,newnames=y_new)
-        else
-          d = build_dim_schema(x,I=idx.x[k],newnames=dimensions(y)[j],bracket=FALSE)
+        ind = which(by.y %in% y_dim) # by index
+        build_dim_schema(x,I=idx.x[ind],newnames=y_dim,bracket=FALSE,newend=scidb_coordinate_end(y)[j])
       }
     })
   newds = newds[!unlist(lapply(newds,is.null))]
@@ -231,7 +232,6 @@ merge_scidb_on_attributes = function(x,y,by.x,by.y)
 # upper array bounds). Otherwise we need redimension.
   if(isTRUE(compare_schema(x,y,ignore_attributes=TRUE,ignore_types=TRUE,ignore_nullable=TRUE,s1_dimension_index=idx.x, s2_dimension_index=which(msk.y), ignore_end=TRUE)))
   {
-#    castschema = sprintf("%s%s",newas,build_dim_schema(y))
     castschema = sprintf("%s%s",newas,newds)
     z = cast(y, castschema)
   } else
