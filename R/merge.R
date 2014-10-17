@@ -27,21 +27,52 @@
 # END_COPYRIGHT
 #
 
+# Auxillary merge functions for each special case follow. The main function
+# appears athe bottom of this file.
+
+# Special case 1: full set cross product
+merge_scidb_cross = function(x,y,scidbmerge)
+{
+  if(scidbmerge) stop("SciDB merge not supported in this context")
+# New attribute schema for y that won't conflict with x:
+  newas = build_attr_schema(y,newnames=make.unique_(x@attributes,y@attributes))
+# Impose a reasonable chunk size for dense arrays
+  chunky = scidb_coordinate_chunksize(y)
+  chunkx   = scidb_coordinate_chunksize(x)
+  chunk_elements = prod(c(as.numeric(chunky),as.numeric(chunkx)))
+# Only compute these counts if we need to
+  pdx = prod(dim(x))
+  if(is.scidbdf(x)) pdx = dim(x)[1]
+  pdy = prod(dim(y))
+  if(is.scidbdf(y)) pdy = dim(y)[1]
+  if(chunk_elements>1e6 && pdx==count(x) && pdy==count(y))
+    {
+      NC = length(chunkx) + length(chunky)
+      NS = 1e6^(1/NC)
+      chunky = rep(noE(NS), length(chunky))
+      chunkx = rep(noE(NS), length(chunkx))
+      x = repart(x,sprintf("%s%s",build_attr_schema(x), build_dim_schema(x,newchunk=chunkx)))
+      y = repart(y,sprintf("%s%s",build_attr_schema(y), build_dim_schema(y,newchunk=chunkx)))
+    }
+  newds = build_dim_schema(y,newnames=make.unique_(x@dimensions,y@dimensions))
+  y = cast(y,sprintf("%s%s",newas,newds))
+  query = sprintf("cross_join(%s, %s)",x@name,y@name)
+  return(.scidbeval(query,FALSE,depend=list(x,y)))
+}
+
 # SciDB join, cross_join, and merge wrapper internal function to support merge
 # on various classes (scidb, scidbdf). This is an internal function to support
 # R's merge on various SciDB objects.
 #
-# X and Y are SciDB array references of any kind (scidb, scidbdf)
-# by is either a single character indicating a dimension name common to both
-# arrays to join on, or a two-element list of character vectors of array
-# dimensions to join on.
-# eval=TRUE means run the query and return a scidb object.
-# eval=FALSE means return a promise object representing the query.
+# x and y are SciDB array references of any kind (scidb, scidbdf)
+# `by` is either a single character indicating a dimension name common to both
+#      arrays to join on, or a two-element list of character vectors of array
+#      dimensions to join on.
+# `fillin` is an optional argument specifying a value used to fill attributes
+#          as required by merge, it defaults to null.
+# `all` is an optional argument that, if TRUE, indicates outer join. It only
+#       applies in limited settings. The default is inner join.
 #
-# Examples:
-# merge(x,y)        # Cross-product of x and y
-# merge(x,y,by='i') # Natural join on common dimension i
-# merge(x,y,by.x='i',by.y='i') # equiv. to the last expression
 `merge_scidb` = function(x,y,`by`,...)
 {
   mc = list(...)
@@ -54,7 +85,7 @@
   if(!is.null(mc$by.y)) by.y = mc$by.y
   if(!is.null(mc$merge)) scidbmerge = mc$merge
   if(!is.null(mc$fillin)) fillin = sprintf("(%s)",mc$fillin)
-  `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
+  `eval` = FALSE
   xname = x@name
   yname = y@name
 
@@ -68,36 +99,11 @@
     `by` = NULL
   }
 
-
 # Check for full cross case.
   if((is.null(`by`) && is.null(by.x) && is.null(by.y)) ||
       length(`by`)==0 && is.null(by.x) && is.null(by.y))
   {
-    if(scidbmerge) stop("SciDB merge not supported in this context")
-# New attribute schema for y that won't conflict with x:
-    newas = build_attr_schema(y,newnames=make.unique_(x@attributes,y@attributes))
-# Impose a reasonable chunk size for dense arrays
-    chunky = scidb_coordinate_chunksize(y)
-    chunkx   = scidb_coordinate_chunksize(x)
-    chunk_elements = prod(c(as.numeric(chunky),as.numeric(chunkx)))
-# Only compute these counts if we need to
-    pdx = prod(dim(x))
-    if(is.scidbdf(x)) pdx = dim(x)[1]
-    pdy = prod(dim(y))
-    if(is.scidbdf(y)) pdy = dim(y)[1]
-    if(chunk_elements>1e6 && pdx==count(x) && pdy==count(y))
-    {
-      NC = length(chunkx) + length(chunky)
-      NS = 1e6^(1/NC)
-      chunky = rep(noE(NS), length(chunky))
-      chunkx = rep(noE(NS), length(chunkx))
-      x = repart(x,sprintf("%s%s",build_attr_schema(x), build_dim_schema(x,newchunk=chunkx)))
-      y = repart(y,sprintf("%s%s",build_attr_schema(y), build_dim_schema(y,newchunk=chunkx)))
-    }
-    newds = build_dim_schema(y,newnames=make.unique_(x@dimensions,y@dimensions))
-    y = cast(y,sprintf("%s%s",newas,newds))
-    query = sprintf("cross_join(%s, %s)",x@name,y@name)
-    return(.scidbeval(query,eval,depend=list(x,y)))
+    return(merge_scidb_cross(x,y,scidbmerge))
   }
 
 # Convert identically specified by into separate by.x by.y
@@ -106,6 +112,7 @@
     by.x = `by`
     by.y = `by`
   }
+
 # Check for special join on attributes case (limited applicability)
 # In particular:
 # - join on only one attribute per array
