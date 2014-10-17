@@ -1,3 +1,99 @@
+commit 6637b07609f4dc292d4a81f0abef382d6afb1038
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 19:36:17 2014 -0400
+
+    Added error to quantile when input array is empty; removed broke quantile test
+
+commit b4e15e57badcc96886e9544f138526dac7c2096e
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 19:27:54 2014 -0400
+
+    Fixed an edge case in materialize and added new warnings
+
+commit f48913b3580abf64af7396beda6bc5b7f8e63cc7
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 19:15:37 2014 -0400
+
+    This hopefully completes a major overhaul of merge fixing several bugs
+
+commit d920f177c102c82f6fa8bdb453a18a0ffe14b276
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 18:05:04 2014 -0400
+
+    New scidb class array materialization routines that use the newer and better scidbdf code. This is a major change and fixes 1/2 of the bug in issue #52.
+
+commit afe65e8327fbe131e9cc42aa23b9b04a0b2df162
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 12:32:22 2014 -0400
+
+    Fix for longstanding merge bug reported in issue #41; added several new examples to and somewhat improved merge documentation
+
+commit 2c12a290f455b7959d603e8d292e81db7f29ad20
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 12:26:41 2014 -0400
+
+    Fix for longstanding merge bug reported in issue #41; added several new examples to and somewhat improved merge documentation
+
+commit e11609cfde8312ef2b275722925c8e9fcf593ca6
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 10:52:39 2014 -0400
+
+    Starting to break up giant merge_scidb function; split out full cross case
+
+commit 1a6459d5166beb58d349226df7cde14915399a30
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 08:33:39 2014 -0400
+
+    Added test for issue #54
+
+commit d8378155d61c0b494704bc1dee377dbc86e7c39a
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 08:06:29 2014 -0400
+
+    Fixed indexing bounds issue #54
+
+commit 6e5ce8a9a05a3b9b21af692f816ce46e757269c4
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Oct 9 23:32:24 2014 -0400
+
+    Fixed github issue #45
+
+commit f589b0b3ca111998facacc04a78c9b6b9f6e9674
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Oct 9 23:13:57 2014 -0400
+
+    Added test for github issue #45
+
+commit a8ffd4bc5743fb9ee74377ac07aec396d9f1e12a
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Sep 25 20:55:42 2014 -0400
+
+    Performance tweak for kmeans
+
+commit e001c4f122c88ea1c908c4f17beaececef95f199
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Sep 25 20:22:40 2014 -0400
+
+    Fixed a nasty join/merge bug in the tricky cross_join case that stupidly required dimensions to be listed in the same order in complicated cases
+
+commit 4ac695fa36a2ac7d4ed6a9ff1a86420aeb822c2c
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sat Sep 20 17:17:17 2014 -0400
+
+    A fix for an obscure naming issue/problem in show not knowing true output schema
+
+commit 712f7ccc8b2dbcaa05436a0f7812f118d17fc5e6
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Sep 8 23:24:36 2014 -0400
+
+    Added new is.temp documentation, set up experimental k-means to use temp arrays when available
+
+commit 108859f5b77ce59e3363bf1760dd3dad18eab2b1
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Sep 8 23:23:46 2014 -0400
+
+    Added new is.temp documentation, set up experimental k-means to use temp arrays when available
+
 commit 03a8be5c1c20d213ab8ce7154b5e5262efb223d0
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Mon Sep 8 22:26:52 2014 -0400
