@@ -221,16 +221,19 @@ length.scidb = function(x) prod(as.numeric(scidb_coordinate_bounds(x)$length))
 # XXX Future: Add n-d array support here (TODO)
 as.scidb = function(X,
                     name=tmpnam(),
-                    chunkSize,
+                    chunksize,
                     overlap,
                     start,
+                    chunkSize = chunksize,
                     gc=TRUE, ...)
 {
   if(inherits(X,"data.frame"))
+  {
     if(missing(chunkSize))
       return(df2scidb(X,name=name,gc=gc,start=start,...))
     else
       return(df2scidb(X,name=name,chunkSize=as.numeric(chunkSize[[1]]),gc=gc,start=start,...))
+  }
   if(missing(chunkSize))
   {
 # Note nrow, ncol might be NULL here if X is not a matrix. That's OK, we'll

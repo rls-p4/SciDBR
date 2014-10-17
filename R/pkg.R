@@ -106,7 +106,7 @@ TRAP = function()
   double="uint64",
   integer="int32",
   logical="bool",
-  character="char"
+  character="string"
 )
 
 # These types are used to infer dataframe column classes.

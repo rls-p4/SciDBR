@@ -311,95 +311,45 @@ materialize = function(x, drop=FALSE)
     return(ans)
   }
 
-# Set origin to zero and project. We need the zero origin here to reconstruct
-# array indices in R. We don't wrap subarray in sg here because there is no
-# chance that this will be involved in a gemm query later.
-  ndim = as.integer(length(dimensions(x)))
-  N = paste(rep("null",2*ndim),collapse=",")
+
+# Set array index origin to zero. We need the zero origin here to reconstruct
+# array indices in R.
+  d     = dim(x)
+  ndim  = length(d)
+  N     = paste(rep("null",2*ndim),collapse=",")
   query = sprintf("subarray(project(%s,%s),%s)",x@name,attr,N)
 
-# Unpack
-  query = sprintf("unpack(%s,%s)",query,"__row")
+# Unpack into a staging data frame
+  data  = scidb_unpack_to_dataframe(query)
+  nelem = nrow(data)
+  p     = prod(d)
+# Adjust indexing origin
+  data[,1:ndim] = data[,1:ndim] + 1
 
-# We always assume missing values may exist
-  i = paste(rep("int64",ndim),collapse=",")
-  nl = TRUE
-  N = "NULL"
-
-  savestring = sprintf("(%s,%s %s)",i,scidb_types(x),N)
-  interrupt = scidb.interrupt()
-
-  sessionid = scidbquery(query, save=savestring, async=FALSE, release=0, interrupt=TRUE)
-# Release the session on exit
-  on.exit( GET("/release_session",list(id=sessionid)) ,add=TRUE)
-  n = 0
-
-  r = URI("/read_bytes",list(id=sessionid,n=n))
-  sigint(TRAP())
-  BUF = tryCatch(
-        {
-          getBinaryURL(r, .opts=list('ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=!interrupt, progressfunction=curl_signal_trap))
-        }, error=function(e)
-        {
-          GET("/release_session",list(id=sessionid))
-          sigint(SIG_DFL)
-          stop("canceled")
-        })
-  sigint(SIG_DFL)
-
-  type = eval(parse(text=paste(names(.scidbtypes[.scidbtypes==scidb_types(x)]),"()")))
-  len  = as.integer(.typelen[names(.scidbtypes[.scidbtypes==scidb_types(x)])])
-  len  = len + nl # Type length
-  i64 = 0L;
-# Special int64 cases:
-  if(scidb_types(x)[1]=="int64")
-  {
-    i64 = 1L;
-    warning("Coercing SciDB int64 values to R double precision real numeric values.")
-  }
-  if(scidb_types(x)[1]=="uint64")
-  {
-    i64 = 2L;
-    warning("Coercing SciDB uint64 values to R double precision real numeric values.")
-  }
-
-  nelem = length(BUF) / (ndim*8 + len)
-  stopifnot(nelem==as.integer(nelem))
-  A = tryCatch(
-    {
-      .Call("scidbparse",BUF,ndim,as.integer(nelem),type,as.integer(nl),i64,PACKAGE="scidb")
-    },
-    error = function(e){stop(e)})
-
-  xlen = as.numeric(scidb_coordinate_bounds(x)$length)
-  p = prod(xlen)
-
-# Check for sparse matrix case
+# Check for sparse matrix or sparse vector case. The tryCatch guards
+# against unsupported types in R's sparse Matrix package and returns the
+# raw data frames in bad cases.
   if(ndim==2 && nelem<p)
   {
-    return(Matrix::sparseMatrix(i=A[[2]][,1]+1,j=A[[2]][,2]+1,x=A[[1]],dims=xlen))
-  } else if(ndim==1 && nelem <p)
+    ans = tryCatch(
+            Matrix::sparseMatrix(i=data[,1],j=data[,2],x=data[,3],dims=d),
+            error=function(e) {warning(e,"Note: The R sparse Matrix package does not support certain value types like\ncharacter strings");data})
+    return(ans)
+  } else if(ndim==1 && nelem < p)
   {
-    return(Matrix::sparseVector(x=A[[1]],i=A[[2]][,1]+1,length=p))
-  } else if(nelem<p)
+    ans = tryCatch(
+            Matrix::sparseVector(i=data[,1],x=data[,2],length=p),
+            error=function(e) {warning(e,"Note: The R sparse Matrix package does not support certain value types like\ncharacter strings");data})
+    return(ans)
+  } else if(nelem < p)
   {
-# Don't know how to represent this in R!
-    names(A)=c("values","coordinates")
-# Try to restore original SciDB coordinate system
-    orig = as.numeric(scidb_coordinate_start(x))
-    if(!all(as.character(orig) == scidb_coordinate_start(x)))
-    {
-      warning("Coordinate system too large for R")
-      return(A)
-    }
-    A[[2]] = A[[2]] + rep(orig,each=nrow(A[[2]]))
-    return(A)
+# Don't know how to represent this in R! (R only knows sparse vectors or arrays)
+    return(data)
   }
-  ans = array(NA, dim=dim(x))
-  ans[A[[2]]+1] = A[[1]]
-  if(length(dim(ans))==1)
-  {
-    ans=as.vector(ans)
-  }
-  return(ans)
+# OK, we have a dense array of some kind
+  if(length(d)==1) return(data[,2])  # A vector
+
+  ans = array(NA, dim=d)  # A matrix or n-d array
+  ans[as.matrix(data[,1:ndim])] = data[,ndim+1]
+  ans
 }

@@ -1025,7 +1025,7 @@ show_commit_log = function()
   }
 }
 
-
+# This is a workhorse SciDB data munger
 scidb_unpack_to_dataframe = function(query, ...)
 {
   DEBUG = FALSE
@@ -1038,7 +1038,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   {
     argsbuf = tryCatch(as.integer(args$buffer),warning=function(e) NA)
 # Potential problem here if args$buffer is bogus or '*' or whatever.
-# Deal with it. XXX
+# Deal with it. XXX FIX ME
     if(!is.na(argsbuf) && argsbuf < 100e6) buffer = as.integer(argsbuf)
   }
   if(!is.null(args$row.names)) row_names = args$row.names

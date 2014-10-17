@@ -7,15 +7,16 @@ Upload an R matrix or data.frame to a SciDB array.
 Upload an R matrix or data.frame into SciDB, returning a reference scidb object.
 }
 \usage{
-as.scidb(X, name = tmpnam(), chunkSize, overlap, start, gc=TRUE, ...)
+as.scidb(X, name = tmpnam(), chunksize, overlap, start, chunkSize, gc=TRUE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{X}{ A vector, matrix or sparse matrix of double-precision floating point values or a data.frame. }
   \item{name}{ The name of the SciDB array to create.  }
-  \item{chunkSize}{A vector of optional SciDB array chunk sizes (a vector of length 1 for data frames and vectors, length 2 for matrices)}
+  \item{chunksize}{A vector of optional SciDB array chunk sizes (a vector of length 1 for data frames and vectors, length 2 for matrices)}
   \item{overlap}{(Not yet supported)}
   \item{start}{A vector of SciDB array starting dimension numeric index value or values.}
+  \item{chunkSize}{(Same as \code{chunksize} argument, for backwards compatibility -- use \code{chunksize} instead)}
   \item{gc}{Set to TRUE to remove SciDB array when R object is garbage collected or R exists. FALSE means SciDB array persists.}
   \item{\dots}{ additional arguments to pass to \code{df2scidb} (see \code{\link{df2scidb}}).}
 }

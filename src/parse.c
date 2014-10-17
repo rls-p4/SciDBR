@@ -295,6 +295,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
 // XXX Use a stack buffer here unless the string exceeds a buffer length
 // XXX for efficiency's sake... XXX FIX ME
     char *buf = (char *)calloc(len,1);
+    if(!buf) error("out of memory");
     memcpy(buf, *p, len);
     (*p)+=len;
     SET_STRING_ELT(vec,i,mkChar(buf));
