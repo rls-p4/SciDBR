@@ -63,6 +63,10 @@ identical partitioning (coordinate system bounds, chunk size, etc.) in the
 common dimensions.  The \code{merge} method attempts to rectify SciDB
 arrays along the specified dimensions as required before joining. Those
 dimensions must at least have common lower index bounds.
+
+The merge function may rename SciDB attributes and dimensions as required
+to avoid name conflicts in SciDB. See the last example for an
+illustration.
 }
 \value{A \code{scidb} or \code{scidbdf} reference object. }
 \author{
