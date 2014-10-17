@@ -171,6 +171,10 @@ summary.scidb = function(x)
   else redim=M$redim
 # inverse of redim (same functionality) for user convenience
   if(!is.null(M$between)) redim=!M$between
+  if(!is.null(M$redim) && !is.null(M$between))
+  {
+    warning("The `redim` and `between` options are antonyms but they provide the same control over the query. When both are specified the `redim` option is ignored and subsetting only pays attention to the between option.")
+  }
   M = M[3:length(M)]
   if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","eval","redim","between"))]
 # i shall contain a list of requested index values

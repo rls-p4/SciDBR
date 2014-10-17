@@ -230,6 +230,11 @@ check(quantile(a)[][,2], quantile(x$value))
   gc()
   x[]
 
+# Github issue #54
+  scidbremove("oh_no",error=invisible,force=TRUE)
+  iquery("create_array(oh_no,<mask:bool>[variant_id=0:1109999,10000,0,pos=0:12000000,10000000,0,chrom_id=0:0,1,0])")
+  x = scidb("oh_no")
+  x [, 11000000:12000000, ]
 
 }
 gc()
