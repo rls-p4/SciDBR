@@ -212,6 +212,7 @@ scidb_raw (SEXP A)
   SEXP ans = R_NilValue;
   char *buf;
   R_xlen_t j, len = XLENGTH(A);
+  unsigned int slen, l;
   const unsigned char not_missing = NOT_MISSING;
   const char missing = IS_MISSING;
   switch (TYPEOF (A))
@@ -267,18 +268,30 @@ scidb_raw (SEXP A)
       }
       break;
     case STRSXP:
-      PROTECT(ans = allocVector(RAWSXP, len*(sizeof(char) + 1)));
+/* Compute the output length first, padding length for SciDB string header,
+ * null flag (byte), string length (unsigned int), and for the terminating
+ * string zero byte.
+ */
+      slen = 0;
+      for(j=0;j<len;++j)
+      {
+        if(STRING_ELT(A,j) == NA_STRING) slen = slen + 4 + 1 + 1;
+        else slen = slen + 4 + 1 + 1 + strlen(CHAR(STRING_ELT(A,j)));
+      }
+      PROTECT(ans = allocVector(RAWSXP,  slen));
       buf = (char *)RAW(ans);
       if(!buf) error ("Not enough memory.");
       for(j=0;j<len;++j)
       {
         if(STRING_ELT(A,j) != NA_STRING)
         {
+          l = strlen(CHAR(STRING_ELT(A,j))) + 1;
           memcpy(buf, &not_missing, 1); buf++;
-          memcpy(buf, CHAR(STRING_ELT(A,j)), sizeof(char)); buf++;
+          memcpy(buf, &l, 4); buf+=4;
+          memcpy(buf, CHAR(STRING_ELT(A,j)), l); buf = buf + l;
         } else
         {
-          memcpy(buf, &missing, 1); buf+=2;
+          memcpy(buf, &missing, 1); buf+=6;
         }
       }
       break;

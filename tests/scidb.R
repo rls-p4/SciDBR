@@ -231,5 +231,9 @@ cat("# Github issue #54\n")
   x = scidb("oh_no")
   x [, 11000000:12000000, ]
 
+cat("# Github issue #52\n")
+  x = scidb("build(<s:string>[i=1:3,1,0,j=1:1,1,0],'{1,1}[[(law)],[(bryan)],[(homer)]]',true)")
+  a = as.scidb(x[])
+
 }
 gc()
