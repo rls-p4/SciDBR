@@ -93,32 +93,45 @@ kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
 
 
 # Limited distance function (Euclidean only) SLOOOOOW!
-dist_scidb = function(x)
+dist_scidb = function(x, method=c("euclidean","manhattan","maximum"))
 {
   if(length(dim(x))!=2) stop("dist requires a numeric matrix")
-# Slow...
+  method = match.arg(method)
+# This should be faster for large problems, but only handles Euclidean
+# distance...
 #  u = apply(x*x,1,sum) %*% matrix(1.0,1,nrow(x))
 #  ans = sqrt(abs(u + t(u) - 2 * x %*% t(x)))
 
-# The following is faster but still slow:
-  n   = nrow(x)
-  x1  = merge(x,x)
-  p = make.unique_(x1@attributes,"prod")
-  x2  = project(bind(x1,p,paste(x1@attributes,collapse="*")),p)
-  s = scidbeval(apply(x2, 1, sum)) # Cache this result
-  r = dimensions(s)
-
-  u  = project(merge(build(1,c(n,n),names=c("val",dimensions(x))),s,by=r),2)
-  tu = project(merge(build(1,c(n,n),names=c("val",dimensions(x))),s,by.x=dimensions(x)[2],by.y=r),2)
-
-  utu = merge(u,tu)
-  utu = project(bind(utu,"sum",paste(scidb_attributes(utu),collapse="+")),"sum")
-
-  out = build(0,c(nrow(x),nrow(x)), type="double")
-
-  xtx = scidb(sprintf("gemm(%s, transpose(%s), %s)",x@name,x@name,out@name))
-  expr = paste(dimensions(xtx),collapse=">")
-  subset(project(bind(merge(utu,xtx),"ans","sqrt(abs(sum - 2*gemm))"),"ans"),expr)
+# Faster, but not so natural. But it has the advantage that it can
+# compute many different distance metrics.
+  M     = merge(x,t(x),by.x=2, by.y=1)
+  b     = scidb_attributes(M)[1]
+  a     = scidb:::make.unique_(scidb_attributes(M), "_")
+  if(method=="euclidean")
+  {
+    dexpr = sprintf("pow(%s,2)",paste(scidb_attributes(M),collapse="-"))
+    sexpr = sprintf("sum(%s) as %s",a,a)
+    pexpr = sprintf("pow(%s,0.5)",a)
+    M     = aggregate(bind(M, a, dexpr), by=list(1,3), FUN=sexpr)
+    M     = subset(M, paste(dimensions(M),collapse=">"))
+    M     = project(bind(M, b, pexpr),2)
+  }
+  if(method=="manhattan")
+  {
+    dexpr = sprintf("abs(%s)",paste(scidb_attributes(M),collapse="-"))
+    sexpr = sprintf("sum(%s) as %s",a,b)
+    M     = aggregate(bind(M, a, dexpr), by=list(1,3), FUN=sexpr)
+    M     = subset(M, paste(dimensions(M),collapse=">"))
+  }
+  if(method=="maximum")
+  {
+    m = scidb_attributes(M)
+    dexpr = sprintf("abs(%s)",paste(scidb_attributes(M),collapse="-"))
+    sexpr = sprintf("max(%s) as %s",a,b)
+    M     = aggregate(bind(M, a, dexpr), by=list(1,3), FUN=sexpr)
+    M     = subset(M, paste(dimensions(M),collapse=">"))
+  }
+  M
 }
 
 # Note fill_sparse=TRUE is not yet supported but will be...
