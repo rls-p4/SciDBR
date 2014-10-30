@@ -42,6 +42,8 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE, temp=FALSE)
 {
   ans = eval(expr)
   if(!(inherits(ans,"scidb") || inherits(ans,"scidbdf"))) return(ans)
+# If expr is a stored temp array, then re-use its name
+  if(!is.null(ans@gc$temp) && ans@gc$temp && missing(name)) name=ans@name
   .scidbeval(ans@name, `eval`=eval, name=name, gc=gc, schema=ans@schema, temp=temp)
 }
 
@@ -87,6 +89,7 @@ is.temp = function(name)
 {
   if(is.scidb(name) || is.scidbdf(name))
   {
+    if(!is.null(name@gc$temp)) return(name@gc$temp)
     name = name@name
   }
   query = sprintf("filter(list('arrays'),name='%s')", name)
@@ -145,6 +148,7 @@ is.temp = function(name)
     query = sprintf("store(%s,%s)",expr,newarray)
     scidbquery(query, interrupt=TRUE)
     ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)
+    if(temp) ans@gc$temp = TRUE
 # This is a fix for a SciDB issue that can unexpectedly change schema
 # bounds. And another fix to allow unexpected dimname and attribute name
 # changes. Arrgh.
