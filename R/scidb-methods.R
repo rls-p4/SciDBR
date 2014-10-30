@@ -529,3 +529,8 @@ setMethod("sqrt",signature(x="scidb"),
   {
     fn_scidb(x, "sqrt")
   })
+setMethod("exp",signature(x="scidb"),
+  function(x)
+  {
+    fn_scidb(x, "exp")
+  })

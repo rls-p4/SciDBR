@@ -209,6 +209,11 @@ setMethod("sqrt", signature(x="scidbdf"),
   {
     fn_scidb(x, "sqrt")
   })
+setMethod("exp", signature(x="scidbdf"),
+  function(x)
+  {
+    fn_scidb(x, "exp")
+  })
 # Non-traditional masking binary comparison operators
 setMethod("%<%",signature(x="scidbdf", y="ANY"),
   function(x,y)

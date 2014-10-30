@@ -11,6 +11,7 @@
 \alias{sin,scidbdf-method}
 \alias{abs,scidbdf-method}
 \alias{sqrt,scidbdf-method}
+\alias{exp,scidbdf-method}
 \alias{cos,scidbdf-method}
 \alias{tan,scidbdf-method}
 \alias{asin,scidbdf-method}
@@ -51,8 +52,9 @@ Objects can be created by calls of the form \code{new("scidbdf", ...)},
     \item{sin}{\code{signature(x = "scidbdf")}: \code{sin(x)}
       Return an array with the sine of each element of the array \code{x}. The first listed attribute is used and should be numeric. The returned array contains a new attibute with "_sin" appended containing the result. Additional trig functions (\code{cos, tan, asin, acos, atan}) act similarly.
     }
-    \item{abs}{\code{signature(x = "scidbdf")}: \code{cos(x)} See doc. for \code{sin}.}
-    \item{sqrt}{\code{signature(x = "scidbdf")}: \code{cos(x)} See doc. for \code{sin}.}
+    \item{abs}{\code{signature(x = "scidbdf")}: \code{abs(x)} See doc. for \code{sin}.}
+    \item{sqrt}{\code{signature(x = "scidbdf")}: \code{sqrt(x)} See doc. for \code{sin}.}
+    \item{exp}{\code{signature(x = "scidbdf")}: \code{exp(x)} See doc. for \code{sin}.}
     \item{cos}{\code{signature(x = "scidbdf")}: \code{cos(x)} See doc. for \code{sin}.}
     \item{tan}{\code{signature(x = "scidbdf")}: \code{tan(x)} See doc. for \code{sin}.}
     \item{asin}{\code{signature(x = "scidbdf")}: \code{asin(x)} See doc. for \code{sin}.}
