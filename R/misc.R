@@ -2,6 +2,13 @@
 # tend to be newer and somewhat more experimental than the other functions, and
 # maybe not quite as fully baked.
 
+range_scidb = function(x)
+{
+  a = scidb_attributes(x)[1]
+  FUN = sprintf("min(%s) as min, max(%s) as max",a,a)
+  aggregate(x, FUN=FUN)
+}
+
 bernoulli = function (x, prob , seed=sample(2^32 - 1 - 2^31, 1))
 {
   if ( prob <= 0 || prob > 1 )
