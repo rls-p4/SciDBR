@@ -1,5 +1,6 @@
 \name{peek}
 \alias{peek}
+\alias{iqdf}
 \title{
 Sample from populated cells in a SciDB array.
 }
@@ -7,7 +8,8 @@ Sample from populated cells in a SciDB array.
 Return an R dataframe containing samples from an input array.
 }
 \usage{
-peek (x, n=6L, prob=0.1,...)
+peek (x, n=50L, prob=1)
+iqdf (x, n=50L, prob=1)
 }
 \arguments{
   \item{x}{A \code{scidb}  or \code{scidbdf} object.}
@@ -15,7 +17,6 @@ peek (x, n=6L, prob=0.1,...)
   \item{prob}{A number in the interval (0, 1] 
               indicating the probability of a cell being included
               in the sample.}
-  \item{...}{Additional arguments passed to \code{bernoulli}.}
 }
 \value{
 An R data frame.
@@ -26,7 +27,9 @@ Use \code{peek} to get a sense of the data contained in an array.
 
 The function always returns results in data frame form, including
 the array coordinates as data frame variables.
-
+}
+\note{
+The synonym \code{iqdf} is maintained for compatibility with existing programs.
 }
 \author{
 B. W. Lewis <blewis@paradigm4.com>
@@ -39,4 +42,3 @@ B. W. Lewis <blewis@paradigm4.com>
 x <- as.scidb(iris)
 peek(x)
 }}
-

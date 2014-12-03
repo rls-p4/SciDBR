@@ -19,9 +19,29 @@ bernoulli = function (x, prob , seed=sample(2^32 - 1 - 2^31, 1))
   return (scidb(query))
 }
 
-peek = function(x, n=6L, prob=0.1,...)
+
+iqdf = function( x, n = 50L, prob = 1)
 {
-  subarray(unpack(bernoulli(x,prob,...)),c(0,n-1))[]
+  result = x
+  if ( class(result) == "character")
+  {
+    result = scidb(result)
+  }
+  if ( prob < 1 )
+  {
+    result = bernoulli(result, prob)
+  }
+  result = unpack(result)
+  if ( n > 0 && is.finite(n))
+  {
+    return(result[0:n-1, ][])
+  }
+  return(result[])
+}
+
+peek = function(x, n=50L, prob=1)
+{
+  iqdf(x, n, prob)
 }
 
 order_scidb = function(x,na.last=TRUE,decreasing=FALSE)
@@ -99,7 +119,7 @@ kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
 }
 
 
-# Limited distance function (Euclidean only) SLOOOOOW!
+# distance function SLOOOOOW!
 dist_scidb = function(x, method=c("euclidean","manhattan","maximum"))
 {
   if(length(dim(x))!=2) stop("dist requires a numeric matrix")
@@ -113,7 +133,7 @@ dist_scidb = function(x, method=c("euclidean","manhattan","maximum"))
 # compute many different distance metrics.
   M     = merge(x,t(x),by.x=2, by.y=1)
   b     = scidb_attributes(M)[1]
-  a     = scidb:::make.unique_(scidb_attributes(M), "_")
+  a     = make.unique_(scidb_attributes(M), "_")
   if(method=="euclidean")
   {
     dexpr = sprintf("pow(%s,2)",paste(scidb_attributes(M),collapse="-"))
