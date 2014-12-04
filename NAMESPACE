@@ -55,6 +55,7 @@ export("index_lookup")
 export("show_commit_log")
 export("peek")
 export("iqdf")
+export("remove_old_versions")
 #export("order.scidb")
 
 # S4 methods

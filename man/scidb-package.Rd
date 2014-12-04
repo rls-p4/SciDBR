@@ -4,15 +4,6 @@
 \title{ SciDB interface package.  }
 \description{
 
-\deqn{
-    _____      _ ____  ____
-   / ___/_____(_) __ \/ __ )
-   \__ \/ ___/ / / / / __  |
-  ___/ / /__/ / /_/ / /_/ /
- /____/\___/_/_____/_____/
-}
-
-
 The scidb package provides basic functions
 that move data between R and SciDB and issue SciDB queries.
 

@@ -44,6 +44,20 @@ rename = function(A, name=A@name, gc)
   scidb(name,gc=gc)
 }
 
+remove_old_versions = function( stored_array )
+{
+  if(!(inherits(stored_array,"scidb") || inherits(stored_array,"scidbdf"))) stop("`stored_array` must be a scidb object.")
+  versions_query = sprintf("aggregate(versions(%s), max(version_id) as max_version)", stored_array@name)
+  versions = iqdf(versions_query, n=Inf)
+  max_version = versions$max_version
+  if (is.na(max_version))
+  {
+    stop("The array has no versions to remove")
+  }
+  remove_query = sprintf("remove_versions(%s, %i)", stored_array@name, max_version)
+  iquery(remove_query)
+}
+
 unpack_scidb = function(x, `eval`=FALSE)
 {
   dimname = make.unique_(c(dimensions(x),scidb_attributes(x)), "i")
