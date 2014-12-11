@@ -97,9 +97,8 @@ TRAP = function()
   options(scidb.stream=c())
 }
 
-# scidb array object type map. We don't yet support strings in scidb array
-# objects. Use df2scidb and iquery for strings.
-# R type = SciDB type
+# scidb array object type map.
+# R type -> SciDB type
 .scidbtypes = list(
   double="double",
   double="int64",
@@ -110,6 +109,7 @@ TRAP = function()
 )
 
 # These types are used to infer dataframe column classes.
+# SciDB type -> R type
 .scidbdftypes = list(
   double="double",
   int64="double",
@@ -124,6 +124,23 @@ TRAP = function()
   string="character",
   char="character",
   datetime="Date"
+)
+
+# Default substitution values to remove null in replaceNA
+.scidb_default_subst = list(
+  double="double(nan)",
+  int64="int64(0)",
+  uint64="uint64(0)",
+  uint32="uint32(0)",
+  int32="int32(0)",
+  int16="int16(0)",
+  unit16="uint16(0)",
+  int8="int8(0)",
+  uint8="uint8(0)",
+  bool="false",
+  string="string('')",
+  char="char('')",
+  datetime="datetime(0)"
 )
 
 .typelen = list(

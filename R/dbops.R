@@ -120,15 +120,25 @@ replaceNA = function(x, value, `attribute`, `eval`=FALSE, ...)
   if(!any(scidb_nullable(x))) return(x)
   if(missing(attribute))
   {
-    attribute = ""
+    attribute = 1:length(scidb_attributes(x))
   }
-  if(is.numeric(attribute)) attribute = x@attributes[attribute]
+  if(!is.numeric(attribute))
+  {
+    attribute = which(scidb_attributes(x) %in% attribute)
+  }
+  if(length(attribute)<1) stop("Invalid attribute(s)")
   if(missing(value))
-    value = sprintf("build(%s[i=0:0,1,0],i)",build_attr_schema(x,I=1))
-  if(nchar(attribute)<1)
-    query = sprintf("substitute(%s,%s)",x@name, value)
-  else
-    query = sprintf("substitute(%s,%s,%s)",x@name, value, attribute)
+  {
+    ba = paste("build(",lapply(attribute,function(a)scidb:::build_attr_schema(x,I=a,nullable=FALSE,newname="____")),"[i=0:0,1,0]",",",.scidb_default_subst[scidb_types(x)],")",sep="")
+  } else
+  {
+    ba = paste("build(",lapply(attribute,function(a)scidb:::build_attr_schema(x,I=a,nullable=FALSE),newname="____"),"[i=0:0,1,0]",",",value,")",sep="")
+  }
+  query = x@name
+  for(j in 1:length(ba))
+  {
+    query = sprintf("substitute(%s,%s,%s)",query,ba[j],scidb_attributes(x)[j])
+  }
   .scidbeval(query, `eval`, depend=list(x))
 }
 

@@ -203,6 +203,9 @@ x = read.csv(file=textConnection('"tumor_type_id","sample_id","agilentg4502a_07_
 a = redimension(as.scidb(x,types=c("int64","int64","int64","double")), dim=names(x)[1:3], eval=TRUE)
 check(quantile(a)[][,2], quantile(x$value))
 
+cat("# Check that replaceNA works\n")
+ replaceNA(scidb("apply(build(<x:double null>[i=1:1,1,0],null), s, string(null))"))
+ check(count(replaceNA(scidb("apply(build(<x:double null>[i=1:1,1,0],null), s, string(null))"))),1)
 
 cat("# Another merge test courtesy Alex Polyiakov\n")
   x = build(1,c(2,2))
