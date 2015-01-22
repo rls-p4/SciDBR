@@ -152,6 +152,9 @@ cat("# Aggregation, just trying to catch errors\n")
   aggregate(A,by=p,mean) # Aggregate by another array
   aggregate(A,by=2,mean) # Positional dimension index
   aggregate(A,FUN=mean)  # Grand aggregate
+  x = build(5.5,10)
+  aggregate(x, FUN=sum, window=c(0,1e6)) # GitHub issue #57
+  aggregate(x,FUN=sum, by=1, variable_window=c(0,1e6))
 
 cat("# More special index tests, sort, apply, densify giant sparse sort result.\n")
   a = build("i+j",c(5,5),type="double")
