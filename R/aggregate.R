@@ -200,11 +200,11 @@
   if(!missing(window))
   {
     unpack = FALSE
-    query = sprintf("window(%s, %s, %s)",query,paste(window,collapse=","),FUN)
+    query = sprintf("window(%s, %s, %s)",query,paste(noE(window),collapse=","),FUN)
   } else if(!missing(variable_window))
   {
     unpack = FALSE
-    query = sprintf("variable_window(%s, %s, %s, %s)",query,along,paste(variable_window,collapse=","),FUN)
+    query = sprintf("variable_window(%s, %s, %s, %s)",query,along,paste(noE(variable_window),collapse=","),FUN)
   } else
   if(nchar(along)<1)
     query = sprintf("aggregate(%s, %s)", query, FUN)
