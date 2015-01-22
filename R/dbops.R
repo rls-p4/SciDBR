@@ -129,10 +129,10 @@ replaceNA = function(x, value, `attribute`, `eval`=FALSE, ...)
   if(length(attribute)<1) stop("Invalid attribute(s)")
   if(missing(value))
   {
-    ba = paste("build(",lapply(attribute,function(a)scidb:::build_attr_schema(x,I=a,nullable=FALSE,newname="____")),"[i=0:0,1,0]",",",.scidb_default_subst[scidb_types(x)],")",sep="")
+    ba = paste("build(",lapply(attribute,function(a) build_attr_schema(x,I=a,nullable=FALSE,newname="____")),"[i=0:0,1,0]",",",.scidb_default_subst[scidb_types(x)],")",sep="")
   } else
   {
-    ba = paste("build(",lapply(attribute,function(a)scidb:::build_attr_schema(x,I=a,nullable=FALSE),newname="____"),"[i=0:0,1,0]",",",value,")",sep="")
+    ba = paste("build(",lapply(attribute,function(a) build_attr_schema(x,I=a,nullable=FALSE),newname="____"),"[i=0:0,1,0]",",",value,")",sep="")
   }
   query = x@name
   for(j in 1:length(ba))
