@@ -95,7 +95,7 @@ scidb_coordinate_bounds = function(x)
   s1 = gsub("\\*",.scidb_DIM_MAX,start)
   s2 = gsub("\\*",.scidb_DIM_MAX,end)
   len = as.numeric(s2) - as.numeric(s1) + 1
-  i = len > as.double(.scidb_DIM_MAX)
+  i = len >= as.double(.scidb_DIM_MAX)
   len = noE(len)
   if(any(i))
   {
