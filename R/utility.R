@@ -426,8 +426,8 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
     {
       if(is.null(save))
         GET("/execute_query",list(id=sessionid,release=release,
-             query=query,afl=as.integer(afl)),
-             interrupt=interrupt, stream=0L)
+             query=query,afl=as.integer(afl), stream=0L),
+             interrupt=interrupt)
       else
         GET("/execute_query",list(id=sessionid,release=release,
             save=save,query=query,afl=as.integer(afl),stream=STREAM), 
