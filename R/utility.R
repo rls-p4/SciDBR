@@ -194,7 +194,7 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 
 # Use the query ID from a query as a unique ID for automated
 # array name generation.
-  x = scidbquery(query="setopt('precision','16')",release=1,resp=TRUE)
+  x = scidbquery(query="setopt('precision','16')",release=1,resp=TRUE,stream=0L)
   if(is.null(.scidbenv$uid))
   {
     id = strsplit(x$response, split="\\r\\n")[[1]]
