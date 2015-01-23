@@ -33,7 +33,7 @@ Package options:
   \item \code{options(scidb.safe_remove=TRUE)} Require \code{force=TRUE} to remove non-session arrays
   \item \code{options(scidb.verifyhost=FALSE)} Set TRUE to reverse host lookup in SSL sessions
   \item \code{options(scidb.interrupt=TRUE)} Set FALSE to disable user interruptable HTTP transactions
-  \item \code{options(scidb.stream=FALSE)} Set TRUE to enable streaming data through the shim interface to SciDB, see \url{https://github.com/Paradigm4/shim}.
+  \item \code{options(scidb.stream=FALSE)} Set TRUE to enable streaming data through the shim interface to SciDB (avoids copying query output data to a file on the server), see \url{https://github.com/Paradigm4/shim}.
 }
 }
 \author{

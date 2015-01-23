@@ -140,13 +140,16 @@ is.temp = function(name)
       newarray = tmpnam()
       if(temp)
       {
-        query   = sprintf("create_array(%s, %s, 'TEMP')", newarray, schema)
+# SciDB temporary array syntax varies with SciDB version
+        TEMP = "'TEMP'"
+        if(compare_versions(options("scidb.version")[[1]],14.12)) TEMP="true"
+        query   = sprintf("create_array(%s, %s, %s)", newarray, schema, TEMP)
         iquery(query, `return`=FALSE)
       }
     }
     else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
-    scidbquery(query, interrupt=TRUE)
+    scidbquery(query, interrupt=TRUE, stream=0L)
     ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)
     if(temp) ans@gc$temp = TRUE
 # This is a fix for a SciDB issue that can unexpectedly change schema
@@ -201,19 +204,19 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 # Try to load the dense_linear_algebra library
   tryCatch(
     scidbquery(query="load_library('dense_linear_algebra')",
-               release=1,resp=FALSE),
+               release=1,resp=FALSE, stream=0L),
     error=invisible)
 # Try to load the example_udos library (>= SciDB 13.6)
   tryCatch(
-    scidbquery(query="load_library('example_udos')",release=1,resp=FALSE),
+    scidbquery(query="load_library('example_udos')",release=1,resp=FALSE,stream=0L),
     error=invisible)
 # Try to load the superfunpack
   tryCatch(
-    scidbquery(query="load_library('superfunpack')",release=1,resp=FALSE),
+    scidbquery(query="load_library('superfunpack')",release=1,resp=FALSE,stream=0L),
     error=invisible)
 # Try to load the P4 library
   tryCatch(
-    scidbquery(query="load_library('linear_algebra')",release=1,resp=FALSE),
+    scidbquery(query="load_library('linear_algebra')",release=1,resp=FALSE,stream=0L),
     error=invisible)
 # Save available operators
   assign("ops",iquery("list('operators')",return=TRUE),envir=.scidbenv)
@@ -389,6 +392,8 @@ scidbls = function(...) scidblist(...)
 # release: Set to zero preserve web session until manually calling release_session
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
 # resp(logical): return http response
+# interrupt: Set to TRUE to enable user interrupt
+# stream: Set to 0L or 1L to control streaming, otherwise use package options
 # Example values of save:
 # save="dcsv"
 # save="lcsv+"
@@ -396,12 +401,15 @@ scidbls = function(...) scidblist(...)
 #
 # Returns the HTTP session in each case
 scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
-                      release=1, session=NULL, resp=FALSE, interrupt=FALSE)
+                      release=1, session=NULL, resp=FALSE, interrupt=FALSE, stream)
 {
   DEBUG = FALSE
   STREAM = 0L
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
-  if(!is.null(options("scidb.stream")[[1]]) && TRUE==options("scidb.stream")[[1]]) STREAM=1L
+  if(missing(stream))
+  {
+    if(!is.null(options("scidb.stream")[[1]]) && TRUE==options("scidb.stream")[[1]]) STREAM=1L
+  } else STREAM = as.integer(stream)
   sessionid=session
   if(is.null(session))
   {
@@ -419,7 +427,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
       if(is.null(save))
         GET("/execute_query",list(id=sessionid,release=release,
              query=query,afl=as.integer(afl)),
-             interrupt=interrupt)
+             interrupt=interrupt, stream=0L)
       else
         GET("/execute_query",list(id=sessionid,release=release,
             save=save,query=query,afl=as.integer(afl),stream=STREAM), 
@@ -486,11 +494,11 @@ scidbremove.default = function(x, error=warning, async, force, warn=TRUE, recurs
     query = sprintf("remove(%s)",y)
     if(grepl(sprintf("^R_array.*%s$",uid),y,perl=TRUE))
     {
-      tryCatch( scidbquery(query,async=async, release=1),
+      tryCatch( scidbquery(query,async=async, release=1, stream=0L),
                 error=function(e) if(!recursive && warn)errfun(e))
     } else if(force)
     {
-      tryCatch( scidbquery(query,async=async, release=1),
+      tryCatch( scidbquery(query,async=async, release=1, stream=0L),
                 error=function(e) if(!recursive && warn)errfun(e))
     } else if(warn)
     {
@@ -591,7 +599,7 @@ df2scidb = function(X,
 
 # Load query
   query = sprintf("store(input(%s, '%s'),%s)",SCHEMA, tmp, name)
-  scidbquery(query, async=FALSE, release=1, session=session)
+  scidbquery(query, async=FALSE, release=1, session=session, stream=0L)
   scidb(name,`data.frame`=TRUE,gc=gc)
 }
 
@@ -710,7 +718,10 @@ iquery = function(query, `return`=FALSE,
            {
              stop(e)
            })
-    } else ans = scidbquery(query,afl)
+    } else
+    {
+      ans = scidbquery(query, afl, async=FALSE, release=1, interrupt=TRUE, stream=0L)
+    }
     m = m + 1
   }
   if(!(`return`)) return(invisible())
