@@ -243,3 +243,4 @@ cat("# Github issue #52\n")
 
 }
 gc()
+tryCatch(scidbrm(scidbls()), warning=invisible)
