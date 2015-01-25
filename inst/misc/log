@@ -1,3 +1,39 @@
+commit 7433d7e4344899faa69894e78eb671d73cbd0f36
+Author: scidb <scidb@p4xen7.(none)>
+Date:   Sun Jan 25 13:09:17 2015 -0500
+
+    Fixed another start dimension bound bug
+
+commit 2a80cc39cb109444d2e40bb1e3bb9185b41c80cb
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Jan 23 17:25:59 2015 -0500
+
+    Minor cleanup for default stream option
+
+commit d228c1befc466b04a2f4fd52c0ae8810e666e990
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Jan 23 09:50:37 2015 -0500
+
+    Bug in scidbquery internal function use of stream
+
+commit 864848e4034c5c90c2d2fbebce70bba2bba72674
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Jan 23 09:44:20 2015 -0500
+
+    Fix for coordinate bounds issue #60
+
+commit 63072b6c90a69f5ff6bf190c5a56377d4f1c310b
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Jan 23 09:37:32 2015 -0500
+
+    Fix for coordinate bounds issue #60
+
+commit 9e20c98a29fe3b6a84cc6b6bd17e60ec026873e5
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Jan 22 23:20:09 2015 -0500
+
+    The commit log was growing large; now show_commit_log only displays the most recent GitHub commits. See the repository for the full history.
+
 commit dfbf1a265344042a75419624f863c57e12d78b0c
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Thu Jan 22 23:01:58 2015 -0500
@@ -462,39 +498,3 @@ Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue Aug 5 08:59:33 2014 -0400
 
     Silence spurious warnings in unpack_to_dataframe
-
-commit d4848e6299b7234024a37b2ed1e899ced5e248db
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Aug 5 02:11:36 2014 -0400
-
-    Merge needs common starting indices now
-
-commit ce88f9d3f836ae3c1c8949e51e9b1c6149a18904
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Aug 5 02:05:04 2014 -0400
-
-    Fixed substitute/replaceNA bugs in multiply and elsewhere
-
-commit e0066520635f963b04b3a7205ec8f1268a4d27a0
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Aug 5 00:00:23 2014 -0400
-
-    Fixed a reference counting bug in redimension
-
-commit 850de8a0fbdbc9cad92a967973edcbf458e7d69e
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Mon Aug 4 23:38:26 2014 -0400
-
-    Exposed some more schema manipulation functions
-
-commit 13f8971568b8ed5fb6ce636d7edc4ff0a1d24ec4
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Mon Aug 4 23:27:57 2014 -0400
-
-    Moved redimension, reshape, and repart to their own file
-
-commit 3496de4a39414e8ed346fa0a4fc57d71f723d4ed
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Mon Aug 4 23:25:21 2014 -0400
-
-    Maybe order is ok now...
