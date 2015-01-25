@@ -253,11 +253,11 @@ build_dim_schema = function(A, bracket=TRUE, I,
     star = grep("\\*",newlen)
     len = gsub("\\*",.scidb_DIM_MAX, newlen)
     end = as.numeric(start) + as.numeric(len) - 1
-    i = end > as.double(.scidb_DIM_MAX)
+    i = end >= as.double(.scidb_DIM_MAX)
     end = noE(end)
     if(any(i))
     {
-      end[i] = .scidb_DIM_MAX
+      end[i] = "*"
     }
     if(length(star)>0)
     {
