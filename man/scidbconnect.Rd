@@ -46,9 +46,13 @@ One may connect to and use multiple SciDB databases by sequentially calling
 valid across different SciDB databases.
 
 Use the optional \code{username} and \code{password} arguments to authenticate
-the connection with the shim service. Authenticated connections require 
+the connection with the shim service. PAM-authenticated connections require 
 an encrypted connection with shim, available by default on port 8083.
 
+Use the optional \code{username} and \code{password} arguments with
+\code{auth_type} set to "digest" to use HTTP digest authentication (see the
+shim documentation to configur this).  Digest authentication may use either
+"http" or "https" transports selected by the \code{protocol} setting.
 }
 \note{
 Disconnection is automatically handled by the package.
