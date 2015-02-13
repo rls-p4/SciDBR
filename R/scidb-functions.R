@@ -295,8 +295,10 @@ as.scidb = function(X,
   fn = tempfile()
   bytes = writeBin(.Call("scidb_raw",as.vector(t(X)),PACKAGE="scidb"),con=fn)
   url = URI("upload_file",list(id=session))
-  ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
-           .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifypeer'=0,'ssl.verifyhost'=as.integer(options("scidb.verifyhost"))))
+# RCurl madness! postForm with digest auth errors out, even when it
+# succeeds! XXX
+  hdr = digest_auth("POST",url)
+  ans = tryCatch(postForm(uri = url, uploadedfile = fileUpload(filename=fn), .opts = c(curlopts(),curlOptions(httpheader=hdr,'ssl.verifypeer'=0,'ssl.verifyhost'=as.integer(options("scidb.verifyhost"))))), error=invisible)
   unlink(fn)
   ans = ans[[1]]
   ans = gsub("\r","",ans)

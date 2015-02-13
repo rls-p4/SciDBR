@@ -175,29 +175,43 @@ is.temp = function(name)
 # store the connection information and obtain a unique ID
 scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
                         port=options("scidb.default_shim_port")[[1]],
-                        username, password)
+                        username, password,
+                        auth_type=c("pam","digest"), protocol=c("http","https"))
 {
   scidbdisconnect()
+  auth_type = match.arg(auth_type)
+  protocol = match.arg(protocol)
   assign("host",host, envir=.scidbenv)
   assign("port",port, envir=.scidbenv)
+  assign("protocol",protocol,envir=.scidbenv)
   if(missing(username)) username=c()
   if(missing(password)) password=c()
-# Check for login
+# Check for login using either pam or basic authentication
   if(!is.null(username))
   {
-    auth = GET(resource="login",list(username=username, password=password),header=FALSE)
-    if(nchar(auth)<1) stop("Authentication error")
-    assign("auth",auth,envir=.scidbenv)
+    if(auth_type=="pam")
+    {
+      auth = GET(resource="login",list(username=username, password=password),header=FALSE)
+      if(nchar(auth)<1) stop("Authentication error")
+      assign("auth",auth,envir=.scidbenv)
+    } else # HTTP basic digest auth
+    {
+      assign("digest",paste(username,password,sep=":"),envir=.scidbenv)
+    }
+    assign("authtype",auth_type,envir=.scidbenv)
     assign("authenv",new.env(),envir=.scidbenv)
     reg.finalizer(.scidbenv$authenv, function(e) scidblogout(), onexit=TRUE)
   }
 
 # Use the query ID from a query as a unique ID for automated
 # array name generation.
-  x = scidbquery(query="setopt('precision','16')",release=1,resp=TRUE,stream=0L)
+  x = tryCatch(
+        scidbquery(query="setopt('precision','16')",release=1,resp=TRUE,stream=0L),
+        error=function(e) stop("Connection error"))
   if(is.null(.scidbenv$uid))
   {
-    id = strsplit(x$response, split="\\r\\n")[[1]]
+    id = tryCatch(strsplit(x$response, split="\\r\\n")[[1]],
+           error=function(e) stop("Connection error"))
     id = id[[length(id)]]
     assign("uid",id,envir=.scidbenv)
   }
@@ -244,11 +258,10 @@ scidblogout = function()
 
 scidbdisconnect = function()
 {
+# forces call to scidblogout via finalizer, see scidbconnect:
   if(exists("authenv",envir=.scidbenv)) rm("authenv",envir=.scidbenv)
   gc()
-  if(exists("auth",envir=.scidbenv))  rm("auth",envir=.scidbenv)
-  if(exists("host",envir=.scidbenv)) rm("host", envir=.scidbenv)
-  if(exists("port",envir=.scidbenv)) rm("port", envir=.scidbenv)
+  rm(list=ls(envir=.scidbenv), envir=.scidbenv)
 }
 
 make.names_ = function(x)
@@ -305,7 +318,7 @@ URI = function(resource="", args=list())
   if(!exists("host",envir=.scidbenv)) stop("Not connected...try scidbconnect")
   if(exists("auth",envir=.scidbenv))
     args = c(args,list(auth=get("auth",envir=.scidbenv)))
-  prot = "http://"
+  prot = paste(get("protocol",envir=.scidbenv),"//",sep=":")
   if("username" %in% names(args) || "auth" %in% names(args)) prot = "https://"
   ans  = paste(prot, get("host",envir=.scidbenv),":",get("port",envir=.scidbenv),sep="")
   ans = paste(ans, resource, sep="/")
@@ -318,9 +331,12 @@ URI = function(resource="", args=list())
 # resource: URI service name
 # args: named list of HTTP GET query parameters
 # header: TRUE=return the HTTP response header, FALSE=don't return it
-# async: Doesn't really do anything
+# async: Doesn't really do anything, should be removed XXX
 # interrupt: Set to FALSE to disable SIGINT, otherwise handle gracefully.
-GET = function(resource, args=list(), header=TRUE, async=FALSE, interrupt=FALSE)
+# ...: additional curl options passed to getURI
+#
+# returns NULL if async=TRUE or the return value of RCurl getURI otherwise
+GET = function(resource, args=list(), header=TRUE, async=FALSE, interrupt=FALSE, ...)
 {
   if(!(substr(resource,1,1)=="/")) resource = paste("/",resource,sep="")
   uri = URI(resource, args)
@@ -337,18 +353,24 @@ GET = function(resource, args=list(), header=TRUE, async=FALSE, interrupt=FALSE)
   {
     sigint(SIG_IGN)          # Ignore SIGINT
   }
+#  digest = curlopts()
+  digest = digest_auth("GET",uri)
   if(async)
   {
     getURI(url=uri,
-      .opts=list(header=header,
+      .opts=c(list(header=header,
                  'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),
                  'ssl.verifypeer'=0,
                  noprogress=!interrupt, progressfunction=curl_signal_trap),
+                 list(...), httpheader=digest),
       async=TRUE)
     return(NULL)
   }
-  getURI(url=uri, .opts=list(header=header,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0,
-                         noprogress=!interrupt, progressfunction=curl_signal_trap))
+# The gsub is here because basic digest authentication might return TWO
+# concatenated responses: the first a 401 auth error as the digest
+# authentication is negotiated and the 2nd potentially the desired response (or
+# maybe another error). We strip everything up to the last response with gsub.
+  gsub(".*\\r\\n\\r\\nHTTP","HTTP",getURI(url=uri, .opts=c(list(header=header,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=!interrupt, progressfunction=curl_signal_trap),list(...),httpheader=digest)))
 }
 
 # Check if array exists
@@ -592,7 +614,8 @@ df2scidb = function(X,
 
 # Post the input string to the SciDB http service
   uri = URI("upload_file",list(id=session))
-  tmp = postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=c(Expect=""),'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0))
+  hdr = digest_auth("POST",uri)
+  tmp = tryCatch(postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=hdr,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0)), error=invisible)
   tmp = tmp[[1]]
   tmp = gsub("\r","",tmp)
   tmp = gsub("\n","",tmp)
@@ -642,8 +665,8 @@ df2scidb = function(X,
   fn = tempfile()
   bytes = writeBin(.Call("scidb_raw",as.vector(t(matrix(c(X@i + start[[1]],j + start[[2]], X@x),length(X@x)))),PACKAGE="scidb"),con=fn)
   url = URI("/upload_file",list(id=session))
-  ans = postForm(uri = url, uploadedfile = fileUpload(filename=fn),
-                 .opts = curlOptions(httpheader = c(Expect = ""),'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0))
+  hdr = digest_auth("POST",url)
+  ans = tryCatch(postForm(uri = url, uploadedfile = fileUpload(filename=fn), .opts=curlOptions(httpheader=hdr,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0)), error=invisible)
   unlink(fn)
   ans = ans[[1]]
   ans = gsub("\r","",ans)
@@ -1073,7 +1096,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   sigint(TRAP())
   BUF = tryCatch(
         { 
-          getBinaryURL(r, .opts=list('ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=!interrupt, progressfunction=curl_signal_trap))
+          getBinaryURL(r, .opts=c(curlopts(),list('ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=!interrupt, progressfunction=curl_signal_trap)))
         }, error=function(e)
         { 
           GET("/release_session",list(id=sessionid))
@@ -1136,3 +1159,36 @@ if(DEBUG) cat("  R rownames assignment",(proc.time()-dt2)[3],"\n")
   if(DEBUG) cat("Total R parsing time",(proc.time()-dt1)[3],"\n")
   ans
 }
+
+# Convenience function for digest authentication.
+digest_auth = function(method, uri, realm="", nonce="123456")
+{
+  if(exists("authtype",envir=.scidbenv))
+  {
+   if(.scidbenv$authtype != "digest") return(c(Expect=""))
+  }
+  uri = gsub(".*/","/",uri)
+  userpwd = .scidbenv$digest
+  if(is.null(userpwd)) userpwd=":"
+  up = strsplit(userpwd,":")[[1]]
+  user = up[1]
+  pwd  = up[2]
+  if(is.na(pwd)) pwd=""
+  ha1=digest(sprintf("%s:%s:%s",user,realm,pwd,algo="md5"),serialize=FALSE)
+  ha2=digest(sprintf("%s:%s", method,  uri, algo="md5"),serialize=FALSE)
+  cnonce="MDc1YmFhOWFkY2M0YWY2MDAwMDBlY2JhMDAwMmYxNTI="
+  nc="00000001"
+  qop="auth"
+  response=digest(sprintf("%s:%s:%s:%s:%s:%s",ha1,nonce,nc,cnonce,qop,ha2),algo="md5",serialize=FALSE)
+  sprintf('Authorization: Digest username="%s", realm=%s, nonce="%s", uri="%s", cnonce="%s", nc=%s, qop=%s, response="%s"', user, realm, nonce, uri, cnonce, nc, qop, response)
+}
+
+# Return extra curl options defined by the active connection
+curlopts = function()
+{
+  ans = c()
+  if(exists("digest",envir=.scidbenv))
+    ans=c(ans,list(userpwd=get("digest",envir=.scidbenv)))
+  ans
+}
+

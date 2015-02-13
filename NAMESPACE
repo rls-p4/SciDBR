@@ -6,6 +6,7 @@ importFrom("stats", aggregate, sd, var, reshape, glm, glm.fit, phyper, qhyper, q
 importFrom("graphics", image, hist)
 import("RCurl", iterators)
 importFrom("zoo", na.locf)
+importFrom("digest", digest)
 
 # Functions
 export("is.temp")
