@@ -9,6 +9,7 @@ importFrom("zoo", na.locf)
 importFrom("digest", digest)
 
 # Functions
+export("unbound")
 export("is.temp")
 export("bernoulli")
 export("replaceNA")

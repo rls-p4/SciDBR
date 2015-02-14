@@ -2,6 +2,15 @@
 # tend to be newer and somewhat more experimental than the other functions, and
 # maybe not quite as fully baked.
 
+
+unbound = function(x)
+{
+  new_lengths = rep("*",length(x@dimensions))
+  new_dims = build_dim_schema(x, newlen=new_lengths)
+  schema = sprintf("%s%s",build_attr_schema(x),new_dims)
+  redimension(x, schema=schema)
+}
+
 range_scidb = function(x)
 {
   a = scidb_attributes(x)[1]

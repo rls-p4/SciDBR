@@ -44,6 +44,10 @@ at most \code{buffer} rows. Adjust this for performance.
 this value to be a vector of row labels for the output, or optionally a single
 number indicating the output column to use as row names for the output
 data.frame.
+
+\item \code{unpack=TRUE}: Set \code{unpack} to FALSE to return only the array
+attribute data values. The default \code{unpack=TRUE} returns coordinate indices
+and the array attribute values.
 }
 
 Select \code{binary=FALSE} to use a delimited text transfer option. Data are

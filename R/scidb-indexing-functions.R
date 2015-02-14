@@ -112,6 +112,8 @@ dimfilter = function(x, i, eval, drop, redim)
   r = paste(c(ro,re),collapse=",")
   q = sprintf("between(%s,%s)",x@name,r)
 # XXXX XXX XXX XXX
+  new_dimnames = c()
+  new_depend = x
   if(!everything)
   {
     newstart = unlist(lapply(ranges,function(z)z[1]))
@@ -128,6 +130,19 @@ dimfilter = function(x, i, eval, drop, redim)
     {
       newend[ina] = scidb_coordinate_end(x)[ina]
     }
+# Propagate dimension labels
+    if(!is.null(dimnames(x)))
+    {
+      new_dimnames =  vector(mode="list",length=length(dim(x)))
+      for(j in 1:length(new_dimnames))
+      {
+        if(!is.null(dimnames(x)[[j]]))
+        {
+          new_dimnames[[j]] = scidb(sprintf("project(join(redimension(%s,%s%s) as x, %s as y), y.%s)",q,build_attr_schema(x),build_dim_schema(x,I=j), dimnames(x)[[j]]@name, scidb_attributes(dimnames(x)[[j]])[[1]]))
+          new_depend = c(new_depend, dimnames(x)[[j]])
+        }
+      }
+    }
     if(redim)
     {
       q = sprintf("redimension(%s, %s%s)", q, build_attr_schema(x),
@@ -135,7 +150,8 @@ dimfilter = function(x, i, eval, drop, redim)
     }
   }
 # Return a new scidb array reference
-  ans = .scidbeval(q,eval=FALSE,gc=TRUE,`data.frame`=FALSE,depend=x)
+  ans = .scidbeval(q,eval=FALSE,gc=TRUE,`data.frame`=FALSE,depend=new_depend)
+  dimnames(ans) = new_dimnames
   if(any(ci)) 
   {
     assign("dimnames",dimnames(x),envir=ans@gc)
@@ -154,6 +170,7 @@ dimfilter = function(x, i, eval, drop, redim)
 }
 
 # Helper function to drop dimensions of length 1 (cf R's drop)
+# XXX DROP DIMNAMES TOO
 drop_dim = function(ans)
 {
   i = as.numeric(scidb_coordinate_bounds(ans)$length) == 1

@@ -94,11 +94,13 @@ dimnames.scidb = function(x)
 }
 
 # SciDB labeled coordinates assignment
-# Improve this:
-# 1. Accept non-scidb array indices by making SciDB arrays out of them
-# 2. Automatically adjust the origin of the label arrays to match x
 `dimnames<-.scidb` = function(x, value)
 {
+  if(is.null(value)) 
+  {
+    x@gc$dimnames = value
+    return(x)
+  }
   if(!is.list(value))
     stop("dimnames requires a list")
   if(length(value)!=length(dim(x)))
@@ -111,11 +113,15 @@ dimnames.scidb = function(x)
       if(is.null(v)) return(v)
       if(is.scidb(v) || is.scidbdf(v))
       {
+        if(length(dim(v))>1) stop("Dimension label arrays must be one dimensional")
+# Make sure that the label array has '*' upper dimension bound
+        if(dim(v) < as.numeric(scidb:::.scidb_DIM_MAX)) v = unbound(v)
         check = scidb_coordinate_start(x)[j] == scidb_coordinate_start(v)[1] &&
                 scidb_coordinate_chunksize(x)[j] == scidb_coordinate_chunksize(v)[1]
         if(!check)
         {
-          v = reshape_scidb(v,shape=dim(v),start=as.numeric(scidb_coordinate_start(x)[j]),chunks=as.numeric(scidb_coordinate_chunksize(x)[j]))
+          schema = sprintf("%s%s",build_attr_schema(v), build_dim_schema(v,newstart=scidb_coordinate_start(x)[j],newchunk=scidb_coordinate_chunksize(x)[j]))
+          v = reshape_scidb(v,schema=schema)
         }
         return(v);
       }
@@ -135,8 +141,6 @@ dimnames.scidb = function(x)
       is.null(value[[j]]) || (nrow(value[[j]]) == dim(x)[j])
     }))
   check[is.na(check)] = FALSE
-  if(!all(check))
-    warning("Label lengths might not match array dimensions")
   x@gc$dimnames = value
   x@gc$depend =c (x@gc$depend, unlist(value))
   x

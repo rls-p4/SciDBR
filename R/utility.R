@@ -1064,6 +1064,7 @@ show_commit_log = function()
 }
 
 # This is a workhorse SciDB data munger
+# query is a query string, not a scidb object.
 scidb_unpack_to_dataframe = function(query, ...)
 {
   DEBUG = FALSE
@@ -1080,7 +1081,10 @@ scidb_unpack_to_dataframe = function(query, ...)
     if(!is.na(argsbuf) && argsbuf < 100e6) buffer = as.integer(argsbuf)
   }
   if(!is.null(args$row.names)) row_names = args$row.names
-  x = scidb(sprintf("unpack(%s,row)",query), data.frame=TRUE)
+  up = TRUE
+  if(!is.null(args$unpack)) up = args$unpack
+  if(up) x = scidb(sprintf("unpack(%s,row)",query), data.frame=TRUE)
+  else x = scidb(sprintf("project(unpack(%s,row),%s)",query,scidb_attributes(x)), data.frame=TRUE)
   N = scidb_nullable(x)
   TYPES = scidb_types(x)
   ns = rep("",length(N))
