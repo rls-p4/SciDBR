@@ -148,7 +148,7 @@ dimfilter = function(x, i, eval, drop, redim)
       q = sprintf("redimension(%s, %s%s)", q, build_attr_schema(x),
           build_dim_schema(x,newend=newend,newstart=newstart))
     }
-  }
+  } else new_dimnames = dimnames(x)
 # Return a new scidb array reference
   ans = .scidbeval(q,eval=FALSE,gc=TRUE,`data.frame`=FALSE,depend=new_depend)
 #  dimnames(ans) = new_dimnames # no--it does too much housekeeping for us,
@@ -157,8 +157,7 @@ dimfilter = function(x, i, eval, drop, redim)
   ans@gc$dimnames = new_dimnames
   if(any(ci)) 
   {
-    assign("dimnames",dimnames(x),envir=ans@gc)
-    return(special_index(ans, ans@name, i, ci, eval, drop))
+    return(special_index(ans, ans@name, i, ci, eval, drop, redim))
   }
 # Drop singleton dimensions if instructed to
   if(drop)
@@ -249,10 +248,16 @@ materialize = function(x, drop=FALSE)
     {
       if(is.null(dimnames(x)[[j]])) return(NULL)
       if(!is.scidb(dimnames(x)[[j]])) return(NULL)
-      dn = iquery(dimnames(x)[[j]]@name, re=TRUE, binary=TRUE)
-      dn[,1] = dn[,1]  - dn[1,1] + 1
-      nm =  rep("",dim(x)[j])
-      nm[dn[,1]] = dn[,2]
+      dn = iquery(dimnames(x)[[j]]@name, re=TRUE, binary=TRUE, n=Inf)
+      if(nrow(dn)==dim(x)[j])
+      {
+        nm = dn[,2]
+      } else
+      {
+        dn[,1] = dn[,1]  - dn[1,1] + 1
+        nm =  rep("",dim(x)[j])
+        nm[dn[,1]] = dn[,2]
+      }
       nm
     })
   }
@@ -272,8 +277,11 @@ materialize = function(x, drop=FALSE)
   } else if(ndim==1 && nelem < p)
   {
     ans = tryCatch(
-            Matrix::sparseVector(i=data[,1],x=data[,2],length=p),
-            error=function(e) {warning(e,"Note: The R sparse Matrix package does not support certain value types like\ncharacter strings");data})
+          {
+            t = Matrix::sparseVector(i=data[,1],x=data[,2],length=p)
+            dimnames(t) = labels
+            t
+          }, error=function(e) {warning(e,"Note: The R sparse Matrix package does not support certain value types like\ncharacter strings");data})
     return(ans)
   } else if(nelem < p)
   {
