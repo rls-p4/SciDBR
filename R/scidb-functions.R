@@ -111,7 +111,8 @@ dimnames.scidb = function(x)
     {
       v = value[[j]]
       if(is.null(v)) return(v)
-      if(is.scidb(v) || is.scidbdf(v))
+      if(is.scidbdf(v)) class(v) = "scidb"
+      if(is.scidb(v))
       {
         if(length(dim(v))>1) stop("Dimension label arrays must be one dimensional")
 # Make sure that the label array has '*' upper dimension bound
@@ -125,7 +126,7 @@ dimnames.scidb = function(x)
         }
         return(v);
       }
-      as.scidb(data.frame(label=v)[,1,drop=FALSE],
+      as.scidb(v,
                start=scidb_coordinate_start(x)[j],
                chunkSize=scidb_coordinate_chunksize(x)[j])
     })
