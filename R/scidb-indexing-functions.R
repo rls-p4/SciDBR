@@ -151,7 +151,10 @@ dimfilter = function(x, i, eval, drop, redim)
   }
 # Return a new scidb array reference
   ans = .scidbeval(q,eval=FALSE,gc=TRUE,`data.frame`=FALSE,depend=new_depend)
-  dimnames(ans) = new_dimnames
+#  dimnames(ans) = new_dimnames # no--it does too much housekeeping for us,
+# we know that we already have a conformable schema so just update the dimname
+# directly:
+  ans@gc$dimnames = new_dimnames
   if(any(ci)) 
   {
     assign("dimnames",dimnames(x),envir=ans@gc)
@@ -370,5 +373,20 @@ materialize = function(x, drop=FALSE)
 
   ans = array(NA, dim=d)  # A matrix or n-d array
   ans[as.matrix(data[,1:ndim])] = data[,ndim+1]
+
+# Handle coordinate labels
+  if(!is.null(dimnames(x)))
+  {
+    dimnames(ans) = lapply(1:ndim, function(j)
+    {
+      if(is.null(dimnames(x)[[j]])) return(NULL)
+      if(!is.scidb(dimnames(x)[[j]])) return(NULL)
+      dn = iquery(dimnames(x)[[j]]@name, re=TRUE, binary=TRUE)
+      dn[,1] = dn[,1]  - dn[1,1] + 1
+      nm =  rep("",dim(x)[j])
+      nm[dn[,1]] = dn[,2]
+      nm
+    })
+  }
   ans
 }
