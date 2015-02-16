@@ -46,7 +46,8 @@ between = function(a,b)
       a = a[[1]]
     } else stop("between requires two arguments or a single argument with two elements")
   }
-  function() list(a,b)
+  l = lapply(list(a,b), function(x) gsub(".*Inf","null",noE(x)))
+  function() l
 }
 
 `$.scidb` = function(x, ...)
@@ -138,15 +139,25 @@ dimfilter = function(x, i, eval, drop, redim)
       {
         if(!is.null(dimnames(x)[[j]]))
         {
-          new_dimnames[[j]] = scidb(sprintf("project(join(redimension(%s,%s%s) as x, %s as y), y.%s)",q,build_attr_schema(x),build_dim_schema(x,I=j), dimnames(x)[[j]]@name, scidb_attributes(dimnames(x)[[j]])[[1]]))
+          new_dimnames[[j]] = scidb(sprintf("project(join(redimension(%s,%s%s) as x, %s as y), y.%s)",q,build_attr_schema(x),build_dim_schema(x,I=j,newend="*"), dimnames(x)[[j]]@name, scidb_attributes(dimnames(x)[[j]])[[1]]))
           new_depend = c(new_depend, dimnames(x)[[j]])
         }
       }
     }
-    if(redim)
+# redim will be handled by the special_index function in the ci case:
+    if(redim && !any(ci))
     {
       q = sprintf("redimension(%s, %s%s)", q, build_attr_schema(x),
           build_dim_schema(x,newend=newend,newstart=newstart))
+# We need to redimension any dimname arrays conformably. The only thing that
+# could change is the starting coordinate :(
+      if(!is.null(new_dimnames))
+      { for(j in 1:length(new_dimnames))
+        { if(!is.null(new_dimnames[[j]]))
+          { if(newstart[j] != scidb_coordinate_start(new_dimnames[[j]]))
+            {
+              new_dimnames[[j]] = scidb(sprintf("redimension(%s, %s%s)", new_dimnames[[j]]@name, build_attr_schema(new_dimnames[[j]]), build_dim_schema(new_dimnames[[j]],newstart=newstart[j],newend="*")))
+            } } } }
     }
   } else new_dimnames = dimnames(x)
 # Return a new scidb array reference
@@ -249,16 +260,24 @@ materialize = function(x, drop=FALSE)
       if(is.null(dimnames(x)[[j]])) return(NULL)
       if(!is.scidb(dimnames(x)[[j]])) return(NULL)
       dn = iquery(dimnames(x)[[j]]@name, re=TRUE, binary=TRUE, n=Inf)
+      if(is.null(dn)) return("")
+      if(nrow(dn)==0) return("")
       if(nrow(dn)==dim(x)[j])
       {
         nm = dn[,2]
       } else
       {
-        dn[,1] = dn[,1]  - dn[1,1] + 1
+        dn[,1] = dn[,1]  - as.numeric(scidb_coordinate_start(x)[j]) + 1
         nm =  rep("",dim(x)[j])
         nm[dn[,1]] = dn[,2]
       }
       nm
+    })
+  } else
+  {
+    labels = lapply(1:ndim, function(j)
+    {
+      seq(from=as.numeric(scidb_coordinate_start(x)[j]),length.out=dim(x)[j])
     })
   }
 
@@ -269,17 +288,18 @@ materialize = function(x, drop=FALSE)
   {
     ans = tryCatch(
           {
-            t = Matrix::sparseMatrix(i=data[,1],j=data[,2],x=data[,3],dims=d)
+            if(is.null(data)) t = Matrix::Matrix(0.0,nrow=dim(x)[1],ncol=dim(x)[2])
+            else t = Matrix::sparseMatrix(i=data[,1],j=data[,2],x=data[,3],dims=d)
             dimnames(t) = labels
             t
-          }, error=function(e) {warning(e,"Note: The R sparse Matrix package does not support certain value types like\ncharacter strings");data})
+          }, error=function(e) {warning(e,"Note: The R sparse Matrix package does not support certain value types like\ncharacter strings"); data})
     return(ans)
   } else if(ndim==1 && nelem < p)
   {
     ans = tryCatch(
           {
-            t = Matrix::sparseVector(i=data[,1],x=data[,2],length=p)
-            dimnames(t) = labels
+            if(is.null(data)) t = Matrix::sparseVector(0.0,1,length=dim(x))
+            else t = Matrix::sparseVector(i=data[,1],x=data[,2],length=p)
             t
           }, error=function(e) {warning(e,"Note: The R sparse Matrix package does not support certain value types like\ncharacter strings");data})
     return(ans)

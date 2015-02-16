@@ -116,19 +116,19 @@ dimnames.scidb = function(x)
       {
         if(length(dim(v))>1) stop("Dimension label arrays must be one dimensional")
 # Make sure that the label array has '*' upper dimension bound
-        if(dim(v) < as.numeric(scidb:::.scidb_DIM_MAX)) v = unbound(v)
         check = scidb_coordinate_start(x)[j] == scidb_coordinate_start(v)[1] &&
-                scidb_coordinate_chunksize(x)[j] == scidb_coordinate_chunksize(v)[1]
+                scidb_coordinate_chunksize(x)[j] == scidb_coordinate_chunksize(v)[1] &&
+                (is.na(dim(v)) || (dim(v) == as.numeric(.scidb_DIM_MAX)))
         if(!check)
         {
-          schema = sprintf("%s%s",build_attr_schema(v), build_dim_schema(v,newstart=scidb_coordinate_start(x)[j],newchunk=scidb_coordinate_chunksize(x)[j]))
-          v = reshape_scidb(v,schema=schema)
+          schema = sprintf("%s%s",build_attr_schema(v), build_dim_schema(v,newstart=scidb_coordinate_start(x)[j],newchunk=scidb_coordinate_chunksize(x)[j], newend="*"))
+          v = redimension(v,schema=schema)
         }
         return(v);
       }
-      as.scidb(v,
-               start=scidb_coordinate_start(x)[j],
-               chunkSize=scidb_coordinate_chunksize(x)[j])
+      scidbeval(unbound(as.scidb(v,
+                start=scidb_coordinate_start(x)[j],
+                chunkSize=scidb_coordinate_chunksize(x)[j])))
     })
 
   check = unlist(lapply(1:length(value), function(j)

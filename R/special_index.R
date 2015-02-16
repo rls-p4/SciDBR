@@ -86,7 +86,8 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
     } else # No special index in this coordinate
     {
       len = scidb_coordinate_bounds(x)$length
-      swap = c(swap,list(list(old=N, new=N, length=len[j], start=xstart[j])))
+      if(!is.null(i[[j]])) len=length(i[[j]])
+      swap = c(swap,list(list(old=N, new=N, length=len, start=i[[j]][1])))
     }
   }
   nn = sapply(swap, function(x) x[[2]])

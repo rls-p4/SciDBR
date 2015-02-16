@@ -82,7 +82,7 @@ scidb_nullable = function(x)
 dimensions = function(x)
 {
   d = .dimsplitter(x)
-  unlist(lapply(d[-length(d)],function(x)x[[length(x)]]))
+  gsub("^ *","",unlist(lapply(d[-length(d)],function(x) x[[length(x)]])))
 }
 
 # Returns a list of character-valued vectors of starting and
@@ -96,10 +96,10 @@ scidb_coordinate_bounds = function(x)
   s2 = gsub("\\*",.scidb_DIM_MAX,end)
   len = as.numeric(s2) - as.numeric(s1) + 1
   i = len >= as.double(.scidb_DIM_MAX)
-  len = noE(len)
+  len = noE(len) # in particular, len is now character
   if(any(i))
   {
-    len[i] = .scidb_DIM_MAX
+    len[i] = "Inf"
   }
   list(start=noE(start), end=noE(end), length=len)
 }
