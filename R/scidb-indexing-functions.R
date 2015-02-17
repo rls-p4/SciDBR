@@ -318,7 +318,7 @@ materialize = function(x, drop=FALSE)
   if(length(d)==1) # a vector
   {
     ans = data[,2]
-    names(ans) = labels
+    names(ans) = labels[[1]]
     return(ans)
   }
 
