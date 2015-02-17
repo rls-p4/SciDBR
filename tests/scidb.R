@@ -217,9 +217,10 @@ cat("# Another merge test courtesy Alex Polyiakov\n")
 
 cat("# Complicated cross_join filtering\n")
   set.seed(1)
-  X = as.scidb( matrix(rnorm(20),nrow=5) )
-  rownames(X) = as.scidb( data.frame(letters[1:5]), start=0)
+  X = as.scidb( matrix(rnorm(20),nrow=5))
+  rownames(X) = as.scidb( data.frame(letters[1:5]))
   X[c("b","a","d"), ]
+gc()
   idx = rownames(X) > "b"
   check(nrow(X[idx, ]),3)
 

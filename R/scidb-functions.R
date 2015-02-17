@@ -124,7 +124,9 @@ dimnames.scidb = function(x)
           reschema = sprintf("%s%s",build_attr_schema(v), build_dim_schema(v,newchunk=scidb_coordinate_chunksize(x)[j], newend="*"))
           schema = sprintf("%s%s",build_attr_schema(v), build_dim_schema(v,newstart=scidb_coordinate_start(x)[j],newchunk=scidb_coordinate_chunksize(x)[j], newend="*"))
           query = sprintf("reshape(redimension(%s, %s), %s)", v@name, reschema, schema)
+          vold = v
           v = scidb(query)
+          v@gc$depend = c(v@gc$depend, vold)
         }
         return(v);
       }
