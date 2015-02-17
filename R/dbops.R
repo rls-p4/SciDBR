@@ -109,6 +109,7 @@ slice = function(x, d, n, `eval`=FALSE)
   {
     stop("Invalid dimension specified")
   }
+  if(missing(n)) n = scidb_coordinate_bounds(x)$start[i]
   query = sprintf("slice(%s, %s)",x@name,paste(paste(x@dimensions[i],noE(n),sep=","),collapse=","))
   .scidbeval(query,eval,depend=list(x))
 }
