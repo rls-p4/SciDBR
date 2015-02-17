@@ -175,37 +175,12 @@ scidbdf_subset = function(x, i, drop=FALSE)
     attribute_range = x@attributes[attribute_range]
   }
 
-  i = i[[1]]
-
-# How is the row index range specified?
-  if(is.null(i))
-  {
-# Unspecified, return all rows:
-    query = x@name
-  }
-  else if(checkseq(i))
-  {
-# Sequential numeric index
-    query = betweenbound(x,min(i),max(i))
-  }
-  else if(inherits(i,"function"))
-  {
-# Bounding box
-    r = i()
-    query = betweenbound(x, r[1], r[2])
-  }
-  else
-  {
-# Complicated indexing. Use scidb class. (XXX In future, do this for any index)
-    y = scidb(x, `data.frame`=FALSE)
-    return(dimfilter(y, list(i), `eval`=FALSE, drop=drop))
-  }
-  query = sprintf("project(%s, %s)",query, paste(attribute_range,collapse=","))
-  if(drop && length(attribute_range)==1)
-  {
-    return(.scidbeval(query, `data.frame`=FALSE, gc=TRUE, `eval`=FALSE, depend=x))
-  }
-  .scidbeval(query, `data.frame`=TRUE, gc=TRUE, `eval`=FALSE, depend=x)
+  y = project(x, attribute_range)
+  class(y) = "scidb"
+  ans = dimfilter(y, list(i[[1]]), `eval`=FALSE, drop=drop)
+  class(ans) = "scidbdf"
+  ans@gc$depend = c(ans@gc$depend, x)
+  ans
 }
 
 betweenbound = function(x, m, n)
