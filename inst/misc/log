@@ -1,3 +1,105 @@
+commit 22df50286dfd4ebe2c6653872a24e34b6c8f5435
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 10:04:37 2015 -0500
+
+    Fixed dependency regression introduced in dimnames (caught in tests)
+
+commit 6dc6f6dcaac32eee8a34fb73e77668fc5a67d866
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 09:49:11 2015 -0500
+
+    Fixed regression in drop=TRUE for vectors (caught in tests)
+
+commit 8dfd2cae58af4054916e9093ce6d84faeecb9acb
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 09:38:40 2015 -0500
+
+    Fixed regression in drop=TRUE for vectors (caught in tests)
+
+commit e3c1f9c1f90f8c1dde9f3031b3fbc6aa97f58491
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 09:21:08 2015 -0500
+
+    Fixed bug in slice
+
+commit 49c4d6b47a72c8f51e718f98339c4e53bbd5a5a9
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 09:16:34 2015 -0500
+
+    Adjusted tests to understand that returned values are labeled by default now
+
+commit 4fce55eb30dc0863a30a526f71c2751c5d4265fc
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 09:00:12 2015 -0500
+
+    fix bug in assignment of dimension labels with initial index mismatch
+
+commit 500e8515109872fef5371556ea28d9b3561cc184
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 00:30:25 2015 -0500
+
+    I notice that the indexing queries are getting exponentially longer. Probaby need to force evals there.
+
+commit 1794a9c76ec6aeb702eb156e39d3095ba72a85ee
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 00:24:46 2015 -0500
+
+    New indexing for scidb objects mostly complete, a bit of cleanup needed. Still nothing for data frames
+
+commit 5a4237d22925cb3e4aa93fe87d260fe04b595733
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 00:21:06 2015 -0500
+
+    New indexing for scidb objects mostly complete, a bit of cleanup needed. Still nothing for data frames
+
+commit 3418055e33e20786935d5b3ccf6b5b6c80000c2c
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Feb 16 16:22:58 2015 -0500
+
+    More dimension label madness, partially complete
+
+commit 2914ac3361d705344bcac585c4ce26748fded62c
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sun Feb 15 00:00:20 2015 -0500
+
+    dimnames for scidb objects. Still need to implement for scidbdf. found some bugs in special_index, working on that
+
+commit 6d60a0e9bfb208cda443d3f7f434505f5eaa605a
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sat Feb 14 21:43:44 2015 -0500
+
+    minor fix to character vector dimlabel assignment
+
+commit 5e3e73d9f50af89c1d4bf09f7e8c82e612e608ba
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sat Feb 14 20:58:41 2015 -0500
+
+    Inheritance of index labels for simple,dense scidb object subsetting. Still working out more complex subsetting and row labeling for scidbdf objects.
+
+commit 54e6bcd8c7642d75917d43b3de08dd12fa323d44
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sat Feb 14 19:55:35 2015 -0500
+
+    Partial dimname inheritance and printing
+
+commit 3070223734f209b3b9e39768f7e8b055f703a4b0
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sat Feb 14 14:47:54 2015 -0500
+
+    Added unbound function, unpack option to iquery
+
+commit 3d3e7059532759d9202726e5ec2aa57ba3801f7f
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Feb 13 17:25:38 2015 -0500
+
+    Improved scidbconnect doc
+
+commit d4c2de0fe15542fd18fa2b4910417271e415bee9
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Feb 13 17:20:08 2015 -0500
+
+    log
+
 commit 53cf32b4ad8e741e63a4d0876fbee2539afa6b16
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Fri Feb 13 17:12:31 2015 -0500
@@ -97,4 +199,302 @@ Date:   Wed Dec 3 21:15:15 2014 -0500
 commit 64456028da85cf2f068ed76bc184bd176e89634e
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Wed Dec 3 09:48:33 2014 -0500
+
+    Added Alex's iqdf function (aka peek), improved misc doc.
+
+commit f3bfb0b23f729bf57fb1804f5331754acc6f13b7
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Dec 1 22:58:52 2014 -0500
+
+    Added non-exported range_scidb function pending better integration with base R function
+
+commit 6b3408d94db6b7e73640bb3762707fb196e15f26
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Oct 30 16:17:36 2014 -0400
+
+    Slight optimization to temp arrays to avoid lookup query sometimes in is.temp
+
+commit c62c994746fe36ea82b997d61e236162bc6ecfe7
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Oct 30 12:54:07 2014 -0400
+
+    Added exp function, fixde minor doc typos
+
+commit b627c68d8438ee4c82d2b4be1c37e7ad3208e5f0
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Fri Oct 24 03:06:15 2014 -0400
+
+    Fixes and extensions of distance function
+
+commit 915260aba12f8196f1002475a0d5eab043af19ac
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Tue Oct 21 01:54:44 2014 -0400
+
+    Fixed a bug in as.scidb argument handling
+
+commit a0d90c0a7844ca8cf312c0c43b4f75581d7f2560
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 20:47:13 2014 -0400
+
+    Fix for 2nd half of github issue #52 with new test
+
+commit 24adbbcbe84b017cea7f4a7350fb0419a5d20d8a
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 19:37:01 2014 -0400
+
+    Updated log; tests are pasing
+
+commit 6637b07609f4dc292d4a81f0abef382d6afb1038
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 19:36:17 2014 -0400
+
+    Added error to quantile when input array is empty; removed broke quantile test
+
+commit b4e15e57badcc96886e9544f138526dac7c2096e
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 19:27:54 2014 -0400
+
+    Fixed an edge case in materialize and added new warnings
+
+commit f48913b3580abf64af7396beda6bc5b7f8e63cc7
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 19:15:37 2014 -0400
+
+    This hopefully completes a major overhaul of merge fixing several bugs
+
+commit d920f177c102c82f6fa8bdb453a18a0ffe14b276
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 18:05:04 2014 -0400
+
+    New scidb class array materialization routines that use the newer and better scidbdf code. This is a major change and fixes 1/2 of the bug in issue #52.
+
+commit afe65e8327fbe131e9cc42aa23b9b04a0b2df162
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 12:32:22 2014 -0400
+
+    Fix for longstanding merge bug reported in issue #41; added several new examples to and somewhat improved merge documentation
+
+commit 2c12a290f455b7959d603e8d292e81db7f29ad20
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 12:26:41 2014 -0400
+
+    Fix for longstanding merge bug reported in issue #41; added several new examples to and somewhat improved merge documentation
+
+commit e11609cfde8312ef2b275722925c8e9fcf593ca6
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 10:52:39 2014 -0400
+
+    Starting to break up giant merge_scidb function; split out full cross case
+
+commit 1a6459d5166beb58d349226df7cde14915399a30
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 08:33:39 2014 -0400
+
+    Added test for issue #54
+
+commit d8378155d61c0b494704bc1dee377dbc86e7c39a
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Fri Oct 17 08:06:29 2014 -0400
+
+    Fixed indexing bounds issue #54
+
+commit 6e5ce8a9a05a3b9b21af692f816ce46e757269c4
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Oct 9 23:32:24 2014 -0400
+
+    Fixed github issue #45
+
+commit f589b0b3ca111998facacc04a78c9b6b9f6e9674
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Oct 9 23:13:57 2014 -0400
+
+    Added test for github issue #45
+
+commit a8ffd4bc5743fb9ee74377ac07aec396d9f1e12a
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Sep 25 20:55:42 2014 -0400
+
+    Performance tweak for kmeans
+
+commit e001c4f122c88ea1c908c4f17beaececef95f199
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Sep 25 20:22:40 2014 -0400
+
+    Fixed a nasty join/merge bug in the tricky cross_join case that stupidly required dimensions to be listed in the same order in complicated cases
+
+commit 4ac695fa36a2ac7d4ed6a9ff1a86420aeb822c2c
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Sat Sep 20 17:17:17 2014 -0400
+
+    A fix for an obscure naming issue/problem in show not knowing true output schema
+
+commit 712f7ccc8b2dbcaa05436a0f7812f118d17fc5e6
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Sep 8 23:24:36 2014 -0400
+
+    Added new is.temp documentation, set up experimental k-means to use temp arrays when available
+
+commit 108859f5b77ce59e3363bf1760dd3dad18eab2b1
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Sep 8 23:23:46 2014 -0400
+
+    Added new is.temp documentation, set up experimental k-means to use temp arrays when available
+
+commit 03a8be5c1c20d213ab8ce7154b5e5262efb223d0
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Sep 8 22:26:52 2014 -0400
+
+    Important fix to binary arithmetic operations with mismatched coordinate systems, broken by recent performance changes to merge. Added a test to catch this.
+
+commit dbc3677f85490e8c6dcbad8a765316a4a2aca029
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Sep 8 20:55:26 2014 -0400
+
+    Moved temp array handling to scidbeval; added fix for bounds issue
+
+commit cf916812b7f1c682cebffafbac353f71e02bbf32
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Sep 8 15:17:33 2014 -0400
+
+    Added temp option to  function (requires SciDB >= 14.8)
+
+commit 873c6dfa26d70ba99411f67bf23092776c2a87d3
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Fri Aug 29 23:32:14 2014 -0400
+
+    Name change to avoid conflict with p4
+
+commit dc6585e95d3ff25c6a96c29dd60c7f50a4dda33b
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Fri Aug 29 23:09:54 2014 -0400
+
+    Changed names of fisher_ SciDB functions to avoid p4 conflict and use superfunpack if available
+
+commit 946825e1b09cd2430fd4cd5185ab42b2e8a54f41
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Thu Aug 28 03:16:06 2014 -0400
+
+    Added peek
+
+commit 9decb8c01df895b8ee496550f8c0e765295010db
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Thu Aug 28 01:23:52 2014 -0400
+
+    Improved SIG_TRP setting, fixing a check note
+
+commit b7237dda670931c40bd18035e58578f10390fd30
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Thu Aug 28 00:57:39 2014 -0400
+
+    Modified model_scidb to use new unfold operator instead of prototype collate operator (requires SciDB 14.8)
+
+commit 632b611692fb1d79c51fb7466d772c325856d04e
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 23:24:20 2014 -0400
+
+    Modified model_scidb to use new unfold operator instead of prototype collate operator (requires SciDB 14.8)
+
+commit 6b1e78551e82e19bc36c684d8d95801ed1a97f60
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 23:04:43 2014 -0400
+
+    Added bernoulli
+
+commit 8e9e9e44566aa76c9d84929c778632197028eea8
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 17:58:37 2014 -0400
+
+    Added between option w/same function as redim but better syntax to [ function
+
+commit 68563fd206d05f4fdf0d386cec463df96afe40b2
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 17:54:00 2014 -0400
+
+    Fixed coordinate index bug in >2d sparse materialize with redim=FALSE
+
+commit 59165e6ce13c1ddac28f55e1b58ad6e832c135b8
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 09:35:46 2014 -0400
+
+    Fixed indexing by other SciDB array bug introduced by auto attribute name conflict resolution
+
+commit acb3bb6ee976a6c02454c554fb82afe6289529b1
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 09:20:32 2014 -0400
+
+    Fixed indexing by other SciDB array bug introduced by auto attribute name conflict resolution
+
+commit c7874a6a6a5e1c1f6eb0ed036cc4c0b4377dc979
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 27 08:39:30 2014 -0400
+
+    Added new internal (for now) function compare_schema and use it in merge to optimize out redimensions
+
+commit 47378b7f0ff9ba769fc13fcd265d3ff20d2fef8b
+Merge: a0ed98a e2a80a0
+Author: bwlewis <blewis@illposed.net>
+Date:   Tue Aug 26 16:41:13 2014 -0400
+
+    Merge branch 'master' into laboratory
+
+commit e2a80a017d12ca09958a3d5d539878dd642e29c1
+Author: bwlewis <blewis@illposed.net>
+Date:   Tue Aug 26 16:40:29 2014 -0400
+
+    Clarified instructions on README
+
+commit a0ed98abd3a7019787ac2796a38e6e91aac7709f
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Aug 12 20:37:15 2014 -0400
+
+    More support for experimental streaming option
+
+commit 13520be5fbda92d768013b72699748da674dda87
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Aug 11 15:27:15 2014 -0400
+
+    Added scidb.stream option to support expermental shim streaming api
+
+commit 46e681cb4d02410790be0811a3c4266b96240156
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Aug 11 14:25:43 2014 -0400
+
+    Fixed bug preventing use with RStudio
+
+commit 845831c63b3c386ef7b9b18ada88c4320f48a722
+Merge: 52f62ec e825608
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Aug 11 14:24:51 2014 -0400
+
+    Fixed bug preventing use with RStudio
+
+commit 52f62ecd1851d50d0534d7e964f7a03917b95755
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Aug 11 14:23:20 2014 -0400
+
+    Fixed bug preventing use with RStudio
+
+commit 5523605bf7a271a085d1441542796ababcf4a35f
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Aug 11 14:23:10 2014 -0400
+
+    Fixed bug preventing use with RStudio
+
+commit e82560865ded0c79149406923d3a22ffa0173ab2
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Aug 6 09:48:44 2014 -0400
+
+    Follow good practice using .onAttach for package startup message
+
+commit 64f88d716105554cab622bea532a2545f666419e
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Aug 6 09:46:15 2014 -0400
+
+    Removed spurious namespace prefixes
+
+commit 25c3c12f95f521ddfa2efcb0642d8911d9089e68
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Aug 6 08:34:11 2014 -0400
+
+    Merged minor vignette changes from lab branch
 
