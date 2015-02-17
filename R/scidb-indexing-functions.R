@@ -257,7 +257,8 @@ materialize = function(x, drop=FALSE)
   {
     labels = lapply(1:ndim, function(j)
     {
-      if(is.null(dimnames(x)[[j]])) return(NULL)
+      if(is.null(dimnames(x)[[j]]))
+        return(tryCatch(seq(from=as.numeric(scidb_coordinate_start(x)[j]),length.out=dim(x)[j]), error=invisible))
       if(!is.scidb(dimnames(x)[[j]])) return(NULL)
       dn = iquery(dimnames(x)[[j]]@name, re=TRUE, binary=TRUE, n=Inf)
       if(is.null(dn)) return("")
@@ -277,7 +278,7 @@ materialize = function(x, drop=FALSE)
   {
     labels = lapply(1:ndim, function(j)
     {
-      seq(from=as.numeric(scidb_coordinate_start(x)[j]),length.out=dim(x)[j])
+      tryCatch(seq(from=as.numeric(scidb_coordinate_start(x)[j]),length.out=dim(x)[j]), error=invisible)
     })
   }
 
