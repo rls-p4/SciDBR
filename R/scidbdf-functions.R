@@ -70,6 +70,22 @@ rownames.scidbdf = function(x)
   x@gc$dimnames[[1]]
 }
 
+row.names.scidbdf = function(x)
+{
+  if(is.null(x@gc$dimnames)) return(NULL)
+  x@gc$dimnames[[1]]
+}
+
+`row.names<-.scidbdf` = function(x, value)
+{
+  y = x
+  class(y) = "scidb"
+  z = do.call("dimnames<-.scidb", args=list(x=y, value=list(value)))
+  z@gc$depend=c(z@gc$depend, x)
+  class(z) = "scidbdf"
+  z
+}
+
 names.scidbdf = function(x)
 {
   x@attributes
@@ -81,7 +97,7 @@ names.scidbdf = function(x)
   if(length(value)!=length(old)) stop(paste("Incorrect number of names (should be",length(old),")"))
   arg = paste(paste(old,value,sep=","),collapse=",")
   query = sprintf("attribute_rename(%s,%s)",x@name,arg)
-  iquery(query)
+  .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
 }
 
 dimnames.scidbdf = function(x)
@@ -126,6 +142,10 @@ dimnames.scidbdf = function(x)
     }
     else
     {
+      if(!is.null(dimnames(x)[[1]]))
+      {
+        row.names = iquery(dimnames(x)[[1]]@name, `return`=TRUE,binary=TRUE)[,2]
+      }
       ans = iquery(sprintf("%s",x@name),`return`=TRUE,binary=TRUE,buffer=nrow(x),row.names=row.names)
       return(ans)
     }
@@ -177,6 +197,7 @@ scidbdf_subset = function(x, i, drop=FALSE)
   }
 
   y = project(x, attribute_range)
+  row.names(y) = rownames(x)  # Preserve row names
   class(y) = "scidb"
   ans = dimfilter(y, list(i[[1]]), `eval`=FALSE, drop=drop)
   class(ans) = "scidbdf"
