@@ -157,7 +157,11 @@ dimfilter = function(x, i, eval, drop, redim)
           { if(newstart[j] != scidb_coordinate_start(new_dimnames[[j]]))
             {
               new_dimnames[[j]] = scidb(sprintf("subarray(redimension(%s, %s%s),null,null)", new_dimnames[[j]]@name, build_attr_schema(new_dimnames[[j]]), build_dim_schema(new_dimnames[[j]],newstart=newstart[j],newend="*")))
-            } } } }
+            } else
+            {
+            }
+              new_dimnames[[j]] = scidb(sprintf("subarray(%s,null,null)", new_dimnames[[j]]@name ))
+          } } }
     }
   } else new_dimnames = dimnames(x)
 # Return a new scidb array reference

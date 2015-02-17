@@ -121,8 +121,10 @@ dimnames.scidb = function(x)
                 (is.na(dim(v)) || (dim(v) == as.numeric(.scidb_DIM_MAX)))
         if(!check)
         {
+          reschema = sprintf("%s%s",build_attr_schema(v), build_dim_schema(v,newchunk=scidb_coordinate_chunksize(x)[j], newend="*"))
           schema = sprintf("%s%s",build_attr_schema(v), build_dim_schema(v,newstart=scidb_coordinate_start(x)[j],newchunk=scidb_coordinate_chunksize(x)[j], newend="*"))
-          v = redimension(v,schema=schema)
+          query = sprintf("reshape(redimension(%s, %s), %s)", v@name, reschema, schema)
+          v = scidb(query)
         }
         return(v);
       }
