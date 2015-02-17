@@ -106,7 +106,7 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
       {
 # crazy schema munging here!
         if(redim)
-          new_dimnames[[j]] = scidb(sprintf("redimension(join(redimension(%s,<%s:int64>%s), %s), %s%s)",query,nn[j],build_dim_schema(x,I=j), dimnames(x)[[j]]@name, build_attr_schema(dimnames(x)[[j]]), build_dim_schema(x,I=j,newstart=ns[j],newnames=nn[j],newlen="*")))
+          new_dimnames[[j]] = scidb(sprintf("subarray(redimension(join(redimension(%s,<%s:int64>%s), %s), %s%s),null,null)",query,nn[j],build_dim_schema(x,I=j), dimnames(x)[[j]]@name, build_attr_schema(dimnames(x)[[j]]), build_dim_schema(x,I=j,newstart=ns[j],newnames=nn[j],newlen="*")))
         else
           new_dimnames[[j]] = scidb(sprintf("project(join(redimension(%s,<%s:int64>%s) as x, %s as y), y.%s)",query,nn[j],build_dim_schema(x,I=j), dimnames(x)[[j]]@name,scidb_attributes(dimnames(x)[[j]])[1]))
       }
@@ -114,11 +114,11 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
   }
   if(redim)
   {
-    query = sprintf("cast(redimension(%s, %s%s),%s%s)", query,
+    query = sprintf("subarray(cast(redimension(%s, %s%s),%s%s),%s)", query,
                     build_attr_schema(x),
                     build_dim_schema(x,newstart=ns,newnames=nn,newlen=nl),
                     build_attr_schema(x),
-                    build_dim_schema(x,newstart=ns,newlen=nl))
+                    build_dim_schema(x,newstart=ns,newlen=nl),paste(rep('null',2*length(ns)),collapse=","))
   } else
   {
     query = sprintf("project(%s,%s)",query,scidb_attributes(x))
