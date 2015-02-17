@@ -71,7 +71,7 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
         }
         tmp = bind(i[[j]],N,dimensions(i[[j]])[1],eval=FALSE)
         tmp = sort(project(tmp, length(scidb_attributes(tmp)),eval=FALSE),eval=FALSE)
-# Insane scidb name conflict problems, check for and resolve them.
+# scidb name conflict problems, check for and resolve them.
         tmp = attribute_rename(tmp, old=1, new=N)
         tmpaname = make.unique_(dimlabel, scidb_attributes(tmp))
         cst = paste(build_attr_schema(tmp,newnames=tmpaname),build_dim_schema(tmp,newnames=dimlabel))
@@ -85,9 +85,11 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
       }
     } else # No special index in this coordinate
     {
-      len = scidb_coordinate_bounds(x)$length
+      len = scidb_coordinate_bounds(x)$length[[j]]
       if(!is.null(i[[j]])) len=length(i[[j]])
-      swap = c(swap,list(list(old=N, new=N, length=len, start=i[[j]][1])))
+      st = 0
+      if(!is.null(i[[j]])) st = i[[j]][1]
+      swap = c(swap,list(list(old=N, new=N, length=len, start=st)))
     }
   }
   nn = sapply(swap, function(x) x[[2]])
@@ -102,15 +104,21 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
     {
       if(!is.null(dimnames(x)[[j]]))
       {
-        new_dimnames[[j]] = scidb(sprintf("project(join(redimension(%s,%s%s) as x, %s as y), y.%s)",query,build_attr_schema(x),build_dim_schema(x,I=j), dimnames(x)[[j]]@name, scidb_attributes(dimnames(x)[[j]])[[1]]))
+# crazy schema munging here!
+        if(redim)
+          new_dimnames[[j]] = scidb(sprintf("redimension(join(redimension(%s,<%s:int64>%s), %s), %s%s)",query,nn[j],build_dim_schema(x,I=j), dimnames(x)[[j]]@name, build_attr_schema(dimnames(x)[[j]]), build_dim_schema(x,I=j,newstart=ns[j],newnames=nn[j],newlen="*")))
+        else
+          new_dimnames[[j]] = scidb(sprintf("project(join(redimension(%s,<%s:int64>%s) as x, %s as y), y.%s)",query,nn[j],build_dim_schema(x,I=j), dimnames(x)[[j]]@name,scidb_attributes(dimnames(x)[[j]])[1]))
       }
     }
   }
   if(redim)
   {
-    query = sprintf("redimension(%s, %s%s)", query,
+    query = sprintf("cast(redimension(%s, %s%s),%s%s)", query,
                     build_attr_schema(x),
-                    build_dim_schema(x,newstart=ns,newnames=nn,newlen=nl))
+                    build_dim_schema(x,newstart=ns,newnames=nn,newlen=nl),
+                    build_attr_schema(x),
+                    build_dim_schema(x,newstart=ns,newlen=nl))
   } else
   {
     query = sprintf("project(%s,%s)",query,scidb_attributes(x))
