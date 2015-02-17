@@ -315,7 +315,12 @@ materialize = function(x, drop=FALSE)
     return(data)
   }
 # OK, we have a dense array of some kind
-#  if(length(d)==1) return(data[,2])  # A vector
+  if(length(d)==1) # a vector
+  {
+    ans = data[,2]
+    names(ans) = labels
+    return(ans)
+  }
 
   ans = array(NA, dim=d)  # A matrix or n-d array
   ans[as.matrix(data[,1:ndim])] = data[,ndim+1]
