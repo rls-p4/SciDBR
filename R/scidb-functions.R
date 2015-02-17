@@ -199,7 +199,7 @@ summary.scidb = function(x)
 
 `dim<-.scidb` = function(x, value)
 {
-  stop("unsupported")
+  reshape(x, shape=value)
 }
 
 str.scidb = function(object, ...)

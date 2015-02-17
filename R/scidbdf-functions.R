@@ -66,7 +66,8 @@ colnames.scidbdf = function(x)
 
 rownames.scidbdf = function(x)
 {
-  stop("Sorry, not implemented yet")
+  if(is.null(x@gc$dimnames)) return(NULL)
+  x@gc$dimnames[[1]]
 }
 
 names.scidbdf = function(x)
@@ -140,7 +141,7 @@ dimnames.scidbdf = function(x)
 
 `dim<-.scidbdf` = function(x, value)
 {
-  stop("unsupported")
+  reshape(x,shape=value)
 }
 
 
