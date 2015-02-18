@@ -219,7 +219,7 @@ scidbdf_subset = function(x, i, drop=FALSE)
   row.names(y) = rownames(x)  # Preserve row names
   class(y) = "scidb"
   ans = dimfilter(y, list(i[[1]]), `eval`=FALSE, drop=drop)
-  class(ans) = "scidbdf"
+  if(!(length(dim(ans)==1) && drop)) class(ans) = "scidbdf"
   ans@gc$depend = c(ans@gc$depend, x)
   ans
 }
