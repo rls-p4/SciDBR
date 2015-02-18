@@ -1,3 +1,21 @@
+commit f346b584d922fd497689c11fe70962803b903a4e
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Feb 18 10:32:46 2015 -0500
+
+    error msg cleanup
+
+commit 40fe2c48fc3445ab39ae2f51b621c011081c9677
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Feb 18 09:23:42 2015 -0500
+
+    Better dependency resolution in inherited dimension labels
+
+commit d6b78a7c57f182c46ea456c74f0918003f8f50a3
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 21:48:18 2015 -0500
+
+    Fixed scidbdf drop issue
+
 commit 4e4f248591dfd65556dc28b01879af1007b1e014
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue Feb 17 21:47:39 2015 -0500
@@ -480,21 +498,3 @@ Date:   Wed Aug 27 09:20:32 2014 -0400
 
 commit c7874a6a6a5e1c1f6eb0ed036cc4c0b4377dc979
 Author: Bryan W Lewis <blewis@paradigm4.com>
-Date:   Wed Aug 27 08:39:30 2014 -0400
-
-    Added new internal (for now) function compare_schema and use it in merge to optimize out redimensions
-
-commit 47378b7f0ff9ba769fc13fcd265d3ff20d2fef8b
-Merge: a0ed98a e2a80a0
-Author: bwlewis <blewis@illposed.net>
-Date:   Tue Aug 26 16:41:13 2014 -0400
-
-    Merge branch 'master' into laboratory
-
-commit e2a80a017d12ca09958a3d5d539878dd642e29c1
-Author: bwlewis <blewis@illposed.net>
-Date:   Tue Aug 26 16:40:29 2014 -0400
-
-    Clarified instructions on README
-
-commit a0ed98abd3a7019787ac2796a38e6e91aac7709f
