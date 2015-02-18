@@ -236,6 +236,7 @@ cat("# Github issue #54\n")
   iquery("create array oh_no <mask:bool>[variant_id=0:1109999,10000,0,pos=0:12000000,10000000,0,chrom_id=0:0,1,0]")
   x = scidb("oh_no")
   x [, 11000000:12000000, ]
+  scidbremove("oh_no",error=invisible,force=TRUE)
 
 cat("# Github issue #52\n")
   x = scidb("build(<s:string>[i=1:3,1,0,j=1:1,1,0],'{1,1}[[(law)],[(bryan)],[(homer)]]',true)")

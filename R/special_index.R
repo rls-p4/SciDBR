@@ -63,7 +63,7 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
         query = sprintf("cross_join(%s as x, %s as y, x.%s, y.%s)",query, Q1, N, N)
       } else if(is.scidb(i[[j]]))
       {
-# Case 3. A SciDB array, really just a cross_join selector.
+# Case 3. A SciDB array, a densified cross_join selector.
 # If it's Boolean, convert it to a sparse array for cross_join indexing
         if(scidb_types(i[[j]])[[1]] == "bool")
         {
@@ -75,7 +75,7 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
         tmp = attribute_rename(tmp, old=1, new=N)
         tmpaname = make.unique_(dimlabel, scidb_attributes(tmp))
         cst = paste(build_attr_schema(tmp,newnames=tmpaname),build_dim_schema(tmp,newnames=dimlabel))
-        tmp = cast(tmp,cst,eval=0)
+        tmp = cast(tmp,cst,eval=FALSE)
         cnt = count(tmp)
         dependencies = c(dependencies, tmp)
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", tmp@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
