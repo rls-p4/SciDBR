@@ -140,7 +140,8 @@ dimfilter = function(x, i, eval, drop, redim)
         if(!is.null(dimnames(x)[[j]]))
         {
           new_dimnames[[j]] = scidb(sprintf("project(join(redimension(%s,%s%s) as x, %s as y), y.%s)",q,build_attr_schema(x),build_dim_schema(x,I=j,newend="*"), dimnames(x)[[j]]@name, scidb_attributes(dimnames(x)[[j]])[[1]]))
-          new_depend = c(new_depend, dimnames(x)[[j]])
+# This dependency is already covered by x, which we already depend on:
+#          new_depend = c(new_depend, dimnames(x)[[j]])
         }
       }
     }
@@ -159,8 +160,8 @@ dimfilter = function(x, i, eval, drop, redim)
               new_dimnames[[j]] = scidb(sprintf("subarray(redimension(%s, %s%s),null,null)", new_dimnames[[j]]@name, build_attr_schema(new_dimnames[[j]]), build_dim_schema(new_dimnames[[j]],newstart=newstart[j],newend="*")))
             } else
             {
-            }
               new_dimnames[[j]] = scidb(sprintf("subarray(%s,null,null)", new_dimnames[[j]]@name ))
+            }
           } } }
     }
   } else new_dimnames = dimnames(x)

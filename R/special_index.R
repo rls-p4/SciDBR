@@ -38,7 +38,8 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
                         chunkSize=xchunk[j],
                         rowOverlap=xoverlap[j], nullable=FALSE)
         swap = c(swap, list(list(old=N, new=dimlabel, length=length(tmp[,1]), start=xstart[j])))
-        dependencies = c(dependencies, i[[j]])
+# This dependency is already covered in x, which we already depend on:
+#        dependencies = c(dependencies, i[[j]])
         Q1 = sprintf("redimension(%s,<%s:int64>%s)", i[[j]]@name,dimlabel,build_dim_schema(x,I=j,newnames=N))
         query = sprintf("cross_join(%s as x, %s as y, x.%s, y.%s)",query, Q1, N, N)
       } else if(is.character(i[[j]]))
