@@ -14,8 +14,9 @@ redimension(x, schema, dim, FUN, `eval`=FALSE)
   \item{schema}{An optional SciDB array object of class scidb, scidbdf,
            or a character string representation of the output array schema.}
   \item{dim}{An optional character vector or list of new dimension names
-             from the union of dimension and attribute names of x. Exactly
-             one of the \code{s} and \code{dim} arguments must be specified.}
+             from the *union* of dimension and attribute names of x, or
+             an integer positional index of a dimension of x.  Exactly
+             one of the \code{schema} and \code{dim} arguments must be specified.}
   \item{FUN}{An optional reduction function applied when \code{redimension}
              collapses multiple values.}
   \item{eval}{(Optional) If true, execute the query and store the reult array.

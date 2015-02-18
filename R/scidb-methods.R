@@ -333,21 +333,7 @@ function(x)
 setMethod("head", signature(x="scidb"),
 function(x, n=6L, ...)
 {
-  bounds = scidb_coordinate_bounds(x)
-  xstart = as.numeric(bounds$start)
-  xlen   = as.numeric(bounds$end)
-  m = xstart
-  p = m + n - 1
-  p = apply(cbind(p, xlen),1,min)
-  if(length(p)>2) p[3:length(p)] = m[3:length(p)]
-  limits = lapply(1:length(m), function(j) seq(m[j],p[j]))
-  tryCatch(
-    do.call(dimfilter,args=list(x=x,i=limits,eval=FALSE,drop=TRUE))[],
-    error = function(e)
-    {
-      query = betweenbound(x,m,p)
-      iquery(query, return=TRUE, n=n)
-    })
+  iqdf(x,n)
 })
 
 setMethod("tail", signature(x="scidb"),

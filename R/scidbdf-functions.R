@@ -70,6 +70,17 @@ rownames.scidbdf = function(x)
   x@gc$dimnames[[1]]
 }
 
+`rownames<-.scidbdf` = function(x, value)
+{
+  x
+}
+
+`dimnames<-.scidbdf` = function(x, value)
+{
+  y = do.call("names<-.scidbdf",args=list(x=x,value=value[[2]]))
+  do.call("row.names<-.scidbdf",args=list(x=y,value=value[[1]])) # order matters here
+}
+
 row.names.scidbdf = function(x)
 {
   if(is.null(x@gc$dimnames)) return(NULL)
@@ -94,10 +105,14 @@ names.scidbdf = function(x)
 `names<-.scidbdf` = function(x,value)
 {
   old = x@attributes
+  if(is.null(value)) return(x)
+  if(all(old==value)) return(x)
   if(length(value)!=length(old)) stop(paste("Incorrect number of names (should be",length(old),")"))
   arg = paste(paste(old,value,sep=","),collapse=",")
   query = sprintf("attribute_rename(%s,%s)",x@name,arg)
-  .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
+  ans = .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
+  row.names(ans) = rownames(x)  # Preserve row names
+  ans
 }
 
 dimnames.scidbdf = function(x)
@@ -138,6 +153,7 @@ dimnames.scidbdf = function(x)
     if(iterative)
     {
       ans = iquery(sprintf("%s",x@name),`return`=TRUE,iterative=TRUE,n=n,excludecol=1,colClasses=scidbdfcc(x))
+      if(!is.null(dimnames(x)[[1]])) warning("row labels will not be displayed")
       return(ans)
     }
     else
@@ -145,8 +161,11 @@ dimnames.scidbdf = function(x)
       if(!is.null(dimnames(x)[[1]]))
       {
         row.names = iquery(dimnames(x)[[1]]@name, `return`=TRUE,binary=TRUE)[,2]
+        ans = iquery(sprintf("%s",x@name),`return`=TRUE,binary=TRUE,buffer=nrow(x),row.names=row.names)[,-1]
+      } else
+      {
+        ans = iquery(sprintf("%s",x@name),`return`=TRUE,binary=TRUE,buffer=nrow(x),row.names=row.names)
       }
-      ans = iquery(sprintf("%s",x@name),`return`=TRUE,binary=TRUE,buffer=nrow(x),row.names=row.names)
       return(ans)
     }
 # Not materializing, return a SciDB array

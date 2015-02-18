@@ -53,20 +53,20 @@ function(x,y,`eval`=FALSE)
   .scidbeval(s, `data.frame`=TRUE, gc=TRUE, `eval`=eval, depend=list(x,y))
 })
 
+# Head and tail are not very efficient, but they're nifty!  XXX
 setMethod("head", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
-  xstart = as.numeric(scidb_coordinate_start(x))
-  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,xstart,xstart + n - 1),`return`=TRUE,colClasses=scidbdfcc(x))[,-1]
+  x[x[,1], ][0:(n-1),][]
 })
 
 setMethod("tail", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
-  bounds = scidb_coordinate_bounds(x)
-  xstart = as.numeric(bounds$start)
-  xlen   = as.numeric(bounds$len)
-  iquery(sprintf("between(%s,%.0f,%.0f)",x@name,xstart + xlen - n - 1,xstart + xlen-1),`return`=TRUE, colClasses=scidbdfcc(x))[,-1]
+  ans = x[x[,1],]
+  end = as.numeric(scidb_coordinate_bounds(ans)$end)
+  start = max(0, end-n+1)
+  ans[start:end,][]
 })
 
 setMethod("Filter",signature(f="character",x="scidbdf"),

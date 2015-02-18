@@ -28,12 +28,11 @@
 #
 
 # Array redimension, repart, reshape operations.
-
 reshape_scidb = function(data, schema, shape, dimnames, start, chunks, `eval`=FALSE)
 {
   if(!missing(schema))
   {
-    if(is.scidb(schema)||is.scidbdf(schema)) schema=schema(schema)
+    if(is.scidb(schema)||is.scidbdf(schema)) schema=schema(schema) # <- that's nutty notation Malkovich!
     query = sprintf("reshape(%s,%s)",data@name,schema)
     return(.scidbeval(query,eval,depend=list(data)))
   }
@@ -93,7 +92,8 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
   {
     d = unlist(dim)
     ia = which(scidb_attributes(x) %in% d)
-    id = which(dimensions(x) %in% d)
+    if(is.numeric(d)) id = d
+    else id = which(dimensions(x) %in% d)
     if(length(ia)<1 && length(id)<1) stop("Invalid dimensions")
     as = build_attr_schema(x, I=-ia)
     if(length(id>0))
