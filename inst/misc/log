@@ -1,3 +1,57 @@
+commit 4e4f248591dfd65556dc28b01879af1007b1e014
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 21:47:39 2015 -0500
+
+    Fixed scidbdf drop issue
+
+commit 8bd16d3fa3d332e4cac38c81933bec5fcbe20cf1
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 21:05:36 2015 -0500
+
+    better warnings for sparse dimension issues
+
+commit d1975d56ed88183365d5516f4ec366def5c4b3c3
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 19:46:38 2015 -0500
+
+    dimnames, rownames, row.names, etc. for scidbdf; redimension now accepts numeric dimension indices too--very useful for 'densification'
+
+commit 8cfbb28b9ed4ada47fcfeede16c27daef6c95803
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 14:43:59 2015 -0500
+
+    scidbdf now supports row.names<-
+
+commit e9be462ff1278d844b67fecd60e891b171795b7c
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 14:04:02 2015 -0500
+
+    dim<- now maps to reshape
+
+commit 727233dc42af3a0f3253b03a502e536ae7b7f408
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 13:00:26 2015 -0500
+
+    Fixed another subtle indexing issue; the resetting of origins to zero is enforced in most bracket subarray operations now unless redim=FALSE is indicated
+
+commit 7fa291c3feace866ba6da88857049d744ca7e3ff
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 12:48:53 2015 -0500
+
+    scidbdf row index subsetting now uses scidb code path
+
+commit a71a2e4fd2228882375b4777029f68da74ac31e9
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 11:42:47 2015 -0500
+
+    Changed  version to 1.2-0
+
+commit a2c1a64d3b8793af57ac59ec8bfb6d3822eea5e7
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Feb 17 10:08:33 2015 -0500
+
+    tests passing again
+
 commit 22df50286dfd4ebe2c6653872a24e34b6c8f5435
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue Feb 17 10:04:37 2015 -0500
@@ -444,57 +498,3 @@ Date:   Tue Aug 26 16:40:29 2014 -0400
     Clarified instructions on README
 
 commit a0ed98abd3a7019787ac2796a38e6e91aac7709f
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Aug 12 20:37:15 2014 -0400
-
-    More support for experimental streaming option
-
-commit 13520be5fbda92d768013b72699748da674dda87
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Mon Aug 11 15:27:15 2014 -0400
-
-    Added scidb.stream option to support expermental shim streaming api
-
-commit 46e681cb4d02410790be0811a3c4266b96240156
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Mon Aug 11 14:25:43 2014 -0400
-
-    Fixed bug preventing use with RStudio
-
-commit 845831c63b3c386ef7b9b18ada88c4320f48a722
-Merge: 52f62ec e825608
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Mon Aug 11 14:24:51 2014 -0400
-
-    Fixed bug preventing use with RStudio
-
-commit 52f62ecd1851d50d0534d7e964f7a03917b95755
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Mon Aug 11 14:23:20 2014 -0400
-
-    Fixed bug preventing use with RStudio
-
-commit 5523605bf7a271a085d1441542796ababcf4a35f
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Mon Aug 11 14:23:10 2014 -0400
-
-    Fixed bug preventing use with RStudio
-
-commit e82560865ded0c79149406923d3a22ffa0173ab2
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Wed Aug 6 09:48:44 2014 -0400
-
-    Follow good practice using .onAttach for package startup message
-
-commit 64f88d716105554cab622bea532a2545f666419e
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Wed Aug 6 09:46:15 2014 -0400
-
-    Removed spurious namespace prefixes
-
-commit 25c3c12f95f521ddfa2efcb0642d8911d9089e68
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Wed Aug 6 08:34:11 2014 -0400
-
-    Merged minor vignette changes from lab branch
-
