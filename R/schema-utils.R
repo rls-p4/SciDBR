@@ -179,9 +179,11 @@ scidb_from_schemastring = function(s, expr=character(), `data.frame`)
 #    as I.
 # nullable: optional vector of new nullability expressed as FALSE or TRUE,
 #    must be the same length as I.
-build_attr_schema = function(A, prefix="", I, newnames, nullable)
+# newtypes: optional vector of new types, must be the same length as I.
+build_attr_schema = function(A, prefix="", I, newnames, nullable, newtypes)
 {
   if(missing(I) || length(I)==0) I = rep(TRUE,length(scidb_attributes(A)))
+  if(is.character(A)) A = scidb_from_schemastring(A)
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
   if(is.logical(I)) I = which(I)
   N = rep("", length(scidb_nullable(A)[I]))
@@ -191,7 +193,8 @@ build_attr_schema = function(A, prefix="", I, newnames, nullable)
     N = rep("", length(I))
     N[nullable] = " NULL"
   }
-  N = paste(scidb_types(A)[I],N,sep="")
+  if(!missing(newtypes)) N = paste(newtypes,N,sep="")
+  else N = paste(scidb_types(A)[I],N,sep="")
   attributes = paste(prefix,scidb_attributes(A)[I],sep="")
   if(!missing(newnames)) attributes = newnames
   S = paste(paste(attributes,N,sep=":"),collapse=",")
@@ -210,8 +213,8 @@ build_dim_schema = function(A, bracket=TRUE, I,
                             newnames, newlen, newstart,
                             newend, newchunk, newoverlap)
 {
+  if(is.character(A)) A = scidb_from_schemastring(A)
   if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-
   dims = dimensions(A)
   bounds = scidb_coordinate_bounds(A)
   start =  bounds$start

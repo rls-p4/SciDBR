@@ -7,7 +7,7 @@ redimension
 The \code{redimension} function is a wrapper to the SciDB `redimension` operator.
 }
 \usage{
-redimension(x, schema, dim, FUN, `eval`=FALSE)
+redimension(x, schema, dim, FUN, grand)
 }
 \arguments{
   \item{x}{A SciDB array object of class scidb or scidbdf.}
@@ -19,8 +19,7 @@ redimension(x, schema, dim, FUN, `eval`=FALSE)
              one of the \code{schema} and \code{dim} arguments must be specified.}
   \item{FUN}{An optional reduction function applied when \code{redimension}
              collapses multiple values.}
-  \item{eval}{(Optional) If true, execute the query and store the reult array.
-              Otherwise defer evaluation.}
+  \item{grand}{(Optional) Perform a grand aggregation if \code{TRUE}.}
 }
 \value{
 A \code{scidb} object.
@@ -67,5 +66,21 @@ x <- as.scidb(iris)
 
 # bind an example new 'class' column:
 y <- bind(x, "class", "iif(Petal_Width>2, int64(1), 0)")
-z <- redimension(y, dim="class", FUN=max)
+
+# Data counts along a dimension:
+z <- redimension(y, dim="class", FUN=count, grand=TRUE)
+# Example output:
+##  z[]
+##    0   1 
+##  127  23 
+
+# Contingency table along two dimensions:
+z <- redimension(y, dim=c("class", "Species"), FUN=count, grand=TRUE)
+# Example output:
+##  z[]
+##  2 x 3 sparse Matrix of class "dgCMatrix"
+##    setosa versicolor virginica
+##  0     50         50        27
+##  1      .          .        23
+
 }}

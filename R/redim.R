@@ -74,13 +74,14 @@ repart = function(x, schema, upper, chunk, overlap, `eval`=FALSE)
 # Either supply schema or dim. dim is a list of new dimensions made up from the
 # attributes and existing dimensions. FUN is a limited scidb aggregation
 # expression.
-redimension = function(x, schema, dim, FUN, `eval`=FALSE)
+redimension = function(x, schema, dim, FUN, grand)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
 # NB SciDB NULL is not allowed along a coordinate axis prior to SciDB 12.11,
 # which could lead to a run time error here.
   if(missing(schema)) schema = NULL
   if(missing(dim)) dim = NULL
+  if(missing(grand)) grand = FALSE
   s = schema
   if(is.null(s) && is.null(dim) ||
     (!is.null(s) && !is.null(dim)))
@@ -88,9 +89,11 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
     stop("Exactly one of schema or dim must be specified")
   }
   if((class(s) %in% c("scidb","scidbdf"))) s = schema(s)
+  dnames = c()
   if(!is.null(dim))
   {
     d = unlist(dim)
+    dnames = vector("list",length(dim))
     ia = which(scidb_attributes(x) %in% d)
     if(is.numeric(d)) id = d
     else id = which(dimensions(x) %in% d)
@@ -116,23 +119,33 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
         if(scidb_types(x)[idx] != "int64")
         {
           reindexed = TRUE
+          didx = which(d %in% nid)
           newat = sprintf("%s_index",nid)
           newat = make.unique_(x@attributes, newat)
+          dnames[didx] = unique(xold[,nid])
+          names(dnames)[didx] = newat
           x = index_lookup(x, unique(xold[,nid]), nid, newat)
-          d[d %in% nid] = newat
+          d[didx] = newat
         }
       }
       if(reindexed)
       {
         ia = which(x@attributes %in% d)
-        as = build_attr_schema(x, I=-ia)
+        as = build_attr_schema(x, I=-ia) # remove _index attributes
       }
+# Note! we need to keep around the original nid attributes for the
+# index_lookups. This can screw with some aggregation functions.
+# In such cases, use aggregate for now. Eventually, maybe split
+# the nids out into a new array?
 
 # Add the new dimension(s)
       a = x@attributes[ia]
       x@attributes = x@attributes[-ia]
       f = paste(paste("min(",a,"), max(",a,")",sep=""),collapse=",")
+# Explicitly bounding this dimension is nice, but not necessary. Can
+# just use a '*' bound instead (cheaper)--see commented line... XXX
       m = matrix(aggregate(x, FUN=f, unpack=FALSE)[],ncol=2,byrow=TRUE)
+#      m = cbind(rep("0",length(a)), rep("*",length(a)))
       p = prod(as.numeric(scidb_coordinate_chunksize(x)[-id]))
       chunk = ceiling((1e6/p)^(1/length(ia)))
       new = apply(m,1,paste,collapse=":")
@@ -151,68 +164,41 @@ redimension = function(x, schema, dim, FUN, `eval`=FALSE)
   }
   if(!missing(FUN))
   {
-    if(!is.function(FUN)) stop("`FUN` must be a function")
-    fn = .scidbfun(FUN)
+    fn = FUN
+    if(is.function(FUN)) fn = .scidbfun(FUN)
     if(is.null(fn))
       stop("`FUN` requires an aggregate function")
-    reduce = paste(sprintf("%s(%s) as %s",fn,x@attributes,x@attributes),
+ # Note that some aggregates change types! XXX
+    if(!is.null(schema))
+    {
+      reduce = FUN
+    } else if(grand)
+    {
+      reduce = sprintf("%s(*) as %s",fn,fn)
+      if(fn=="count") s = sprintf("<%s:uint64 null>%s",fn, build_dim_schema(s))
+    } else
+    {
+      reduce = paste(sprintf("%s(%s) as %s",fn,x@attributes,x@attributes),
                collapse=",")
+      if(fn=="count") s = sprintf("%s%s",build_attr_schema(s, newtypes="uint64", nullable=TRUE), build_dim_schema(s))
+    }
     s = sprintf("%s,%s", s, reduce)
   }
   query = sprintf("redimension(%s,%s)",x@name,s)
-  .scidbeval(query,eval,depend=list(x))
-}
-
-# Apply a heuristic method bring the schema of x and y into reasonable
-# conformance. The heuristic favors name matching, then resorts to
-# positional matching. Partial matches are allowed.
-conform = function(x, y, dimension.only=TRUE)
-{
-  if(!dimension.only) stop("Sorry, not yet supported")
-  if((class(x) %in% c("scidb","scidbdf"))) stop("x must be a scidb or scidbdf object")
-  if(!is.character(x)) stop("Invalid x")
-  if(!is.character(y)) stop("Invalid y")
-
-# Find attibute and dimension names in common
-  ai = intersect(scidb_attributes(x), scidb_attributes(y))
-  ad = intersect(dimensions(x), dimensions(y))
-
-# First work on bringing dimensions into agreement...
-  if(length(ad)>0) # by name
+  ans = .scidbeval(query,`eval`=FALSE,depend=list(x))
+  if(!is.null(dnames))
   {
-    adx = which(dimensions(x) %in% ad)
-    ady = which(dimensions(y) %in% ad)
-    s   = lapply(1:length(dim(x)), function(i)
-            {
-              if(i %in% adx) build_dim_schema(y,I=ady[i],bracket=FALSE)
-              else build_dim_schema(x,I=i,bracket=FALSE)
-            })
-  } else # positional
-  {
-    s   = lapply(1:length(dim(x)), function(i)
-            {
-              if(i < length(dim(y))) build_dim_schema(y,I=i,bracket=FALSE)
-              else build_dim_schema(x,I=i,bracket=FALSE)
-            })
+    if(class(ans) %in% "scidbdf") rownames(ans)=dnames[[1]]
+    else {
+      if(any(dimensions(ans) %in% names(dnames)))
+      {
+        dnew = vector("list",length(dimensions(ans)))
+        names(dnew) = dimensions(ans)
+        dnames = dnames[unlist(lapply(dnames,function(x)!is.null(x)))]
+        dnew[names(dnames)] = dnames
+        dimnames(ans) = dnew
+      }
+    }
   }
-  s1 = sprintf("%s[%s]",build_attr_schema(x),paste(s,collapse=","))
-  s1b = lapply(scidb_coordinate_bounds(s1), as.numeric)
-  xb = lapply(scidb_coordinate_bounds(x), as.numeric)
-  s1b = lapply(s1b, function(x) {a=x;a[is.na(x)]=Inf;a})
-  xb = lapply(xb, function(x) {a=x;a[is.na(x)]=Inf;a})
-# Check for no  op.
-  if(isTRUE(compare_schema(x,s1)))
-  {
-    return(x)
-  }
-# Check to see if the new dimension bounds lie strictly within the old ones.
-# If so, we use reshape instead of redimension.
-  strict = all(s1b$start >= xb$start) && all(s1b$end <= xb$end)
-  if(strict)
-  {
-    query = sprintf("reshape(between(%s, %s), %s)", x@name,
-              between_coordinate_bounds(s1), s1)
-    return(.scidbeval(query, eval=FALSE))
-  }
-# XXX ... still working on this...
+  ans
 }
