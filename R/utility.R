@@ -401,7 +401,6 @@ type= c("arrays","operators","functions","types","aggregates","instances","queri
     if(!missing(pattern))
       z = grep(z,pattern=pattern,value=TRUE)
   }
-  if(type=="arrays" && verbose) z=z[,3]
   z
 }
 scidbls = function(...) scidblist(...)
