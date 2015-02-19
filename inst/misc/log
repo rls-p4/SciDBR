@@ -1,3 +1,21 @@
+commit 2bfc9af501b78ddaf5909bfcedfab2f3d89e4871
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Feb 19 10:14:25 2015 -0500
+
+    Fixed an issue with verbose scidbls
+
+commit 127a2e772f86bb49f379f6a860514449b035f36b
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Feb 19 08:43:17 2015 -0500
+
+    More versatile redimension
+
+commit ed724214e454d20a7131a893648195013e6853c5
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Feb 18 10:34:48 2015 -0500
+
+    error msg cleanup
+
 commit f346b584d922fd497689c11fe70962803b903a4e
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Wed Feb 18 10:32:46 2015 -0500
@@ -479,22 +497,4 @@ Date:   Wed Aug 27 17:58:37 2014 -0400
     Added between option w/same function as redim but better syntax to [ function
 
 commit 68563fd206d05f4fdf0d386cec463df96afe40b2
-Author: Bryan W Lewis <blewis@paradigm4.com>
-Date:   Wed Aug 27 17:54:00 2014 -0400
-
-    Fixed coordinate index bug in >2d sparse materialize with redim=FALSE
-
-commit 59165e6ce13c1ddac28f55e1b58ad6e832c135b8
-Author: Bryan W Lewis <blewis@paradigm4.com>
-Date:   Wed Aug 27 09:35:46 2014 -0400
-
-    Fixed indexing by other SciDB array bug introduced by auto attribute name conflict resolution
-
-commit acb3bb6ee976a6c02454c554fb82afe6289529b1
-Author: Bryan W Lewis <blewis@paradigm4.com>
-Date:   Wed Aug 27 09:20:32 2014 -0400
-
-    Fixed indexing by other SciDB array bug introduced by auto attribute name conflict resolution
-
-commit c7874a6a6a5e1c1f6eb0ed036cc4c0b4377dc979
 Author: Bryan W Lewis <blewis@paradigm4.com>
