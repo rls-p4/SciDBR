@@ -79,7 +79,7 @@ TRAP = function()
   options(scidb.interrupt=TRUE)
 # Set to TRUE to enable experimental shim stream protocol, avoids copying query
 # output to data file on server # (see https://github.com/Paradigm4/shim).
-  options(scidb.stream=FALSE)
+  options(scidb.stream=TRUE)
 }
 
 .onUnload = function(libpath)

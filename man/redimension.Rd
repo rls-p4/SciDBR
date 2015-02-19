@@ -43,10 +43,12 @@ When \code{redimension} reduces the dimensionality of an array, it's likely
 that multiple values may fall into the same output array cell. When this
 occurs, SciDB's default behavior randomly selects one of the possible values
 for output. Alternatively, users may specify a reduction function in the
-\code{FUN} argument or explicitly specify reductions using SciDB syntax in
-the schema argument. Note that the indicated reduction function will be
-applied to all the attributes. If you need more control over the reduction,
-explicitly specify the output schema instead.
+\code{FUN} argument or explicitly specify reductions using SciDB syntax in the
+schema argument. The indicated reduction function will be applied to all the
+attributes, unless \code{grand=TRUE} is specified.  When \code{grand=TRUE} then
+a single reduction function is applied, most frequently used with
+\code{FUN=count}.  If you need more control over the reduction, explicitly
+specify the output schema instead.
 }
 \note{
 Use \code{eval=FALSE} to defer expression evaluation for efficiency. Results
