@@ -1,10 +1,10 @@
 \name{as.scidb}
 \alias{as.scidb}
 \title{
-Upload an R matrix or data.frame to a SciDB array.
+Upload an R vector, matrix or data.frame to a SciDB array.
 }
 \description{
-Upload an R matrix or data.frame into SciDB, returning a reference scidb object.
+Upload an R vector, matrix or data.frame into SciDB, returning a reference scidb object.
 }
 \usage{
 as.scidb(X, name = tmpnam(), chunksize, overlap, start, chunkSize, gc=TRUE, ...)
@@ -25,13 +25,15 @@ Used with a matrix  or vector argument,
 the \code{as.scidb} function creates a single-attribute SciDB array named
 \code{name} and copies the data from \code{X} into it, returning a \code{scidb}
 object reference to the new array. The SciDB array will be 1-D if \code{X} is a
-vector, and 2-D if \code{X} is a matrix.
+vector, and 2-D if \code{X} is a matrix. Data are transferred using a binary
+representation.
 
 If \code{X} is a data.frame, then \code{as.scidb} creates a one-dimensional
 multi-attribute SciDB array, with SciDB attributes representing each column
 of the data.frame. A utitlity function called \code{df2scidb} is used for
 data.frame uploads--the functions \code{as.scidb} and {df2scidb} are equivalent
-in this use case.
+in this use case. Note that data frame data are transferred using a text
+representation.
 
 This function supports double-precision, integer (32-bit), logical, and single-character
 array attribute types.

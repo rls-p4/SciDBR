@@ -157,11 +157,23 @@ summary.scidb = function(x)
   invisible()
 }
 
-# XXX this will use insert, write me.
-#`[<-.scidb` = function(x,j,k, ..., value)
-#{
-#  stop("Sorry, scidb array objects are read only for now.")
-#}
+`[<-.scidb` = function(x, ..., value)
+{
+  m = match.call()
+  a = scidb_attributes(x)[1]
+  if(!is.null(m$attr)) a = m$attr
+  ai = which(scidb_attributes(x) %in% a)
+  i = list(...)
+  if(!all(unlist(lapply(i,checkseq)))) stop("Assignment is limited to contiguous blocks for now.")
+  d = sapply(i, length) # dimensions
+  s = sapply(i, function(u) u[1]) # origin
+# Note, ordered by rows thanks to aperm
+  if(!is.array(value)) value = array(value)
+  v = as.scidb(as.vector(aperm(value)), nullable=scidb_nullable(x)[ai], attr=a, reshape=FALSE)
+  reschema = sprintf("%s%s", build_attr_schema(v),
+              build_dim_schema(x, newstart=s, newlen=d))
+  merge(x, redimension(reshape(v, schema=reschema), schema=schema(x)), merge=TRUE)
+}
 
 # Array subsetting wrapper.
 # x: A Scidb array object
@@ -243,6 +255,13 @@ as.scidb = function(X,
     else
       return(df2scidb(X,name=name,chunkSize=as.numeric(chunksize[[1]]),gc=gc,start=start,...))
   }
+  args = list(...)
+  nullable = TRUE
+  if(!is.null(args$nullable)) nullable = as.logical(args$nullable) # control nullability
+  attr_name = "val"
+  if(!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
+  do_reshape = TRUE
+  if(!is.null(args$reshape)) do_reshape = as.logical(args$reshape) # control reshape
   if(missing(chunksize))
   {
 # Note nrow, ncol might be NULL here if X is not a matrix. That's OK, we'll
@@ -275,16 +294,16 @@ as.scidb = function(X,
     chunkSize = min(chunkSize[[1]],length(X))
     X = as.matrix(X)
     schema = sprintf(
-      "< val : %s null>  [i=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
+      "< %s : %s null>  [i=%.0f:%.0f,%.0f,%.0f]", attr_name, type, start[[1]],
       nrow(X)-1+start[[1]], min(nrow(X),chunkSize), overlap[[1]])
     load_schema = schema
   } else {
 # X is a matrix
     schema = sprintf(
-      "< val : %s >  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
+      "< %s : %s  null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", attr_name, type, start[[1]],
       nrow(X)-1+start[[1]], chunkSize[[1]], overlap[[1]], start[[2]], ncol(X)-1+start[[2]],
       chunkSize[[2]], overlap[[2]])
-    load_schema = sprintf("<val:%s null>[row=1:%.0f,1000000,0]",type,length(X))
+    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]",attr_name, type,  length(X))
   }
   if(!is.matrix(X)) stop ("X must be a matrix or a vector")
 
@@ -318,8 +337,12 @@ as.scidb = function(X,
   }
 
 # Load query
-  query = sprintf("store(reshape(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
+  if(do_reshape)
+    query = sprintf("store(reshape(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
+  else
+    query = sprintf("store(input(%s,'%s', 0, '(%s null)'),%s)",load_schema,ans,type,name)
   iquery(query)
   ans = scidb(name,gc=gc)
+  if(!nullable) ans = replaceNA(ans)
   ans
 }
