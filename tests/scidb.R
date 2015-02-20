@@ -65,7 +65,7 @@ cat("# Sparse elementwise addition and scalar multiplication\n")
   check(sum(D-w), 0)
 
 cat("# Indexing by other SciDB arrays\n")
-  x = build("i",c(5,3),eval=TRUE, type="double")
+  x = build("i",c(5,3),type="double")
   a = as.scidb(c(1,5,1,5,1))
   check(x[a %>% 2, ][], matrix(c(1,1,1,3,3,3),nrow=2,byrow=TRUE))
 
@@ -139,7 +139,7 @@ cat("# 4d labels and auto promotion of labels to SciDB arrays\n")
   check(i,4)
 
 cat("# Indices not at the origin, and general ranged index check\n")
-  a = build("random()",c(5,5),start=c(-3,-2), eval=TRUE)
+  a = scidbeval(build("random()",c(5,5),start=c(-3,-2)))
   check(count(a[-3:-2,0:2]),6)
 
 cat("# Pseudo-uint64 support! And also simplified aggregation function syntax\n")
@@ -147,8 +147,8 @@ cat("# Pseudo-uint64 support! And also simplified aggregation function syntax\n"
   check(sum(apply(a,2,count)),25)
 
 cat("# Aggregation, just trying to catch errors, github issue #57\n")
-  A = build("random()%10",c(100,100))
-  p = build("random()%2",100)
+  A = scidbeval(build("random()%10",c(100,100)))
+  p = scidbeval(build("random()%2",100))
   aggregate(A,by=p,mean) # Aggregate by another array
   aggregate(A,by=2,mean) # Positional dimension index
   aggregate(A,FUN=mean)  # Grand aggregate
@@ -180,7 +180,7 @@ cat("# slice\n")
 # Write me!
 
 cat("# order\n")
-  x = build("random()%100", 100, type="double", eval=TRUE, start=1)
+  x = scidbeval(build("random()%100", 100, type="double", start=1))
   o1 = order(x)[]
   o2 = order(x[])
   xx = x[]
@@ -202,7 +202,7 @@ x = read.csv(file=textConnection('"tumor_type_id","sample_id","agilentg4502a_07_
 7,2680,4252,-0.842
 7,2678,17062,-1.1738
 7,2765,13244,-2.1102'))
-a = redimension(as.scidb(x,types=c("int64","int64","int64","double")), dim=names(x)[1:3], eval=TRUE)
+a = redimension(as.scidb(x,types=c("int64","int64","int64","double")), dim=names(x)[1:3])
 check(quantile(a)[][,2], quantile(x$value))
 
 cat("# Check that replaceNA works\n")
@@ -225,7 +225,7 @@ gc()
   check(nrow(X[idx, ]),3)
 
 cat("# Github issue #45\n")
-  x = build(5.5,5,eval=TRUE)
+  x = scidbeval(build(5.5,5))
   a = scidbeval(x, eval=FALSE)
   rm(a)
   gc()

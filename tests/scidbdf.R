@@ -74,9 +74,9 @@ if(nchar(host)>0)
 
 
 # $ indexing
- x = build("random()%100",20,type="double",eval=TRUE,start=1)
+ x = build("random()%100",20,type="double",start=1)
  x = bind(x,"w",2)
- f = function(a)  unique(a$val, eval=TRUE)
+ f = function(a)  unique(a$val)
  u = f(x)
 
 }
