@@ -242,6 +242,11 @@ cat("# Github issue #52\n")
   x = scidb("build(<s:string>[i=1:3,1,0,j=1:1,1,0],'{1,1}[[(law)],[(bryan)],[(homer)]]',true)")
   a = as.scidb(x[])
 
+cat("# Github issue #61\n")
+  v = scidb("build(<val:double>[i=1:10000,1000,0], random()%10)")
+  v = scidbeval(v, temp=TRUE)
+  aggregate(v, FUN=count, by="val")[]
+
 }
 gc()
 tryCatch(scidbrm(scidbls()), warning=invisible)

@@ -167,7 +167,8 @@
       {
         atr     = oldatr[j]
 # Adjust the FUN expression to include the original attribute
-        FUN = sprintf("%s, min(%s) as %s", FUN, atr, atr)
+# The gsub is a fix for github issue #61.
+        FUN = sprintf("%s, min(%s) as %s", gsub("\\(\\)","(*)",FUN), atr, atr)
 # Factorize atr
         x       = index_lookup(x,unique(sort(project(x,atr)),sort=FALSE),atr)
 # Name the new attribute and sort by it instead of originally specified one.
