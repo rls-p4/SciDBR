@@ -122,7 +122,7 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
                     build_dim_schema(x,newstart=ns,newlen=nl),paste(rep('null',2*length(ns)),collapse=","))
   } else
   {
-    query = sprintf("project(%s,%s)",query,scidb_attributes(x))
+    query = sprintf("project(%s,%s)",query,paste(scidb_attributes(x), collapse=","))
   }
   ans = .scidbeval(query, eval=FALSE, depend=dependencies)
   ans@gc$dimnames = new_dimnames
