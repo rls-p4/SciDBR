@@ -62,9 +62,13 @@ scidb = function(name, gc, `data.frame`)
     query = name@name
     return(.scidbeval(name@name, eval=FALSE, gc=gc, `data.frame`=`data.frame`, depend=list(name)))
   }
-  query = sprintf("show('filter(%s,true)','afl')",gsub("'","\\\\'",name,perl=TRUE))
-  schema = gsub("^.*<","<",iquery(query,`return`=1)$schema, perl=TRUE)
+  escape = gsub("'","\\\\'",name,perl=TRUE)
+  query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape,escape)
+  query = iquery(query, `return`=TRUE)
+  logical_plan = query$logical_plan
+  schema = gsub("^.*<","<",query$schema, perl=TRUE)
   obj = scidb_from_schemastring(schema, name, `data.frame`)
+  obj@logical_plan = logical_plan
   if(gc)
   {
     if(length(grep("\\(",name))==0)
