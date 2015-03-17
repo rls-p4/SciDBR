@@ -285,11 +285,12 @@ project = function(X,attributes,`eval`=FALSE)
 {
   if(missing(attr)) attr = X@attributes[[1]]
   if(missing(new_attr)) new_attr=paste(attr,"index",sep="_")
+  al = scidb_alias(X,I)
   xname = X
   if(class(X) %in% c("scidb","scidbdf")) xname=X@name
   iname = I
   if(class(I) %in% c("scidb","scidbdf")) iname=I@name
-  query = sprintf("index_lookup(%s as x, %s as y, x.%s, %s)",xname, iname, attr, new_attr)
+  query = sprintf("index_lookup(%s as %s, %s as %s, %s.%s, %s)",xname, al[1], iname, al[2], al[1], attr, new_attr)
   .scidbeval(query,eval,depend=list(X,I))
 }
 

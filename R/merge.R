@@ -64,6 +64,7 @@ merge_scidb_on_attributes = function(x,y,by.x,by.y)
   `eval`=FALSE
   by.x = by.x[[1]]  # Limitation: only one attribute for now
   by.y = by.y[[1]]  # Ditto
+  al = scidb_alias(x,y)  # new alias names
   lkup = unique(project(x,by.x),attributes=by.x)
   XI = index_lookup(x,lkup,by.x,`eval`=FALSE)
   YI = index_lookup(y,lkup,by.y,`eval`=FALSE)
@@ -83,7 +84,7 @@ merge_scidb_on_attributes = function(x,y,by.x,by.y)
   D = sprintf("[%s,%s]",redim,build_dim_schema(y,bracket=FALSE))
   D2 = sprintf("[%s,_%s]",redim,build_dim_schema(y,bracket=FALSE))
   q2 = sprintf("cast(redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s),%s%s)",YI@name,n,S,D,S,D2)
-  query = sprintf("unpack(cross_join(%s as _cazart, %s as _yikes, _cazart.%s_index, _yikes.%s_index),%s)",q1,q2,by.x,by.y,new_dim_name)
+  query = sprintf("unpack(cross_join(%s as %s, %s as %s, %s.%s_index, %s.%s_index),%s)",q1,al[1],q2,al[2],al[1],by.x,al[2],by.y,new_dim_name)
   return(.scidbeval(query,eval,depend=list(x,y)))
 }
 
@@ -103,6 +104,7 @@ merge_scidb_on_attributes = function(x,y,by.x,by.y)
 `merge_scidb` = function(x,y,`by`,...)
 {
   mc = list(...)
+  al = scidb_alias(x,y)
   by.x = by.y = NULL
   `all` = FALSE
   scidbmerge = FALSE
@@ -242,7 +244,7 @@ merge_scidb_on_attributes = function(x,y,by.x,by.y)
   }
 
 # Join on dimensions.
-  query = sprintf("cross_join(%s as x, %s as y", xname, z@name)
+  query = sprintf("cross_join(%s as %s, %s as %s", xname, al[1], z@name, al[2])
   k = min(length(by.x),length(by.y))
   by.x = by.x[1:k]
   by.y = by.y[1:k]

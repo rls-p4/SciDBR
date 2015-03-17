@@ -62,23 +62,14 @@ scidbmultiply = function(e1,e2)
   SPARSE = e1.sparse || e2.sparse
 
 # Up to at least SciDB 13.12, gemm does not accept nullable attributes.
-  miswarn = (function() {
-    state = TRUE
-    function() {
-      if(state) {
-        warning("An array might contain missing values (R NA/SciDB 'null'-able attribute).\n Missing values are not yet understood by SciDB multiplication operators\n and any missing values have been replaced with zero (see replaceNA).", call.=FALSE)
-        state <<- FALSE
-      }
-    }
-  }) () # oh boy
   if(any(scidb_nullable(e1)))
   {
-    miswarn()
+    warnonce("missing")
     e1 = replaceNA(e1)
   }
   if(any(scidb_nullable(e2)))
   {
-    miswarn()
+    warnonce("missing")
     e2 = replaceNA(e2)
   }
 

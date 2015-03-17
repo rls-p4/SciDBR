@@ -114,15 +114,8 @@
   {
 # We are grouping by attributes in another SciDB array `by`. We assume that
 # x and by have conformable dimensions to join along!
-    j = intersect(dimensions(x), dimensions(by[[1]]))
-# Check for and resolve attribute name conflicts:
-    nn = make.unique_(x@attributes, by[[1]]@attributes)
-    if(!isTRUE(all.equal(by[[1]]@attributes,nn)))
-    {
-      `by`[[1]]=attribute_rename(`by`[[1]],old=by[[1]]@attributes,new=nn)
-    }
-    x = merge(x,`by`[[1]],by=j,eval=FALSE,depend=list(x,`by`[[1]]))
-    n = by[[1]]@attributes
+    x = merge(x,`by`[[1]])
+    n = x@attributes[length(x@attributes)]
     `by`[[1]] = n
   }
 # A bug up to SciDB 13.6 unpack prevents us from using eval=FALSE

@@ -1199,3 +1199,18 @@ curlopts = function()
   ans
 }
 
+# Internal warning function
+warnonce = (function() {
+  state = list(
+    unpack="The array contains multiple SciDB attributes, returning as an unpacked dataframe.",
+    missing="An array might contain missing values (R NA/SciDB 'null'-able attribute).\n Missing values are not yet understood by SciDB multiplication operators\n and any missing values have been replaced with zero (see replaceNA)."
+  )
+  function(warn) {
+    if(!is.null(state[warn][[1]])) {
+      warning(state[warn], call.=FALSE)
+      s <<- state
+      s[warn] = c()
+      state <<- s
+    }
+  }
+}) () # oh boy

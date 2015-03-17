@@ -213,10 +213,11 @@ drop_dim = function(ans)
 # Materialize the single-attribute scidb array x as an R array.
 materialize = function(x, drop=FALSE)
 {
+
 # If x has multiple attributes, warn.
   if(length(x@attributes)>1)
   {
-    warning("The array contains multiple SciDB attributes, returning as an unpacked dataframe.")
+    warnonce("unpack")
     return(iquery(x, return=TRUE,n=Inf))
   }
   type = names(.scidbtypes[.scidbtypes==scidb_types(x)])

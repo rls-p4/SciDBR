@@ -82,7 +82,14 @@ scidb_nullable = function(x)
 dimensions = function(x)
 {
   d = .dimsplitter(x)
-  gsub("^ *","",unlist(lapply(d[-length(d)],function(x) x[[length(x)]])))
+#  gsub("^ *","",unlist(lapply(d[-length(d)],function(x) x[[length(x)]])))
+  h = paste(gsub("^ *","",d[[1]]), collapse="|")
+  d = d[-1]
+  if(length(d)>1)
+  {
+    h = c(h,gsub("^ *","",unlist(lapply(d[-length(d)],function(x) paste(x[4:length(x)],collapse="|")))))
+  }
+  h
 }
 
 # Returns a list of character-valued vectors of starting and
@@ -336,4 +343,44 @@ compare_schema = function(s1, s2,
                    nullable=nullable)
   }
   ans
+}
+
+# Internal function compute the difference of two strings, vectorized
+strdiff = function(x,y)
+{
+  if(length(x)==1 && length(y)>1) x = rep(x,length(y))
+  if(length(x)!=length(y)) stop("mismatched vector lengths")
+  unlist(lapply(seq(1,length(x)), function(i)
+         {
+           gsub(sprintf("^%s",x[[i]]), "", y[[i]])
+         }))
+}
+# Internal function used to infer aliases in use by comparing the output of
+# show and explain_logical. Returns NULL if no aliasing can be determined.
+aliases = function(x)
+{
+  ans = c()
+  if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(ans)
+  logical_schema = grep("^>>schema",strsplit(x@logical_plan,"\n")[[1]], value=TRUE)
+  if(length(logical_schema) < 1) return(NULL)
+  logical_schema = gsub(".*<","<",logical_schema)
+  dl = dimensions(logical_schema)
+  ds = dimensions(x@schema)
+  if(length(dl) != length(ds)) return(NULL)
+  for(j in 1:length(ds))
+  {
+    d = strsplit(dl[j],"\\|")[[1]]
+    p = strdiff(d[j],ds[j])
+    d = c(d[1],unlist(lapply(d[-1],function(z)sprintf("%s%s",p,z))))
+    ans = c(ans, gsub(" ","",strdiff(ds[j], d)))
+  } 
+  unique(ans)
+}
+
+# An internal function used to create new alias names that don't conflict
+# with existing aliases for scidb objects x and y. Returns a two element
+# character vector with the new aliases.
+scidb_alias = function(x,y)
+{
+  make.unique_(c(aliases(x),aliases(y)), c("x","y"))
 }
