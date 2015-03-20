@@ -297,14 +297,14 @@ materialize = function(x, drop=FALSE)
           {
             if(any(is.infinite(d)))
             {
-              warning("Dimensions too big for R sparse the Matrix package! Returning data in unpacked data.frame form.")
+              warnonce("toobig")
               return(data)
             }
             if(is.null(data)) t = Matrix::Matrix(0.0,nrow=dim(x)[1],ncol=dim(x)[2])
             else t = Matrix::sparseMatrix(i=data[,1],j=data[,2],x=data[,3],dims=d)
             dimnames(t) = labels
             t
-          }, error=function(e) {warning(e,"Note: The R sparse Matrix package does not support certain value types like\ncharacter strings"); data})
+          }, error=function(e) {warnonce("nonum"); data})
     return(ans)
   } else if(ndim==1 && nelem < p)
   {
@@ -312,13 +312,13 @@ materialize = function(x, drop=FALSE)
           {
             if(any(is.infinite(dim(x))))
             {
-              warning("Dimensions too big for R the sparse Matrix package! Returning data in unpacked data.frame form.")
+              warnonce("toobig")
               return(data)
             }
             if(is.null(data)) t = Matrix::sparseVector(0.0,1,length=dim(x))
             else t = Matrix::sparseVector(i=data[,1],x=data[,2],length=p)
             t
-          }, error=function(e) {warning(e,"Note: The R sparse Matrix package does not support certain value types like\ncharacter strings");data})
+          }, error=function(e) {warnonce("nonum");data})
     return(ans)
   } else if(nelem < p)
   {

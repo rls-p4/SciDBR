@@ -248,10 +248,9 @@ merge_scidb_on_attributes = function(x,y,by.x,by.y)
   k = min(length(by.x),length(by.y))
   by.x = by.x[1:k]
   by.y = by.y[1:k]
-  cterms = unique(paste(c("x","y"), as.vector(rbind(by.x,by.y)), sep="."))
+  cterms = unique(paste(c(al[1],al[2]), as.vector(rbind(by.x,by.y)), sep="."))
   cterms = paste(cterms,collapse=",")
   query  = paste(query,",",cterms,")",sep="")
   ans = .scidbeval(query,eval,depend=list(x,y))
-# Fix up bogus dimension names ... todo XXX
   ans
 }

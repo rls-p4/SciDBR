@@ -1203,7 +1203,9 @@ curlopts = function()
 warnonce = (function() {
   state = list(
     unpack="The array contains multiple SciDB attributes, returning as an unpacked dataframe.",
-    missing="An array might contain missing values (R NA/SciDB 'null'-able attribute).\n Missing values are not yet understood by SciDB multiplication operators\n and any missing values have been replaced with zero (see replaceNA)."
+    missing="An array might contain missing values (R NA/SciDB 'null'-able attribute).\n Missing values are not yet understood by SciDB multiplication operators\n and any missing values have been replaced with zero (see replaceNA).",
+    nonum="Note: The R sparse Matrix package does not support certain value types like\ncharacter strings",
+    toobig="Dimensions too big for R sparse the Matrix package! Returning data in unpacked data.frame form."
   )
   function(warn) {
     if(!is.null(state[warn][[1]])) {
