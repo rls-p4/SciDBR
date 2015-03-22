@@ -298,13 +298,15 @@ materialize = function(x, drop=FALSE)
             if(any(is.infinite(d)))
             {
               warnonce("toobig")
+# de-adjust indexing origin
+              data[,1:ndim] = data[,1:ndim] - 1
               return(data)
             }
             if(is.null(data)) t = Matrix::Matrix(0.0,nrow=dim(x)[1],ncol=dim(x)[2])
             else t = Matrix::sparseMatrix(i=data[,1],j=data[,2],x=data[,3],dims=d)
             dimnames(t) = labels
             t
-          }, error=function(e) {warnonce("nonum"); data})
+          }, error=function(e) {warnonce("nonum"); data[,1:ndim] = data[,1:ndim] - 1; data})
     return(ans)
   } else if(ndim==1 && nelem < p)
   {
@@ -313,17 +315,19 @@ materialize = function(x, drop=FALSE)
             if(any(is.infinite(dim(x))))
             {
               warnonce("toobig")
+              data[,1:ndim] = data[,1:ndim] - 1
               return(data)
             }
             if(is.null(data)) t = Matrix::sparseVector(0.0,1,length=dim(x))
             else t = Matrix::sparseVector(i=data[,1],x=data[,2],length=p)
             t
-          }, error=function(e) {warnonce("nonum");data})
+          }, error=function(e) {warnonce("nonum");data[,1:ndim] = data[,1:ndim] - 1; data})
     return(ans)
   } else if(nelem < p)
   {
 # Don't know how to represent this in R! (R only knows sparse vectors or arrays)
     warning("Note: R does not natively support sparse n-d objects for n>2. Returning data as a data frame.")
+    data[,1:ndim] = data[,1:ndim] - 1
     return(data)
   }
 # OK, we have a dense array of some kind
