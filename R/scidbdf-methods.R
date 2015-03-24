@@ -57,7 +57,7 @@ function(x,y,`eval`=FALSE)
 setMethod("head", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
-  x[x[,1], ][0:(n-1),][]
+  iqdf(x, n)[,-c(1,2)]
 })
 
 setMethod("tail", signature(x="scidbdf"),
