@@ -247,6 +247,11 @@ cat("# Github issue #61\n")
   v = scidbeval(v, temp=TRUE)
   aggregate(v, FUN=count, by="val")[]
 
+cat("# Github issue #62\n")
+  a = as.scidb(matrix(rnorm(25),5))
+  i = as.scidb(1:5)
+  a[ i %>% 2,  between(1,3) ]
+
 }
+rm(list=ls())
 gc()
-tryCatch(scidbrm(scidbls()), warning=invisible)
