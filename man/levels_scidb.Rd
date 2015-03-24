@@ -4,7 +4,7 @@
 Hybrid R/SciDB factors
 }
 \description{
-Return levels for this factor vector from a SciDB indexing array.
+Return levels for this factor vector from a SciDB dimension array.
 }
 \usage{
 levels_scidb(x)
@@ -15,7 +15,7 @@ An R factor vector created by \code{factor_scidb}.
 }
 }
 \value{
-The SciDB index array levels associated with the factors in this vector.
+The SciDB dimension array levels associated with the factors in this vector.
 Those levels may differ from the enumeration used for the R factor levels
 returned by \code{levels(x)}.
 }

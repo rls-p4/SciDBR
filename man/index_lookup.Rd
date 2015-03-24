@@ -5,7 +5,7 @@ index_lookup
 }
 \description{
 The \code{index_lookup} function is a wrapper to the SciDB `index_lookup` operator.
-It produces a new SciDB array that joins the unqiue indices defined in the array
+It produces a new SciDB dimension array that joins the unqiue indices defined in the array
 \code{I} with values looked up in array \code{X} for attribute \code{attr}. Use
 the \code{index_lookup} with the \code{unique} and \code{sort} functions.
 }

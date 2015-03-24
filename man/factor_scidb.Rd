@@ -4,7 +4,7 @@
 Hybrid R/SciDB factors
 }
 \description{
-Create R factor variables that include SciDB indexing array index values.
+Create R factor variables that include SciDB dimension array index values.
 }
 \usage{
 factor_scidb(x, levels)
@@ -14,7 +14,7 @@ factor_scidb(x, levels)
 An R vector or factor vector.
 }
   \item{levels}{
-A SciDB index lookup array. This can be an array created with the SciDB
+A SciDB dimension array. This can be an array created with the SciDB
 \code{index_lookup} function, or any one-dimensional SciDB array. If the
 array has more than one SciDB attribute, the first attribute will be used
 to look up values from \code{x}.
@@ -29,9 +29,9 @@ reference to the \code{levels} array.
 \note{
 \code{scidb_factor} values are treated specially when uploaded
 from R to SciDB. Normal R factor values upload their contents. But \code{scidb_factor}
-values upload their index values corresponding to their SciDB indexing array (as
-int64 value types). Those values can then be directly joined with the SciDB indexing
-array. See the examples below.
+values upload their index values corresponding to their SciDB dimension array (as
+type int64). Those values can then be directly joined with the SciDB dimension 
+array, or any SciDB array using the same dimension index. See the examples below.
 }
 \author{
 B. W. Lewis <blewis@paradigm4.com>
@@ -39,7 +39,7 @@ B. W. Lewis <blewis@paradigm4.com>
 
 \examples{
 \dontrun{
-# Consider a SciDB index lookup array of Iris flower species, perhaps with
+# Consider a SciDB dimension array of Iris flower species, perhaps with
 # some additional data (made up in this example).
 set.seed(1)
 species <- data.frame(
@@ -61,7 +61,7 @@ iris$Species <- factor_scidb(iris$Species, species)
 
 # Let's upload the newly indexed iris data to SciDB. Observe that the 'Species'
 # values are uploaded as SciDB int64 index values! Those indices are join-able
-# with the index lookup array used to create the factor.
+# with the dimension array used to create the factor.
 x <- as.scidb(iris)
 str(x)
 
@@ -72,7 +72,7 @@ str(x)
 # using SciDB's redimension function:
 xr <- redimension(x, dim="Species", FUN=mean)
 
-# That output is join-able with the SciDB index lookup array species:
+# That output is join-able with the SciDB dimension array species:
 merge(xr,species, by.x="Species", by.y="index")[]
 
 # ...the output should look something like this...
