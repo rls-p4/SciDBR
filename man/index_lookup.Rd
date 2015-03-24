@@ -23,7 +23,8 @@ index_lookup(X, I, attr, new_attr, eval=FALSE)
 A \code{scidb}  or \code{scidbdf} object.
 }
 \note{
-Use \code{eval=FALSE} to defer expression evaluation for efficiency.
+If \code{attr} is missing, the first SciDB attribute of \code{X} will be used.
+If \code{I} has more than one attribute, then its first attribute will be used.
 }
 \author{
 B. W. Lewis<blewis@paradigm4.com>
