@@ -47,7 +47,7 @@ TRAP = function()
 
 .onAttach = function(libname,pkgname)
 {
-  packageStartupMessage("NOTE: The 'substitute' function has been renamed to 'replaceNA'."    , domain = NULL, appendLF = TRUE)
+  packageStartupMessage("NOTE: The 'substitute' function has been removed. Use 'replaceNA' instead.\nUse of the eval parameter in scidb functions is deprecated, use the 'scidbeval' function instead."    , domain = NULL, appendLF = TRUE)
 
 # Maximum allowed sequential index limit (for larger, use between)
   options(scidb.index.sequence.limit=1000000)
