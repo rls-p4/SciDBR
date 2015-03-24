@@ -34,6 +34,7 @@ Objects can be created by calls of the form \code{new("scidbdf", ...)},
     \item{\code{attributes}:}{Object of class \code{"character"} Vector of SciDB attribute names. }
     \item{\code{dimensions}:}{Object of class \code{"character"} Vector of SciDB dimension names. }
     \item{\code{schema}:}{Object of class \code{"character"} SciDB array schema.} 
+    \item{\code{logical_plan}:}{Object of class \code{"character"} SciDB array plan. }
     \item{\code{gc}:}{Object of class \code{"environment"} An environment used to link the SciDB array to the R garbage collector. }
     \item{\code{.S3Class}:}{Object of class \code{"character"} ~~ }
   }
