@@ -166,7 +166,25 @@ merge_scidb_on_attributes = function(x,y,by.x,by.y)
   if((length(by.x) == length(by.y)) && all(dimensions(x) %in% by.x) && all(dimensions(y) %in% by.y))
   {
 # Check for valid starting coordinates (they must be identical)
-    if(!isTRUE(all.equal(scidb_coordinate_start(x),scidb_coordinate_start(y)))) stop("Mis-matched starting coordinates")
+    if(!isTRUE(all.equal(scidb_coordinate_start(x),scidb_coordinate_start(y))))
+    {
+#      stop("Mis-matched starting coordinates") # used to error out, now try to redim
+# try inserting a redimension
+       xless = scidb_coordinate_start(x) < scidb_coordinate_start(y)
+       yless = scidb_coordinate_start(y) < scidb_coordinate_start(x)
+       if(any(xless))
+       {
+         newstart = scidb_coordinate_start(y)
+         newstart[xless] = scidb_coordinate_start(x)
+         y = redimension(y, schema=sprintf("%s%s", build_attr_schema(y), build_dim_schema(y,newstart=newstart)))
+       }
+       if(any(yless))
+       {
+         newstart = scidb_coordinate_start(x)
+         newstart[yless] = scidb_coordinate_start(y)
+         x = redimension(x, schema=sprintf("%s%s", build_attr_schema(x), build_dim_schema(x,newstart=newstart)))
+       }
+    }
 # If the chunk sizes are identical, we're OK (join does not care about the
 # upper array bounds). Otherwise we need redimension.
     if(!isTRUE(all.equal(scidb_coordinate_chunksize(x), scidb_coordinate_chunksize(y))))
