@@ -280,11 +280,11 @@ project = function(X,attributes,`eval`=FALSE)
 }
 
 
-
 `index_lookup` = function(X, I, attr, new_attr, `eval`=FALSE)
 {
   if(missing(attr)) attr = X@attributes[[1]]
   if(missing(new_attr)) new_attr=paste(attr,"index",sep="_")
+  if(class(I) %in% c("scidb","scidbdf") && length(scidb_attributes(I))>1) I = project(I,1)
   al = scidb_alias(X,I)
   xname = X
   if(class(X) %in% c("scidb","scidbdf")) xname=X@name
