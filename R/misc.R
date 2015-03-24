@@ -2,6 +2,27 @@
 # tend to be newer and somewhat more experimental than the other functions, and
 # maybe not quite as fully baked.
 
+# factor_scidb and levels_scidb define an experimental new hybrid class of
+# R factors with levels from a SciDB indexing array. They're intended to make
+# merge (joins) and redimension work better. See the doc for examples.
+factor_scidb = function(x, levels)
+{
+  if(!(is.vector(x) ||  is.factor(x))) stop("x must be an R factor or vector object")
+  if(!any(class(levels) %in% c("scidb","scidbdf"))) stop("levels must be an object of class scidb or scidbdf")
+
+  if(!is.factor(x)) x = factor(x)
+  l = index_lookup(as.scidb(x), levels)[]
+  attr(x, "scidb_levels") = l[,2]
+  attr(x, "scidb_index") = levels
+  attr(x, "class") = c(attr(x, "class"), "scidb_factor")
+  x
+}
+
+levels_scidb = function(x)
+{
+  if(!("scidb_factor" %in% class(x))) stop("x must be a scidb_factor object")
+  attr(x, "scidb_levels")
+}
 
 unbound = function(x)
 {

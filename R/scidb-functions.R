@@ -256,6 +256,7 @@ as.scidb = function(X,
     else
       return(df2scidb(X,name=name,chunkSize=as.numeric(chunksize[[1]]),gc=gc,start=start,...))
   }
+  if(is.factor(X)) X = as.vector(X)
   args = list(...)
   nullable = TRUE
   if(!is.null(args$nullable)) nullable = as.logical(args$nullable) # control nullability
