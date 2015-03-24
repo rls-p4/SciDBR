@@ -62,7 +62,9 @@ unpack_scidb = function(x, `eval`=FALSE)
 {
   dimname = make.unique_(c(dimensions(x),scidb_attributes(x)), "i")
   query = sprintf("unpack(%s, %s)",x@name, dimname)
-  .scidbeval(query,eval,depend=list(x))
+  ans = .scidbeval(query,eval,depend=list(x))
+  class(ans) = "scidbdf"
+  ans
 }
 
 attribute_rename = function(x, old, `new`, `eval`=FALSE)
@@ -284,12 +286,16 @@ project = function(X,attributes,`eval`=FALSE)
 {
   if(missing(attr)) attr = X@attributes[[1]]
   if(missing(new_attr)) new_attr=paste(attr,"index",sep="_")
-  if(class(I) %in% c("scidb","scidbdf") && length(scidb_attributes(I))>1) I = project(I,1)
   al = scidb_alias(X,I)
   xname = X
   if(class(X) %in% c("scidb","scidbdf")) xname=X@name
   iname = I
-  if(class(I) %in% c("scidb","scidbdf")) iname=I@name
+  if(class(I) %in% c("scidb","scidbdf"))
+  {
+    if(length(scidb_attributes(I))>1) I = project(I,1)
+    if(scidb_nullable(I)) I = replaceNA(I)
+    iname=I@name
+  }
   query = sprintf("index_lookup(%s as %s, %s as %s, %s.%s, %s)",xname, al[1], iname, al[2], al[1], attr, new_attr)
   .scidbeval(query,eval,depend=list(X,I))
 }

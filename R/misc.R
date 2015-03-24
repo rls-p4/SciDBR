@@ -11,7 +11,9 @@ factor_scidb = function(x, levels)
   if(!any(class(levels) %in% c("scidb","scidbdf"))) stop("levels must be an object of class scidb or scidbdf")
 
   if(!is.factor(x)) x = factor(x)
-  l = index_lookup(as.scidb(x), levels)[]
+  l = index_lookup(as.scidb(levels(x)), levels)
+  class(l) = "scidbdf"  # just make sure...
+  l = l[]
   attr(x, "scidb_levels") = l[,2]
   attr(x, "scidb_index") = levels
   attr(x, "class") = c(attr(x, "class"), "scidb_factor")
@@ -64,9 +66,9 @@ iqdf = function( x, n = 50L, prob = 1)
   result = unpack(result)
   if ( n > 0 && is.finite(n))
   {
-    return(result[0:n-1, ][])
+    return(result[0:n-1, ,drop=FALSE][])
   }
-  return(result[])
+  result[]
 }
 
 peek = function(x, n=50L, prob=1)

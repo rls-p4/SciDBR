@@ -588,7 +588,17 @@ df2scidb = function(X,
       else if("character" %in% class(X[,j])) 
         typ[j] = paste("string",nullable[j])
       else if("factor" %in% class(X[,j])) 
-        typ[j] = paste("string",nullable[j])
+      {
+        if("scidb_factor" %in% class(X[,j]))
+        {
+          typ[j] = paste("int64 NULL")
+          Xj = X[,j]
+          levels(Xj) = levels_scidb(Xj)
+          X[,j] = as.vector(Xj)
+        }
+        else
+          typ[j] = paste("string",nullable[j])
+      }
       else if("POSIXct" %in% class(X[,j])) 
       {
         warning("Converting R POSIXct to SciDB datetime as UTC time. Subsecond times rounded to seconds.")

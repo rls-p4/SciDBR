@@ -256,7 +256,18 @@ as.scidb = function(X,
     else
       return(df2scidb(X,name=name,chunkSize=as.numeric(chunksize[[1]]),gc=gc,start=start,...))
   }
-  if(is.factor(X)) X = as.vector(X)
+  force_type = NULL
+  if(is.factor(X))
+  {
+    if("scidb_factor" %in% class(X))
+    {
+      levels(X) = levels_scidb(X)
+      X = as.integer(as.vector(X))  # XXX !!! XXX THIS LIMITS INDEX VALUES TO 31 bits!!! !!!
+      force_type = "int64"
+    }
+    else
+      X = as.vector(X)
+  }
   args = list(...)
   nullable = TRUE
   if(!is.null(args$nullable)) nullable = as.logical(args$nullable) # control nullability
@@ -299,6 +310,12 @@ as.scidb = function(X,
       "< %s : %s null>  [i=%.0f:%.0f,%.0f,%.0f]", attr_name, type, start[[1]],
       nrow(X)-1+start[[1]], min(nrow(X),chunkSize), overlap[[1]])
     load_schema = schema
+    if(!is.null(force_type))
+    {
+      schema = sprintf(
+        "< %s : %s null>  [i=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, start[[1]],
+        nrow(X)-1+start[[1]], min(nrow(X),chunkSize), overlap[[1]])
+    }
   } else {
 # X is a matrix
     schema = sprintf(
@@ -340,9 +357,25 @@ as.scidb = function(X,
 
 # Load query
   if(do_reshape)
-    query = sprintf("store(reshape(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
+  {
+    if(!is.null(force_type))
+    {
+      query = sprintf("store( attribute_rename(project(apply(reshape(input(%s,'%s', 0, '(%s null)'),%s), ___, %s(%s)), ___), ___, %s), %s)",load_schema,ans,type,schema, force_type, attr_name, attr_name, name)
+    }
+    else {
+      query = sprintf("store(reshape(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
+    }
+  }
   else
-    query = sprintf("store(input(%s,'%s', 0, '(%s null)'),%s)",load_schema,ans,type,name)
+  {
+    if(!is.null(force_type))
+    {
+      query = sprintf("store(attribute_rename(project(appy(input(%s,'%s', 0, '(%s null)'),___, %s(%s)), ___), ___, %s), %s)",load_schema,ans,type,name,force_type,attr_name,attr_name)
+    } else
+    {
+      query = sprintf("store(input(%s,'%s', 0, '(%s null)'),%s)",load_schema,ans,type,name)
+    }
+  }
   iquery(query)
   ans = scidb(name,gc=gc)
   if(!nullable) ans = replaceNA(ans)

@@ -87,6 +87,7 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
     } else # No special index in this coordinate
     {
       len = scidb_coordinate_bounds(x)$length[[j]]
+      if(is.function(i[[j]])) i[[j]] = i[[j]]()
       if(!is.null(i[[j]])) len=length(i[[j]])
       st = 0
       if(!is.null(i[[j]])) st = i[[j]][1]

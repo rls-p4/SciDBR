@@ -333,6 +333,7 @@ function(x)
 setMethod("head", signature(x="scidb"),
 function(x, n=6L, ...)
 {
+  class(x)="scidbdf"  # to supress warning
   iqdf(x,n)
 })
 

@@ -9,6 +9,8 @@ importFrom("zoo", na.locf)
 importFrom("digest", digest)
 
 # Functions
+export("factor_scidb")
+export("levels_scidb")
 export("unbound")
 export("is.temp")
 export("bernoulli")
