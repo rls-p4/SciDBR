@@ -91,7 +91,8 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
       if(!is.null(i[[j]])) len=length(i[[j]])
       st = 0
       if(!is.null(i[[j]])) st = i[[j]][1]
-      swap = c(swap,list(list(old=N, new=N, length=len, start=st)))
+      query = sprintf("apply(%s, %s, int64(0))", query, dimlabel)
+      swap = c(swap,list(list(old=N, new=dimlabel, length=len, start=st)))
     }
   }
   nn = sapply(swap, function(x) x[[2]])
