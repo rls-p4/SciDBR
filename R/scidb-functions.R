@@ -121,14 +121,18 @@ dimnames.scidb = function(x)
                 (is.na(dim(v)) || (dim(v) == as.numeric(.scidb_DIM_MAX)))
         if(!check)
         {
-          reschema = sprintf("%s%s",build_attr_schema(v), build_dim_schema(v,newchunk=scidb_coordinate_chunksize(x)[j], newend="*"))
-          schema = sprintf("%s%s",build_attr_schema(v), build_dim_schema(v,newstart=scidb_coordinate_start(x)[j],newchunk=scidb_coordinate_chunksize(x)[j], newend="*"))
-          query = sprintf("reshape(redimension(between(%s,%s,%s), %s), %s)", v@name,noE(scidb_coordinate_start(x)[j]), noE(scidb_coordinate_end(x)[j]), reschema, schema)
-# Crazy!
+          schema = sprintf("%s%s",build_attr_schema(v,I=1), build_dim_schema(v,newstart=scidb_coordinate_start(x)[j],newchunk=scidb_coordinate_chunksize(x)[j], newend="*"))
+          query = sprintf("redimension(between(%s,%s,%s), %s)", v@name,noE(scidb_coordinate_start(x)[j]), noE(scidb_coordinate_end(x)[j]), schema)
           vold = v
           v = scidb(query)
           v@gc$depend = c(v@gc$depend, vold)
+        } else
+        {
+          if(length(v@attributes)>1) v = project(v,1)
         }
+# join out holes. don't use dimnames! this is crummy.
+        xj = apply(x,j,count)
+        v = project(merge(v, xj, by.x=dimensions(v), by.y=dimensions(xj)),1)
         return(v);
       }
       scidbeval(unbound(as.scidb(v,
