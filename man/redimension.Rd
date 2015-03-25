@@ -7,7 +7,7 @@ redimension
 The \code{redimension} function is a wrapper to the SciDB `redimension` operator.
 }
 \usage{
-redimension(x, schema, dim, FUN, grand)
+redimension(x, schema, dim, FUN)
 }
 \arguments{
   \item{x}{A SciDB array object of class scidb or scidbdf.}
@@ -17,9 +17,7 @@ redimension(x, schema, dim, FUN, grand)
              from the *union* of dimension and attribute names of x, or
              an integer positional index of a dimension of x.  Exactly
              one of the \code{schema} and \code{dim} arguments must be specified.}
-  \item{FUN}{An optional reduction function applied when \code{redimension}
-             collapses multiple values.}
-  \item{grand}{(Optional) Perform a grand aggregation if \code{TRUE}.}
+  \item{FUN}{An optional reduction function or character SciDB aggregation expression.}
 }
 \value{
 A \code{scidb} object.
@@ -28,7 +26,7 @@ A \code{scidb} object.
 \code{Redimension} is a core SciDB operation. It can change the dimensionality,
 shape, and partitioning of arrays, and transform array attributes into array
 dimensions and vice versa. \code{Redimension} can also apply reduction functions
-to values when dimensions are removed, similarly to grouped aggregates.
+to values when dimensions are removed, similarly to group-by aggregation.
 
 The R package \code{redimension} function presents several forms. The most
 direct form takes a SciDB array reference \code{x} and an desired output schema
@@ -37,7 +35,12 @@ direct form takes a SciDB array reference \code{x} and an desired output schema
 Alternatively, users may specify a character vector or list of \code{dim}
 values that represent new array coordinate axes. These values should be a
 subset of the union of attributes and dimension names in the input array
-\code{x}. Note that they must also be valid \code{int64} types.
+\code{x}. Note that they must also be valid \code{int64} types. If attributes
+are selected that are not \code{int64}, then an attempt will be made to create
+an auxilliary dimension array to enumerate unique attribute values.  References
+to any created auxilliary arrays are placed in the dimnames list of the output
+array (and can be inspected with \code{dimnames}, \code{rownames},
+code{colnames}, etc.).
 
 When \code{redimension} reduces the dimensionality of an array, it's likely
 that multiple values may fall into the same output array cell. When this
@@ -45,10 +48,16 @@ occurs, SciDB's default behavior randomly selects one of the possible values
 for output. Alternatively, users may specify a reduction function in the
 \code{FUN} argument or explicitly specify reductions using SciDB syntax in the
 schema argument. The indicated reduction function will be applied to all the
-attributes, unless \code{grand=TRUE} is specified.  When \code{grand=TRUE} then
-a single reduction function is applied, most frequently used with
-\code{FUN=count}.  If you need more control over the reduction, explicitly
-specify the output schema instead.
+attributes. You can also explicitly specify a character-valued SciDB
+aggregation expression.
+
+If \code{FUN} contains a SciDB aggregation expression, it *must* declare
+the name of each output attribute using the SciDB \code{AS} syntax. See
+the examples.
+
+Reductions involving database user-defined types or aggregation functions
+must explicitly specify an output schema.
+
 }
 \note{
 Use \code{eval=FALSE} to defer expression evaluation for efficiency. Results
@@ -84,5 +93,17 @@ z <- redimension(y, dim=c("class", "Species"), FUN=count, grand=TRUE)
 ##    setosa versicolor virginica
 ##  0     50         50        27
 ##  1      .          .        23
+
+# More aggregation examples
+A <- bind(as.scidb(matrix(rnorm(25),5)), "m", 2)
+redimension(A, dim="i",
+  FUN="avg(m) as mavg, count(val) as count, min(val) as minval, sum(m) as msum")[]
+# Example output:
+##   mavg count     minval msum
+## 0    2     5 -0.3101882   10
+## 1    2     5 -1.1746309   10
+## 2    2     5 -2.1702600   10
+## 3    2     5 -0.9536650   10
+## 4    2     5 -0.2206027   10
 
 }}

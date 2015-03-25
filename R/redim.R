@@ -74,14 +74,13 @@ repart = function(x, schema, upper, chunk, overlap, `eval`=FALSE)
 # Either supply schema or dim. dim is a list of new dimensions made up from the
 # attributes and existing dimensions. FUN is a limited scidb aggregation
 # expression.
-redimension = function(x, schema, dim, FUN, grand)
+redimension = function(x, schema, dim, FUN)
 {
   if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
 # NB SciDB NULL is not allowed along a coordinate axis prior to SciDB 12.11,
 # which could lead to a run time error here.
   if(missing(schema)) schema = NULL
   if(missing(dim)) dim = NULL
-  if(missing(grand)) grand = FALSE
   s = schema
   if(is.null(s) && is.null(dim) ||
     (!is.null(s) && !is.null(dim)))
@@ -164,25 +163,19 @@ redimension = function(x, schema, dim, FUN, grand)
   }
   if(!missing(FUN))
   {
-    fn = FUN
-    if(is.function(FUN)) fn = .scidbfun(FUN)
-    if(is.null(fn))
-      stop("`FUN` requires an aggregate function")
- # Note that some aggregates change types! XXX
-    if(!is.null(schema))
+    fn = NULL
+    if(is.function(FUN))
     {
-      reduce = FUN
-    } else if(grand)
-    {
-      reduce = sprintf("%s(*) as %s",fn,fn)
-      if(fn=="count") s = sprintf("<%s:uint64 null>%s",fn, build_dim_schema(s))
-    } else
-    {
-      reduce = paste(sprintf("%s(%s) as %s",fn,x@attributes,x@attributes),
-               collapse=",")
-      if(fn=="count") s = sprintf("%s%s",build_attr_schema(s, newtypes="uint64", nullable=TRUE), build_dim_schema(s))
+      fn = sprintf("%s(%s)",.scidbfun(FUN),scidb_attributes(s))
     }
-    s = sprintf("%s,%s", s, reduce)
+    if(is.character(FUN)) fn = FUN
+    if(is.null(fn))
+      stop("`FUN` requires a function or SciDB aggregation expression")
+    if(is.null(schema))
+    {
+      s = sprintf("%s%s",aparser(x,fn), build_dim_schema(s))
+    }
+    s = sprintf("%s, %s", s, fn)
   }
   query = sprintf("redimension(%s,%s)",x@name,s)
   ans = .scidbeval(query,`eval`=FALSE,depend=list(x))

@@ -1226,3 +1226,47 @@ warnonce = (function() {
     }
   }
 }) () # oh boy
+
+
+# Utility function that parses an aggregation expression
+# makes sense of statements like
+# max(a) as amax, avg(b) as bmean, ...
+# Input
+# x: scidb object
+# expr: aggregation expression (as is required)
+# Output
+# New attribute schema
+aparser = function(x, expr)
+{
+  map = list(
+    ApproxDC    = function(x) "double null",
+    avg         = function(x) "double null",
+    count       = function(x) "uint64 null",
+    first_value = function(x) sprintf("%s null",x),
+    last_value  = function(x) sprintf("%s null",x),
+    mad         = function(x) sprintf("%s null",x),
+    max         = function(x) sprintf("%s null",x),
+    min         = function(x) sprintf("%s null",x),
+    median      = function(x) sprintf("%s null",x),
+    prod        = function(x) sprintf("%s null",x),
+    stdev       = function(x) "double null",
+    sum         = function(x) sprintf("%s null",x),
+    top_five    = function(x) sprintf("%s null",x),
+    var         = function(x) "double null")
+
+  p = strsplit(expr,",")[[1]]                      # comma separated
+  p = lapply(p,function(v) strsplit(v,"as")[[1]])  # as is required
+  new_attrs = lapply(p, function(v) v[[2]])        # output attribute names
+  y = lapply(p,function(v)strsplit(v,"\\(")[[1]])  #
+  fun = lapply(y, function(v) gsub(" ","",v[[1]])) # functions
+  old_attrs = unlist(lapply(y,function(v)gsub("[\\) ]","",v[[2]])))
+  i = 1:length(x@attributes)
+  names(i)=x@attributes
+  old_types = scidb_types(x)[i[old_attrs]]
+  z = rep("",length(new_attrs))
+  for(j in 1:length(z))
+  {
+    z[j] = sprintf("%s:%s", new_attrs[j],map[unlist(fun)][[j]](old_types[j]))
+  }
+  sprintf("<%s>", paste(z, collapse=","))
+}
