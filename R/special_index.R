@@ -91,8 +91,7 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
       if(!is.null(i[[j]])) len=length(i[[j]])
       st = 0
       if(!is.null(i[[j]])) st = i[[j]][1]
-      query = sprintf("apply(%s, %s, int64(0))", query, dimlabel)
-      swap = c(swap,list(list(old=N, new=dimlabel, length=len, start=st)))
+      swap = c(swap,list(list(old=N, new=N, length=len, start=st)))
     }
   }
   nn = sapply(swap, function(x) x[[2]])
@@ -107,11 +106,19 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
     {
       if(!is.null(dimnames(x)[[j]]))
       {
-# crazy schema munging here!
-        if(redim)
-          new_dimnames[[j]] = scidb(sprintf("subarray(redimension(join(redimension(%s,<%s:int64>%s), %s), %s%s),null,null)",query,nn[j],build_dim_schema(x,I=j), dimnames(x)[[j]]@name, build_attr_schema(dimnames(x)[[j]]), build_dim_schema(x,I=j,newstart=ns[j],newnames=nn[j],newlen="*")))
-        else
-          new_dimnames[[j]] = scidb(sprintf("project(join(redimension(%s,<%s:int64>%s) as x, %s as y), y.%s)",query,nn[j],build_dim_schema(x,I=j), dimnames(x)[[j]]@name,scidb_attributes(dimnames(x)[[j]])[1]))
+        if(is.null(i[[j]]))
+        {
+          new_dimnames[[j]] = dimnames(x)[[j]]
+        }  else
+        {
+# crazy schema munging here! Seriously, don't use dimnames.
+          new_dimnames[[j]] = merge(redimension(scidb(query),dim=dimensions(x)[j]), dimnames(x)[[j]], by.x=dimensions(x)[j], by.y=dimensions(dimnames(x)[[j]]))
+          new_dimnames[[j]] = project(new_dimnames[[j]], length(new_dimnames[[j]]@attributes))
+          if(redim)
+          {
+            new_dimnames[[j]] = subarray(redimension(new_dimnames[[j]], schema= sprintf("%s%s", build_attr_schema(new_dimnames[[j]]), build_dim_schema(new_dimnames[[j]], newstart=ns[j], newlen="*"))))
+          }
+        }
       }
     }
   }

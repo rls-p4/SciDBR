@@ -121,7 +121,7 @@ cat("# Misc\n")
 
 cat("# Labeled indices\n")
   L = c(letters,LETTERS)
-  i = as.scidb(data.frame(L[1:nrow(X)]), start=0)
+  i = as.scidb(data.frame(L[1:nrow(X)]), start=1)
   j = as.scidb(data.frame(L[1:ncol(X)]), start=0)
   rownames(X) = i
   colnames(X) = j
