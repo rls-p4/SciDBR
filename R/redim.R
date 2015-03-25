@@ -166,7 +166,8 @@ redimension = function(x, schema, dim, FUN)
     fn = NULL
     if(is.function(FUN))
     {
-      fn = sprintf("%s(%s)",.scidbfun(FUN),scidb_attributes(s))
+# convert to aggregation expression that can be parsed by aparser
+      fn = paste(sprintf("%s(%s) as %s",.scidbfun(FUN),scidb_attributes(s),scidb_attributes(s)), collapse=",")
     }
     if(is.character(FUN)) fn = FUN
     if(is.null(fn))

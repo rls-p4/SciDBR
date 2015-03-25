@@ -142,9 +142,10 @@ dimnames.scidbdf = function(x)
   if(missing(row.names)) row.names=1
   else row.names = M[["row.names"]]
   drop = ifelse(is.null(M$drop),TRUE,M$drop)
+  redim = ifelse(is.null(M$redim),TRUE,M$redim)
 # Passing along a NULL argument is harder than it should be...
   M = M[3:length(M)]
-  if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","iterative","n","row.names"))]
+  if(!is.null(names(M))) M = M[!(names(M) %in% c("drop","iterative","n","row.names","redim"))]
 # i shall contain a list of requested index values
   E = parent.frame()
   i = lapply(1:length(M), function(j) tryCatch(eval(M[j][[1]],E),error=function(e)c()))
@@ -170,7 +171,7 @@ dimnames.scidbdf = function(x)
     }
 # Not materializing, return a SciDB array
   if(length(i)!=length(dim(x))) stop("Dimension mismatch")
-  scidbdf_subset(x,i,drop)
+  scidbdf_subset(x,i,drop,redim)
 }
 
 `dim.scidbdf` = function(x)
@@ -205,7 +206,7 @@ length.scidbdf = function(x) ncol(x)
 # 'ui' not specified range (everything, by R convention)
 # 'ci' lookup-style range, a non-sequential numeric or labeled set, for example
 #      c(3,3,1,5,3)   or  c('a1','a3')
-scidbdf_subset = function(x, i, drop=FALSE)
+scidbdf_subset = function(x, i, drop=FALSE, redim=TRUE)
 {
   attribute_range = i[[2]]
   if(is.logical(attribute_range)) attribute_range = which(attribute_range)
@@ -218,7 +219,7 @@ scidbdf_subset = function(x, i, drop=FALSE)
   y = project(x, attribute_range)
   row.names(y) = rownames(x)  # Preserve row names
   class(y) = "scidb"
-  ans = dimfilter(y, list(i[[1]]), `eval`=FALSE, drop=drop)
+  ans = dimfilter(y, list(i[[1]]), `eval`=FALSE, drop=drop, redim=redim)
   if(!(length(dim(ans)==1) && drop)) class(ans) = "scidbdf"
   ans@gc$depend = c(ans@gc$depend, x)
   ans
