@@ -115,20 +115,16 @@ dimnames.scidb = function(x)
       if(is.scidb(v))
       {
         if(length(dim(v))>1) stop("Dimension label arrays must be one dimensional")
+        if(length(v@attributes)>1) v = project(v,1)
 # Make sure that the label array has '*' upper dimension bound
         check = scidb_coordinate_start(x)[j] == scidb_coordinate_start(v)[1] &&
                 scidb_coordinate_chunksize(x)[j] == scidb_coordinate_chunksize(v)[1] &&
                 (is.na(dim(v)) || (dim(v) == as.numeric(.scidb_DIM_MAX)))
         if(!check)
         {
-          schema = sprintf("%s%s",build_attr_schema(v,I=1), build_dim_schema(v,newstart=scidb_coordinate_start(x)[j],newchunk=scidb_coordinate_chunksize(x)[j], newend="*"))
-          query = sprintf("redimension(between(%s,%s,%s), %s)", v@name,noE(scidb_coordinate_start(x)[j]), noE(scidb_coordinate_end(x)[j]), schema)
-          vold = v
-          v = scidb(query)
-          v@gc$depend = c(v@gc$depend, vold)
-        } else
-        {
-          if(length(v@attributes)>1) v = project(v,1)
+# uh oh
+            v = redimension(v, sprintf("%s%s", build_attr_schema(v), build_dim_schema(v, newend="*")))
+            v = reshape(v, sprintf("%s%s", build_attr_schema(v), build_dim_schema(v, newstart=scidb_coordinate_start(x)[j])))
         }
 # join out holes. don't use dimnames! this is crummy.
         xj = apply(x,j,count)
