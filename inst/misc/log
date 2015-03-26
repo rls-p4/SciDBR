@@ -1,3 +1,33 @@
+commit a2082ef43f255979bb437a544b77d6d0cf8da069
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 26 13:58:05 2015 -0400
+
+    Added new bound function, use it in fix for GitHub issue #34
+
+commit a81476d2549ae48d4681429179aa872ea7e55f47
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 26 12:18:02 2015 -0400
+
+    tweak to redimension for count case, doc
+
+commit 5925044a1ff8553db2f5f8c066de1413e2c75afc
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 26 12:06:29 2015 -0400
+
+    doc
+
+commit 650ff4eadb05d61153ec236f805525106f4b933f
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 26 11:55:28 2015 -0400
+
+    Resolved package check NOTE
+
+commit 31630af0b39a847a90be2bff7406dc34e3f24f4f
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 26 11:52:29 2015 -0400
+
+    log
+
 commit dd9bd1b0a7f6c249837048841cfe2225d25241cb
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Thu Mar 26 11:52:06 2015 -0400
@@ -468,33 +498,3 @@ Date:   Thu Jan 22 09:13:53 2015 -0500
 
 commit 151f74771b80ddba4d806cff0f2c9dc4fc33fd5d
 Author: Bryan W Lewis <blewis@paradigm4.com>
-Date:   Thu Dec 11 03:54:59 2014 -0500
-
-    Fixed bug in replaceNA with mixed numeric and string types
-
-commit 6d0a2e038530209385aafe52f893e44ca810535e
-Author: Bryan W Lewis <blewis@paradigm4.com>
-Date:   Wed Dec 3 21:15:15 2014 -0500
-
-    Fixed doc issues
-
-commit 64456028da85cf2f068ed76bc184bd176e89634e
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Wed Dec 3 09:48:33 2014 -0500
-
-    Added Alex's iqdf function (aka peek), improved misc doc.
-
-commit f3bfb0b23f729bf57fb1804f5331754acc6f13b7
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Mon Dec 1 22:58:52 2014 -0500
-
-    Added non-exported range_scidb function pending better integration with base R function
-
-commit 6b3408d94db6b7e73640bb3762707fb196e15f26
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Thu Oct 30 16:17:36 2014 -0400
-
-    Slight optimization to temp arrays to avoid lookup query sometimes in is.temp
-
-commit c62c994746fe36ea82b997d61e236162bc6ecfe7
-Author: B. W. Lewis <blewis@illposed.net>
