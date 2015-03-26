@@ -127,7 +127,7 @@ cat("# Labeled indices\n")
   colnames(X) = j
   rownames(A) = L[1:nrow(A)]
   colnames(A) = L[1:ncol(A)]
-  check(X[c("F","v","f"),c("N","a","A")][], A[c("F","v","f"),c("N","a","A")])
+  check(X[c("f","v","F"),c("a","A","N")][], A[c("f","v","F"),c("a","A","N")])
 
 cat("# 4d labels and auto promotion of labels to SciDB arrays\n")
   X = build(0,dim=c(3,4,5,6))
