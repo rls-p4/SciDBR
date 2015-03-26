@@ -379,6 +379,7 @@ function(x, grid=c(500,500), op=sprintf("sum(%s)", .get_attribute(x)), na=0, ...
 {
   if(length(dim(x))!=2) stop("Sorry, array must be two-dimensional")
   if(length(grid)!=2) stop("The grid parameter must contain two values")
+  if(any(is.infinite(dim(x)))) x = bound(x)
   el = list(...)
   if("plot" %in% names(el))
   {

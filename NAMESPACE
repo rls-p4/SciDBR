@@ -9,6 +9,7 @@ importFrom("zoo", na.locf)
 importFrom("digest", digest)
 
 # Functions
+export("bound")
 export("factor_scidb")
 export("levels_scidb")
 export("unbound")

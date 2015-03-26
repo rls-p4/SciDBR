@@ -34,6 +34,16 @@ unbound = function(x)
   redimension(x, schema=schema)
 }
 
+bound = function(x)
+{
+  d = sprintf("_%s",dimensions(x))
+  a = bind(x, c("_", d), c("int64(0)",dimensions(x)))
+  a = redimension(a, dim="_", FUN=paste(sprintf("max(%s) as %s",d, d),collapse=","))
+  m = a[]
+  schema = sprintf("%s%s", build_attr_schema(x), build_dim_schema(x, newend=noE(m)))
+  redimension(x, schema=schema)
+}
+
 range_scidb = function(x)
 {
   a = scidb_attributes(x)[1]

@@ -1263,6 +1263,7 @@ aparser = function(x, expr)
   i = 1:length(x@attributes)
   names(i)=x@attributes
   old_types = scidb_types(x)[i[old_attrs]]
+  old_types[is.na(old_types)] = "int64"    # catch all
   z = rep("",length(new_attrs))
   for(j in 1:length(z))
   {
