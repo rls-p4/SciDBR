@@ -95,15 +95,16 @@ z <- redimension(y, dim=c("class", "Species"), FUN=count)
 ##  1      .          .        23
 
 # More aggregation examples
+set.seed(1)
 A <- bind(as.scidb(matrix(rnorm(25),5)), "m", 2)
 redimension(A, dim="i",
   FUN="avg(m) as mavg, count(val) as count, min(val) as minval, sum(m) as msum")[]
 # Example output:
-##   mavg count     minval msum
-## 0    2     5 -0.3101882   10
-## 1    2     5 -1.1746309   10
-## 2    2     5 -2.1702600   10
-## 3    2     5 -0.9536650   10
-## 4    2     5 -0.2206027   10
+##   mavg count      minval msum
+## 0    2     5 -0.82046838   10
+## 1    2     5 -0.01619026   10
+## 2    2     5 -0.83562861   10
+## 3    2     5 -2.21469989   10
+## 4    2     5 -0.30538839   10
 
 }}
