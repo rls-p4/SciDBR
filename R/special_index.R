@@ -29,11 +29,13 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
       if(is.numeric(i[[j]]))
       {
 # Special index case 1: non-contiguous numeric indices
-        MASK = redimension(bind(as.scidb(as.double(i[[j]])),"index","int64(val)"),schema=sprintf("<i:int64>%s",build_dim_schema(x,I=1,newnames="index",newend="*")))
+        MASK = redimension(bind(as.scidb(as.double(i[[j]])),"index","int64(val)"),schema=sprintf("<i:int64>%s",build_dim_schema(x,I=j,newnames="index",newend="*")))
       } else if(is.character(i[[j]]))
       {
 # Case 2: character labels, consult a lookup array if possible
-# XXX WRITE ME
+        if(is.null(dimnames(x)[[j]])) stop("Missing dimension array for character index lookup")
+        MASK = index_lookup(as.scidb(i[[j]]), dimnames(x)[[j]])
+        MASK = redimension(MASK,schema= sprintf("%s%s",scidb:::build_attr_schema(MASK,I=1),scidb:::build_dim_schema(x,I=j,newnames="val_index",newend="*")))
       } else if(is.scidb(i[[j]]))
       {
 # Case 3. A SciDB array, a densified cross_join selector.
