@@ -33,7 +33,7 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
 # Case 2: character labels, consult a lookup array if possible
         if(is.null(dimnames(x)[[j]])) stop("Missing dimension array for character index lookup")
         MASK = index_lookup(as.scidb(i[[j]]), dimnames(x)[[j]])
-        MASK = redimension(MASK,schema= sprintf("%s%s",scidb:::build_attr_schema(MASK,I=1),scidb:::build_dim_schema(ans,I=j,newnames="val_index",newend="*")))
+        MASK = redimension(MASK,schema= sprintf("%s%s",build_attr_schema(MASK,I=1),scidb:::build_dim_schema(ans,I=j,newnames="val_index",newend="*")))
       } else if(is.scidb(i[[j]]))
       {
 # Case 3. A SciDB array, a densified cross_join selector.
