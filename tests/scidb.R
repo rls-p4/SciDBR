@@ -53,7 +53,7 @@ cat("# SVD\n")
 
 cat("# Numeric array subsetting\n")
   check((X %*% X[1,,drop=TRUE])[,drop=FALSE], A %*% A[1,])
-  check(X[c(6,16,2),c(25,12,11)][], A[c(6,16,2),c(26,13,12)])
+  check(X[c(2,6,16),c(11,12,25)][], A[c(2,6,16),c(12,13,26)])
   check(as.vector(diag(Y)[]), diag(B))
 
 cat("# Filtering\n")

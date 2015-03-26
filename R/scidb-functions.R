@@ -165,7 +165,6 @@ summary.scidb = function(x)
   if(!is.null(m$attr)) a = m$attr
   ai = which(scidb_attributes(x) %in% a)
   i = list(...)
-  i = i[names(i)==""]
   if(!all(unlist(lapply(i,checkseq)))) stop("Assignment is limited to contiguous blocks for now.")
   d = sapply(i, length) # dimensions
   s = sapply(i, function(u) u[1]) # origin
