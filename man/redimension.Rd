@@ -79,14 +79,14 @@ x <- as.scidb(iris)
 y <- bind(x, "class", "iif(Petal_Width>2, int64(1), 0)")
 
 # Data counts along a dimension:
-z <- redimension(y, dim="class", FUN=count, grand=TRUE)
+z <- redimension(y, dim="class", FUN=count)
 # Example output:
 ##  z[]
 ##    0   1 
 ##  127  23 
 
 # Contingency table along two dimensions:
-z <- redimension(y, dim=c("class", "Species"), FUN=count, grand=TRUE)
+z <- redimension(y, dim=c("class", "Species"), FUN=count)
 # Example output:
 ##  z[]
 ##  2 x 3 sparse Matrix of class "dgCMatrix"
