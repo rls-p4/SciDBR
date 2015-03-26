@@ -47,7 +47,7 @@ TRAP = function()
 
 .onAttach = function(libname,pkgname)
 {
-  packageStartupMessage("   ____    _ ___  ___\n  / __/___(_) _ \\/ _ )\n _\\ \\/ __/ / // / _  |\n/___/\\__/_/____/____/     Copyright 2015, Paradigm4, Inc.\n\n* The 'substitute' function has been removed. Use 'replaceNA' instead.\n* Use of the eval parameter in scidb functions is deprecated, use the\n'scidbeval' function instead."    , domain = NULL, appendLF = TRUE)
+  packageStartupMessage("   ____    _ ___  ___\n  / __/___(_) _ \\/ _ )\n _\\ \\/ __/ / // / _  |\n/___/\\__/_/____/____/     Copyright 2015, Paradigm4, Inc.\n\n* The 'substitute' function has been removed. Use 'replaceNA' instead.\n* Use of the eval parameter in scidb functions is deprecated, use the\n  'scidbeval' function instead."    , domain = NULL, appendLF = TRUE)
 
 # Maximum allowed sequential index limit (for larger, use between)
   options(scidb.index.sequence.limit=1000000)

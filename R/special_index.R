@@ -11,13 +11,11 @@
 # idx: A logical vector indicating the axes with special indexing
 special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
 {
-  xdims = dimensions(x)
-  xstart = scidb_coordinate_start(x)
-  xend = scidb_coordinate_end(x)
-  xchunk = scidb_coordinate_chunksize(x)
-  xoverlap = scidb_coordinate_overlap(x)
-
   ans = scidb(query)  # make working query into a scidb object
+  xdims = dimensions(ans)
+  xstart = scidb_coordinate_start(ans)
+  xend = scidb_coordinate_end(ans)
+
   new_dimnames = dimnames(x) # will be assigned to ans as required
 
   for(j in 1:length(idx))
@@ -29,13 +27,13 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
       if(is.numeric(i[[j]]))
       {
 # Special index case 1: non-contiguous numeric indices
-        MASK = redimension(bind(as.scidb(as.double(i[[j]])),"index","int64(val)"),schema=sprintf("<i:int64>%s",build_dim_schema(x,I=j,newnames="index",newend="*")))
+        MASK = redimension(bind(as.scidb(as.double(i[[j]])),"index","int64(val)"),schema=sprintf("<i:int64>%s",build_dim_schema(ans,I=j,newnames="index",newend="*")))
       } else if(is.character(i[[j]]))
       {
 # Case 2: character labels, consult a lookup array if possible
         if(is.null(dimnames(x)[[j]])) stop("Missing dimension array for character index lookup")
         MASK = index_lookup(as.scidb(i[[j]]), dimnames(x)[[j]])
-        MASK = redimension(MASK,schema= sprintf("%s%s",scidb:::build_attr_schema(MASK,I=1),scidb:::build_dim_schema(x,I=j,newnames="val_index",newend="*")))
+        MASK = redimension(MASK,schema= sprintf("%s%s",scidb:::build_attr_schema(MASK,I=1),scidb:::build_dim_schema(ans,I=j,newnames="val_index",newend="*")))
       } else if(is.scidb(i[[j]]))
       {
 # Case 3. A SciDB array, a densified cross_join selector.
@@ -47,20 +45,22 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
         {
           MASK = MASK %==% TRUE
         }
-        if(scidb_coordinate_start(MASK)[1] != scidb_coordinate_start(x)[j])
+        if(scidb_coordinate_start(MASK)[1] != xstart[j])
         {
 # oh no
           MASK = redimension(MASK, sprintf("%s%s", build_attr_schema(MASK), build_dim_schema(MASK, newend="*")))
-          MASK = reshape(MASK, sprintf("%s%s", build_attr_schema(MASK), build_dim_schema(MASK, newstart=scidb_coordinate_start(x)[j])))
+          MASK = reshape(MASK, sprintf("%s%s", build_attr_schema(MASK), build_dim_schema(MASK, newstart=xstart[j])))
         }
       }
+      MASK = scidbeval(MASK)  # Note! Can't use temp array because the output will depend on this!
 # -- now, cross_join with MASK and adjust for redim=TRUE case if required
       ans = project(merge(ans, MASK, by.x=xdims[j], by.y=dimensions(MASK)), 1:length(ans@attributes))
       if(redim)  # this means densify, it's tricky
       {
-        newdim = project(bind(cumulate(bind(apply(ans,1,count),"_","int64(1)"), "sum(_) as __"),"_","__ - 1"),"_")
-        newstart = xstart
-        newend = xend
+        newdim = project(bind(cumulate(bind(apply(ans,j,count),"_","int64(1)"), "sum(_) as __"),"_","__ - 1"),"_")
+        newdim = scidbeval(newdim)
+        newstart = scidb_coordinate_start(ans)
+        newend = scidb_coordinate_end(ans)
         newnames = xdims
         newstart[j] = "0"
         newend[j] = noE(max(newdim))
@@ -70,10 +70,10 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
 # Now handle the corresponding NID conformably. Gross.
       if(!is.null(dimnames(x)[[j]]))
       {
-        new_dimnames[[j]] = project(merge(dimnames(x)[[j]], MASK, by.x=dimensions(dimnames(x)[[j]])[1], by.y=dimensions(MASK)), 1)
+        new_dimnames[[j]] = scidbeval(project(merge(dimnames(x)[[j]], MASK, by.x=dimensions(dimnames(x)[[j]])[1], by.y=dimensions(MASK)), 1))
         if(redim)
         {
-          new_dimnames[[j]] = dimension_rename(redimension(merge(dimnames(x)[[j]],newdim,by.x=dimensions(dimnames(x)[[j]]), by.y=dimensions(newdim)), schema=sprintf("%s%s",build_attr_schema(dimnames(x)[[j]]), build_dim_schema(dimnames(x)[[j]],newstart="0", newend=newend[j], newnames="_"))), old="_", new=dimensions(x)[[j]])
+          new_dimnames[[j]] = scidbeval(dimension_rename(redimension(merge(dimnames(x)[[j]],newdim,by.x=dimensions(dimnames(x)[[j]]), by.y=dimensions(newdim)), schema=sprintf("%s%s",build_attr_schema(dimnames(x)[[j]]), build_dim_schema(dimnames(x)[[j]],newstart="0", newend=newend[j], newnames="_"))), old="_", new=dimensions(x)[[j]]))
         }
       }
     }
