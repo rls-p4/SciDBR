@@ -211,10 +211,10 @@ are uniform across all cells in an array, and SciDB stores data for each
 attribute separately. Thus, a one-dimensional SciDB array is conceptually
 similar to a data frame in R: the SciDB dimension index corresponds to data
 frame row index, and SciDB attributes to data frame columns.
-Higher-dimensional arrays in SciDB don't correspond directly to objects in R;
-the {\tt scidb} $n$-dimensional array class described below is limited to
-working with one attribute at a time to more closely emulate standard R
-arrays.
+Higher-dimensional arrays in SciDB are conceptually array data frames and they
+don't correspond directly to objects in R; the {\tt scidb} $n$-dimensional
+array class described below is sometimes limited to working with one attribute
+at a time to more closely emulate standard R arrays.
 
 The \verb+scidb+ package defines two array classes for R with data backed
 by SciDB arrays: the \verb+scidbdf+ class for data frame-like objects,
@@ -390,7 +390,7 @@ use 1-based indexing. When in doubt about the base index, use the \verb+str+,
 for details.
 \item Numeric indexing may include contiguous ranges or vectors of distinct
 coordinate values, but repeated coordinate values in a single dimension are
-not allowed right now (sorry about that). Examples of valid index ranges include
+not allowed. Examples of valid index ranges include
 \verb+[1:4, c(3,1,5), -10:15]+, but not \verb+[c(1,3,1)]+.
 \item The bracket subsetting function \verb+[+ takes an optional logical
 \verb+redim+ argument. When \verb+FALSE+, the returned value has the same
@@ -685,7 +685,7 @@ limited kinds and outer joins are only supported in certain cases.
 The \verb+aggregate+ function performs various aggregation operations
 on SciDB array objects.  Aggregation may be defined over array dimensions
 and/or array attributes very similarly to standard R aggregation syntax, except
-that aggregation functions must be valid SciDB aggregate expressions,
+that aggregation functions must generally be valid SciDB aggregate expressions,
 represented as strings.
 
 <<>>=
@@ -701,6 +701,17 @@ multi-dimensional moving window aggregation along array coordinate systems, and
 1-d aggregation along consecutive data values in sparse arrays.  See the on-line
 man page for additional details and examples.
 
+Alternatively, use the SciDB-specific \verb+redimension+ function to perform
+aggregations. This form of aggregation is sometimes more efficient in the
+database. See the help page for \verb+redimension+ and this example:
+
+<<>>=
+# Redimension aggregation example (cf. above example)
+redimension(df,
+            dim="Species",
+            FUN="avg(Petal_Length) as Petal_Length_avg,
+                     stdev(Petal_Width) as Petal_Width_stdev")[]
+@
 
 \subsection{Binding new variables to an array}
 
