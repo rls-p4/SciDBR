@@ -703,15 +703,8 @@ man page for additional details and examples.
 
 Alternatively, use the SciDB-specific \verb+redimension+ function to perform
 aggregations. This form of aggregation is sometimes more efficient in the
-database. See the help page for \verb+redimension+ and this example:
-
-<<>>=
-# Redimension aggregation example (cf. above example)
-redimension(df,
-            dim="Species",
-            FUN="avg(Petal_Length) as Petal_Length_avg,
-                     stdev(Petal_Width) as Petal_Width_stdev")[]
-@
+database. See the help page for \verb+redimension+ and the examples in the
+following section on \verb+redimension+.
 
 \subsection{Binding new variables to an array}
 
@@ -742,7 +735,12 @@ x <- as.scidb(iris)
 y <- bind(x, "class", "iif(Petal_Width>2, int64(1), 0)")
      
 # Contingency table along two dimensions:
-redimension(y, dim=c("class", "Species"), FUN=count, grand=TRUE) []
+redimension(y, dim=c("class", "Species"), FUN=count) []
+
+# Aggregation example (cf. aggregation example above)
+redimension(x,
+            dim="Species",
+            FUN="avg(Petal_Length) as Petal_Length_avg, stdev(Petal_Width) as Petal_Width_stdev")[]
 @
 The function creates and applies row and dimension names as required.
 
@@ -999,53 +997,54 @@ online help for examples and more information on each one.
 <                       <=                      ==
 >                       >=                      -
 !=                      /                       [
-$                       *                       %<=%
-%<%                     %==%                    %>=%
-%>%                     %*%                     +
-abs                     acos                    aggregate
-all.equal               antijoin                apply
-asin                    as.scidb                atan
-attribute_rename        bernoulli               between
-bind                    build                   c
-cast                    cbind                   chunk_map
-colnames                colnames<-              cos
-count                   crossprod               cumulate
-default                 df2scidb                diag
-diff                    dim                     dimension_rename
-dimensions              dimnames                dimnames<-
-dist                    exp                     Filter
+[<-                     $                       *
+%<=%                    %<%                     %==%
+%>=%                    %>%                     %*%
++                       abs                     acos
+aggregate               all.equal               antijoin
+apply                   asin                    as.scidb
+atan                    attribute_rename        bernoulli
+between                 bind                    bound
+build                   c                       cast
+cbind                   chunk_map               colnames
+colnames<-              cos                     count
+crossprod               cumulate                default
+df2scidb                diag                    diff
+dim                     dimension_rename        dimensions
+dimnames                dimnames<-              dist
+exp                     factor_scidb            Filter
 glm                     glm.fit                 glm_scidb
 head                    hist                    image
 index_lookup            iqdf                    iquery
 is.scidb                is.scidbdf              is.temp
 kmeans                  lag                     length
-log                     max                     mean
-median                  merge                   min
-model_scidb             na.locf                 names
-names<-                 ncol                    nrow
-Ops                     order                   peek
-persist                 phyper                  predict
-print                   project                 qhyper
-quantile                rank                    rbind
-redimension             regrid                  remove_old_versions
-rename                  repart                  replaceNA
-reshape                 rownames                row.names
-row.names<-             rownames<-              schema
-scidb                   scidb_attributes        scidbconnect
-scidb_coordinate_bounds scidb_coordinate_chunks scidb_coordinate_end
-scidb_coordinate_overla scidb_coordinate_start  scidbdf
-scidbdisconnect         scidbeval               scidb_fisher.test
-scidblist               scidbls                 scidb_nullable
-scidbremove             scidbrm                 scidb_types
-sd                      show                    show_commit_log
-sin                     slice                   solve
-sort                    sqrt                    str
-subarray                subset                  sum
-summary                 svd                     sweep
-t                       tail                    tan
-tcrossprod              tsvd                    unbound
-unique                  unpack                  var
-xgrid
+levels_scidb            log                     max
+mean                    median                  merge
+min                     model_scidb             na.locf
+names                   names<-                 ncol
+nrow                    Ops                     order
+peek                    persist                 phyper
+predict                 print                   project
+qhyper                  quantile                rank
+rbind                   redimension             regrid
+remove_old_versions     rename                  repart
+replaceNA               reshape                 rownames
+row.names               row.names<-             rownames<-
+schema                  scidb                   scidb_attributes
+scidbconnect            scidb_coordinate_bounds scidb_coordinate_chunks
+scidb_coordinate_end    scidb_coordinate_overla scidb_coordinate_start
+scidbdf                 scidbdisconnect         scidbeval
+scidb_fisher.test       scidblist               scidbls
+scidb_nullable          scidbremove             scidbrm
+scidb_types             sd                      show
+show_commit_log         sin                     slice
+solve                   sort                    sqrt
+str                     subarray                subset
+sum                     summary                 svd
+sweep                   t                       tail
+tan                     tcrossprod              tsvd
+unbound                 unique                  unpack
+var                     xgrid
 \end{verbatim}
 
 
