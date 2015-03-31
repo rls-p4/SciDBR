@@ -1,3 +1,33 @@
+commit c69ca2899e6a8a0f3f07e050c75b9755d4f41272
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Tue Mar 31 09:21:55 2015 -0400
+
+    doc
+
+commit f94e7f8aaf7c529b66bc0d272b305bc2c13fa234
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Mar 30 16:50:59 2015 -0400
+
+    doc
+
+commit bd76aa1f30668ed8371ffb5df9fef17a45cd164c
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Mar 30 16:35:53 2015 -0400
+
+    doc
+
+commit 9e6c9764f56347d495a9760aacd813d479ba6a15
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 26 14:10:04 2015 -0400
+
+    Fix package check NOTE
+
+commit 0ed1ba4874d5163427d733094dc6efe0e6297346
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Thu Mar 26 14:00:59 2015 -0400
+
+    log update
+
 commit a2082ef43f255979bb437a544b77d6d0cf8da069
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Thu Mar 26 13:58:05 2015 -0400
@@ -468,33 +498,3 @@ Date:   Thu Jan 22 23:01:58 2015 -0500
 
 commit 15810d43e6f4d6b6d322903ea634948123ebef67
 Author: B. W. Lewis <blewis@illposed.net>
-Date:   Thu Jan 22 09:47:50 2015 -0500
-
-    Fixed NOTE resulting from partial argument match in replaceNA function
-
-commit 539b55a5f713fd40a1274e3096b9f39d5bd27177
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Thu Jan 22 09:40:08 2015 -0500
-
-    Updated test to fix create_array syntax with SciDB 14.12
-
-commit 3964fb39b008a56490dcc13ba53ca98b3177a5c9
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Thu Jan 22 09:25:54 2015 -0500
-
-    Removed use of ::: within package
-
-commit b7216c0b6ac0732a1dc8964c9c49213aef956c81
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Thu Jan 22 09:24:12 2015 -0500
-
-    Added tests to cover github issue #57
-
-commit 4b2d24b3b97d7590a4cd81246de2d74e6cbcc892
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Thu Jan 22 09:13:53 2015 -0500
-
-    Inserted noE format in windowed aggregates to address bug #57
-
-commit 151f74771b80ddba4d806cff0f2c9dc4fc33fd5d
-Author: Bryan W Lewis <blewis@paradigm4.com>
