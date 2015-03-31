@@ -259,7 +259,8 @@ the examples.
 \end{Sinput}
 \begin{Soutput}
 SciDB expression:  morely
-SciDB schema:  <Expt:int32 NULL DEFAULT null,Run:int32 NULL DEFAULT null,Speed:int32 NULL DEFAULT null> [row=1:100,100,0]
+SciDB schema:  <Expt:int32 NULL DEFAULT null,Run:int32 NULL DEFAULT null,
+                Speed:int32 NULL DEFAULT null> [row=1:100,100,0]
 
 Attributes:
   attribute  type nullable
@@ -1020,7 +1021,8 @@ a congingency table along levels of two variables, "class" and "Species."
 > # Aggregation example (cf. aggregation example above)
 > redimension(x,
 +             dim="Species",
-+             FUN="avg(Petal_Length) as Petal_Length_avg, stdev(Petal_Width) as Petal_Width_stdev")[]
++             FUN="avg(Petal_Length) as Petal_Length_avg,
++                  stdev(Petal_Width) as Petal_Width_stdev")[]
 \end{Sinput}
 \begin{Soutput}
            Petal_Length_avg Petal_Width_stdev
@@ -1151,7 +1153,14 @@ Here is an example:
 > B@name
 \end{Sinput}
 \begin{Soutput}
-[1] "redimension(subarray(redimension(between(transpose(test),3,null,3,null), <val:double NULL>[j=3:3,4,0,i=0:4,5,0]),null,null,null,null), <val:double NULL>[i=0:4,5,0])"
+[1] "redimension(
+       subarray(
+         redimension(
+           between(
+             transpose(test),3,null,3,null),
+           <val:double NULL>[j=3:3,4,0,i=0:4,5,0]),
+          null,null,null,null),
+       <val:double NULL>[i=0:4,5,0])"
 \end{Soutput}
 \begin{Sinput}
 > B@schema
