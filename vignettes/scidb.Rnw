@@ -207,10 +207,10 @@ Matrix package (whose sparse matrix elements are implicitly zero).
 The elements of a SciDB array, called {\it cells}, contain one or more {\it
 attributes} (similar to R variables).  The number and data types of attributes
 are uniform across all cells in an array, and SciDB stores data for each
-attribute separately. Thus, a one-dimensional SciDB array is conceptually
+attribute separately. A one-dimensional SciDB array is conceptually
 similar to a data frame in R: the SciDB dimension index corresponds to data
 frame row index, and SciDB attributes to data frame columns.
-Higher-dimensional arrays in SciDB are conceptually array data frames and they
+Higher-dimensional arrays in SciDB are generalizations of data frames and they
 don't correspond directly to objects in R; the {\tt scidb} $n$-dimensional
 array class described below is sometimes limited to working with one attribute
 at a time to more closely emulate standard R arrays.
@@ -351,7 +351,7 @@ bulk data load utility as outlined in the SciDB documentation instead.
 > str(v)
 \end{Sinput}
 \begin{Soutput}
-SciDB expression:  R_array173f3c72d96e1102936986051
+SciDB expression:  R_array366d7949bc241102999947615
 SciDB schema:  <val:double NULL DEFAULT null> [i=0:4,5,0,j=0:4,5,0]
 
 Attributes:
@@ -366,24 +366,24 @@ Dimensions:
 > crossprod( v[] )              # Compute t(v) %*% v using R
 \end{Sinput}
 \begin{Soutput}
-           0          1          2         3         4
-0  1.8894434  2.4798754 -0.7291764  2.478789 2.5500004
-1  2.4798754  9.2157448 -0.3266349  4.346233 1.3145732
-2 -0.7291764 -0.3266349  2.6620983 -3.624323 0.9648742
-3  2.4787893  4.3462331 -3.6243228  8.432897 1.4778634
-4  2.5500004  1.3145732  0.9648742  1.477863 7.1150307
+            0           1          2           3          4
+0  2.80783239 -0.05946079  0.6109525  1.53758978 -1.1351279
+1 -0.05946079  0.37437931  0.4675420 -0.08090686  0.8351372
+2  0.61095249  0.46754196  2.9929278 -2.32618189  0.7360878
+3  1.53758978 -0.08090686 -2.3261819  5.48612039 -0.5832051
+4 -1.13512788  0.83513722  0.7360878 -0.58320510  2.5291922
 \end{Soutput}
 \begin{Sinput}
 > # Now compute using SciDB, and materialize the result to R:
 > crossprod(v)[]
 \end{Sinput}
 \begin{Soutput}
-           0          1          2         3         4
-0  1.8894434  2.4798754 -0.7291764  2.478789 2.5500004
-1  2.4798754  9.2157448 -0.3266349  4.346233 1.3145732
-2 -0.7291764 -0.3266349  2.6620983 -3.624323 0.9648742
-3  2.4787893  4.3462331 -3.6243228  8.432897 1.4778634
-4  2.5500004  1.3145732  0.9648742  1.477863 7.1150307
+            0           1          2           3          4
+0  2.80783239 -0.05946079  0.6109525  1.53758978 -1.1351279
+1 -0.05946079  0.37437931  0.4675420 -0.08090686  0.8351372
+2  0.61095249  0.46754196  2.9929278 -2.32618189  0.7360878
+3  1.53758978 -0.08090686 -2.3261819  5.48612039 -0.5832051
+4 -1.13512788  0.83513722  0.7360878 -0.58320510  2.5291922
 \end{Soutput}
 \end{Schunk}
 
@@ -1044,6 +1044,9 @@ Use the \verb+index_lookup+ function along with  \verb+unique+ to bind a new
 variable that enumerates unique values of a variable similarly to the R
 \verb+factor+ function.
 
+Use the new \verb+factor_scidb+ function to create R factor variables whose
+levels are determined by a SciDB dimension array.
+
 Examples follow. Note that we use the SciDB \verb+project+ function in one
 example. \verb+project+ presents an alternative syntax to the functionally
 equivalent column subset selection of variables using brackets.
@@ -1085,6 +1088,9 @@ equivalent column subset selection of variables using brackets.
 6         3.9          1.7         0.4  setosa             0
 \end{Soutput}
 \end{Schunk}
+
+See the on-line documentation for \verb+factor_scid+ for additional
+examples.
 
 \subsection{Missing values}
 
@@ -1168,7 +1174,7 @@ Here is an example:
 > C@name
 \end{Sinput}
 \begin{Soutput}
-[1] "R_array173f3fa0cd601102936986051"
+[1] "R_array366d7fc6adf21102999947615"
 \end{Soutput}
 \begin{Sinput}
 > C@schema

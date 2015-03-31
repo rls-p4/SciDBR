@@ -208,10 +208,10 @@ Matrix package (whose sparse matrix elements are implicitly zero).
 The elements of a SciDB array, called {\it cells}, contain one or more {\it
 attributes} (similar to R variables).  The number and data types of attributes
 are uniform across all cells in an array, and SciDB stores data for each
-attribute separately. Thus, a one-dimensional SciDB array is conceptually
+attribute separately. A one-dimensional SciDB array is conceptually
 similar to a data frame in R: the SciDB dimension index corresponds to data
 frame row index, and SciDB attributes to data frame columns.
-Higher-dimensional arrays in SciDB are conceptually array data frames and they
+Higher-dimensional arrays in SciDB are generalizations of data frames and they
 don't correspond directly to objects in R; the {\tt scidb} $n$-dimensional
 array class described below is sometimes limited to working with one attribute
 at a time to more closely emulate standard R arrays.
@@ -757,6 +757,9 @@ Use the \verb+index_lookup+ function along with  \verb+unique+ to bind a new
 variable that enumerates unique values of a variable similarly to the R
 \verb+factor+ function.
 
+Use the new \verb+factor_scidb+ function to create R factor variables whose
+levels are determined by a SciDB dimension array.
+
 Examples follow. Note that we use the SciDB \verb+project+ function in one
 example. \verb+project+ presents an alternative syntax to the functionally
 equivalent column subset selection of variables using brackets.
@@ -774,6 +777,9 @@ unique(x$Species)[]
 # Add a new variable that enumerates factor levels of Species:
 head(index_lookup(x, unique(x$Species), "Species"))
 @
+
+See the on-line documentation for \verb+factor_scid+ for additional
+examples.
 
 \subsection{Missing values}
 
