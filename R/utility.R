@@ -344,7 +344,7 @@ GET = function(resource, args=list(), header=TRUE, async=FALSE, interrupt=FALSE,
 {
   if(!(substr(resource,1,1)=="/")) resource = paste("/",resource,sep="")
   uri = URI(resource, args)
-  uri = URLencode(uri)
+  uri = oldURLencode(uri)
   uri = gsub("\\+","%2B",uri,perl=TRUE)
   on.exit(sigint(SIG_DFL)) # Reset signal handler on exit
   callback = curl_signal_trap
@@ -1271,3 +1271,20 @@ aparser = function(x, expr)
   }
   sprintf("<%s>", paste(z, collapse=","))
 }
+
+# Some versions of RCurl seem to contain a broken URLencode function.
+oldURLencode = function (URL, reserved = FALSE) 
+{
+    OK <- paste0("[^-ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz0123456789$_.+!*'(),", 
+        if (!reserved) 
+            ";/?:@=&", "]")
+    x <- strsplit(URL, "")[[1L]]
+    z <- grep(OK, x)
+    if (length(z)) {
+        y <- sapply(x[z], function(x) paste0("%", as.character(charToRaw(x)), 
+            collapse = ""))
+        x[z] <- y
+    }
+    paste(x, collapse = "")
+}
+
