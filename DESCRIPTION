@@ -1,6 +1,6 @@
 Package: scidb
 Type: Package
-Title: An R interface to SciDB
+Title: An R Interface to SciDB
 Version: 1.2-0
 Date: 2014-03-16
 Author: Paradigm4, B. W. Lewis 
