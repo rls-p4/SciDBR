@@ -691,6 +691,14 @@ df2scidb = function(X,
 }
 
 
+# raw value to special 1-element SciDB array
+raw2scidb = function(X,name,gc=TRUE,...)
+{
+  stop("Not implemented yet")
+}
+
+
+
 iquery = function(query, `return`=FALSE,
                   afl=TRUE, iterative=FALSE,
                   n=10000, excludecol, binary=FALSE, ...)

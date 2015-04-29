@@ -295,6 +295,21 @@ scidb_raw (SEXP A)
         }
       }
       break;
+    case RAWSXP:
+/* Compute the output length first, padding length for SciDB string header,
+ * null flag (byte), string length (unsigned int), and for the terminating
+ * string zero byte.
+ */
+      if(len > INT_MAX) error("Too big.");
+      slen =  1 + 4 + len + 1; // null_flag + len + data + terminating
+      PROTECT(ans = allocVector(RAWSXP,  slen));
+      buf = (char *)RAW(ans);
+      if(!buf) error ("Not enough memory.");
+      memcpy(buf, &not_missing, 1); buf++;
+      l = (unsigned int)len;
+      memcpy(buf, &l, 4); buf+=4;
+      memcpy(buf, RAW(A), len);
+      break;
     default:
       break;
     }

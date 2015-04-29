@@ -249,6 +249,10 @@ as.scidb = function(X,
                     chunkSize = chunksize,
                     gc=TRUE, ...)
 {
+  if(inherits(X,"raw"))
+  {
+    return(raw2scidb(X,name=name,gc=gc,...))
+  }
   if(inherits(X,"data.frame"))
   {
     if(missing(chunksize))
