@@ -63,7 +63,15 @@ scidb = function(name, gc, `data.frame`)
     return(.scidbeval(name@name, eval=FALSE, gc=gc, `data.frame`=`data.frame`, depend=list(name)))
   }
   escape = gsub("'","\\\\'",name,perl=TRUE)
-  query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape,escape)
+# SciDB explain_logical operator changed in version 15.7
+  if(compare_versions(options("scidb.version")[[1]],15.7))
+  {
+    query = sprintf("join(show('filter(%s,true)','afl'), _explain_logical('filter(%s,true)','afl'))", escape,escape)
+  }
+  else
+  {
+    query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape,escape)
+  }
   query = iquery(query, `return`=TRUE)
   logical_plan = query$logical_plan
   schema = gsub("^.*<","<",query$schema, perl=TRUE)
