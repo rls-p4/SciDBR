@@ -1182,7 +1182,7 @@ digest_auth = function(method, uri, realm="", nonce="123456")
 {
   if(exists("authtype",envir=.scidbenv))
   {
-   if(.scidbenv$authtype != "digest") return(c(Expect=""))
+   if(.scidbenv$authtype != "digest") return(NULL)
   }
   uri = gsub(".*/","/",uri)
   userpwd = .scidbenv$digest
