@@ -188,7 +188,7 @@ is.temp = function(name)
 scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
                         port=options("scidb.default_shim_port")[[1]],
                         username, password,
-                        auth_type=c("pam","digest"), protocol=c("http","https"))
+                        auth_type=c("scidb","digest"), protocol=c("http","https"))
 {
   scidbdisconnect()
   auth_type = match.arg(auth_type)
@@ -198,12 +198,12 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
   assign("protocol",protocol,envir=.scidbenv)
   if(missing(username)) username=c()
   if(missing(password)) password=c()
-# Check for login using either pam or basic authentication
+# Check for login using either scidb or HTTP digest authentication
   if(!is.null(username))
   {
     assign("authtype",auth_type,envir=.scidbenv)
     assign("authenv",new.env(),envir=.scidbenv)
-    if(auth_type=="pam")
+    if(auth_type=="scidb")
     {
       auth = GET(resource="login",list(username=username, password=password),header=FALSE)
       if(nchar(auth)<1) stop("Authentication error")
