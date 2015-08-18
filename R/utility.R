@@ -193,6 +193,8 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 # Check for login using either pam or basic authentication
   if(!is.null(username))
   {
+    assign("authtype",auth_type,envir=.scidbenv)
+    assign("authenv",new.env(),envir=.scidbenv)
     if(auth_type=="pam")
     {
       auth = GET(resource="login",list(username=username, password=password),header=FALSE)
@@ -202,8 +204,6 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
     {
       assign("digest",paste(username,password,sep=":"),envir=.scidbenv)
     }
-    assign("authtype",auth_type,envir=.scidbenv)
-    assign("authenv",new.env(),envir=.scidbenv)
     reg.finalizer(.scidbenv$authenv, function(e) scidblogout(), onexit=TRUE)
   }
 
