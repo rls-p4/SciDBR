@@ -104,7 +104,7 @@ names.scidbdf = function(x)
 
 `names<-.scidbdf` = function(x,value)
 {
-  ans = attribtue_rename(x,`new`=value)
+  ans = attribute_rename(x,`new`=value)
   row.names(ans) = rownames(x)  # Preserve row names
   ans
 }
