@@ -104,13 +104,7 @@ names.scidbdf = function(x)
 
 `names<-.scidbdf` = function(x,value)
 {
-  old = x@attributes
-  if(is.null(value)) return(x)
-  if(all(old==value)) return(x)
-  if(length(value)!=length(old)) stop(paste("Incorrect number of names (should be",length(old),")"))
-  arg = paste(paste(old,value,sep=","),collapse=",")
-  query = sprintf("attribute_rename(%s,%s)",x@name,arg)
-  ans = .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
+  ans = attribtue_rename(x,`new`=value)
   row.names(ans) = rownames(x)  # Preserve row names
   ans
 }

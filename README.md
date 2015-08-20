@@ -41,12 +41,43 @@ This project also has a pretty web page on Github here:
 
 https://Paradigm4.github.io/SciDBR
 
+
+Stuff that will change
+===
+
+## Labeled coordinates
+
+I plan to drop all use of `rownames` in the package. I agree with Hadley
+Wickham that rownames is an ill-advised indexing strategy. I want to remove
+it from the package because it leads to substantial internal complexity without
+providing significant benefit. Here is a description of the old use of
+row names and better alternative indexing schemes:
+
+SciDB arrays support labeled coordinate indices using the standard R
+rownames, colnames, or dimnames settings. Assigned labels are provided by 1-d
+SciDB arrays that map the integer coordinate to a string label. Here is a
+simple example:
+
+```
+# Upload a test matrix to SciDB:
+X <- as.scidb( matrix(rnorm(20),nrow=5) )
+
+# Assign rownames to the SciDB matrix X.  SciDB matrix objects like X default
+# to zero-based indexing.  It's important that the label array have the same
+# starting index:
+rownames(X) <- as.scidb( data.frame(letters[1:5]), start=0)
+
+# We can now use strings to select subarrays and otherwise index X:
+X[c("b","a","d"), ]
+```
+
+
 New features
 ===
 
 ## Database-related updates
 
-* Support for SciDB version 14.3--also supports older SciDB releases, but not actively tested
+* Support for SciDB version 15.7--also supports older SciDB releases, but not actively tested
 * Dropping arrays from other R sessions requires a non-default option facilitating multiple-user settings.
 * Queries can be canceled with R user interrupts now (for example with CTRL + C or ESC).
 
@@ -68,26 +99,6 @@ are mapped to SciDB missing code zero.
 Multidimensional windowed and moving-window aggregates are now supported with
 simple syntax in the `aggregate` function. Windows can be defined along
 coordinate axes or number of (sparse) data values.
-
-## Labeled coordinates
-
-SciDB arrays now support labeled coordinate indices using the standard R
-rownames, colnames, or dimnames settings. Assigned labels are provided by 1-d
-SciDB arrays that map the integer coordinate to a string label. Here is a
-simple example:
-
-```
-# Upload a test matrix to SciDB:
-X <- as.scidb( matrix(rnorm(20),nrow=5) )
-
-# Assign rownames to the SciDB matrix X.  SciDB matrix objects like X default
-# to zero-based indexing.  It's important that the label array have the same
-# starting index:
-rownames(X) <- as.scidb( data.frame(letters[1:5]), start=0)
-
-# We can now use strings to select subarrays and otherwise index X:
-X[c("b","a","d"), ]
-```
 
 ## More indexing goodness
 

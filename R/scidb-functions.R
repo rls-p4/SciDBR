@@ -360,7 +360,8 @@ as.scidb = function(X,
   {
     if(!is.null(force_type))
     {
-      query = sprintf("store( attribute_rename(project(apply(reshape(input(%s,'%s', 0, '(%s null)'),%s), ___, %s(%s)), ___), ___, %s), %s)",load_schema,ans,type,schema, force_type, attr_name, attr_name, name)
+#      query = sprintf("store( attribute_rename(project(apply(reshape(input(%s,'%s', 0, '(%s null)'),%s), ___, %s(%s)), ___), ___, %s), %s)",load_schema,ans,type,schema, force_type, attr_name, attr_name, name)
+      query = sprintf("store( cast(project(apply(reshape(input(%s,'%s', 0, '(%s null)'),%s), ___, %s(%s)), ___), ___, %s), %s)",load_schema,ans,type,schema, force_type, attr_name, schema, name)
     }
     else {
       query = sprintf("store(reshape(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
@@ -370,7 +371,8 @@ as.scidb = function(X,
   {
     if(!is.null(force_type))
     {
-      query = sprintf("store(attribute_rename(project(appy(input(%s,'%s', 0, '(%s null)'),___, %s(%s)), ___), ___, %s), %s)",load_schema,ans,type,name,force_type,attr_name,attr_name)
+#      query = sprintf("store(attribute_rename(project(appy(input(%s,'%s', 0, '(%s null)'),___, %s(%s)), ___), ___, %s), %s)",load_schema,ans,type,name,force_type,attr_name,attr_name)
+      query = sprintf("store(cast(project(appy(input(%s,'%s', 0, '(%s null)'),___, %s(%s)), ___), ___, %s), %s)",load_schema,ans,type,name,force_type,attr_name,schema)
     } else
     {
       query = sprintf("store(input(%s,'%s', 0, '(%s null)'),%s)",load_schema,ans,type,name)

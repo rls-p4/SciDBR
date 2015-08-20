@@ -69,15 +69,18 @@ unpack_scidb = function(x, `eval`=FALSE)
 
 attribute_rename = function(x, old, `new`, `eval`=FALSE)
 {
+  if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
   atr = scidb_attributes(x)
   if(missing(old)) old=x@attributes
 # Positional attributes
-  if(is.numeric(old))
+  if(!is.numeric(old))
   {
-    old = atr[old]
+    old = which(atr %in% old)
   }
-  query = sprintf("attribute_rename(%s,%s)",x@name,
-    paste(paste(old,new,sep=","),collapse=","))
+  idx = old
+  atr[idx] = `new`
+  query = sprintf("cast(%s, %s%s)", x@name, build_attr_schema(x,newnames=atr),
+             build_dim_schema(x))
   .scidbeval(query,eval,depend=list(x))
 }
 

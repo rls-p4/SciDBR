@@ -465,8 +465,9 @@ fn_scidb = function(x,fun,attr)
   expr = paste(sprintf("%s, %s(%s)", new_attributes, fun, attr),collapse=",")
   query = sprintf("apply(%s, %s)",x@name, expr)
   query = sprintf("project(%s, %s)",query, paste(new_attributes,collapse=","))
-  ren = paste(sprintf("%s,%s",new_attributes,attr),collapse=",")
-  query = sprintf("attribute_rename(%s,%s)",query,ren)
+#  ren = paste(sprintf("%s,%s",new_attributes,attr),collapse=",")
+#  query = sprintf("attribute_rename(%s,%s)",query,ren)
+  query = attribute_rename(scidb(query), new_attributes, attr)@name
   .scidbeval(query,`eval`=FALSE,gc=TRUE,depend=list(x),`data.frame`=(is.scidbdf(x)))
 }
 
