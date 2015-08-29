@@ -203,11 +203,7 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
   {
     assign("authtype",auth_type,envir=.scidbenv)
     assign("authenv",new.env(),envir=.scidbenv)
-<<<<<<< HEAD
-    if(auth_type=="pam")
-=======
     if(auth_type=="scidb")
->>>>>>> master
     {
       auth = GET(resource="login",list(username=username, password=password),header=FALSE)
       if(nchar(auth)<1) stop("Authentication error")
