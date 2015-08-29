@@ -148,8 +148,8 @@ dimfilter = function(x, i, eval, drop, redim)
 # redim will be handled by the special_index function in the ci case:
     if(redim && !any(ci))
     {
-      q = sprintf("subarray(redimension(%s, %s%s),%s)", q, build_attr_schema(x),
-          build_dim_schema(x,newend=newend,newstart=newstart), paste(rep('null',2*length(dim(x))),collapse=","))
+      q = sprintf("redimension(%s, %s%s)", q, build_attr_schema(x),
+          build_dim_schema(x,newend=newend,newstart=newstart))
 # We need to redimension any dimname arrays conformably. The only thing that
 # could change is the starting coordinate.
       if(!is.null(new_dimnames))
@@ -157,10 +157,7 @@ dimfilter = function(x, i, eval, drop, redim)
         { if(!is.null(new_dimnames[[j]]))
           { if(newstart[j] != scidb_coordinate_start(new_dimnames[[j]]))
             {
-              new_dimnames[[j]] = scidb(sprintf("subarray(redimension(%s, %s%s),null,null)", new_dimnames[[j]]@name, build_attr_schema(new_dimnames[[j]]), build_dim_schema(new_dimnames[[j]],newstart=newstart[j],newend="*")))
-            } else
-            {
-              new_dimnames[[j]] = scidb(sprintf("subarray(%s,null,null)", new_dimnames[[j]]@name ))
+              new_dimnames[[j]] = scidb(sprintf("redimension(%s, %s%s)", new_dimnames[[j]]@name, build_attr_schema(new_dimnames[[j]]), build_dim_schema(new_dimnames[[j]],newstart=newstart[j],newend="*")))
             }
           } } }
     }
