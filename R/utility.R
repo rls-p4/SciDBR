@@ -63,7 +63,15 @@ scidb = function(name, gc, `data.frame`)
     return(.scidbeval(name@name, eval=FALSE, gc=gc, `data.frame`=`data.frame`, depend=list(name)))
   }
   escape = gsub("'","\\\\'",name,perl=TRUE)
-  query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape,escape)
+# SciDB explain_logical operator changed in version 15.7
+  if(compare_versions(options("scidb.version")[[1]],15.7))
+  {
+    query = sprintf("join(show('filter(%s,true)','afl'), _explain_logical('filter(%s,true)','afl'))", escape,escape)
+  }
+  else
+  {
+    query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape,escape)
+  }
   query = iquery(query, `return`=TRUE)
   logical_plan = query$logical_plan
   schema = gsub("^.*<","<",query$schema, perl=TRUE)
@@ -180,7 +188,7 @@ is.temp = function(name)
 scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
                         port=options("scidb.default_shim_port")[[1]],
                         username, password,
-                        auth_type=c("pam","digest"), protocol=c("http","https"))
+                        auth_type=c("scidb","digest"), protocol=c("http","https"))
 {
   scidbdisconnect()
   auth_type = match.arg(auth_type)
@@ -190,12 +198,16 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
   assign("protocol",protocol,envir=.scidbenv)
   if(missing(username)) username=c()
   if(missing(password)) password=c()
-# Check for login using either pam or basic authentication
+# Check for login using either scidb or HTTP digest authentication
   if(!is.null(username))
   {
     assign("authtype",auth_type,envir=.scidbenv)
     assign("authenv",new.env(),envir=.scidbenv)
+<<<<<<< HEAD
     if(auth_type=="pam")
+=======
+    if(auth_type=="scidb")
+>>>>>>> master
     {
       auth = GET(resource="login",list(username=username, password=password),header=FALSE)
       if(nchar(auth)<1) stop("Authentication error")
@@ -344,7 +356,7 @@ GET = function(resource, args=list(), header=TRUE, async=FALSE, interrupt=FALSE,
 {
   if(!(substr(resource,1,1)=="/")) resource = paste("/",resource,sep="")
   uri = URI(resource, args)
-  uri = URLencode(uri)
+  uri = oldURLencode(uri)
   uri = gsub("\\+","%2B",uri,perl=TRUE)
   on.exit(sigint(SIG_DFL)) # Reset signal handler on exit
   callback = curl_signal_trap
@@ -1190,7 +1202,7 @@ digest_auth = function(method, uri, realm="", nonce="123456")
 {
   if(exists("authtype",envir=.scidbenv))
   {
-   if(.scidbenv$authtype != "digest") return(c(Expect=""))
+   if(.scidbenv$authtype != "digest") return(NULL)
   }
   uri = gsub(".*/","/",uri)
   userpwd = .scidbenv$digest
@@ -1279,3 +1291,20 @@ aparser = function(x, expr)
   }
   sprintf("<%s>", paste(z, collapse=","))
 }
+
+# Some versions of RCurl seem to contain a broken URLencode function.
+oldURLencode = function (URL, reserved = FALSE) 
+{
+    OK <- paste0("[^-ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz0123456789$_.+!*'(),", 
+        if (!reserved) 
+            ";/?:@=&", "]")
+    x <- strsplit(URL, "")[[1L]]
+    z <- grep(OK, x)
+    if (length(z)) {
+        y <- sapply(x[z], function(x) paste0("%", as.character(charToRaw(x)), 
+            collapse = ""))
+        x[z] <- y
+    }
+    paste(x, collapse = "")
+}
+

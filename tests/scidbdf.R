@@ -79,5 +79,10 @@ if(nchar(host)>0)
  f = function(a)  unique(a$val)
  u = f(x)
 
+
+# factor_scidb
+ x = as.scidb(levels(iris$Species))
+ y = factor_scidb(iris$Species, x)
+
 }
 gc()

@@ -86,18 +86,6 @@ peek = function(x, n=50L, prob=1)
   iqdf(x, n, prob)
 }
 
-order_scidb = function(x,na.last=TRUE,decreasing=FALSE)
-{
-# XXX Does this dispatch properly to other methods for order?
-  if(!is.scidb(x)) return(base::order(x, na.last=na.last, decreasing=decreasing))
-  if(!na.last) stop("The na.last argument is not supported")
-  if(length(dim(x))>1) stop("x must be a scidb vector object")
-  a = bind(x,"p",dimensions(x)[1])
-  s = sort(a,attributes=scidb_attributes(a)[-length(scidb_attributes(a))],decreasing=decreasing)
-# XXX modify this to return the same dimension schema as x
-  project(s,length(scidb_attributes(s)))[0:(count(s)-1)]
-}
-
 
 rank_scidb = function(x,na.last=TRUE,ties.method = c("average", "first", "random", "max", "min"))
 {

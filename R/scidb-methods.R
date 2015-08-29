@@ -303,7 +303,8 @@ function(x)
     mask = sprintf("build(<%s:double>[%s=0:%s,1000000,0],1)",atr,dims[1],noE(min(len)-1))
     mask = sprintf("apply(%s,%s,%s)",mask,dims[2],dims[1])
     mask = sprintf("redimension(%s,%s)",mask, bschema)
-    mask = sprintf("attribute_rename(%s,%s,%s)",mask,atr,make.unique_(atr,"v"))
+#    mask = sprintf("attribute_rename(%s,%s,%s)",mask,atr,make.unique_(atr,"v"))
+    mask = attribute_rename(scidb(mask), atr, make.unique_(atr,"v"))@name
     GEMM.BUG = ifelse(is.logical(options("scidb.gemm_bug")[[1]]),options("scidb.gemm_bug")[[1]],FALSE)
     if(GEMM.BUG) query = sprintf("project(join(sg(subarray(%s,null,null,null,null),1,-1),%s),%s)",x@name,mask,atr)
     else query = sprintf("project(join(subarray(%s,null,null,null,null),%s),%s)",x@name,mask,atr)
@@ -419,8 +420,6 @@ setMethod("glm.fit", signature(x="scidb",y="ANY",weights="MNSN"), glm.fit_scidb)
 setMethod("na.locf",signature(object="scidb"), na.locf_scidb)
 setMethod("hist",signature(x="scidb"), hist_scidb)
 setMethod("rank",signature(x="scidb"), rank_scidb)
-setGeneric("order")
-setMethod("order",signature("ANY"), order_scidb)
 
 
 # Transpose a matrix or vector

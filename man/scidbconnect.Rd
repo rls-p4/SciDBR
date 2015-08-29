@@ -8,7 +8,7 @@ Connect to a SciDB database.
 scidbconnect(host=options("scidb.default_shim_host")[[1]],
              port=options("scidb.default_shim_port")[[1]],
              username, password,
-             auth_type=c("pam","digest"),
+             auth_type=c("scidb","digest"),
              protocol=c("http","https"))
 }
 \arguments{
@@ -24,14 +24,14 @@ The default shim ports are 8080 (open) and 8083 (SSL encrypted).
   \item{password}{Optional authentication password (character).}
   \item{auth_type}{Optinal authentication method. The
 \code{auth_type} parameter is only used when a \code{username} and
-\code{password} are supplied. It defaults to 'pam'
-which uses local Linux user names and passwords on the SciDB system.
+\code{password} are supplied. It defaults to 'scidb'
+which uses SciDB's native authentication.
 Select 'digest' to use basic HTTP digest authentication. See the
 \code{shim} documentation for details
 \url{http://htmlpreview.github.io/?https://raw.github.com/Paradigm4/shim/master/wwwroot/help.html}.}
   \item{protocol}{Optional transport protocol, defaults to 'http.'
-Select 'https' for TLS encryption. Note that the 'pam' authenitication
-type automatically uses TLS encryption.}
+Select 'https' for TLS encryption. The 'scidb' authenitication
+type automatically uses (and requires) TLS encryption.}
 }
 \details{
 The SciDB connection state is maintained internally to the \code{scidb}

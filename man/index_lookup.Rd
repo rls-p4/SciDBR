@@ -25,6 +25,7 @@ A \code{scidb}  or \code{scidbdf} object.
 \note{
 If \code{attr} is missing, the first SciDB attribute of \code{X} will be used.
 If \code{I} has more than one attribute, then its first attribute will be used.
+The option \code{eval} is deprecated and will be removed in the future. Use \code{scidbeval} instead.
 }
 \author{
 B. W. Lewis<blewis@paradigm4.com>
