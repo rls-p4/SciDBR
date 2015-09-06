@@ -247,12 +247,18 @@ materialize = function(x, drop=FALSE)
 
 # Unpack into a staging data frame
   data  = scidb_unpack_to_dataframe(query)
+# Bail as soon as possible
+  if(any(is.infinite(dim(x))))
+  {
+    warnonce("toobig")
+    return(data)
+  }
   nelem = nrow(data)
   if(is.null(nelem)) nelem = 0
   p     = prod(d)
 # Adjust indexing origin
 #  data[,1:ndim] = data[,1:ndim] + 1
-  labels = as.list(data[,1:ndim])
+  labels = lapply(data[,1:ndim], unique)
   for(idx in 1:ndim)
   {
     data[,idx] = data[,idx] - data[1,idx] + 1
