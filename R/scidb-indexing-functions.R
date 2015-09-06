@@ -112,6 +112,8 @@ dimfilter = function(x, i, eval, drop, redim)
   re = r[seq(from=2,to=length(r),by=2)]
   r = paste(c(ro,re),collapse=",")
   q = sprintf("between(%s,%s)",x@name,r)
+  newend = scidb_coordinate_end(x)
+  newstart = scidb_coordinate_start(x)
 
   new_depend = x
   if(!everything)
@@ -137,11 +139,11 @@ dimfilter = function(x, i, eval, drop, redim)
           build_dim_schema(x,newend=newend,newstart=newstart))
     }
   }
-# Return a new scidb array reference
+# a new scidb array reference
   ans = .scidbeval(q,eval=FALSE,gc=TRUE,`data.frame`=FALSE,depend=new_depend)
   if(any(ci)) 
   {
-    return(special_index(ans, ans@name, i, ci, eval, drop, redim))
+    return(special_index(ans, i, ci, eval, drop, redim, newstart, newend))
   }
 # Drop singleton dimensions if instructed to
   if(drop)

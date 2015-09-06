@@ -76,7 +76,7 @@ rownames.scidbdf = function(x)
 
 `dimnames<-.scidbdf` = function(x, value)
 {
-  stop("Not supported. Use names<- to change attribute names.:w")
+  stop("Not supported. Use names<- to change attribute names.")
 }
 
 row.names.scidbdf = function(x)

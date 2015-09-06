@@ -82,11 +82,6 @@ redimension = function(x, schema, dim, FUN)
   if(missing(schema)) schema = NULL
   if(missing(dim)) dim = NULL
   s = schema
-  if(is.null(s) && is.null(dim) ||
-    (!is.null(s) && !is.null(dim)))
-  {
-    stop("Exactly one of schema or dim must be specified")
-  }
   if((class(s) %in% c("scidb","scidbdf"))) s = schema(s)
   dnames = c()
   if(!is.null(dim))
@@ -100,7 +95,7 @@ redimension = function(x, schema, dim, FUN)
     as = build_attr_schema(x, I=-ia)
     if(length(id>0))
     {
-      ds = build_dim_schema(x, I=id, bracket=FALSE)
+      ds = build_dim_schema(s, I=id, bracket=FALSE) # Note use of s here
     } else
     {
       ds = c()
@@ -135,7 +130,7 @@ redimension = function(x, schema, dim, FUN)
 # Note! we need to keep around the original nid attributes for the
 # index_lookups. This can screw with some aggregation functions.
 # In such cases, use aggregate for now. Eventually, maybe split
-# the nids out into a new array?
+# the nids out into a new array? XXX
 
 # Add the new dimension(s)
       a = x@attributes[ia]
