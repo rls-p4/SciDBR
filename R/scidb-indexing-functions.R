@@ -258,7 +258,7 @@ materialize = function(x, drop=FALSE)
   p     = prod(d)
 # Adjust indexing origin
 #  data[,1:ndim] = data[,1:ndim] + 1
-  if(ndim==1) labels = unique(data[,1])
+  if(ndim==1) labels = list(unique(data[,1]))
   else labels = lapply(data[,1:ndim], unique)
   for(idx in 1:ndim)
   {
