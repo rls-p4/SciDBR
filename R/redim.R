@@ -153,6 +153,8 @@ redimension = function(x, schema, dim, FUN)
       new = paste(new,collapse=",")
       ds = ifelse(length(ds)>0,paste(ds,new,sep=","),new)
     }
+# Re-order new dimension schema to fit order specified in `dim`
+    ds = paste(.dimsplit(sprintf("[%s]",ds))[dim],collapse=",")
     s = sprintf("%s[%s]",as,ds)
   }
 # Check to see if the new schema is identical to the original schema.

@@ -208,7 +208,7 @@ drop_dim = function(ans)
 
 
 # Materialize the single-attribute scidb array x as an R array.
-materialize = function(x, drop=FALSE, densify=FALSE)
+materialize = function(x, drop=FALSE)
 {
 
 # If x has multiple attributes, warn.

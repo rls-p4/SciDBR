@@ -45,6 +45,21 @@
   strsplit(strsplit(d,"=")[[1]],",")
 }
 
+.dimsplit = function(x)
+{
+  d = .dimsplitter(x)
+  n = lapply(d[-length(d)], function(x)x[[length(x)]])
+  p = d[-1]
+  l = length(p)
+  if(l>1)
+  {
+    p[1:(l-1)] = lapply(p[1:(l-1)], function(x) x[1:(length(x)-1)])
+  }
+  ans = paste(n,lapply(p,paste,collapse=","),sep="=")
+  names(ans) = n
+  ans
+}
+
 .attsplitter = function(x)
 {
   if(is.character(x)) s = x
