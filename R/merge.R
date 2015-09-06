@@ -249,16 +249,25 @@ merge_scidb_on_attributes = function(x,y,by.x,by.y)
   newds = sprintf("[%s]",paste(newds,collapse=","))
 
 # If the chunk sizes are identical, we're OK (join does not care about the
-# upper array bounds). Otherwise we need redimension.
-  if(isTRUE(compare_schema(x,y,ignore_attributes=TRUE,ignore_types=TRUE,ignore_nullable=TRUE,s1_dimension_index=idx.x, s2_dimension_index=which(msk.y), ignore_end=TRUE)))
+# upper array bounds). Otherwise we need redimension. This is no longer needed
+# after 14.12, but we keep the old optimization around for
+# backward-compatibility.
+  if(compare_versions(options("scidb.version")[[1]],14.12))
   {
     castschema = sprintf("%s%s",newas,newds)
     z = cast(y, castschema)
   } else
   {
-    reschema = sprintf("%s%s", newas,newds)
-    castschema = sprintf("%s%s",newas,newds)
-    z = redimension(cast(subarray(y,limits=reschema,between=TRUE),castschema),reschema)
+    if(isTRUE(compare_schema(x,y,ignore_attributes=TRUE,ignore_types=TRUE,ignore_nullable=TRUE,s1_dimension_index=idx.x, s2_dimension_index=which(msk.y), ignore_end=TRUE)))
+    {
+      castschema = sprintf("%s%s",newas,newds)
+      z = cast(y, castschema)
+    } else
+    {
+      reschema = sprintf("%s%s", newas,newds)
+      castschema = sprintf("%s%s",newas,newds)
+      z = redimension(cast(subarray(y,limits=reschema,between=TRUE),castschema),reschema)
+    }
   }
 
 # Join on dimensions.
