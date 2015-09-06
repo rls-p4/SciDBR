@@ -1291,16 +1291,135 @@ aparser = function(x, expr)
 # Some versions of RCurl seem to contain a broken URLencode function.
 oldURLencode = function (URL, reserved = FALSE) 
 {
-    OK <- paste0("[^-ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz0123456789$_.+!*'(),", 
+    OK = paste0("[^-ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz0123456789$_.+!*'(),", 
         if (!reserved) 
             ";/?:@=&", "]")
-    x <- strsplit(URL, "")[[1L]]
-    z <- grep(OK, x)
+    x = strsplit(URL, "")[[1L]]
+    z = grep(OK, x)
     if (length(z)) {
-        y <- sapply(x[z], function(x) paste0("%", as.character(charToRaw(x)), 
+        y = sapply(x[z], function(x) paste0("%", as.character(charToRaw(x)), 
             collapse = ""))
-        x[z] <- y
+        x[z] = y
     }
     paste(x, collapse = "")
 }
 
+
+
+
+
+
+#@params
+#'expr an R 'language' type object to parse
+#'sci a SciDB array 
+rewrite_subset_expression = function(expr, sci)
+{
+  dims = dimensions(sci)
+  n = length(dims)
+  template = rep("",2*n)
+
+  .toList = makeCodeWalker(call=function(e, w) lapply(e, walkCode, w),
+                           leaf=function(e, w) e)
+
+# Walk the ast for R expression x, annotating elements with identifying
+# attributes. Specify a character vector of array dimension in dims.
+# Substitute evaluated R scalars for variables where possible (but not more
+# complext R expressions).  The output is a list that can be parsed by the
+# `.compose_r` function below.
+  .annotate = function(x, dims=NULL, op="")
+  {
+    if(is.list(x))
+    {
+      if(length(x)>1) op = c(op,as.character(x[[1]]))
+      return(lapply(x, .annotate, dims, op))
+    }
+    op = paste(op,collapse="")
+    s = as.character(x)
+    if(!(s %in% c(dims, scidb_attributes(sci))))
+      s = tryCatch(as.character(eval(x,parent.frame())), error=function(e) as.character(x))
+    attr(s,"what") = "element"
+    if("character" %in% class(x)) attr(s,"what") = "character"
+    if(nchar(gsub("null","",gsub("[0-9 \\-\\.]+","",s),ignore.case=TRUE))==0)
+      attr(s,"what") = "scalar"
+    if(any(dims %in% gsub(" ","",s)) && nchar(gsub("[&(<>=) ]*","",op))==0)
+    {
+      attr(s,"what") = "dimension"
+    }
+    s
+  }
+
+  .compose_r = function(x)
+  {
+    if(is.list(x))
+    {
+      if(length(x)==3)
+      {
+        if(!is.list(x[[2]]) && !is.list(x[[3]]) &&
+           all( c("scalar","dimension") %in%
+                c(attr(x[[2]],"what"), attr(x[[3]],"what"))))
+        {
+          b = template
+          d = which(c(attr(x[[2]],"what"), attr(x[[3]],"what")) == "dimension") + 1
+          s = which(c(attr(x[[2]],"what"), attr(x[[3]],"what")) == "scalar") + 1
+          i = which(dims %in% x[[d]]) # template index
+          intx = round(as.numeric(x[[s]]))
+          if(intx >= 2^53) stop("Values too large, use an explicit SciDB filter expression")
+          numx = as.numeric(x[[s]])
+          lb = intx
+          if(lb==numx) lb = lb - 1
+          ub = intx
+          if(ub==numx) ub = ub + 1
+          if(x[[1]] == "==" || x[[1]] == "=") b[i] = b[i+n] = x[[s]]
+          else if(x[[1]] == "<") b[i+n] = sprintf("%.0f",lb)
+          else if(x[[1]] == "<=") b[i+n] = sprintf("%.0f",intx)
+          else if(x[[1]] == ">") b[i] = sprintf("%.0f",ub)
+          else if(x[[1]] == ">=") b[i] = sprintf("%.0f",intx)
+          b = paste(b,collapse=",")
+          return(sprintf("::%s",b))
+        }
+        return(c(.compose_r(x[[2]]), as.character(x[[1]]), .compose_r(x[[3]])))
+      }
+      if(length(x)==2)
+      {
+        if(as.character(x[[1]])=="(") return(c(.compose_r(x[[1]]),.compose_r(x[[2]]), ")"))
+        return(c(.compose_r(x[[1]]),.compose_r(x[[2]])))
+      }
+    }
+    if(attr(x,"what")=="character") return(sprintf("'%s'",as.character(x)))
+    as.character(x)
+  }
+
+  ans = .compose_r(.annotate(walkCode(expr, .toList), dims))
+  i   = grepl("::",ans)
+  ans = gsub("==","=",gsub("!","not",gsub("\\|","or",gsub("\\|\\|","or", gsub("&","and",gsub("&&","and",ans))))))
+  if(any(i))
+  {
+# Compose the betweens in a highly non-elegant way
+    b = strsplit(paste(gsub("::","",ans[i]),""),",")
+    ans[i] = "true"
+    b = Reduce(function(x,y)
+    {
+      n = length(x)
+      x = tryCatch(as.numeric(x), warning=function(e) rep(NA,n))
+      y = tryCatch(as.numeric(y), warning=function(e) rep(NA,n))
+      m = n/2
+      x1 = x[1:m]
+      y1 = y[1:m]
+      x1[is.na(x1)] = -Inf
+      y1[is.na(y1)] = -Inf
+      x1 = pmax(x1,y1)
+      x2 = x[(m+1):n]
+      y2 = y[(m+1):n]
+      x2[is.na(x2)] = Inf
+      y2[is.na(y2)] = Inf
+      x2 = pmin(x2,y2)
+      c(x1,x2)
+    }, b, init=template)
+    b = gsub("Inf","null",gsub("-Inf","null",as.character(b)))
+    ans = gsub("and true","",paste(ans,collapse=" "))
+    if(nchar(gsub(" ","",ans))==0 || gsub(" ","",ans)=="true")
+      return(sprintf("between(%s,%s)",sci@name,paste(b,collapse=",")))
+    return(sprintf("filter(between(%s,%s),%s)",sci@name,paste(b,collapse=","),ans))
+  }
+  sprintf("filter(%s,%s)",sci@name,paste(ans,collapse=" "))
+}

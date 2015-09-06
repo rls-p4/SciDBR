@@ -265,22 +265,26 @@ project = function(X,attributes,`eval`=FALSE)
   .scidbeval(query,eval,depend=list(X))
 }
 
-# This is the SciDB filter operation, not the R timeseries one.
-# X is either a scidb, scidbdf object.
-# expr is a valid SciDB expression (character)
-# eval=TRUE means run the query and return a scidb object.
-# eval=FALSE means return a promise object representing the query.
+# This is the SciDB filter operation, not the R timeseries one.  X is either a
+# scidb, scidbdf object.  expr is either a character SciDB filter expression or
+# an R language object.
 `filter_scidb` = function(X,expr,`eval`=FALSE)
 {
   xname = X
   if(class(X) %in% c("scidbdf","scidb")) xname = X@name
-# Check for special filter cases and adjust expr
-  if(length(scidb_attributes(X))==2 && nchar(expr)==1)
+  ischar = tryCatch( is.character(expr), error=function(e) FALSE)
+  if(ischar)
   {
-# Case 1: single comparison and two attributes
-    expr = paste(scidb_attributes(X), collapse=expr)
+# Check for special filter cases and adjust expr
+    if(length(scidb_attributes(X))==2 && nchar(expr)==1)
+    {
+      expr = paste(scidb_attributes(X), collapse=expr)
+    }
+    query = sprintf("filter(%s,%s)", xname,expr)
+  } else
+  {
+    query = rewrite_subset_expression(substitute(expr), X)
   }
-  query = sprintf("filter(%s,%s)", xname,expr)
   .scidbeval(query,eval,depend=list(X))
 }
 
@@ -386,5 +390,5 @@ sort_scidb = function(X, decreasing = FALSE, ...)
 `sort.scidbdf` = function(x,decreasing=FALSE,...) sort_scidb(x,decreasing,...)
 `unique.scidb` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
 `unique.scidbdf` = function(x,incomparables=FALSE,...) unique_scidb(x,incomparables,...)
-`subset.scidb` = function(x,subset,...) filter_scidb(x,expr=subset,...)
-`subset.scidbdf` = function(x,subset,...) filter_scidb(x,expr=subset,...)
+`subset.scidb` = function(x,...) filter_scidb(x,...)
+`subset.scidbdf` = function(x,...) filter_scidb(x,...)
