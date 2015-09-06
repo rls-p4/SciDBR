@@ -252,13 +252,13 @@ materialize = function(x, drop=FALSE)
   p     = prod(d)
 # Adjust indexing origin
 #  data[,1:ndim] = data[,1:ndim] + 1
+  labels = as.list(data[,1:ndim])
   for(idx in 1:ndim)
   {
     data[,idx] = data[,idx] - data[1,idx] + 1
   }
 
 # Handle coordinate labels
-  labels = NULL
   if(!is.null(dimnames(x)))
   {
     labels = lapply(1:ndim, function(j)
@@ -279,14 +279,6 @@ materialize = function(x, drop=FALSE)
         nm[dn[,1]] = dn[,2]
       }
       nm
-    })
-  } else
-  {
-    labels = lapply(1:ndim, function(j)
-    {
-      l = dim(x)[j]
-      if(l %in% "Inf") l = lapply(data[,j], function(x) length(unique(x)))
-      tryCatch(seq(from=as.numeric(scidb_coordinate_start(x)[j]),length.out=l), error=invisible)
     })
   }
 
