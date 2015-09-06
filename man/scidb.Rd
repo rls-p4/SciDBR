@@ -69,10 +69,6 @@ not allowed. Examples of valid index ranges include
 objects with array attributes as columns. Use either positional numeric
 or name-based indexing along columns, either with the dollar-sign notation
 or string indexing. See examples.
-\item The \code{scidb} class supports labeled dimension indexing using
-R \code{rownames, colnames}, or \code{dimnames} settings. Labels assigned
-in this way must be provided by 1-d SciDB arrays that map the integer
-coordinates to character label values. See the examples.
 \item The \code{scidb} class supports indexing by other SciDB arrays
 to achieve the effect of filtering by boolean expressions and similar
 operations, also illustrated below in the examples section.
@@ -129,28 +125,18 @@ D = diag(diag(X))
 # Materialize this sparse array to R:
 D[]
 
-# Produce a sparse matrix of filtered entries and materialize to R:
-subset(X, "val > 0")[]
+# Produce a sparse matrix of filtered entries and materialize to R
+# (cf ?subset):
+subset(X, val > 0)[]
 
 # Short-hand for the same effect:
-(X > 0)[]
-
-# Assign row labels to X. Note! We make sure that the index array starts at the
-# same starting index as the matrix (zero in this example):
-rownames(X) <- as.scidb(data.frame(letters[1:5]),start=0)
-# Index by label:
-X[c("c","a"), ]
-
-# Filter X by an auxillary SciDB array condition (we use the rownames array),
-# returning the result to R:
-X[rownames(X) > "'b'", ][]
-
+(X %%>%% 0)[]
 
 # A 3-d array:
 X <- build(dim=c(3,2,2),names=c("x","i","j","k"),data="i+j+k")
 
 # A sparse 3-d array filtered with subset:
-Y <- subset(X, "x>1")
+Y <- subset(X, x>1)
 count(Y)
 Y[]
 }}
