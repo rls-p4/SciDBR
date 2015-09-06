@@ -277,10 +277,18 @@ as.scidb = function(X,
     else
       X = as.vector(X)
   }
+# Check for a bunch of optional hidden arguments
   args = list(...)
+  attr_name = "val"
+  flip = FALSE
+  if(!is.null(args$dimension))  # flip attribute and dimension
+  {
+    force_type = "int64"
+    flip = TRUE
+    attr_name = "i"
+  }
   nullable = TRUE
   if(!is.null(args$nullable)) nullable = as.logical(args$nullable) # control nullability
-  attr_name = "val"
   if(!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
   do_reshape = TRUE
   if(!is.null(args$reshape)) do_reshape = as.logical(args$reshape) # control reshape
@@ -306,6 +314,7 @@ as.scidb = function(X,
   D = dim(X)
   start = as.integer(start)
   overlap = as.integer(overlap)
+  dimname = make.unique_(attr_name,"i")
   if(is.null(D)) {
 # X is a vector
     if(!is.vector(X)) stop ("X must be a matrix or a vector")
@@ -313,7 +322,7 @@ as.scidb = function(X,
     chunkSize = min(chunkSize[[1]],length(X))
     X = as.matrix(X)
     schema = sprintf(
-        "< %s : %s null>  [i=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, start[[1]],
+        "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
         nrow(X)-1+start[[1]], min(nrow(X),chunkSize), overlap[[1]])
     load_schema = schema
   } else {
@@ -362,7 +371,16 @@ as.scidb = function(X,
   }
   else
   {
-    query = sprintf("store(input(%s,'%s', 0, '(%s null)'),%s)",load_schema,ans,type,name)
+    if(flip)
+    {
+      schema = sprintf(
+        "< %s : int64>  [%s=%.0f:*,%.0f,%.0f]", dimname, attr_name, start[[1]],
+         min(nrow(X),chunkSize), overlap[[1]])
+      query = sprintf("store(redimension(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
+    } else
+    {
+      query = sprintf("store(input(%s,'%s', 0, '(%s null)'),%s)",load_schema,ans,type,name)
+    }
   }
   iquery(query)
   ans = scidb(name,gc=gc)

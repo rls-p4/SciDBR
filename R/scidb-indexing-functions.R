@@ -239,7 +239,6 @@ materialize = function(x, drop=FALSE)
   }
 
 
-# Set array index origin to zero and bounds to the limits.
   d     = dim(x)
   ndim  = length(dimensions(x))
   N     = paste(rep("null",2*ndim),collapse=",")
@@ -257,14 +256,8 @@ materialize = function(x, drop=FALSE)
   if(is.null(nelem)) nelem = 0
   p     = prod(d)
 # Adjust indexing origin
-#  data[,1:ndim] = data[,1:ndim] + 1
   if(ndim==1) labels = list(unique(data[,1]))
   else labels = lapply(data[,1:ndim], unique)
-  for(idx in 1:ndim)
-  {
-    data[,idx] = data[,idx] - data[1,idx] + 1
-  }
-
 # Handle coordinate labels
   if(!is.null(dimnames(x)))
   {
@@ -296,16 +289,16 @@ materialize = function(x, drop=FALSE)
   {
     ans = tryCatch(
           {
-            if(any(is.infinite(d)))
-            {
-              warnonce("toobig")
-# de-adjust indexing origin
-              data[,1:ndim] = data[,1:ndim] - 1
-              return(data)
-            }
-            if(is.null(data)) t = Matrix::Matrix(0.0,nrow=dim(x)[1],ncol=dim(x)[2])
-            else t = Matrix::sparseMatrix(i=data[,1],j=data[,2],x=data[,3],dims=d)
-            dimnames(t) = labels
+            cs = as.numeric(scidb_coordinate_start(x))
+            data[,1] = data[,1] - cs[1] + 1
+            data[,2] = data[,2] - cs[2] + 1
+            if(is.null(data)) t = Matrix(0.0,nrow=dim(x)[1],ncol=dim(x)[2])
+            else t = sparseMatrix(i=data[,1],j=data[,2],x=data[,3],dims=d)
+            l1 = rep("",dim(x)[1])
+            l1[unique(data[,1])] = labels[[1]]
+            l2 = rep("",dim(x)[2])
+            l2[unique(data[,2])] = labels[[2]]
+            dimnames(t) = list(l1,l2)
             t
           }, error=function(e) {warnonce("nonum"); data[,1:ndim] = data[,1:ndim] - 1; data})
     return(ans)
@@ -313,14 +306,9 @@ materialize = function(x, drop=FALSE)
   {
     ans = tryCatch(
           {
-            if(any(is.infinite(dim(x))))
-            {
-              warnonce("toobig")
-              data[,1:ndim] = data[,1:ndim] - 1
-              return(data)
-            }
-            if(is.null(data)) t = Matrix::sparseVector(0.0,1,length=dim(x))
-            else t = Matrix::sparseVector(i=data[,1],x=data[,2],length=p)
+            data[,1] = data[,1] - as.numeric(scidb_coordinate_start(x)[1]) + 1
+            if(is.null(data)) t = sparseVector(0.0,1,length=dim(x))
+            else t = sparseVector(i=data[,1],x=data[,2],length=p)
             t
           }, error=function(e) {warnonce("nonum");data[,1:ndim] = data[,1:ndim] - 1; data})
     return(ans)
@@ -332,6 +320,10 @@ materialize = function(x, drop=FALSE)
     return(data)
   }
 # OK, we have a dense array of some kind
+  for(idx in 1:ndim)
+  {
+    data[,idx] = data[,idx] - data[1,idx] + 1
+  }
   if(length(d)==1) # a vector
   {
     ans = data[,2]

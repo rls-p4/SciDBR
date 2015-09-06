@@ -48,6 +48,8 @@ Optional additional aguments include:
 
 \code{attr} A character name of the output array attribute name.
 
+\code{dimension} Logical, defaults to FALSE. If TRUE, flip the attribute and dimension values when \code{X} is a vector. Use this option to conveniently upload coordinate masks.
+
 }
 \value{A \code{scidb} reference object. }
 \author{
