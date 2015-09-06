@@ -1326,6 +1326,7 @@ rewrite_subset_expression = function(expr, sci)
 # Substitute evaluated R scalars for variables where possible (but not more
 # complext R expressions).  The output is a list that can be parsed by the
 # `.compose_r` function below.
+  pf = parent.frame()
   .annotate = function(x, dims=NULL, op="")
   {
     if(is.list(x))
@@ -1336,7 +1337,7 @@ rewrite_subset_expression = function(expr, sci)
     op = paste(op,collapse="")
     s = as.character(x)
     if(!(s %in% c(dims, scidb_attributes(sci))))
-      s = tryCatch(as.character(eval(x,parent.frame())), error=function(e) as.character(x))
+      s = tryCatch(as.character(eval(x,pf)), error=function(e) as.character(x))
     attr(s,"what") = "element"
     if("character" %in% class(x)) attr(s,"what") = "character"
     if(nchar(gsub("null","",gsub("[0-9 \\-\\.]+","",s),ignore.case=TRUE))==0)
@@ -1365,14 +1366,17 @@ rewrite_subset_expression = function(expr, sci)
           intx = round(as.numeric(x[[s]]))
           if(intx >= 2^53) stop("Values too large, use an explicit SciDB filter expression")
           numx = as.numeric(x[[s]])
-          lb = intx
-          if(lb==numx) lb = lb - 1
-          ub = intx
-          if(ub==numx) ub = ub + 1
+          lb = ceiling(numx)
+          ub = floor(intx)
+          if(intx==numx)
+          {
+            lb = intx + 1
+            ub = intx - 1
+          }
           if(x[[1]] == "==" || x[[1]] == "=") b[i] = b[i+n] = x[[s]]
-          else if(x[[1]] == "<") b[i+n] = sprintf("%.0f",lb)
+          else if(x[[1]] == "<") b[i+n] = sprintf("%.0f",ub)
           else if(x[[1]] == "<=") b[i+n] = sprintf("%.0f",intx)
-          else if(x[[1]] == ">") b[i] = sprintf("%.0f",ub)
+          else if(x[[1]] == ">") b[i] = sprintf("%.0f",lb)
           else if(x[[1]] == ">=") b[i] = sprintf("%.0f",intx)
           b = paste(b,collapse=",")
           return(sprintf("::%s",b))

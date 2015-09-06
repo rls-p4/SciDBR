@@ -270,8 +270,9 @@ project = function(X,attributes,`eval`=FALSE)
 # an R language object.
 `filter_scidb` = function(X,expr,`eval`=FALSE)
 {
-  xname = X
-  if(class(X) %in% c("scidbdf","scidb")) xname = X@name
+  if(!(class(X) %in% c("scidbdf","scidb"))) stop("X must be a scidb or scidbdf object")
+  xname = X@name
+  isdf = "scidbdf" %in% class(X)
   ischar = tryCatch( is.character(expr), error=function(e) FALSE)
   if(ischar)
   {
@@ -285,7 +286,7 @@ project = function(X,attributes,`eval`=FALSE)
   {
     query = rewrite_subset_expression(substitute(expr), X)
   }
-  .scidbeval(query,eval,depend=list(X))
+  .scidbeval(query,eval,depend=list(X), `data.frame`=isdf)
 }
 
 
