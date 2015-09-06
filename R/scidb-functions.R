@@ -260,7 +260,12 @@ as.scidb = function(X,
     else
       return(df2scidb(X,name=name,chunkSize=as.numeric(chunksize[[1]]),gc=gc,start=start,...))
   }
-  force_type = NULL
+  type = .scidbtypes[[typeof(X)]]
+  if(is.null(type)) {
+    stop(paste("Unupported data type. The package presently supports: ",
+       paste(.scidbtypes,collapse=" "),".",sep=""))
+   }
+  force_type = type
   if(is.factor(X))
   {
     if("scidb_factor" %in% class(X))
@@ -279,6 +284,7 @@ as.scidb = function(X,
   if(!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
   do_reshape = TRUE
   if(!is.null(args$reshape)) do_reshape = as.logical(args$reshape) # control reshape
+  if(!is.null(args$type)) force_type = as.character(args$type) # limited type conversion
   if(missing(chunksize))
   {
 # Note nrow, ncol might be NULL here if X is not a matrix. That's OK, we'll
@@ -300,33 +306,23 @@ as.scidb = function(X,
   D = dim(X)
   start = as.integer(start)
   overlap = as.integer(overlap)
-  type = .scidbtypes[[typeof(X)]]
-  if(is.null(type)) {
-    stop(paste("Unupported data type. The package presently supports: ",
-       paste(.scidbtypes,collapse=" "),".",sep=""))
-   }
   if(is.null(D)) {
 # X is a vector
     if(!is.vector(X)) stop ("X must be a matrix or a vector")
+    do_reshape = FALSE
     chunkSize = min(chunkSize[[1]],length(X))
     X = as.matrix(X)
     schema = sprintf(
-      "< %s : %s null>  [i=%.0f:%.0f,%.0f,%.0f]", attr_name, type, start[[1]],
-      nrow(X)-1+start[[1]], min(nrow(X),chunkSize), overlap[[1]])
-    load_schema = schema
-    if(!is.null(force_type))
-    {
-      schema = sprintf(
         "< %s : %s null>  [i=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, start[[1]],
         nrow(X)-1+start[[1]], min(nrow(X),chunkSize), overlap[[1]])
-    }
+    load_schema = schema
   } else {
 # X is a matrix
     schema = sprintf(
-      "< %s : %s  null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", attr_name, type, start[[1]],
+      "< %s : %s  null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, start[[1]],
       nrow(X)-1+start[[1]], chunkSize[[1]], overlap[[1]], start[[2]], ncol(X)-1+start[[2]],
       chunkSize[[2]], overlap[[2]])
-    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]",attr_name, type,  length(X))
+    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]",attr_name, force_type,  length(X))
   }
   if(!is.matrix(X)) stop ("X must be a matrix or a vector")
 
@@ -362,25 +358,11 @@ as.scidb = function(X,
 # Load query
   if(do_reshape)
   {
-    if(!is.null(force_type))
-    {
-#      query = sprintf("store( attribute_rename(project(apply(reshape(input(%s,'%s', 0, '(%s null)'),%s), ___, %s(%s)), ___), ___, %s), %s)",load_schema,ans,type,schema, force_type, attr_name, attr_name, name)
-      query = sprintf("store( cast(project(apply(reshape(input(%s,'%s', 0, '(%s null)'),%s), ___, %s(%s)), ___), ___, %s), %s)",load_schema,ans,type,schema, force_type, attr_name, schema, name)
-    }
-    else {
-      query = sprintf("store(reshape(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
-    }
+    query = sprintf("store(reshape(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
   }
   else
   {
-    if(!is.null(force_type))
-    {
-#      query = sprintf("store(attribute_rename(project(appy(input(%s,'%s', 0, '(%s null)'),___, %s(%s)), ___), ___, %s), %s)",load_schema,ans,type,name,force_type,attr_name,attr_name)
-      query = sprintf("store(cast(project(appy(input(%s,'%s', 0, '(%s null)'),___, %s(%s)), ___), ___, %s), %s)",load_schema,ans,type,name,force_type,attr_name,schema)
-    } else
-    {
-      query = sprintf("store(input(%s,'%s', 0, '(%s null)'),%s)",load_schema,ans,type,name)
-    }
+    query = sprintf("store(input(%s,'%s', 0, '(%s null)'),%s)",load_schema,ans,type,name)
   }
   iquery(query)
   ans = scidb(name,gc=gc)
