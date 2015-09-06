@@ -13,7 +13,7 @@ SciDB \code{filter} operations.
 }
 \arguments{
   \item{X}{A \code{scidb} or \code{scidbdf} object.}
-  \item{subset}{A character string representing a SciDB filter expression or an R expression.}
+  \item{subset}{A logical R expression involving the array dimensions or attributes, or a character string representing an explicit SciDB filter expression.}
   \item{eval}{(Optional) If true, execute the query. Otherwise defer evaluation.}
 }
 \details{
