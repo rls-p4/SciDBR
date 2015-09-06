@@ -56,100 +56,42 @@ log.scidb = function(x, base=exp(1))
 
 colnames.scidb = function(x)
 {
-  if(is.null(x@gc$dimnames)) return(NULL)
-  if(length(x@gc$dimnames)<2) return(NULL)
-  x@gc$dimnames[[2]]
+  NULL
 }
 
 `colnames<-.scidb` = function(x, value)
 {
-  x
+  stop("SciDB arrays don't support dimension labels")
 }
 
 rownames.scidb = function(x)
 {
-  if(is.null(x@gc$dimnames)) return(NULL)
-  x@gc$dimnames[[1]]
+  NULL
 }
 
 `rownames<-.scidb` = function(x, value)
 {
-  x
+  stop("SciDB arrays don't support dimension labels")
 }
 
 names.scidb = function(x)
 {
-  if(is.null(dim(x))) rownames(x)
-  colnames(x)
+  NULL
 }
 
 `names<-.scidb` = function(x, value)
 {
-  colnames(x) <- value
+  stop("SciDB arrays don't support dimension labels")
 }
 
 dimnames.scidb = function(x)
 {
-  x@gc$dimnames
+  NULL
 }
 
-# SciDB labeled coordinates assignment
 `dimnames<-.scidb` = function(x, value)
 {
-  if(is.null(value)) 
-  {
-    x@gc$dimnames = value
-    return(x)
-  }
-  if(!is.list(value))
-    stop("dimnames requires a list")
-  if(length(value)!=length(dim(x)))
-    stop("incorrect number of dimensions specified")
-# Make sure that specified indices are all SciDB arrays.
-# If not, try to make them so.
-  value = lapply(1:length(value), function(j)
-    {
-      v = value[[j]]
-      if(is.null(v)) return(v)
-      if(is.scidbdf(v)) class(v) = "scidb"
-      if(is.scidb(v))
-      {
-        if(length(dim(v))>1) stop("Dimension label arrays must be one dimensional")
-        if(length(v@attributes)>1) v = project(v,1)
-# Make sure that the label array has '*' upper dimension bound
-        check = scidb_coordinate_start(x)[j] == scidb_coordinate_start(v)[1] &&
-                scidb_coordinate_chunksize(x)[j] == scidb_coordinate_chunksize(v)[1] &&
-                (is.na(dim(v)) || (dim(v) == as.numeric(.scidb_DIM_MAX)))
-        if(!check)
-        {
-# uh oh
-            v = redimension(v, sprintf("%s%s", build_attr_schema(v), build_dim_schema(v, newend="*")))
-            v = reshape(v, sprintf("%s%s", build_attr_schema(v), build_dim_schema(v, newstart=scidb_coordinate_start(x)[j])))
-        }
-# join out holes. don't use dimnames! this is crummy.
-        xj = apply(x,j,count)
-        v = project(merge(v, xj, by.x=dimensions(v), by.y=dimensions(xj)),1)
-        return(v);
-      }
-      scidbeval(unbound(as.scidb(v,
-                start=scidb_coordinate_start(x)[j],
-                chunkSize=scidb_coordinate_chunksize(x)[j])))
-    })
-
-  check = unlist(lapply(1:length(value), function(j)
-    {
-      is.null(value[[j]]) || (scidb_coordinate_start(value[[j]])[1] == scidb_coordinate_start(x)[j])
-    }))
-  if(!all(check))
-    stop("Label array starting indices don't match data array--please check")
-  check = unlist(lapply(1:length(value), function(j)
-    {
-      is.null(value[[j]]) || (nrow(value[[j]]) == dim(x)[j])
-    }))
-  check[is.na(check)] = FALSE
-  x@gc$dimnames = value
-  x@gc$depend =c (x@gc$depend, unlist(value))
-  x
+  stop("SciDB arrays don't support dimension labels")
 }
 
 summary.scidb = function(x)

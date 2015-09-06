@@ -66,35 +66,27 @@ colnames.scidbdf = function(x)
 
 rownames.scidbdf = function(x)
 {
-  if(is.null(x@gc$dimnames)) return(NULL)
-  x@gc$dimnames[[1]]
+  NULL
 }
 
 `rownames<-.scidbdf` = function(x, value)
 {
-  x
+  stop("Not supported")
 }
 
 `dimnames<-.scidbdf` = function(x, value)
 {
-  y = do.call("names<-.scidbdf",args=list(x=x,value=value[[2]]))
-  do.call("row.names<-.scidbdf",args=list(x=y,value=value[[1]])) # order matters here
+  stop("Not supported. Use names<- to change attribute names.:w")
 }
 
 row.names.scidbdf = function(x)
 {
-  if(is.null(x@gc$dimnames)) return(NULL)
-  x@gc$dimnames[[1]]
+  NULL
 }
 
 `row.names<-.scidbdf` = function(x, value)
 {
-  y = x
-  class(y) = "scidb"
-  z = do.call("dimnames<-.scidb", args=list(x=y, value=list(value)))
-  z@gc$depend=c(z@gc$depend, x)
-  class(z) = "scidbdf"
-  z
+  stop("Not supported")
 }
 
 names.scidbdf = function(x)

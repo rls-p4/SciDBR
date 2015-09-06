@@ -16,8 +16,6 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
   xstart = scidb_coordinate_start(ans)
   xend = scidb_coordinate_end(ans)
 
-  new_dimnames = dimnames(x) # will be assigned to ans as required
-
   for(j in 1:length(idx))
   {
     if(idx[[j]])
@@ -30,10 +28,7 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
         MASK = redimension(bind(as.scidb(as.double(i[[j]])),"index","int64(val)"),schema=sprintf("<i:int64>%s",build_dim_schema(ans,I=j,newnames="index",newend="*")))
       } else if(is.character(i[[j]]))
       {
-# Case 2: character labels, consult a lookup array if possible
-        if(is.null(dimnames(x)[[j]])) stop("Missing dimension array for character index lookup")
-        MASK = index_lookup(as.scidb(i[[j]]), dimnames(x)[[j]])
-        MASK = redimension(MASK,schema= sprintf("%s%s",build_attr_schema(MASK,I=1),build_dim_schema(ans,I=j,newnames="val_index",newend="*")))
+        stop("dimension labels are not supported")
       } else if(is.scidb(i[[j]]))
       {
 # Case 3. A SciDB array, a densified cross_join selector.
@@ -67,18 +62,8 @@ special_index = function(x, query, i, idx, eval=FALSE, drop=FALSE, redim=TRUE)
         newnames[j] = "_"
         ans = dimension_rename(redimension(merge(ans,newdim), schema=sprintf("%s%s",build_attr_schema(ans), build_dim_schema(ans,newstart=newstart, newend=newend, newnames=newnames))), old="_", new=xdims[j])
       }
-# Now handle the corresponding NID conformably. Gross.
-      if(!is.null(dimnames(x)[[j]]))
-      {
-        new_dimnames[[j]] = scidbeval(project(merge(dimnames(x)[[j]], MASK, by.x=dimensions(dimnames(x)[[j]])[1], by.y=dimensions(MASK)), 1))
-        if(redim)
-        {
-          new_dimnames[[j]] = scidbeval(dimension_rename(redimension(merge(dimnames(x)[[j]],newdim,by.x=dimensions(dimnames(x)[[j]]), by.y=dimensions(newdim)), schema=sprintf("%s%s",build_attr_schema(dimnames(x)[[j]]), build_dim_schema(dimnames(x)[[j]],newstart="0", newend=newend[j], newnames="_"))), old="_", new=dimensions(x)[[j]]))
-        }
-      }
     }
   } # end for loop over axes
-  dimnames(ans) = new_dimnames
   if(drop)
   {
     ans = drop_dim(ans)

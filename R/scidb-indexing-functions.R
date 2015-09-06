@@ -113,7 +113,6 @@ dimfilter = function(x, i, eval, drop, redim)
   r = paste(c(ro,re),collapse=",")
   q = sprintf("between(%s,%s)",x@name,r)
 
-  new_dimnames = c()
   new_depend = x
   if(!everything)
   {
@@ -131,43 +130,15 @@ dimfilter = function(x, i, eval, drop, redim)
     {
       newend[ina] = scidb_coordinate_end(x)[ina]
     }
-# Propagate dimension labels
-    if(!is.null(dimnames(x)))
-    {
-      new_dimnames =  vector(mode="list",length=length(dim(x)))
-      for(j in 1:length(new_dimnames))
-      {
-        if(!is.null(dimnames(x)[[j]]))
-        {
-          new_dimnames[[j]] = scidb(sprintf("project(join(redimension(%s,%s%s) as x, %s as y), y.%s)",q,build_attr_schema(x),build_dim_schema(x,I=j,newend="*"), dimnames(x)[[j]]@name, scidb_attributes(dimnames(x)[[j]])[[1]]))
-# This dependency is already covered by x, which we already depend on:
-#          new_depend = c(new_depend, dimnames(x)[[j]])
-        }
-      }
-    }
 # redim will be handled by the special_index function in the ci case:
     if(redim && !any(ci))
     {
       q = sprintf("redimension(%s, %s%s)", q, build_attr_schema(x),
           build_dim_schema(x,newend=newend,newstart=newstart))
-# We need to redimension any dimname arrays conformably. The only thing that
-# could change is the starting coordinate.
-      if(!is.null(new_dimnames))
-      { for(j in 1:length(new_dimnames))
-        { if(!is.null(new_dimnames[[j]]))
-          { if(newstart[j] != scidb_coordinate_start(new_dimnames[[j]]))
-            {
-              new_dimnames[[j]] = scidb(sprintf("redimension(%s, %s%s)", new_dimnames[[j]]@name, build_attr_schema(new_dimnames[[j]]), build_dim_schema(new_dimnames[[j]],newstart=newstart[j],newend="*")))
-            }
-          } } }
     }
-  } else new_dimnames = dimnames(x)
+  }
 # Return a new scidb array reference
   ans = .scidbeval(q,eval=FALSE,gc=TRUE,`data.frame`=FALSE,depend=new_depend)
-#  dimnames(ans) = new_dimnames # no--it does too much housekeeping for us,
-# we know that we already have a conformable schema so just update the dimname
-# directly:
-  ans@gc$dimnames = new_dimnames
   if(any(ci)) 
   {
     return(special_index(ans, ans@name, i, ci, eval, drop, redim))
@@ -198,9 +169,7 @@ drop_dim = function(ans)
     A = build_attr_schema(ans)
     D = build_dim_schema(ans,I=-j)
     query = sprintf("redimension(%s, %s%s)",ans@name,A,D)
-    dn = dimnames(ans)
     ans = .scidbeval(query,`eval`=FALSE,depend=list(ans))
-    if(!is.null(dn)) ans@gc$dimnames = dn[!i]
   }
   ans
 }
@@ -257,29 +226,6 @@ materialize = function(x, drop=FALSE)
 # Adjust indexing origin
   if(ndim==1) labels = list(unique(data[,1]))
   else labels = lapply(data[,1:ndim], unique)
-# Handle coordinate labels
-  if(!is.null(dimnames(x)))
-  {
-    labels = lapply(1:ndim, function(j)
-    {
-      if(is.null(dimnames(x)[[j]]))
-        return(tryCatch(seq(from=as.numeric(scidb_coordinate_start(x)[j]),length.out=dim(x)[j]), error=invisible))
-      if(!is.scidb(dimnames(x)[[j]])) return(NULL)
-      dn = iquery(dimnames(x)[[j]]@name, `return`=TRUE, binary=TRUE, n=Inf)
-      if(is.null(dn)) return("")
-      if(nrow(dn)==0) return("")
-      if(nrow(dn)==dim(x)[j])
-      {
-        nm = dn[,2]
-      } else
-      {
-        dn[,1] = dn[,1]  - as.numeric(scidb_coordinate_start(x)[j]) + 1
-        nm =  rep("",dim(x)[j])
-        nm[dn[,1]] = dn[,2]
-      }
-      nm
-    })
-  }
 
 # Check for sparse matrix or sparse vector case. The tryCatch guards
 # against unsupported types in R's sparse Matrix package and returns the
