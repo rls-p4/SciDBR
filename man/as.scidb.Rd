@@ -18,7 +18,7 @@ as.scidb(X, name = tmpnam(), chunksize, overlap, start, chunkSize, gc=TRUE, ...)
   \item{start}{A vector of SciDB array starting dimension numeric index value or values.}
   \item{chunkSize}{(Same as \code{chunksize} argument, for backwards compatibility -- use \code{chunksize} instead)}
   \item{gc}{Set to TRUE to remove SciDB array when R object is garbage collected or R exists. FALSE means SciDB array persists.}
-  \item{\dots}{ additional arguments to pass to \code{df2scidb} (see \code{\link{df2scidb}}).}
+  \item{\dots}{ additional optional arguments, also passed to \code{df2scidb} (see \code{\link{df2scidb}}).}
 }
 \details{
 Used with a matrix  or vector argument,
@@ -41,6 +41,13 @@ array attribute types.
 \note{
 The \code{as.scidb} function is not a very efficient way to upload lots of data
 to SciDB. Consider using the SciDB parallel bulk loader tools for that.
+
+Optional additional aguments include:
+
+\code{type} A character representation of a SciDB type for the output attribute.
+
+\code{attr} A character name of the output array attribute name.
+
 }
 \value{A \code{scidb} reference object. }
 \author{
