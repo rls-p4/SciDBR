@@ -215,42 +215,42 @@ setMethod("exp", signature(x="scidbdf"),
     fn_scidb(x, "exp")
   })
 # Non-traditional masking binary comparison operators
-setMethod("%%<%%",signature(x="scidbdf", y="ANY"),
+setMethod("%lt%",signature(x="scidbdf", y="ANY"),
   function(x,y)
   {
     .compare(x,y,"<",traditional=FALSE)
   },
   valueClass="scidbdf"
 )
-setMethod("%%>%%",signature(x="scidbdf", y="ANY"),
+setMethod("%gt%",signature(x="scidbdf", y="ANY"),
   function(x,y)
   {
     .compare(x,y,">",traditional=FALSE)
   },
   valueClass="scidbdf"
 )
-setMethod("%%<=%%",signature(x="scidbdf", y="ANY"),
+setMethod("%<=%",signature(x="scidbdf", y="ANY"),
   function(x,y)
   {
     .compare(x,y,"<=",traditional=FALSE)
   },
   valueClass="scidbdf"
 )
-setMethod("%%>=%%",signature(x="scidbdf", y="ANY"),
+setMethod("%>=%",signature(x="scidbdf", y="ANY"),
   function(x,y)
   {
     .compare(x,y,">=",traditional=FALSE)
   },
   valueClass="scidbdf"
 )
-setMethod("%%==%%",signature(x="scidbdf", y="ANY"),
+setMethod("%==%",signature(x="scidbdf", y="ANY"),
   function(x,y)
   {
     .compare(x,y,"==",traditional=FALSE)
   },
   valueClass="scidbdf"
 )
-setMethod("%%!=%%",signature(x="scidbdf", y="ANY"),
+setMethod("%!=%",signature(x="scidbdf", y="ANY"),
   function(x,y)
   {
     .compare(x,y,"!=",traditional=FALSE)

@@ -1,23 +1,23 @@
 \name{comparison-methods}
 \docType{methods}
-\alias{\%\%<\%\%}
-\alias{\%\%<\%\%,scidb-method}
-\alias{\%\%<\%\%,scidbdf-method}
-\alias{\%\%>\%\%}
-\alias{\%\%>\%\%,scidb-method}
-\alias{\%\%>\%\%,scidbdf-method}
-\alias{\%\%<=\%\%}
-\alias{\%\%<=\%\%,scidb-method}
-\alias{\%\%<=\%\%,scidbdf-method}
-\alias{\%\%>=\%\%}
-\alias{\%\%>=\%\%,scidb-method}
-\alias{\%\%>=\%\%,scidbdf-method}
-\alias{\%\%==\%\%}
-\alias{\%\%!=\%\%}
-\alias{\%\%==\%\%,scidb-method}
-\alias{\%\%==\%\%,scidbdf-method}
-\alias{\%\%!=\%\%,scidb-method}
-\alias{\%\%!=\%\%,scidbdf-method}
+\alias{\%lt\%}
+\alias{\%lt\%,scidb-method}
+\alias{\%lt\%,scidbdf-method}
+\alias{\%gt\%}
+\alias{\%gt\%,scidb-method}
+\alias{\%gt\%,scidbdf-method}
+\alias{\%<=\%}
+\alias{\%<=\%,scidb-method}
+\alias{\%<=\%,scidbdf-method}
+\alias{\%>=\%}
+\alias{\%>=\%,scidb-method}
+\alias{\%>=\%,scidbdf-method}
+\alias{\%==\%}
+\alias{\%!=\%}
+\alias{\%==\%,scidb-method}
+\alias{\%==\%,scidbdf-method}
+\alias{\%!=\%,scidb-method}
+\alias{\%!=\%,scidbdf-method}
 \title{Masking comparison methods from package \pkg{scidb}}
 \description{
 The binary operators described here perform comparison operations that
@@ -31,18 +31,18 @@ Masked comparison arrays can be used to efficiently index other
 SciDB arrays.
 }
 \usage{
-\S4method{\%\%<\%\%}{scidb}(x,y)
-\S4method{\%\%<\%\%}{scidbdf}(x,y)
-\S4method{\%\%>\%\%}{scidb}(x,y)
-\S4method{\%\%>\%\%}{scidbdf}(x,y)
-\S4method{\%\%<=\%\%}{scidb}(x,y)
-\S4method{\%\%<=\%\%}{scidbdf}(x,y)
-\S4method{\%\%>=\%\%}{scidb}(x,y)
-\S4method{\%\%>=\%\%}{scidbdf}(x,y)
-\S4method{\%\%==\%\%}{scidb}(x,y)
-\S4method{\%\%==\%\%}{scidbdf}(x,y)
-\S4method{\%\%!=\%\%}{scidb}(x,y)
-\S4method{\%\%!=\%\%}{scidbdf}(x,y)
+\S4method{\%lt\%}{scidb}(x,y)
+\S4method{\%lt\%}{scidbdf}(x,y)
+\S4method{\%gt\%}{scidb}(x,y)
+\S4method{\%gt\%}{scidbdf}(x,y)
+\S4method{\%<=\%}{scidb}(x,y)
+\S4method{\%<=\%}{scidbdf}(x,y)
+\S4method{\%>=\%}{scidb}(x,y)
+\S4method{\%>=\%}{scidbdf}(x,y)
+\S4method{\%==\%}{scidb}(x,y)
+\S4method{\%==\%}{scidbdf}(x,y)
+\S4method{\%!=\%}{scidb}(x,y)
+\S4method{\%!=\%}{scidbdf}(x,y)
 }
 \arguments{
   \item{x}{A \code{scidb} or \code{scidbdf} object.}
@@ -66,6 +66,9 @@ comparison method is useful to quickly extract the values that meet the
 condition, and also to use the masked array as an index to subset other SciDB
 arrays.
 
+The \code{\%lt\%} and \code{\%gt\%} functions are named differently to avoid
+conflicts with the popular magrittr package.
+
 The examples below illustrate each kind of comparison operator.
 }
 \value{
@@ -83,7 +86,7 @@ B. W. Lewis <blewis@paradigm4.com>
 # [7]  0.4874291  0.7383247  0.5757814 -0.3053884
 > (x < 0)[]
 # [1]  TRUE FALSE  TRUE FALSE FALSE  TRUE FALSE FALSE FALSE  TRUE
-> (x %%<%% 0)[]
+> (x %lt% 0)[]
 #sparse vector (nnz/length = 4/10) of class "dsparseVector"
 # [1] -0.6264538          . -0.8356286          .          . -0.8204684
 # [7]          .          .          . -0.3053884
@@ -96,7 +99,7 @@ B. W. Lewis <blewis@paradigm4.com>
 
 # Sparse filtered output is useful to use to index SciDB arrays. The next
 # example selects just the entries of the array that meet the condition:
-> x[x %%<%% 0][]
+> x[x %lt% 0][]
 # [1] -0.6264538 -0.8356286 -0.8204684 -0.3053884
 
 # The TRUE/FALSE output array is useful to aggregate by groups defined by the

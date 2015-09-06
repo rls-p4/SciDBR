@@ -28,12 +28,12 @@
 #
 
 # Generic function declarations
-setGeneric("%%<%%", def=function(x,y){NULL})
-setGeneric("%%>%%", def=function(x,y){NULL})
-setGeneric("%%<=%%", def=function(x,y){NULL})
-setGeneric("%%>=%%", def=function(x,y){NULL})
-setGeneric("%%==%%", def=function(x,y){NULL})
-setGeneric("%%!=%%", def=function(x,y){NULL})
+setGeneric("%lt%", def=function(x,y){NULL})
+setGeneric("%gt%", def=function(x,y){NULL})
+setGeneric("%<=%", def=function(x,y){NULL})
+setGeneric("%>=%", def=function(x,y){NULL})
+setGeneric("%==%", def=function(x,y){NULL})
+setGeneric("%!=%", def=function(x,y){NULL})
 
 setOldClass("glm")
 setGeneric("glm")
@@ -104,42 +104,42 @@ setGeneric("xgrid", def=function(x,grid){NULL})
 setGeneric("Filter")
 
 # Non-traditional masking binary comparison operators
-setMethod("%%<%%",signature(x="scidb", y="ANY"),
+setMethod("%lt%",signature(x="scidb", y="ANY"),
   function(x,y)
   {
     .compare(x,y,"<",traditional=FALSE)
   },
   valueClass="scidb"
 )
-setMethod("%%>%%",signature(x="scidb", y="ANY"),
+setMethod("%gt%",signature(x="scidb", y="ANY"),
   function(x,y)
   {
     .compare(x,y,">",traditional=FALSE)
   },
   valueClass="scidb"
 )
-setMethod("%%<=%%",signature(x="scidb", y="ANY"),
+setMethod("%<=%",signature(x="scidb", y="ANY"),
   function(x,y)
   {
     .compare(x,y,"<=",traditional=FALSE)
   },
   valueClass="scidb"
 )
-setMethod("%%>=%%",signature(x="scidb", y="ANY"),
+setMethod("%>=%",signature(x="scidb", y="ANY"),
   function(x,y)
   {
     .compare(x,y,">=",traditional=FALSE)
   },
   valueClass="scidb"
 )
-setMethod("%%==%%",signature(x="scidb", y="ANY"),
+setMethod("%==%",signature(x="scidb", y="ANY"),
   function(x,y)
   {
     .compare(x,y,"==",traditional=FALSE)
   },
   valueClass="scidb"
 )
-setMethod("%%!=%%",signature(x="scidb", y="ANY"),
+setMethod("%!=%",signature(x="scidb", y="ANY"),
   function(x,y)
   {
     .compare(x,y,"!=",traditional=FALSE)
