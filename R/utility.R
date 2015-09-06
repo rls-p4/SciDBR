@@ -920,14 +920,29 @@ compare_versions = function(x,y)
   ans
 }
 
-# Reset array coordinate system to zero-indexed origin
-origin = function(x)
+# translate array coordinate system
+translate = function(x, origin="origin")
 {
-  N = paste(rep("null",2*length(dimensions(x))),collapse=",")
-  GEMM.BUG = ifelse(is.logical(options("scidb.gemm_bug")[[1]]),options("scidb.gemm_bug")[[1]],FALSE)
-  if(GEMM.BUG) query = sprintf("sg(subarray(%s,%s),1,-1)",x@name,N)
-  else query = sprintf("subarray(%s,%s)",x@name,N)
-  .scidbeval(query,`eval`=FALSE,depend=list(x),gc=TRUE)
+  if(is.numeric(origin))
+  {
+    newstart = scidb:::noE(origin)
+    newend   = rep("*",length(newstart))
+    reschema = sprintf("%s%s",scidb:::build_attr_schema(x),
+                 scidb:::build_dim_schema(x,newend=newend))
+    newschema = sprintf("%s%s", scidb:::build_attr_schema(x),
+                  scidb:::build_dim_schema(x, newstart=newstart, newend=newend))
+    query = sprintf("reshape(redimension(%s,%s),%s)",x@name,reschema,newschema)
+    return(scidb(query))
+  }
+  else if(origin=="origin")
+  {
+    N = paste(rep("null",2*length(dimensions(x))),collapse=",")
+    query = sprintf("subarray(%s,%s)",x@name,N)
+    return(scidb:::.scidbeval(query,`eval`=FALSE,depend=list(x),gc=TRUE))
+  }
+  else if(!is.scidb(origin)) stop("origin must be either 'origin', numeric coordinates, or another SciDB array")
+# translate by same-named subset of dimensions between arrays
+  stop("not implemented yet")
 }
 
 

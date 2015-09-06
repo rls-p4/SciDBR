@@ -239,12 +239,11 @@ materialize = function(x, drop=FALSE)
   }
 
 
-# Set array index origin to zero. We need the zero origin here to reconstruct
-# array indices in R.
+# Set array index origin to zero and bounds to the limits.
   d     = dim(x)
   ndim  = length(dimensions(x))
   N     = paste(rep("null",2*ndim),collapse=",")
-  query = sprintf("subarray(project(%s,%s),%s)",x@name,attr,N)
+  query = sprintf("project(%s,%s)",x@name,attr)
 
 # Unpack into a staging data frame
   data  = scidb_unpack_to_dataframe(query)
@@ -252,7 +251,11 @@ materialize = function(x, drop=FALSE)
   if(is.null(nelem)) nelem = 0
   p     = prod(d)
 # Adjust indexing origin
-  data[,1:ndim] = data[,1:ndim] + 1
+#  data[,1:ndim] = data[,1:ndim] + 1
+  for(idx in 1:ndim)
+  {
+    data[,idx] = data[,idx] - data[1,idx] + 1
+  }
 
 # Handle coordinate labels
   labels = NULL
@@ -281,7 +284,9 @@ materialize = function(x, drop=FALSE)
   {
     labels = lapply(1:ndim, function(j)
     {
-      tryCatch(seq(from=as.numeric(scidb_coordinate_start(x)[j]),length.out=dim(x)[j]), error=invisible)
+      l = dim(x)[j]
+      if(l %in% "Inf") l = lapply(data[,j], function(x) length(unique(x)))
+      tryCatch(seq(from=as.numeric(scidb_coordinate_start(x)[j]),length.out=l), error=invisible)
     })
   }
 
