@@ -19,6 +19,10 @@ if(nchar(host)>0)
 # Upload
   data("iris")
   x = as.scidb(iris)
+
+# redim on non-integer attribute
+  xr = redimension(x, dim="Species")
+
 # Factor levels are lost
   i = iris
   i[,5] = as.character(i[,5])

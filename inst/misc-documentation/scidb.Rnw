@@ -461,8 +461,8 @@ Non-contiguous selections are supported.
 <<>>=
 x[c(0,2,-1), ][]
 @
-(However, unlike standard R array subsetting repeated indices are not
-supported.)
+However, unlike standard R array subsetting repeated indices are not
+supported and SciDB always returns results in coordinate order.
 
 If a sparse array has coordinates too large for R to manage, results are
 returned in an ``unpacked'' data frame form.
@@ -470,11 +470,6 @@ returned in an ``unpacked'' data frame form.
 SciDB objects with coordinates beyond the range of R display as
 \verb+inf+. Coordinate labeling arrays are sparse with a very large upper
 coordinate bound by convention--allowing the number of labels to grow easily.
-
-Labeled arrays can be subset, and the result retains labels:
-<<>>=
-x[c('c','a','e'), c('B','A')] []
-@
 
 Data-frame like objects are supported. Under the hood they are 1-d SciDB
 arrays.

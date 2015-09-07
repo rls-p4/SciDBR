@@ -149,7 +149,7 @@ redimension = function(x, schema, dim, FUN)
       ds = ifelse(length(ds)>0,paste(ds,new,sep=","),new)
     }
 # Re-order new dimension schema to fit order specified in `dim`
-    ds = paste(.dimsplit(sprintf("[%s]",ds))[dim],collapse=",")
+    if(!reindexed) ds = paste(.dimsplit(sprintf("[%s]",ds))[dim],collapse=",")
     s = sprintf("%s[%s]",as,ds)
   }
 # Check to see if the new schema is identical to the original schema.
@@ -181,19 +181,5 @@ redimension = function(x, schema, dim, FUN)
   }
   query = sprintf("redimension(%s,%s)",x@name,s)
   ans = .scidbeval(query,`eval`=FALSE,depend=list(x))
-  if(!is.null(dnames))
-  {
-    if(class(ans) %in% "scidbdf") rownames(ans)=dnames[[1]]
-    else {
-      if(any(dimensions(ans) %in% names(dnames)))
-      {
-        dnew = vector("list",length(dimensions(ans)))
-        names(dnew) = dimensions(ans)
-        dnames = dnames[unlist(lapply(dnames,function(x)!is.null(x)))]
-        dnew[names(dnames)] = dnames
-        dimnames(ans) = dnew
-      }
-    }
-  }
   ans
 }
