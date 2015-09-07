@@ -10,6 +10,7 @@ importFrom("digest", digest)
 importFrom("codetools", makeCodeWalker, walkCode)
 
 # Functions
+export("translate")
 export("bound")
 export("factor_scidb")
 export("levels_scidb")
