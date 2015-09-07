@@ -155,9 +155,9 @@ Section \ref{shim}). The function may be safely called multiple times.  Once a
 connection is established, connection information is maintained until a
 different connection is established or the R session ends.
 
-The network interface optionally supports SSL encryption and PAM or HTTP digest
-user authentication.  The shim service can be configured to support either
-open/unencrypted or encrypted/authenticated ports, or both.
+The network interface optionally supports SSL encryption and SciDB or HTTP
+digest user authentication.  The shim service can be configured to support
+either open/unencrypted or encrypted/authenticated ports, or both.
 
 <<eval=TRUE,echo=FALSE>>=
 library("scidb")
@@ -170,13 +170,16 @@ library("scidb")
 scidbconnect()
 @
 
-{\bf Connect to SciDB on an encrypted port 8083 with example PAM authentication:}
+{\bf Connect to SciDB on an encrypted port 8083 with example SciDB authentication:}
 <<eval=FALSE>>=
 scidbconnect(host="localhost", port=8083,
              username="scidbuser", password="test")
 @
 We recommend using only encrypted/authenticated sessions when communicating
 with SciDB over public networks.
+
+SciDB user authentication is only supported in SciDB versions 15.7 and
+greater.
 
 
 \subsection{Listing and removing SciDB arrays}
@@ -515,24 +518,13 @@ This works mostly like R, except that such filters may only be applied
 along coordinate axes. (That is, R's special single-index indexing mode
 is not supported.)
 
-Additional examples showing dimension labels and filtering follow.
-<<>>=
-# Example of labeling indices with a label array.
-set.seed(1)
-X <- as.scidb( matrix(rnorm(20),nrow=5) )
-# SciDB matrix objects like X default to zero-based indexing.
-# It's important that the label array have the same starting index:
-rownames(X) <- as.scidb( data.frame(letters[1:5]), start=0)
-
-X[c("b","a","d"), ]
-@
-
 <<>>=
 # Example of indexing by a condition on an auxiliary array.
 # Determine a subset of the rownames of X (another SciDB array):
-idx <- rownames(X) > "b"
-# Subset X by the condition on its rows:
-X[idx, ]
+set.seed(1)
+X <- as.scidb( matrix(rnorm(20),nrow=5) )
+a <- as.scidb(runif(5))
+X[a>0, ]
 @
 
 
@@ -989,31 +981,31 @@ online help for examples and more information on each one.
 >                       >=                      -
 !=                      /                       [
 [<-                     $                       *
-%<=%                    %<%                     %==%
-%>=%                    %>%                     %*%
-+                       abs                     acos
-aggregate               all.equal               antijoin
-apply                   asin                    as.scidb
-atan                    attribute_rename        bernoulli
-between                 bind                    bound
-build                   c                       cast
-cbind                   chunk_map               colnames
-colnames<-              cos                     count
-crossprod               cumulate                default
-df2scidb                diag                    diff
-dim                     dimension_rename        dimensions
-dimnames                dimnames<-              dist
-exp                     factor_scidb            Filter
-glm                     glm.fit                 glm_scidb
-head                    hist                    image
-index_lookup            iqdf                    iquery
-is.scidb                is.scidbdf              is.temp
-kmeans                  lag                     length
-levels_scidb            log                     max
+%<=%                    %==%                    %>=%
+%*%                     +                       abs
+acos                    aggregate               all.equal
+antijoin                apply                   asin
+as.scidb                atan                    attribute_rename
+bernoulli               between                 bind
+bound                   build                   c
+cast                    cbind                   chunk_map
+colnames                colnames<-              cos
+count                   crossprod               cumulate
+default                 df2scidb                diag
+diff                    dim                     dimension_rename
+dimensions              dimnames                dimnames<-
+dist                    exp                     factor_scidb
+Filter                  glm                     glm.fit
+glm_scidb               %gt%                    head
+hist                    image                   index_lookup
+iqdf                    iquery                  is.scidb
+is.scidbdf              is.temp                 kmeans
+lag                     length                  levels_scidb
+log                     %lt%                    max
 mean                    median                  merge
 min                     model_scidb             na.locf
 names                   names<-                 ncol
-nrow                    Ops                     order
+nrow                    Ops                     order_scidb
 peek                    persist                 phyper
 predict                 print                   project
 qhyper                  quantile                rank
@@ -1033,9 +1025,9 @@ solve                   sort                    sqrt
 str                     subarray                subset
 sum                     summary                 svd
 sweep                   t                       tail
-tan                     tcrossprod              tsvd
-unbound                 unique                  unpack
-var                     xgrid
+tan                     tcrossprod              translate
+tsvd                    unbound                 unique
+unpack                  var                     xgrid
 \end{verbatim}
 
 

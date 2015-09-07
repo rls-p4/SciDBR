@@ -84,5 +84,10 @@ if(nchar(host)>0)
  x = as.scidb(levels(iris$Species))
  y = factor_scidb(iris$Species, x)
 
+# Test named index
+ X <- as.scidb(morley, name="morely")
+ X[1:4, c("Run","Speed")][]
+
+
 }
 gc()
