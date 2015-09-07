@@ -28,7 +28,7 @@ special_index = function(x, i, idx, eval=FALSE, drop=FALSE, redim=TRUE, newstart
       if(is.numeric(i[[j]]))
       {
 # Special index case 1: non-contiguous numeric indices, somewhat easy case
-        x = merge(x,as.scidb(i[[j]],dimension=TRUE),by.x=j,by.y=1)
+        x = merge(x, as.scidb(i[[j]], dimension=TRUE, start=as.numeric(scidb_coordinate_start(x)[j])),by.x=j, by.y=1)
         sa = scidb_attributes(x)
         newdim[j] = sa[length(sa)]  # Assign the new attribute for redim
       } else if(is.character(i[[j]]))

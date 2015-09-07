@@ -208,13 +208,13 @@ Matrix package (whose sparse matrix elements are implicitly zero).
 The elements of a SciDB array, called {\it cells}, contain one or more {\it
 attributes} (similar to R variables).  The number and data types of attributes
 are uniform across all cells in an array, and SciDB stores data for each
-attribute separately. A one-dimensional SciDB array is conceptually
-similar to a data frame in R: the SciDB dimension index corresponds to data
-frame row index, and SciDB attributes to data frame columns.
-Higher-dimensional arrays in SciDB are generalizations of data frames and they
-don't correspond directly to objects in R; the {\tt scidb} $n$-dimensional
-array class described below is sometimes limited to working with one attribute
-at a time to more closely emulate standard R arrays.
+attribute separately. A one-dimensional SciDB array is conceptually similar to
+a data frame in R: the SciDB dimension index corresponds to data frame row
+index, and SciDB attributes to data frame columns.  Higher-dimensional arrays
+in SciDB are generalizations of data frames and they don't correspond directly
+to objects in R; the {\tt scidb} $n$-dimensional array class described below is
+sometimes limited to working with one attribute at a time to more closely
+emulate standard R arrays.
 
 The \verb+scidb+ package defines two array classes for R with data backed
 by SciDB arrays: the \verb+scidbdf+ class for data frame-like objects,

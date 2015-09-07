@@ -202,7 +202,8 @@ as.scidb = function(X,
     else
       return(df2scidb(X,name=name,chunkSize=as.numeric(chunksize[[1]]),gc=gc,start=start,...))
   }
-  type = .scidbtypes[[typeof(X)]]
+  if(typeof(X) == "S4") type = .scidbtypes[[typeof(X@x)]]
+  else type = .scidbtypes[[typeof(X)]]
   if(is.null(type)) {
     stop(paste("Unupported data type. The package presently supports: ",
        paste(.scidbtypes,collapse=" "),".",sep=""))

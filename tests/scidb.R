@@ -71,8 +71,7 @@ cat("# Indexing by other SciDB arrays\n")
 
 cat("# some binary operations\n")
 # XXX ADD **lots** more tests here
-  a = as.scidb(Matrix::sparseMatrix(
-               sample(10,100,replace=TRUE),sample(10,100,replace=TRUE),x=runif(100)))
+  a = as.scidb(Matrix::sparseMatrix(i=sample(10,100,replace=TRUE),j=sample(10,100,replace=TRUE), x=runif(100)))
   b = build(pi,c(10,10),names=c("a","b","c"),chunksize=c(3,2))
   check(sum((a*b)[] - a[]*b[]), 0)
   check(sum((a+b)[] - (a[]+b[])), 0)
