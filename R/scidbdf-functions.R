@@ -197,7 +197,7 @@ scidbdf_subset = function(x, i, drop=FALSE, redim=TRUE)
   y = project(x, attribute_range)
   class(y) = "scidb"
   ans = dimfilter(y, list(i[[1]]), `eval`=FALSE, drop=drop, redim=redim)
-  if(!(length(scidb_attributes(ans)==1) && drop)) class(ans) = "scidbdf"
+  if(!(length(scidb_attributes(ans))==1 && drop)) class(ans) = "scidbdf"
   ans@gc$depend = c(ans@gc$depend, x)
   ans
 }
