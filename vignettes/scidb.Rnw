@@ -155,9 +155,9 @@ Section \ref{shim}). The function may be safely called multiple times.  Once a
 connection is established, connection information is maintained until a
 different connection is established or the R session ends.
 
-The network interface optionally supports SSL encryption and PAM or HTTP digest
-user authentication.  The shim service can be configured to support either
-open/unencrypted or encrypted/authenticated ports, or both.
+The network interface optionally supports SSL encryption and SciDB or HTTP
+digest user authentication.  The shim service can be configured to support
+either open/unencrypted or encrypted/authenticated ports, or both.
 
 {\bf Connect to localhost by default on unencrypted port 8080:}
 \begin{Schunk}
@@ -167,7 +167,7 @@ open/unencrypted or encrypted/authenticated ports, or both.
 \end{Sinput}
 \end{Schunk}
 
-{\bf Connect to SciDB on an encrypted port 8083 with example PAM authentication:}
+{\bf Connect to SciDB on an encrypted port 8083 with example SciDB authentication:}
 \begin{Schunk}
 \begin{Sinput}
 > scidbconnect(host="localhost", port=8083,
@@ -176,6 +176,9 @@ open/unencrypted or encrypted/authenticated ports, or both.
 \end{Schunk}
 We recommend using only encrypted/authenticated sessions when communicating
 with SciDB over public networks.
+
+SciDB user authentication is only supported in SciDB versions 15.7 and
+greater.
 
 
 \subsection{Listing and removing SciDB arrays}
@@ -207,13 +210,13 @@ Matrix package (whose sparse matrix elements are implicitly zero).
 The elements of a SciDB array, called {\it cells}, contain one or more {\it
 attributes} (similar to R variables).  The number and data types of attributes
 are uniform across all cells in an array, and SciDB stores data for each
-attribute separately. A one-dimensional SciDB array is conceptually
-similar to a data frame in R: the SciDB dimension index corresponds to data
-frame row index, and SciDB attributes to data frame columns.
-Higher-dimensional arrays in SciDB are generalizations of data frames and they
-don't correspond directly to objects in R; the {\tt scidb} $n$-dimensional
-array class described below is sometimes limited to working with one attribute
-at a time to more closely emulate standard R arrays.
+attribute separately. A one-dimensional SciDB array is conceptually similar to
+a data frame in R: the SciDB dimension index corresponds to data frame row
+index, and SciDB attributes to data frame columns.  Higher-dimensional arrays
+in SciDB are generalizations of data frames and they don't correspond directly
+to objects in R; the {\tt scidb} $n$-dimensional array class described below is
+sometimes limited to working with one attribute at a time to more closely
+emulate standard R arrays.
 
 The \verb+scidb+ package defines two array classes for R with data backed
 by SciDB arrays: the \verb+scidbdf+ class for data frame-like objects,
@@ -259,8 +262,7 @@ the examples.
 \end{Sinput}
 \begin{Soutput}
 SciDB expression:  morely
-SciDB schema:  <Expt:int32 NULL DEFAULT null,Run:int32 NULL DEFAULT null,
-                Speed:int32 NULL DEFAULT null> [row=1:100,100,0]
+SciDB schema:  <Expt:int32 NULL DEFAULT null,Run:int32 NULL DEFAULT null,Speed:int32 NULL DEFAULT null> [row=1:100,100,0]
 
 Attributes:
   attribute  type nullable
@@ -277,11 +279,11 @@ Dimension:
 > X[1:4, c("Run","Speed")][]
 \end{Sinput}
 \begin{Soutput}
-  row Run Speed
-1   0   1   850
-2   1   2   740
-3   2   3   900
-4   3   4  1070
+  Run Speed
+1   1   850
+2   2   740
+3   3   900
+4   4  1070
 \end{Soutput}
 \end{Schunk}
 %%\caption*{Example of a scidbdf object}
@@ -352,7 +354,7 @@ bulk data load utility as outlined in the SciDB documentation instead.
 > str(v)
 \end{Sinput}
 \begin{Soutput}
-SciDB expression:  R_array366d7949bc241102999947615
+SciDB expression:  R_array2c5342fad33f1102088094081
 SciDB schema:  <val:double NULL DEFAULT null> [i=0:4,5,0,j=0:4,5,0]
 
 Attributes:
@@ -367,24 +369,26 @@ Dimensions:
 > crossprod( v[] )              # Compute t(v) %*% v using R
 \end{Sinput}
 \begin{Soutput}
-            0           1          2           3          4
-0  2.80783239 -0.05946079  0.6109525  1.53758978 -1.1351279
-1 -0.05946079  0.37437931  0.4675420 -0.08090686  0.8351372
-2  0.61095249  0.46754196  2.9929278 -2.32618189  0.7360878
-3  1.53758978 -0.08090686 -2.3261819  5.48612039 -0.5832051
-4 -1.13512788  0.83513722  0.7360878 -0.58320510  2.5291922
+   j
+j              0          1           2          3            4
+  0  1.244033505 -0.7949141 -0.03214577  0.4985382 -0.007012987
+  1 -0.794914112  1.6575862  0.15262576  2.4673273 -0.112623769
+  2 -0.032145767  0.1526258  8.96206571  3.9547689 -0.019350146
+  3  0.498538220  2.4673273  3.95476886  9.6855037 -0.375616327
+  4 -0.007012987 -0.1126238 -0.01935015 -0.3756163  0.206898279
 \end{Soutput}
 \begin{Sinput}
 > # Now compute using SciDB, and materialize the result to R:
 > crossprod(v)[]
 \end{Sinput}
 \begin{Soutput}
-            0           1          2           3          4
-0  2.80783239 -0.05946079  0.6109525  1.53758978 -1.1351279
-1 -0.05946079  0.37437931  0.4675420 -0.08090686  0.8351372
-2  0.61095249  0.46754196  2.9929278 -2.32618189  0.7360878
-3  1.53758978 -0.08090686 -2.3261819  5.48612039 -0.5832051
-4 -1.13512788  0.83513722  0.7360878 -0.58320510  2.5291922
+   j_1
+j              0          1           2          3            4
+  0  1.244033505 -0.7949141 -0.03214577  0.4985382 -0.007012987
+  1 -0.794914112  1.6575862  0.15262576  2.4673273 -0.112623769
+  2 -0.032145767  0.1526258  8.96206571  3.9547689 -0.019350146
+  3  0.498538220  2.4673273  3.95476886  9.6855037 -0.375616327
+  4 -0.007012987 -0.1126238 -0.01935015 -0.3756163  0.206898279
 \end{Soutput}
 \end{Schunk}
 
@@ -471,11 +475,6 @@ zero-indexed results unless the \verb+redim=FALSE+ argument is specified.
 objects with SciDB array attribute as columns. Use either positional numeric
 or name-based indexing along columns, either with the dollar-sign notation
 or string indexing.
-\item 
-All array types support labeled dimension indexing using the R \verb+rownames+,
-\verb+colnames+, or \verb+dimnames+ and related functions. Labels assigned in this
-way must be provided by 1-d SciDB arrays that map the integer coordinates to
-character label values. See the examples below.
 \item Arrays may be indexed by other SciDB arrays
 to achieve the effect of filtering by boolean expressions and similar
 operations, also illustrated below in the examples.
@@ -509,29 +508,35 @@ using the special empty index function:
 > x[]
 \end{Sinput}
 \begin{Soutput}
-   0  1  2  3
--2 1  6 11 16
--1 2  7 12 17
-0  3  8 13 18
-1  4  9 14 19
-2  5 10 15 20
+    j
+i    0  1  2  3
+  -2 1  6 11 16
+  -1 2  7 12 17
+  0  3  8 13 18
+  1  4  9 14 19
+  2  5 10 15 20
 \end{Soutput}
 \end{Schunk}
 
-The package adopts the convention that explicit subsets return zero-indexed
-results, noting also that zero and negative integers are valid SciDB indexes
+The package adopts the convention that explicit subsets return with
+starting coordinate indices defined by the subset operation,
+noting also that zero and negative integers are valid SciDB indexes
 (deviating from R's usual interpretation):
 \begin{Schunk}
 \begin{Sinput}
 > x[0:2, 2:3] []
 \end{Sinput}
 \begin{Soutput}
-   0  1
-0 13 18
-1 14 19
-2 15 20
+   j
+i    2  3
+  0 13 18
+  1 14 19
+  2 15 20
 \end{Soutput}
 \end{Schunk}
+Use the \verb+translate+ function to explicitly reset the starting
+coordinate system of any SciDB array result to the SciDB default of
+zero.
 
 Use the optional \verb+redim=FALSE+ option to return a masked sparse
 array of the same shape as the input. This is often useful in conjunction
@@ -542,12 +547,12 @@ with database join operations.
 \end{Sinput}
 \begin{Soutput}
 5 x 4 sparse Matrix of class "dgCMatrix"
-   0 1  2  3
--2 . .  .  .
--1 . .  .  .
-0  . . 13 18
-1  . . 14 19
-2  . . 15 20
+       2  3
+  . .  .  .
+  . .  .  .
+0 . . 13 18
+1 . . 14 19
+2 . . 15 20
 \end{Soutput}
 \end{Schunk}
 
@@ -557,94 +562,45 @@ The bracket function also supports the standard R \verb+drop+ argument:
 > x[, 1] []
 \end{Sinput}
 \begin{Soutput}
- 0  1  2  3  4 
+-2 -1  0  1  2 
  6  7  8  9 10 
 \end{Soutput}
 \begin{Sinput}
 > x[, 1, drop=FALSE] []
 \end{Sinput}
 \begin{Soutput}
-   0
-0  6
-1  7
-2  8
-3  9
-4 10
+    j
+i     1
+  -2  6
+  -1  7
+  0   8
+  1   9
+  2  10
 \end{Soutput}
 \end{Schunk}
 
-Non-contiguous selections are supported, noting again that returned subset
-results by convention here are zero-indexed:
+Non-contiguous selections are supported.
 \begin{Schunk}
 \begin{Sinput}
 > x[c(0,2,-1), ][]
 \end{Sinput}
 \begin{Soutput}
-  0  1  2  3
-0 2  7 12 17
-1 3  8 13 18
-2 5 10 15 20
+    j
+i_1  0  1  2  3
+  -2 3  8 13 18
+  -1 5 10 15 20
+  0  2  7 12 17
 \end{Soutput}
 \end{Schunk}
-(However, unlike standard R array subsetting repeated indices are not
-supported.)
+However, unlike standard R array subsetting repeated indices are not
+supported and SciDB always returns results in coordinate order.
 
-Coordinate axes may be labeled:
-\begin{Schunk}
-\begin{Sinput}
-> rownames(x) <- letters[1:5]
-> colnames(x) <- LETTERS[1:4]
-> x[]
-\end{Sinput}
-\begin{Soutput}
-  A  B  C  D
-a 1  6 11 16
-b 2  7 12 17
-c 3  8 13 18
-d 4  9 14 19
-e 5 10 15 20
-\end{Soutput}
-\end{Schunk}
-The labels are maintained as ancillary SciDB arrays under the hood. You can
-view them:
-\begin{Schunk}
-\begin{Sinput}
-> dimnames(x)
-\end{Sinput}
-\begin{Soutput}
-[[1]]
-Reference to a SciDB vector of length 5 
-
-[[2]]
-Reference to a SciDB vector of length Inf 
-\end{Soutput}
-\begin{Sinput}
-> dimnames(x)[[1]] []
-\end{Sinput}
-\begin{Soutput}
- -2  -1   0   1   2 
-"a" "b" "c" "d" "e" 
-\end{Soutput}
-\end{Schunk}
 If a sparse array has coordinates too large for R to manage, results are
 returned in an ``unpacked'' data frame form.
 
-Note that SciDB objects with coordinates beyond the range of R display as
+SciDB objects with coordinates beyond the range of R display as
 \verb+inf+. Coordinate labeling arrays are sparse with a very large upper
 coordinate bound by convention--allowing the number of labels to grow easily.
-
-Labeled arrays can be subset, and the result retains labels:
-\begin{Schunk}
-\begin{Sinput}
-> x[c('c','a','e'), c('B','A')] []
-\end{Sinput}
-\begin{Soutput}
-  A  B
-a 1  6
-c 3  8
-e 5 10
-\end{Soutput}
-\end{Schunk}
 
 Data-frame like objects are supported. Under the hood they are 1-d SciDB
 arrays.
@@ -655,15 +611,15 @@ arrays.
 \end{Sinput}
 \begin{Soutput}
   Sepal_Width Petal_Length Petal_Width Species
-1         3.5          1.4         0.2  setosa
-2         3.0          1.4         0.2  setosa
-3         3.2          1.3         0.2  setosa
-4         3.1          1.5         0.2  setosa
-5         3.6          1.4         0.2  setosa
-6         3.9          1.7         0.4  setosa
+0         3.5          1.4         0.2  setosa
+1         3.0          1.4         0.2  setosa
+2         3.2          1.3         0.2  setosa
+3         3.1          1.5         0.2  setosa
+4         3.6          1.4         0.2  setosa
+5         3.9          1.7         0.4  setosa
 \end{Soutput}
 \end{Schunk}
-Note that the package will attempt to rename variables to conform to SciDB
+The package will attempt to rename variables to conform to SciDB
 naming conventions when it has to.
 
 The ``columns'' of a data frame like object are defined by the SciDB array
@@ -712,7 +668,7 @@ FALSE FALSE FALSE  TRUE FALSE  TRUE
 \end{Soutput}
 \begin{Sinput}
 > # Special SciDB-style masked comparison:
-> (x$Petal_Length %>% 1.4)[]
+> (x$Petal_Length %gt% 1.4)[]
 \end{Sinput}
 \begin{Soutput}
 sparse vector (nnz/length = 2/6) of class "dsparseVector"
@@ -725,32 +681,17 @@ This works mostly like R, except that such filters may only be applied
 along coordinate axes. (That is, R's special single-index indexing mode
 is not supported.)
 
-Additional examples showing dimension labels and filtering follow.
-\begin{Schunk}
-\begin{Sinput}
-> # Example of labeling indices with a label array.
-> set.seed(1)
-> X <- as.scidb( matrix(rnorm(20),nrow=5) )
-> # SciDB matrix objects like X default to zero-based indexing.
-> # It's important that the label array have the same starting index:
-> rownames(X) <- as.scidb( data.frame(letters[1:5]), start=0)
-> X[c("b","a","d"), ]
-\end{Sinput}
-\begin{Soutput}
-A reference to a  3x4 SciDB array
-\end{Soutput}
-\end{Schunk}
-
 \begin{Schunk}
 \begin{Sinput}
 > # Example of indexing by a condition on an auxiliary array.
 > # Determine a subset of the rownames of X (another SciDB array):
-> idx <- rownames(X) > "b"
-> # Subset X by the condition on its rows:
-> X[idx, ]
+> set.seed(1)
+> X <- as.scidb( matrix(rnorm(20),nrow=5) )
+> a <- as.scidb(runif(5))
+> X[a>0, ]
 \end{Sinput}
 \begin{Soutput}
-A reference to a  3x4 SciDB array
+A reference to a  5x4 SciDB array
 \end{Soutput}
 \end{Schunk}
 
@@ -806,10 +747,10 @@ aggregation function expressed as a character string. Here is a simple example:
 \end{Sinput}
 \begin{Soutput}
   row Petal_Width_sum
-1   1             0.2
-2   2             0.4
-3   3             0.6
-4   4             0.8
+0   1             0.2
+1   2             0.4
+2   3             0.6
+3   4             0.8
 \end{Soutput}
 \end{Schunk}
 
@@ -875,10 +816,11 @@ columns.  The \verb+scidb+ class also supports a short-hand notation for
 > (A > 0)[]
 \end{Sinput}
 \begin{Soutput}
-      0     1    2
-0 FALSE  TRUE TRUE
-1  TRUE  TRUE TRUE
-2 FALSE FALSE TRUE
+   j
+i       0     1    2
+  0 FALSE  TRUE TRUE
+  1  TRUE  TRUE TRUE
+  2 FALSE FALSE TRUE
 \end{Soutput}
 \end{Schunk}
 %%\caption*{Example of array value filtering with subset}
@@ -914,20 +856,13 @@ example that performs an inner join on array attributes:
 > merge(a,b,by.x="surname",by.y="name")[,4:8][]
 \end{Sinput}
 \begin{Soutput}
-  row_2 nationality deceased     name                         title
-1     0   Australia       no   McNeil     Interactive Data Analysis
-2     1          UK       no   Ripley            Spatial Statistics
-3     2          UK       no   Ripley         Stochastic Simulation
-4     3          US       no  Tierney                     LISP-STAT
-5     4          US      yes    Tukey     Exploratory Data Analysis
-6     5   Australia       no Venables Modern Applied Statistics ...
-  other_author
-1         <NA>
-2         <NA>
-3         <NA>
-4         <NA>
-5         <NA>
-6       Ripley
+  nationality deceased     name                         title other_author
+0   Australia       no   McNeil     Interactive Data Analysis         <NA>
+1          UK       no   Ripley            Spatial Statistics         <NA>
+2          UK       no   Ripley         Stochastic Simulation         <NA>
+3          US       no  Tierney                     LISP-STAT         <NA>
+4          US      yes    Tukey     Exploratory Data Analysis         <NA>
+5   Australia       no Venables Modern Applied Statistics ...       Ripley
 \end{Soutput}
 \begin{Sinput}
 > # cf. The standard R data.frame merge function:
@@ -987,9 +922,9 @@ variable named `prod` to the SciDB array \verb+df+ defined in the last example.
 \end{Sinput}
 \begin{Soutput}
   Sepal_Width Petal_Length Petal_Width Species prod
-1         3.5          1.4         0.2  setosa 0.28
-2         3.0          1.4         0.2  setosa 0.28
-3         3.2          1.3         0.2  setosa 0.26
+0         3.5          1.4         0.2  setosa 0.28
+1         3.0          1.4         0.2  setosa 0.28
+2         3.2          1.3         0.2  setosa 0.26
 \end{Soutput}
 \end{Schunk}
 
@@ -1013,22 +948,21 @@ a congingency table along levels of two variables, "class" and "Species."
 \end{Sinput}
 \begin{Soutput}
 2 x 3 sparse Matrix of class "dgCMatrix"
-  setosa versicolor virginica
-0     50         50        27
-1      .          .        23
+   0  1  2
+0 50 50 27
+1  .  . 23
 \end{Soutput}
 \begin{Sinput}
 > # Aggregation example (cf. aggregation example above)
 > redimension(x,
 +             dim="Species",
-+             FUN="avg(Petal_Length) as Petal_Length_avg,
-+                  stdev(Petal_Width) as Petal_Width_stdev")[]
++             FUN="avg(Petal_Length) as Petal_Length_avg, stdev(Petal_Width) as Petal_Width_stdev")[]
 \end{Sinput}
 \begin{Soutput}
-           Petal_Length_avg Petal_Width_stdev
-setosa                1.462         0.1053856
-versicolor            4.260         0.1977527
-virginica             5.552         0.2746501
+  Petal_Length_avg Petal_Width_stdev
+0            1.462         0.1053856
+1            4.260         0.1977527
+2            5.552         0.2746501
 \end{Soutput}
 \end{Schunk}
 The function creates and applies row and dimension names as required.
@@ -1062,9 +996,9 @@ equivalent column subset selection of variables using brackets.
 \end{Sinput}
 \begin{Soutput}
   Sepal_Width Petal_Length Petal_Width Species
-1         3.1          1.5         0.1  setosa
-2         3.0          1.4         0.1  setosa
-3         3.0          1.1         0.1  setosa
+0         3.1          1.5         0.1  setosa
+1         3.0          1.4         0.1  setosa
+2         3.0          1.1         0.1  setosa
 \end{Soutput}
 \begin{Sinput}
 > # Find unique values of Species:
@@ -1082,12 +1016,12 @@ equivalent column subset selection of variables using brackets.
 \end{Sinput}
 \begin{Soutput}
   Sepal_Width Petal_Length Petal_Width Species Species_index
-1         3.5          1.4         0.2  setosa             0
-2         3.0          1.4         0.2  setosa             0
-3         3.2          1.3         0.2  setosa             0
-4         3.1          1.5         0.2  setosa             0
-5         3.6          1.4         0.2  setosa             0
-6         3.9          1.7         0.4  setosa             0
+0         3.5          1.4         0.2  setosa             0
+1         3.0          1.4         0.2  setosa             0
+2         3.2          1.3         0.2  setosa             0
+3         3.1          1.5         0.2  setosa             0
+4         3.6          1.4         0.2  setosa             0
+5         3.9          1.7         0.4  setosa             0
 \end{Soutput}
 \end{Schunk}
 
@@ -1153,14 +1087,7 @@ Here is an example:
 > B@name
 \end{Sinput}
 \begin{Soutput}
-[1] "redimension(
-       subarray(
-         redimension(
-           between(
-             transpose(test),3,null,3,null),
-           <val:double NULL>[j=3:3,4,0,i=0:4,5,0]),
-          null,null,null,null),
-       <val:double NULL>[i=0:4,5,0])"
+[1] "redimension(redimension(between(transpose(test),3,null,3,null), <val:double NULL>[j=3:3,4,0,i=0:4,5,0]), <val:double NULL>[i=0:4,5,0])"
 \end{Soutput}
 \begin{Sinput}
 > B@schema
@@ -1183,7 +1110,7 @@ Here is an example:
 > C@name
 \end{Sinput}
 \begin{Soutput}
-[1] "R_array366d7fc6adf21102999947615"
+[1] "R_array2c53209a026e1102088094081"
 \end{Soutput}
 \begin{Sinput}
 > C@schema
@@ -1376,31 +1303,31 @@ online help for examples and more information on each one.
 >                       >=                      -
 !=                      /                       [
 [<-                     $                       *
-%<=%                    %<%                     %==%
-%>=%                    %>%                     %*%
-+                       abs                     acos
-aggregate               all.equal               antijoin
-apply                   asin                    as.scidb
-atan                    attribute_rename        bernoulli
-between                 bind                    bound
-build                   c                       cast
-cbind                   chunk_map               colnames
-colnames<-              cos                     count
-crossprod               cumulate                default
-df2scidb                diag                    diff
-dim                     dimension_rename        dimensions
-dimnames                dimnames<-              dist
-exp                     factor_scidb            Filter
-glm                     glm.fit                 glm_scidb
-head                    hist                    image
-index_lookup            iqdf                    iquery
-is.scidb                is.scidbdf              is.temp
-kmeans                  lag                     length
-levels_scidb            log                     max
+%<=%                    %==%                    %>=%
+%*%                     +                       abs
+acos                    aggregate               all.equal
+antijoin                apply                   asin
+as.scidb                atan                    attribute_rename
+bernoulli               between                 bind
+bound                   build                   c
+cast                    cbind                   chunk_map
+colnames                colnames<-              cos
+count                   crossprod               cumulate
+default                 df2scidb                diag
+diff                    dim                     dimension_rename
+dimensions              dimnames                dimnames<-
+dist                    exp                     factor_scidb
+Filter                  glm                     glm.fit
+glm_scidb               %gt%                    head
+hist                    image                   index_lookup
+iqdf                    iquery                  is.scidb
+is.scidbdf              is.temp                 kmeans
+lag                     length                  levels_scidb
+log                     %lt%                    max
 mean                    median                  merge
 min                     model_scidb             na.locf
 names                   names<-                 ncol
-nrow                    Ops                     order
+nrow                    Ops                     order_scidb
 peek                    persist                 phyper
 predict                 print                   project
 qhyper                  quantile                rank
@@ -1420,9 +1347,9 @@ solve                   sort                    sqrt
 str                     subarray                subset
 sum                     summary                 svd
 sweep                   t                       tail
-tan                     tcrossprod              tsvd
-unbound                 unique                  unpack
-var                     xgrid
+tan                     tcrossprod              translate
+tsvd                    unbound                 unique
+unpack                  var                     xgrid
 \end{verbatim}
 
 
