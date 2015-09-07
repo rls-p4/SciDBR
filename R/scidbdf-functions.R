@@ -144,14 +144,7 @@ dimnames.scidbdf = function(x)
     }
     else
     {
-      if(!is.null(dimnames(x)[[1]]))
-      {
-        row.names = iquery(dimnames(x)[[1]]@name, `return`=TRUE,binary=TRUE)[,2]
-        ans = iquery(sprintf("%s",x@name),`return`=TRUE,binary=TRUE,buffer=nrow(x),row.names=row.names)[,-1]
-      } else
-      {
-        ans = iquery(sprintf("%s",x@name),`return`=TRUE,binary=TRUE,buffer=nrow(x),row.names=row.names)
-      }
+      ans = iquery(sprintf("%s",x@name),`return`=TRUE,binary=TRUE,buffer=nrow(x),row.names=row.names)
       return(ans)
     }
 # Not materializing, return a SciDB array
@@ -202,10 +195,9 @@ scidbdf_subset = function(x, i, drop=FALSE, redim=TRUE)
   }
 
   y = project(x, attribute_range)
-  row.names(y) = rownames(x)  # Preserve row names
   class(y) = "scidb"
   ans = dimfilter(y, list(i[[1]]), `eval`=FALSE, drop=drop, redim=redim)
-  if(!(length(dim(ans)==1) && drop)) class(ans) = "scidbdf"
+  if(!(length(scidb_attributes(ans)==1) && drop)) class(ans) = "scidbdf"
   ans@gc$depend = c(ans@gc$depend, x)
   ans
 }
