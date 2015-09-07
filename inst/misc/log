@@ -1,3 +1,284 @@
+commit 79e808ad8f3f2ee6be6ea5750d16607c8e80a830
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Sep 7 00:12:30 2015 -0400
+
+    Updated vignette
+
+commit 12142dea5323aeb88486fdf400c09b144fe98647
+Author: bwlewis <blewis@illposed.net>
+Date:   Mon Sep 7 00:07:46 2015 -0400
+
+    vignette caught more problems with new redimension function; added tests
+
+commit 4750faf3da321c2473356eab2ee850f2a69febf5
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 23:45:54 2015 -0400
+
+    Improved scidbdf_subset return type logic
+
+commit 4ea34ff0f500877e220a4f500089ded3f7468332
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 23:44:27 2015 -0400
+
+    Improved scidbdf_subset return type logic
+
+commit 0303770ef720e7e233b16e5ea114c65517575d2d
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 23:37:16 2015 -0400
+
+    Caught scidbdf indexing regression, fixed and added test
+
+commit 178cd5dffcf7f9718faf06de7d673ea2aab85353
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 23:25:14 2015 -0400
+
+    Fixed as.scidb type bug for Matrix objects
+
+commit d3dee1ffbdc3e44ee2bb953f3cec33b50fc61dcc
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 23:07:09 2015 -0400
+
+    Added order_scidb to address issue #42 and #70
+
+commit 0531182252ed78f415d7f3b278cea5e92712bad8
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 23:04:37 2015 -0400
+
+    Added order_scidb to address issue #42 and #70
+
+commit 8c9777012e174d4ee7436c89c974991ea43071d3
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 22:12:34 2015 -0400
+
+    Removed tests associated with dimnames
+
+commit ec54fc3ca6ae3f1d02e97a4a5ba77b35e66ac910
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 22:09:24 2015 -0400
+
+    Updated version number, README
+
+commit cc691192037dfca821ede26db297a513bf37ef4d
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 21:50:33 2015 -0400
+
+    Added translate function
+
+commit afa4609893abb0360bee2c0277837256acc22735
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 21:37:52 2015 -0400
+
+    cumulate enhancement
+
+commit d37a9c02136357c10d1960346f1459a3db165d23
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 21:36:03 2015 -0400
+
+    New special_index function
+
+commit 9bba536c1abed1e191500c98af934bcba7f09263
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 19:57:59 2015 -0400
+
+    New special_index function, partially complete
+
+commit 4aede362f2ec3bf202c0124e2b4b3e9cc9cd77e2
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 18:14:27 2015 -0400
+
+    Ripped out dimnames except for data.frame names<- case
+
+commit fd7d0a457a95e3cd5b1b3c278ba207e16dd38276
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 18:01:36 2015 -0400
+
+    Changed names of infix comparison methods to avoid conflict with magrittr
+
+commit 5a25298287fd1190ec8630935d8a55731714cbe3
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 17:29:14 2015 -0400
+
+    Changed names of infix comparison methods to avoid conflict with magrittr
+
+commit f461d76dd1818f8a45c721027fcfbacebb18afd2
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 17:15:01 2015 -0400
+
+    Preserve specified order in redimension
+
+commit a307a7185a0cdcf966007e631a58733a4f71d315
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 15:59:02 2015 -0400
+
+    Merge enhancement for newer versions
+
+commit e18d20940ad9d6841fadeb66d641431862b1a3c7
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 15:44:24 2015 -0400
+
+    more work on materialize for sparse output
+
+commit 054ad0acecdfc89168b265eca06e14eb33ca2120
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 13:15:34 2015 -0400
+
+    streamlined as.scidb; added optional type argument
+
+commit 189eb6c06b450ede30b939c99f56cabfe6fd7ea0
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 13:12:52 2015 -0400
+
+    streamlined as.scidb; added optional type argument
+
+commit da78b57f1475f54ba488394b4c3c77a257b3db3c
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 13:11:10 2015 -0400
+
+    streamlined as.scidb; added optional type argument
+
+commit 8ee79acf56fd3944cadd84c8cffb8a64ff934d41
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 12:13:07 2015 -0400
+
+    materialize bug fixes
+
+commit 4962c2a2a65004869929d9e58296a4fb022ad4f1
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 11:57:42 2015 -0400
+
+    translate function, fixed bug in return labels
+
+commit 1ee3f87c1ad2a60d29c18e4d5572cd553f816896
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 11:52:28 2015 -0400
+
+    translate function, fixed bug in return labels
+
+commit 383de9171de3ad2a17a3f270a236e55df9313b07
+Author: bwlewis <blewis@illposed.net>
+Date:   Sun Sep 6 00:46:09 2015 -0400
+
+    subset fix for data.frames
+
+commit 11663985b52c8cabb6348055a49ae4be99af519d
+Author: bwlewis <blewis@illposed.net>
+Date:   Sat Sep 5 23:51:45 2015 -0400
+
+    Much improved subset methods
+
+commit 28bd190eeb4b1aa72cf4902641e5b653e6a7772c
+Author: bwlewis <blewis@illposed.net>
+Date:   Sat Sep 5 23:49:21 2015 -0400
+
+    Much improved subset methods
+
+commit 8892f9f899548c16632801a974ada20c79f0c0b8
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Fri Aug 28 23:44:10 2015 -0400
+
+    Removed subarray in [ indexing, starting indices now float
+
+commit 77ba01e20b8bc37020b94500c831a4fef1729699
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Fri Aug 28 22:52:07 2015 -0400
+
+    Merged master branch into lab
+
+commit 06098a27d60cdc26bd5b45b6baf77a6daebee3b7
+Merge: 41c9ed9 00b9fea
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Fri Aug 28 22:50:06 2015 -0400
+
+    Merge branch 'master' into laboratory
+    
+    Conflicts:
+    	DESCRIPTION
+    	R/utility.R
+
+commit 00b9fead2f51286d02a1917fa562e17bad135bf9
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 19 21:51:49 2015 -0400
+
+    typo
+
+commit a344b6e77bc6da42631494f2d529ed5a6813b1d8
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Aug 19 21:49:18 2015 -0400
+
+    More updates for SciDB 15.7, removed use of old SciDB attribute_rename, adapted to changes on logical plan output
+
+commit 840f4e9f42f7eb2164ae77d57721fb112c62d078
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Tue Aug 18 06:01:06 2015 -0400
+
+    Changed 'pam' authentication name to 'scidb' (but still back-compatible with older pam methods for now)
+
+commit 7be6a643f9349bc4e3273ff8c47634bbc5b28dca
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Tue Aug 18 05:57:59 2015 -0400
+
+    Fixed explain_logical name change for 15.7
+
+commit f842800dda51fe919473208279260b4903934cd7
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Tue Aug 18 05:53:54 2015 -0400
+
+    Another issue with digest authentication corrected
+
+commit 90665d61acf258d6e699a0523cf894c5e5c435b9
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Tue Aug 18 05:18:44 2015 -0400
+
+    removed order from namespace
+
+commit b734b910ae88031f90429ca1945487ca34e0b444
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Tue Aug 18 05:16:46 2015 -0400
+
+    Fixed bug in authentication
+
+commit 41c9ed983599fc5b24204bf17f439afb2d9e551e
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Tue Aug 18 05:07:16 2015 -0400
+
+    Fixed a bug in digest authentication
+
+commit d1949879d711c01a9686df982c96559f9ff24432
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Mon Jul 27 17:14:06 2015 -0400
+
+    Removed incorrect order methods to address issues #42 and #70
+
+commit 0f9f3c217c98598bfd9b45a72c7ac873c06c2324
+Author: B. W. Lewis <blewis@illposed.net>
+Date:   Wed Apr 29 13:55:43 2015 -0400
+
+    raw2scidb experiment (incomplete)
+
+commit fff790bd29da23516c4442b5c487105ed70bf1be
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Tue Apr 21 03:09:31 2015 -0400
+
+    working on problems encountered in the new bound function
+
+commit c7fbae7b8ebe65abf55f55a7134bd206de60bc71
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Apr 1 19:24:39 2015 -0400
+
+    Another package check note fixed, checks passing
+
+commit a8ba3e3c9f91a1ef5063e0886cdf270df903f62d
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Apr 1 19:20:29 2015 -0400
+
+    Fixed title case note
+
+commit 366b1493af5b45f3233d730f5567c1995f750bfb
+Author: Bryan W Lewis <blewis@paradigm4.com>
+Date:   Wed Apr 1 19:08:15 2015 -0400
+
+    log update
+
 commit 4922c4965027043c26613af7008a6cc9e5e2326c
 Author: Bryan W Lewis <blewis@paradigm4.com>
 Date:   Wed Apr 1 19:00:42 2015 -0400
@@ -217,284 +498,3 @@ Date:   Tue Mar 24 10:41:16 2015 -0400
 commit 09ace7347c235c4df88d2c51e6dc61aa41bda2ee
 Author: B. W. Lewis <blewis@illposed.net>
 Date:   Tue Mar 24 10:36:52 2015 -0400
-
-    Tweak to index_lookup to take the first attribute of a multi-attribute lookup array by default
-
-commit e10e2a450e02306c4cb70342b6d949a4b1c853ae
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Sat Mar 21 20:16:48 2015 -0400
-
-    When returning data as a data frame due to an indexing or data type mismatch between R and SciDB as a fallback, reset the indices to SciDB values
-
-commit b5f74d3ae04e99a0cfda9ae37b94a10a48c0811f
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Fri Mar 20 13:33:15 2015 -0400
-
-    Fixed aliasing bug in cross_join
-
-commit 5813cfd6479d7769e6d4d4f137f9666302e47b36
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Mar 17 13:08:03 2015 -0400
-
-    Automatic alias tracking; tests passing
-
-commit 09e672981be39da2436f6780b4600cc01def225d
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Mon Mar 16 12:54:21 2015 -0400
-
-    Added logical_plan
-
-commit ecb366965f17911d5e5120437e8236964ae7cd90
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Thu Mar 12 15:13:59 2015 -0400
-
-    Bug in special_index redim=FALSE case
-
-commit 3432a785949032ae2a3a38713323e0012b316c96
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Mon Mar 2 15:24:31 2015 -0500
-
-    Fix for github issue #61
-
-commit 7a73bbbb4e9a2e6b9cea0d4a276799f73daf16a1
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Fri Feb 20 13:55:11 2015 -0500
-
-    Fixed some broken tests due to changes in redimension; reverted to scidb.stream=FALSE--still getting occasional shim deadlock somewhere...
-
-commit 089cf8c5966d0303ecf6463f1b696f0498196283
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Fri Feb 20 12:14:49 2015 -0500
-
-    Preliminary support for subset assignment for the scidb class
-
-commit 74743b2e4050918e2a5f98c60d4baca9a9319ca6
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Thu Feb 19 16:15:07 2015 -0500
-
-    Vignette update
-
-commit ae699e2cb67affb6162ddd05b4a9dae2b5552440
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Thu Feb 19 10:14:36 2015 -0500
-
-    Fixed an issue with verbose scidbls
-
-commit 2bfc9af501b78ddaf5909bfcedfab2f3d89e4871
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Thu Feb 19 10:14:25 2015 -0500
-
-    Fixed an issue with verbose scidbls
-
-commit 127a2e772f86bb49f379f6a860514449b035f36b
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Thu Feb 19 08:43:17 2015 -0500
-
-    More versatile redimension
-
-commit ed724214e454d20a7131a893648195013e6853c5
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Wed Feb 18 10:34:48 2015 -0500
-
-    error msg cleanup
-
-commit f346b584d922fd497689c11fe70962803b903a4e
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Wed Feb 18 10:32:46 2015 -0500
-
-    error msg cleanup
-
-commit 40fe2c48fc3445ab39ae2f51b621c011081c9677
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Wed Feb 18 09:23:42 2015 -0500
-
-    Better dependency resolution in inherited dimension labels
-
-commit d6b78a7c57f182c46ea456c74f0918003f8f50a3
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 21:48:18 2015 -0500
-
-    Fixed scidbdf drop issue
-
-commit 4e4f248591dfd65556dc28b01879af1007b1e014
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 21:47:39 2015 -0500
-
-    Fixed scidbdf drop issue
-
-commit 8bd16d3fa3d332e4cac38c81933bec5fcbe20cf1
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 21:05:36 2015 -0500
-
-    better warnings for sparse dimension issues
-
-commit d1975d56ed88183365d5516f4ec366def5c4b3c3
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 19:46:38 2015 -0500
-
-    dimnames, rownames, row.names, etc. for scidbdf; redimension now accepts numeric dimension indices too--very useful for 'densification'
-
-commit 8cfbb28b9ed4ada47fcfeede16c27daef6c95803
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 14:43:59 2015 -0500
-
-    scidbdf now supports row.names<-
-
-commit e9be462ff1278d844b67fecd60e891b171795b7c
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 14:04:02 2015 -0500
-
-    dim<- now maps to reshape
-
-commit 727233dc42af3a0f3253b03a502e536ae7b7f408
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 13:00:26 2015 -0500
-
-    Fixed another subtle indexing issue; the resetting of origins to zero is enforced in most bracket subarray operations now unless redim=FALSE is indicated
-
-commit 7fa291c3feace866ba6da88857049d744ca7e3ff
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 12:48:53 2015 -0500
-
-    scidbdf row index subsetting now uses scidb code path
-
-commit a71a2e4fd2228882375b4777029f68da74ac31e9
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 11:42:47 2015 -0500
-
-    Changed  version to 1.2-0
-
-commit a2c1a64d3b8793af57ac59ec8bfb6d3822eea5e7
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 10:08:33 2015 -0500
-
-    tests passing again
-
-commit 22df50286dfd4ebe2c6653872a24e34b6c8f5435
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 10:04:37 2015 -0500
-
-    Fixed dependency regression introduced in dimnames (caught in tests)
-
-commit 6dc6f6dcaac32eee8a34fb73e77668fc5a67d866
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 09:49:11 2015 -0500
-
-    Fixed regression in drop=TRUE for vectors (caught in tests)
-
-commit 8dfd2cae58af4054916e9093ce6d84faeecb9acb
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 09:38:40 2015 -0500
-
-    Fixed regression in drop=TRUE for vectors (caught in tests)
-
-commit e3c1f9c1f90f8c1dde9f3031b3fbc6aa97f58491
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 09:21:08 2015 -0500
-
-    Fixed bug in slice
-
-commit 49c4d6b47a72c8f51e718f98339c4e53bbd5a5a9
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 09:16:34 2015 -0500
-
-    Adjusted tests to understand that returned values are labeled by default now
-
-commit 4fce55eb30dc0863a30a526f71c2751c5d4265fc
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 09:00:12 2015 -0500
-
-    fix bug in assignment of dimension labels with initial index mismatch
-
-commit 500e8515109872fef5371556ea28d9b3561cc184
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 00:30:25 2015 -0500
-
-    I notice that the indexing queries are getting exponentially longer. Probaby need to force evals there.
-
-commit 1794a9c76ec6aeb702eb156e39d3095ba72a85ee
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 00:24:46 2015 -0500
-
-    New indexing for scidb objects mostly complete, a bit of cleanup needed. Still nothing for data frames
-
-commit 5a4237d22925cb3e4aa93fe87d260fe04b595733
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Tue Feb 17 00:21:06 2015 -0500
-
-    New indexing for scidb objects mostly complete, a bit of cleanup needed. Still nothing for data frames
-
-commit 3418055e33e20786935d5b3ccf6b5b6c80000c2c
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Mon Feb 16 16:22:58 2015 -0500
-
-    More dimension label madness, partially complete
-
-commit 2914ac3361d705344bcac585c4ce26748fded62c
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Sun Feb 15 00:00:20 2015 -0500
-
-    dimnames for scidb objects. Still need to implement for scidbdf. found some bugs in special_index, working on that
-
-commit 6d60a0e9bfb208cda443d3f7f434505f5eaa605a
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Sat Feb 14 21:43:44 2015 -0500
-
-    minor fix to character vector dimlabel assignment
-
-commit 5e3e73d9f50af89c1d4bf09f7e8c82e612e608ba
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Sat Feb 14 20:58:41 2015 -0500
-
-    Inheritance of index labels for simple,dense scidb object subsetting. Still working out more complex subsetting and row labeling for scidbdf objects.
-
-commit 54e6bcd8c7642d75917d43b3de08dd12fa323d44
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Sat Feb 14 19:55:35 2015 -0500
-
-    Partial dimname inheritance and printing
-
-commit 3070223734f209b3b9e39768f7e8b055f703a4b0
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Sat Feb 14 14:47:54 2015 -0500
-
-    Added unbound function, unpack option to iquery
-
-commit 3d3e7059532759d9202726e5ec2aa57ba3801f7f
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Fri Feb 13 17:25:38 2015 -0500
-
-    Improved scidbconnect doc
-
-commit d4c2de0fe15542fd18fa2b4910417271e415bee9
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Fri Feb 13 17:20:08 2015 -0500
-
-    log
-
-commit 53cf32b4ad8e741e63a4d0876fbee2539afa6b16
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Fri Feb 13 17:12:31 2015 -0500
-
-    Digest authentication (finally)
-
-commit 519a6e753bcd24f8c70b868b3a7c502274c7653b
-Author: scidb <scidb@p4xen7.(none)>
-Date:   Sun Jan 25 13:09:43 2015 -0500
-
-    Log
-
-commit 7433d7e4344899faa69894e78eb671d73cbd0f36
-Author: scidb <scidb@p4xen7.(none)>
-Date:   Sun Jan 25 13:09:17 2015 -0500
-
-    Fixed another start dimension bound bug
-
-commit 2a80cc39cb109444d2e40bb1e3bb9185b41c80cb
-Author: B. W. Lewis <blewis@illposed.net>
-Date:   Fri Jan 23 17:25:59 2015 -0500
-
-    Minor cleanup for default stream option
-
-commit d228c1befc466b04a2f4fd52c0ae8810e666e990
-Author: B. W. Lewis <blewis@illposed.net>
