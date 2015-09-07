@@ -164,7 +164,7 @@ cat("# slice\n")
 
 cat("# order\n")
   x = scidbeval(build("random()%100", 100, type="double", start=1))
-  o1 = order_scidb(x)[]
+  o1 = order_scidb(x)[] + 1  # (zero-based)
   o2 = order(x[])
   xx = x[]
   check(xx[o1], xx[o2])

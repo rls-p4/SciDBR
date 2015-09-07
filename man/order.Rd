@@ -14,7 +14,7 @@ order_scidb(x, attribute=1, decreasing=FALSE)
   \item{decreasing}{Set to \code{TRUE} to return a permutation that orders entries in decreasing order.}
 }
 \value{
-A 1-d SciDB array with integer permutation order entries.
+A 1-d SciDB array with zero-based integer permutation order entries.
 }
 \author{
 B. W. Lewis <blewis@paradigm4.com>

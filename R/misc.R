@@ -8,7 +8,7 @@ order_scidb = function(x, attribute=1, decreasing = FALSE)
   if(is.numeric(attribute)) attribute = scidb_attributes(x)[attribute]
   new_attr = make.unique_(.scidb_names(x),"i")
   y = project(bind(cumulate(bind(x,"__one__","int64(1)"),"sum(__one__) as __sum__"),new_attr,"__sum__-1"), new_attr)
-  scidbeval(project(sort(merge(x,y,by.x=1,by.y=1), attributes=attribute, decreasing=decreasing), new_attr))
+  scidbeval(bound(project(sort(merge(x,y,by.x=1,by.y=1), attributes=attribute, decreasing=decreasing), new_attr)))
 }
 
 # factor_scidb and levels_scidb define an experimental new hybrid class of
