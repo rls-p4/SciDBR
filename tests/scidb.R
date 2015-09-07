@@ -119,25 +119,6 @@ cat("# Misc\n")
   s = atan(tan(abs(acos(cos(asin(sin(S)))))))
   check(sum(s-z[]), 0)
 
-cat("# Labeled indices\n")
-  L = c(letters,LETTERS)
-  i = as.scidb(data.frame(L[1:nrow(X)]), start=1)
-  j = as.scidb(data.frame(L[1:ncol(X)]), start=0)
-  rownames(X) = i
-  colnames(X) = j
-  rownames(A) = L[1:nrow(A)]
-  colnames(A) = L[1:ncol(A)]
-  check(X[c("f","v","F"),c("a","A","N")][], A[c("f","v","F"),c("a","A","N")])
-
-cat("# 4d labels and auto promotion of labels to SciDB arrays\n")
-  X = build(0,dim=c(3,4,5,6))
-  rownames(X) = letters[1:3]
-  dimnames(X)[[2]] = letters[1:4]
-  dimnames(X)[[3]] = letters[1:5]
-  dimnames(X)[[4]] = letters[1:6]
-  i = count(X[c("a","b"),"a",c("d","e"),"a"])
-  check(i,4)
-
 cat("# Indices not at the origin, and general ranged index check\n")
   a = scidbeval(build("random()",c(5,5),start=c(-3,-2)))
   check(count(a[-3:-2,0:2]),6)
@@ -214,15 +195,6 @@ cat("# Another merge test courtesy Alex Polyiakov\n")
   a = build(2,5,names=c("a","j"))
   z = merge(x,a,by="j")
   check(count(z),4)
-
-cat("# Complicated cross_join filtering\n")
-  set.seed(1)
-  X = as.scidb( matrix(rnorm(20),nrow=5))
-  rownames(X) = as.scidb( data.frame(letters[1:5]))
-  X[c("b","a","d"), ]
-gc()
-  idx = rownames(X) > "b"
-  check(nrow(X[idx, ]),3)
 
 cat("# Github issue #45\n")
   x = scidbeval(build(5.5,5))
