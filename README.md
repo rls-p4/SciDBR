@@ -7,10 +7,9 @@ install.packages("scidb")
 
 The current development version of the package can be installed directly from
 sources on  GitHub using the devtools package as follows (requires an R
-development environment  and the R tools package):
+development environment  and the R devtools package):
 ```
-library('devtools')
-install_github("SciDBR","paradigm4",quick=TRUE)
+devtools::install_github("Paradigm4/SciDBR")
 ```
 
 Note! The SciDBR package depends on the RCurl R package, which in turn requires
@@ -18,7 +17,6 @@ support for the curl library in your operating system. This might mean that
 you need to install a libcurl development library RPM or deb package on your
 OS. On RHEL and CentOS, this package is usually called `libcurl-devel` and on
 Ubuntu it's called `libcurl4-gnutls-dev`.
-
 
 The SciDB R package requires installation of a simple open-source HTTP network
 service called on the computer that SciDB is installed on. This service only
@@ -42,177 +40,49 @@ This project also has a pretty web page on Github here:
 https://Paradigm4.github.io/SciDBR
 
 
-Stuff that will change
+Changes in package version 1.3.0
 ===
 
-## Labeled coordinates
+This is a major release that breaks some API compatibility with the previous
+package release. It's designed to support SciDB version 15.7 and also tries
+to maintain compatibility with previous SciDB releases.
 
-I plan to drop all use of `rownames` in the package. I agree with Hadley
-Wickham that rownames is an ill-advised indexing strategy. I want to remove
-it from the package because it leads to substantial internal complexity without
-providing significant benefit. Here is a description of the old use of
-row names and better alternative indexing schemes:
+## Labeled coordinates have been removed
 
-SciDB arrays support labeled coordinate indices using the standard R
-rownames, colnames, or dimnames settings. Assigned labels are provided by 1-d
-SciDB arrays that map the integer coordinate to a string label. Here is a
-simple example:
+The package has dropped all use of `rownames`. Use of `rownames` is of marginal
+value and the SciDB package implementation was very inefficient. Similar
+functionality can be achieved with `subset` (data.frame-like objects), or
+indexing by vectors or other SciDB arrays.
 
-```
-# Upload a test matrix to SciDB:
-X <- as.scidb( matrix(rnorm(20),nrow=5) )
+The `colnames` and `names` functions still work when applied to data.frame-like
+objects.
 
-# Assign rownames to the SciDB matrix X.  SciDB matrix objects like X default
-# to zero-based indexing.  It's important that the label array have the same
-# starting index:
-rownames(X) <- as.scidb( data.frame(letters[1:5]), start=0)
+## The `subset` function is more powerful and efficient
 
-# We can now use strings to select subarrays and otherwise index X:
-X[c("b","a","d"), ]
-```
+It generates better-optimized SciDB queries than previous versions. See `?subset`
+for details and examples.
 
+## Array subset indexing is more efficient
 
-New features
-===
+We removed use of `subarray` to reset array coordinate systems after
+subsetting.  Subsets of sparse or dense arrays returned to R are labeled by
+their original coordinates.
 
-## Database-related updates
+If you need an array subset to start at the coordinate system origin, use
+the new `translate` function. For example:
 
-* Support for SciDB version 15.7--also supports older SciDB releases, but not actively tested
-* Dropping arrays from other R sessions requires a non-default option facilitating multiple-user settings.
-* Queries can be canceled with R user interrupts now (for example with CTRL + C or ESC).
+```r
+x <- build("double(i+j)", c(5,5))
+y <- x[1:2,2:3]
+schema(y)          # Note the coordinate indices
+# [1] "<val:double> [i=1:2,1000,0,j=2:3,1000,0]"
 
-## More functions
-
-* Support for Paradigm4 glm and a basic in-database model matrix builder
-* Support for Paradigm4 truncated SVD routine
-* Added hist, quantile, all.equal, antijoin, c (SciDB concat-like) function and many others
-
-
-## Better handling of missing values
-
-The array-like and dataframe-like classes now handle missing values in a
-uniform way. All SciDB missing codes are mapped to R NA values and R NA values
-are mapped to SciDB missing code zero.
-
-## Windowed and moving-window aggregates
-
-Multidimensional windowed and moving-window aggregates are now supported with
-simple syntax in the `aggregate` function. Windows can be defined along
-coordinate axes or number of (sparse) data values.
-
-## More indexing goodness
-
-Indexing SciDB array objects by other SciDB array objects to achieve the effect
-of filtering by boolean expressions and similar operations is now supported.
-Here is a simple example:
-
-```
-# Create a five-element SciDB vector:
-y <- as.scidb(runif(5))
-
-# Pick out rows of the SciDB matrix X fromt the last example that correspond
-# to entries of y that are positive:
-X[y > 0, ]
+z <- translate(y)  # Reset origin with translate, see ?translate for details
+schema(z)
+# [1] "<val:double> [i=0:1,1000,0,j=0:1,1000,0]"
 ```
 
-## SciDB array promises
-Most functions return objects that represent array promises--unevaluated SciDB
-query expressions with a result schema. Use the new `scidbeval` function or the
-optional `eval` function argument when available to force evaluation to a
-materialized SciDB backing array. Otherwise use the objects normally, deferring
-evaluation until required.
+## The `merge` and `redimension` functions are more efficient
 
-## R Sparse matrix support
-The package now supports double-precision valued R sparse matrices
-defined via the `Matrix` package. Sparse SciDB matrices that are
-materialized to R are returned as sparse R matrices and vice-versa.
-
-## Heatmaps
-The package overloads the standard R `image` function to plot heatmaps
-of SciDB array objects (only applies to objects of class `scidb`).
-```
-library("devtools")
-install_github("SciDBR","Paradigm4")
-library("scidb")
-scidbconnect()      # Fill in your SciDB hostname as required
-
-# Create a SciDB array with some random entries
-iquery("store(build(<v:double>[i=0:999,100,0,j=0:999,250,0],random()%100),A)")
-
-# The SciDBR `image` function overloads the usual R image function to produce
-# heatmaps using SciDB's `regrid` aggregation operator. The 'grid' argument
-# specifies the output array size, and the 'op' argument specifies the
-# aggregation operator to apply.
-
-X = image(A, grid=c(100,100), op="avg(v)", useRaster=TRUE)
-```
-![Example output](https://raw.github.com/Paradigm4/SciDBR/master/inst/misc/image.jpg "Example output")
-
-```
-# Image accepts all the standard arguments to the R `image` function in
-# addition to the SciDB-specific `grid` and `op` arguments. The output axes are
-# labeled in the original array units. The scidb::image function returns the
-# interpolated heatmap array:
-
-dim(X)
-[1] 100 100
-```
-
-## Aggregation, merge, apply, sweep, bind, and related functions
-The package has a completely new implementation of aggregation, merge, and
-related database functions. The new functions apply to SciDB array and data
-frame-like objects. A still growing list of the functions includes:
-
-* aggregate
-* bind  (SciDB `apply` operator--generalizes R's `cbind`)
-* index_lookup
-* merge (SciDB `join` and `cross\_join` operators)
-* project
-* subset (SciDB `filter` operator)
-* sort
-* unique
-* sweep
-* apply (the R-style apply, not the SciDB AFL apply--see `bind` for that)
-* cumulate
-* cast, slice, repart, redimension, build (wrappers to SciDB operators)
-
-See for example `help("subset", package="scidb")` for help on the `subset`
-function, or any of the other functions.
-
-Perhaps the coolest new feature associated with the functions listed above is
-that they can be composed in a way that defers computation in SciDB to avoid
-unnecessary creation of intermediate arrays. The new functions all accept an
-argument named `eval` which, when set to FALSE, returns a new SciDB array
-promise object in place of evaluating the query and returning an array or data
-frame object.
-
-The eval argument is automatically set to FALSE when any of the above functions
-are directly composed in R, unless manually overriden by explicitly setting
-`eval=TRUE`. Consider the following example:
-
-```
-x = as.scidb(iris)
-head(x)
-  Sepal_Length Sepal_Width Petal_Length Petal_Width Species
-1          5.1         3.5          1.4         0.2  setosa
-2          4.9         3.0          1.4         0.2  setosa
-3          4.7         3.2          1.3         0.2  setosa
-4          4.6         3.1          1.5         0.2  setosa
-5          5.0         3.6          1.4         0.2  setosa
-6          5.4         3.9          1.7         0.4  setosa
-
-a = aggregate(
-      project(
-        bind(x,name="PxP", FUN="Petal_Length*Petal_Width"),
-        attributes=c("PxP","Species")),
-      by="Species", FUN="avg(PxP)")
-
-a[]
-  Species_index PxP_avg    Species
-0             0  0.3656     setosa
-1             1  5.7204 versicolor
-2             2 11.2962  virginica
-```
-The composed `aggregate(project(bind(...` functions were carried out in
-the above example within a single SciDB transaction, storing only the result
-of the composed query.
+New versions of these functions generate better-optimized SciDB queries than
+before.
