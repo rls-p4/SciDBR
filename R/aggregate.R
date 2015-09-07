@@ -212,6 +212,7 @@
 `cumulate` = function(x, expression, dimension, `eval`=FALSE)
 {
   if(missing(dimension)) dimension = dimensions(x)[[1]]
+  if(is.numeric(dimension)) dimension = dimensions(x)[dimension]
   query = sprintf("cumulate(%s, %s, %s)",x@name,expression,dimension)
   .scidbeval(query,eval,depend=list(x))
 }

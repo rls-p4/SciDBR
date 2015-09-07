@@ -13,7 +13,7 @@ cumulate(x, expression, dimension, eval)
 \arguments{
   \item{x}{A scidb or scidbdf object}
   \item{expression}{Any valid SciDB aggregate expression, expressed as a character string}
-  \item{dimension}{An optional array dimension name (character) to run along. The default is to use the first dimension.}
+  \item{dimension}{An optional array dimension name (character) or 1-based dimension index to run along. The default is to use the first dimension.}
   \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \value{
