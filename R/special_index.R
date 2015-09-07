@@ -38,7 +38,15 @@ special_index = function(x, i, idx, eval=FALSE, drop=FALSE, redim=TRUE, newstart
       } else if(is.scidb(i[[j]]) || is.scidbdf(i[[j]]))
       {
 # Special index case 3: another SciDB array, tricky case
-cat("YIKES\n")
+# Note that, unlike case 1 above, we can't assume that the array includes an
+# attribute suitable for redimensioning along. We need to append one, which
+# may add considerable overhead. Sadly, that means that this form of indexing
+# is incredibly inefficient.
+        if(length(dim(i[[j]]))>1) stop("Each index requires a 1-d array. Consider using merge instead.")
+        new_attr = make.unique_(c(.scidb_names(x),dimensions(i[[j]])), "j")
+        y = project(bind(cumulate(bind(i[[j]],"__one__","int64(1)"),"sum(__one__) as __sum__"),new_attr,"__sum__-1"), new_attr)
+        x = merge(x, y, by.x=j, by.y=1)
+        newdim[j] = new_attr
       }
     }
   } # end for loop over axes

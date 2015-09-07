@@ -71,6 +71,11 @@
   strsplit(strsplit(strsplit(strsplit(s,">")[[1]][1],"<")[[1]][2],",")[[1]],":")
 }
 
+.scidb_names = function(x)
+{
+  c(scidb_attributes(x), dimensions(x))
+}
+
 # Return a vector of SciDB attribute names of x. This is the implementation
 # of the names method for scidb and scidbdf objects.
 scidb_attributes = function(x)
