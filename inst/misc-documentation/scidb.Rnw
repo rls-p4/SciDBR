@@ -402,11 +402,6 @@ zero-indexed results unless the \verb+redim=FALSE+ argument is specified.
 objects with SciDB array attribute as columns. Use either positional numeric
 or name-based indexing along columns, either with the dollar-sign notation
 or string indexing.
-\item 
-All array types support labeled dimension indexing using the R \verb+rownames+,
-\verb+colnames+, or \verb+dimnames+ and related functions. Labels assigned in this
-way must be provided by 1-d SciDB arrays that map the integer coordinates to
-character label values. See the examples below.
 \item Arrays may be indexed by other SciDB arrays
 to achieve the effect of filtering by boolean expressions and similar
 operations, also illustrated below in the examples.
@@ -434,12 +429,16 @@ using the special empty index function:
 x[]
 @
 
-The package adopts the convention that explicit subsets return zero-indexed
-results, noting also that zero and negative integers are valid SciDB indexes
+The package adopts the convention that explicit subsets return with
+starting coordinate indices defined by the subset operation,
+noting also that zero and negative integers are valid SciDB indexes
 (deviating from R's usual interpretation):
 <<>>=
 x[0:2, 2:3] []
 @
+Use the \verb+translate+ function to explicitly reset the starting
+coordinate system of any SciDB array result to the SciDB default of
+zero.
 
 Use the optional \verb+redim=FALSE+ option to return a masked sparse
 array of the same shape as the input. This is often useful in conjunction
@@ -455,31 +454,17 @@ x[, 1] []
 x[, 1, drop=FALSE] []
 @
 
-Non-contiguous selections are supported, noting again that returned subset
-results by convention here are zero-indexed:
+Non-contiguous selections are supported.
 <<>>=
 x[c(0,2,-1), ][]
 @
 (However, unlike standard R array subsetting repeated indices are not
 supported.)
 
-Coordinate axes may be labeled:
-<<>>=
-rownames(x) <- letters[1:5]
-colnames(x) <- LETTERS[1:4]
-x[]
-@
-The labels are maintained as ancillary SciDB arrays under the hood. You can
-view them:
-<<>>=
-dimnames(x)
-
-dimnames(x)[[1]] []
-@
 If a sparse array has coordinates too large for R to manage, results are
 returned in an ``unpacked'' data frame form.
 
-Note that SciDB objects with coordinates beyond the range of R display as
+SciDB objects with coordinates beyond the range of R display as
 \verb+inf+. Coordinate labeling arrays are sparse with a very large upper
 coordinate bound by convention--allowing the number of labels to grow easily.
 
@@ -495,7 +480,7 @@ d <- as.scidb(iris)
 
 head(d)
 @
-Note that the package will attempt to rename variables to conform to SciDB
+The package will attempt to rename variables to conform to SciDB
 naming conventions when it has to.
 
 The ``columns'' of a data frame like object are defined by the SciDB array
@@ -522,7 +507,7 @@ x <- as.scidb(head(iris))
 # Standard R-style logical comparison:
 (x$Petal_Length > 1.4 )[]
 # Special SciDB-style masked comparison:
-(x$Petal_Length %>% 1.4)[]
+(x$Petal_Length %gt% 1.4)[]
 @
 
 Comparison results can be used as filters in scidb and scidbdf objects.

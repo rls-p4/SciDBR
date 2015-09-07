@@ -67,7 +67,7 @@ cat("# Sparse elementwise addition and scalar multiplication\n")
 cat("# Indexing by other SciDB arrays\n")
   x = build("i",c(5,3),type="double")
   a = as.scidb(c(1,5,1,5,1))
-  check(x[a %>% 2, ][], matrix(c(1,1,1,3,3,3),nrow=2,byrow=TRUE))
+  check(x[a %gt% 2, ][], matrix(c(1,1,1,3,3,3),nrow=2,byrow=TRUE))
 
 cat("# some binary operations\n")
 # XXX ADD **lots** more tests here
@@ -92,6 +92,8 @@ cat("# Join\n")
 # We need 'subarray' here to reset the origin of Y to zero to match
 # diag(Y)--diag always returns a zero indexed vector.
   check(project(bind(merge(subarray(Y),diag(Y),by.x="i",by.y="i_1"),"v","val*val_1"),"v")[], diag(B)*B)
+# Alternatively use `translate`
+  check(project(bind(merge(translate(Y),diag(Y),by.x="i",by.y="i_1"),"v","val*val_1"),"v")[], diag(B)*B)
 
 cat("# On different dimensions\n")
   x = as.scidb(rnorm(5))
@@ -162,7 +164,7 @@ cat("# slice\n")
 
 cat("# order\n")
   x = scidbeval(build("random()%100", 100, type="double", start=1))
-  o1 = order(x)[]
+  o1 = order_scidb(x)[]
   o2 = order(x[])
   xx = x[]
   check(xx[o1], xx[o2])
@@ -222,7 +224,7 @@ cat("# Github issue #61\n")
 cat("# Github issue #62\n")
   a = as.scidb(matrix(rnorm(25),5))
   i = as.scidb(1:5)
-  a[ i %>% 2,  between(1,3) ]
+  a[ i %gt% 2,  between(1,3) ]
 
 }
 rm(list=ls())

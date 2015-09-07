@@ -57,6 +57,15 @@ indexing by vectors or other SciDB arrays.
 The `colnames` and `names` functions still work when applied to data.frame-like
 objects.
 
+## Some infix operator name changes
+
+Changed the name of the `%>%` and `%<%` functions to `%gt%` and `%lt%`,
+respectively to avoid conflict with the populate magrittr package.
+
+## `order` methods have been removed and replaced by `order_scidb`
+
+...to avoid unfortunate conflicts with the base::order function.
+
 ## The `subset` function is more powerful and efficient
 
 It generates better-optimized SciDB queries than previous versions. See `?subset`

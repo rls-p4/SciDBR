@@ -1,38 +1,29 @@
-\name{order.scidb-methods}
-\docType{methods}
-\alias{order,scidb-method}
-\alias{order,ANY-method}
-\alias{order.scidb,scidb-method}
-\alias{order.scidb}
+\name{order_scidb}
 \title{Methods for Function \code{order} in Package \pkg{scidb}}
 \description{
 \code{order}
 returns a permutation which rearranges its first argument
-into ascending or descending order, breaking ties by further
-arguments. 
+into ascending or descending order.
 }
-
 \usage{
-\S4method{order.scidb}{scidb}(..., na.last = TRUE, decreasing = FALSE)
+order_scidb(x, attribute=1, decreasing=FALSE)
 }
 \arguments{
-  \item{...}{A \code{scidb} vector object.}
-  \item{decreasing}{A logical value: TRUE means sort in decreasing order.}
-  \item{na.last}{NOT USED--for compatability with native R functions only.}
+  \item{x}{A 1-d SciDB array object.}
+  \item{attribute}{1-based numeric index of the SciDB array attribute to order on.}
+  \item{decreasing}{Set to \code{TRUE} to return a permutation that orders entries in decreasing order.}
 }
-\value{A \code{scidb} reference object.}
-\note{
-Due to technical difficulties encountered when dispatching on \code{...}, the
-\code{order.scidb} method must be called by its full name.
+\value{
+A 1-d SciDB array with integer permutation order entries.
 }
 \author{
 B. W. Lewis <blewis@paradigm4.com>
 }
+
 \examples{
 \dontrun{
-x <- scidb("build(<v:double>[i=1:10,10,0],random()%100)")
-
+x <- scidbeval(scidb("build(<v:double>[i=1:10,10,0],random()%100)"))
 a <- order.scidb(x)
-print(a)
+a[]
 }
 }
