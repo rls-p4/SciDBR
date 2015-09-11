@@ -179,6 +179,9 @@ drop_dim = function(ans)
 # Materialize the single-attribute scidb array x as an R array.
 materialize = function(x, drop=FALSE)
 {
+  DEBUG = FALSE
+  if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
+  t1 = proc.time()
 # If x has multiple attributes, warn.
   if(length(x@attributes)>1)
   {
@@ -203,6 +206,7 @@ materialize = function(x, drop=FALSE)
     i = as.matrix(u[,1:length(dim(x))])
     for(j in 1:length(dim(x))) i[,j] = i[,j] + 1 - xstart[j]
     ans[i] = u[,ncol(u)]
+    if(DEBUG) cat("  R array formation time",(proc.time()-t1)[3],"\n")
     return(ans)
   }
 
@@ -215,6 +219,7 @@ materialize = function(x, drop=FALSE)
   if(any(is.infinite(dim(x))))
   {
     warnonce("toobig")
+    if(DEBUG) cat("  R array formation time",(proc.time()-t1)[3],"\n")
     return(scidb_unpack_to_dataframe(query))
   }
 # Speculatively try dense, the reshape forces SciDB to return results in order
@@ -232,15 +237,18 @@ materialize = function(x, drop=FALSE)
     {
       data = as.vector(data[,1])
       names(data) = seq(from=as.numeric(scidb_coordinate_start(x)[1]), length.out=p)
+      if(DEBUG) cat("  R array formation time",(proc.time()-t1)[3],"\n")
       return(data)
     } else if(ndim==2)
     {
       data = matrix(data[,1], nrow=d[1], ncol=d[2], byrow=TRUE)
       rownames(data) = seq(from=as.numeric(scidb_coordinate_start(x)[1]), length.out=d[1])
       colnames(data) = seq(from=as.numeric(scidb_coordinate_start(x)[2]), length.out=d[2])
+      if(DEBUG) cat("  R array formation time",(proc.time()-t1)[3],"\n")
       return(data)
     } else  # n-d array case, filled  by row
     {
+      if(DEBUG) cat("  R array formation time",(proc.time()-t1)[3],"\n")
       return(aperm(array(data[,1], dim=d[length(d):1]), perm=length(d):1))
     }
   }
@@ -272,6 +280,7 @@ materialize = function(x, drop=FALSE)
             dimnames(t) = list(l1,l2)
             t
           }, error=function(e) {warnonce("nonum"); coords[,1:ndim] = coords[,1:ndim] - 1; cbind(coords,data)})
+    if(DEBUG) cat("  R array formation time",(proc.time()-t1)[3],"\n")
     return(ans)
   } else if(ndim==1 && nelem < p)
   {
@@ -282,11 +291,13 @@ materialize = function(x, drop=FALSE)
             else t = sparseVector(i=coords[,1],x=data[,1],length=p)
             t
           }, error=function(e) {warnonce("nonum");coords[,1:ndim] = coords[,1:ndim] - 1; cbind(coords,data)})
+    if(DEBUG) cat("  R array formation time",(proc.time()-t1)[3],"\n")
     return(ans)
   } else if(nelem < p)
   {
 # Don't know how to represent this in R! (R only knows sparse vectors or arrays)
     warning("Note: R does not natively support sparse n-d objects for n>2. Returning data as a data frame.")
+    if(DEBUG) cat("  R array formation time",(proc.time()-t1)[3],"\n")
     return(cbind(coords,data))
   }
 }

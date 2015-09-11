@@ -1160,7 +1160,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   cnames = c(names(x),"lines","p")
   rnames = c()
   n = ncol(x)
-  if(projected) n = 1
+  if(projected) n = length(args$project)
   while(p<len)
   {
 dt2 = proc.time()
