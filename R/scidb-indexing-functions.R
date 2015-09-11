@@ -170,7 +170,7 @@ drop_dim = function(ans)
     j = which(i)
     A = build_attr_schema(ans)
     D = build_dim_schema(ans,I=-j)
-    query = sprintf("redimension(%s, %s%s)",ans@name,A,D)
+    query = sprintf("reshape(%s, %s%s)",ans@name,A,D)
     ans = .scidbeval(query,`eval`=FALSE,depend=list(ans))
   }
   ans
@@ -227,7 +227,8 @@ materialize = function(x, drop=FALSE)
   p     = prod(d)
   newshape = rep(1,length(d))
   newshape[1] = p
-  data  = scidb_unpack_to_dataframe(reshape(x,shape=newshape), project=attr)
+  if(length(d)>1) data  = scidb_unpack_to_dataframe(reshape(x,shape=newshape), project=attr)
+  else data  = scidb_unpack_to_dataframe(x, project=attr)
   nelem = nrow(data)
   if(is.null(nelem)) nelem = 0
 # Check for dense case
