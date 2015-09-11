@@ -234,6 +234,7 @@ as.scidb = function(X,
   if(!is.null(args$nullable)) nullable = as.logical(args$nullable) # control nullability
   if(!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
   do_reshape = TRUE
+  nd_reshape = NULL
   if(!is.null(args$reshape)) do_reshape = as.logical(args$reshape) # control reshape
   if(!is.null(args$type)) force_type = as.character(args$type) # limited type conversion
   if(missing(chunksize))
@@ -268,6 +269,15 @@ as.scidb = function(X,
         "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
         nrow(X)-1+start[[1]], min(nrow(X),chunkSize), overlap[[1]])
     load_schema = schema
+  } else if(length(D)>2)
+  {
+    nd_reshape = dim(X)
+    do_reshape = FALSE
+    X = as.matrix(as.vector(aperm(X)))
+    schema = sprintf(
+        "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
+        nrow(X)-1+start[[1]], min(nrow(X),chunkSize), overlap[[1]])
+    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]",attr_name, force_type,  length(X))
   } else {
 # X is a matrix
     schema = sprintf(
@@ -308,6 +318,10 @@ as.scidb = function(X,
   }
 
 # Load query
+  if(!is.null(nd_reshape))
+  {
+    return(scidbeval(reshape_scidb(scidb(sprintf("input(%s,'%s', 0, '(%s null)')",load_schema,ans,type)), shape=nd_reshape),name=name))
+  }
   if(do_reshape)
   {
     query = sprintf("store(reshape(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
