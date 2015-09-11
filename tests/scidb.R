@@ -225,6 +225,12 @@ cat("# Github issue #62\n")
   i = as.scidb(1:5)
   a[ i %gt% 2,  between(1,3) ]
 
+cat("N-d array upload")
+  a = build("sin(1+i+j+k)",c(5,5,5), type="double")
+  b = a[]
+  c = as.scidb(b)
+  check(a[], c[])
+
 }
 rm(list=ls())
 gc()

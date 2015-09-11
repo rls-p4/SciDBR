@@ -1,17 +1,17 @@
 \name{as.scidb}
 \alias{as.scidb}
 \title{
-Upload an R vector, matrix or data.frame to a SciDB array.
+Upload an R vector, matrix, array, sparse matrix or data.frame into SciDB.
 }
 \description{
-Upload an R vector, matrix or data.frame into SciDB, returning a reference scidb object.
+Upload an R vector, matrix, array, sparse matrix or data.frame into SciDB, returning a reference scidb object.
 }
 \usage{
 as.scidb(X, name = tmpnam(), chunksize, overlap, start, chunkSize, gc=TRUE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{X}{ A vector, matrix or sparse matrix of double-precision floating point values or a data.frame. }
+  \item{X}{ A vector, matrix, array or sparse matrix of double-precision floating point values or a data.frame. }
   \item{name}{ The name of the SciDB array to create.  }
   \item{chunksize}{A vector of optional SciDB array chunk sizes (a vector of length 1 for data frames and vectors, length 2 for matrices)}
   \item{overlap}{(Not yet supported)}
@@ -21,7 +21,7 @@ as.scidb(X, name = tmpnam(), chunksize, overlap, start, chunkSize, gc=TRUE, ...)
   \item{\dots}{ additional optional arguments, also passed to \code{df2scidb} (see \code{\link{df2scidb}}).}
 }
 \details{
-Used with a matrix  or vector argument,
+Used with an array, matrix  or vector argument,
 the \code{as.scidb} function creates a single-attribute SciDB array named
 \code{name} and copies the data from \code{X} into it, returning a \code{scidb}
 object reference to the new array. The SciDB array will be 1-D if \code{X} is a
