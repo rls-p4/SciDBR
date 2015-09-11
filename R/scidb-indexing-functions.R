@@ -176,12 +176,9 @@ drop_dim = function(ans)
   ans
 }
 
-
-
 # Materialize the single-attribute scidb array x as an R array.
 materialize = function(x, drop=FALSE)
 {
-
 # If x has multiple attributes, warn.
   if(length(x@attributes)>1)
   {
@@ -212,22 +209,49 @@ materialize = function(x, drop=FALSE)
   d     = dim(x)
   ndim  = length(dimensions(x))
   N     = paste(rep("null",2*ndim),collapse=",")
-  query = sprintf("project(%s,%s)",x@name,attr)
+  query = x@name
 
-# Unpack into a staging data frame
-  data  = scidb_unpack_to_dataframe(query)
 # Bail as soon as possible
   if(any(is.infinite(dim(x))))
   {
     warnonce("toobig")
-    return(data)
+    return(scidb_unpack_to_dataframe(query))
   }
+# Speculatively try dense, the reshape forces SciDB to return results in order
+# (not in chunk order)
+  p     = prod(d)
+  newshape = rep(1,length(d))
+  newshape[1] = p
+  data  = scidb_unpack_to_dataframe(reshape(x,shape=newshape), project=attr)
   nelem = nrow(data)
   if(is.null(nelem)) nelem = 0
-  p     = prod(d)
+# Check for dense case
+  if(nelem == p)
+  {
+    if(ndim==1)
+    {
+      data = as.vector(data[,1])
+      names(data) = seq(from=as.numeric(scidb_coordinate_start(x)[1]), length.out=p)
+      return(data)
+    } else if(ndim==2)
+    {
+      data = matrix(data[,1], nrow=d[1], ncol=d[2], byrow=TRUE)
+      rownames(data) = seq(from=as.numeric(scidb_coordinate_start(x)[1]), length.out=d[1])
+      colnames(data) = seq(from=as.numeric(scidb_coordinate_start(x)[2]), length.out=d[2])
+      return(data)
+    } else  # n-d array case, filled  by row
+    {
+      return(aperm(array(data[,1], dim=d[length(d):1]), perm=length(d):1))
+    }
+  }
+
+# Not dense, need to retrieve coordinates **in sorted order**
+  y = sort(unpack(x),attributes=dimensions(x))
+  coords  = scidb_unpack_to_dataframe(y, project=dimensions(x))
+
 # Adjust indexing origin
-  if(ndim==1) labels = list(unique(data[,1]))
-  else labels = lapply(data[,1:ndim], unique)
+  if(ndim==1) labels = list(unique(coords[,1]))
+  else labels = lapply(coords[,1:ndim], unique)
 
 # Check for sparse matrix or sparse vector case. The tryCatch guards
 # against unsupported types in R's sparse Matrix package and returns the
@@ -237,49 +261,32 @@ materialize = function(x, drop=FALSE)
     ans = tryCatch(
           {
             cs = as.numeric(scidb_coordinate_start(x))
-            data[,1] = data[,1] - cs[1] + 1
-            data[,2] = data[,2] - cs[2] + 1
+            coords[,1] = coords[,1] - cs[1] + 1
+            coords[,2] = coords[,2] - cs[2] + 1
             if(is.null(data)) t = Matrix(0.0,nrow=dim(x)[1],ncol=dim(x)[2])
-            else t = sparseMatrix(i=data[,1],j=data[,2],x=data[,3],dims=d)
+            else t = sparseMatrix(i=coords[,1],j=coords[,2],x=data[,1],dims=d)
             l1 = rep("",dim(x)[1])
-            l1[unique(data[,1])] = labels[[1]]
+            l1[unique(coords[,1])] = labels[[1]]
             l2 = rep("",dim(x)[2])
-            l2[unique(data[,2])] = labels[[2]]
+            l2[unique(coords[,2])] = labels[[2]]
             dimnames(t) = list(l1,l2)
             t
-          }, error=function(e) {warnonce("nonum"); data[,1:ndim] = data[,1:ndim] - 1; data})
+          }, error=function(e) {warnonce("nonum"); coords[,1:ndim] = coords[,1:ndim] - 1; cbind(coords,data)})
     return(ans)
   } else if(ndim==1 && nelem < p)
   {
     ans = tryCatch(
           {
-            data[,1] = data[,1] - as.numeric(scidb_coordinate_start(x)[1]) + 1
+            coords[,1] = coords[,1] - as.numeric(scidb_coordinate_start(x)[1]) + 1
             if(is.null(data)) t = sparseVector(0.0,1,length=dim(x))
-            else t = sparseVector(i=data[,1],x=data[,2],length=p)
+            else t = sparseVector(i=coords[,1],x=data[,1],length=p)
             t
-          }, error=function(e) {warnonce("nonum");data[,1:ndim] = data[,1:ndim] - 1; data})
+          }, error=function(e) {warnonce("nonum");coords[,1:ndim] = coords[,1:ndim] - 1; cbind(coords,data)})
     return(ans)
   } else if(nelem < p)
   {
 # Don't know how to represent this in R! (R only knows sparse vectors or arrays)
     warning("Note: R does not natively support sparse n-d objects for n>2. Returning data as a data frame.")
-    data[,1:ndim] = data[,1:ndim] - 1
-    return(data)
+    return(cbind(coords,data))
   }
-# OK, we have a dense array of some kind
-  for(idx in 1:ndim)
-  {
-    data[,idx] = data[,idx] - data[1,idx] + 1
-  }
-  if(length(d)==1) # a vector
-  {
-    ans = data[,2]
-    names(ans) = labels[[1]]
-    return(ans)
-  }
-
-  ans = array(NA, dim=d)  # A matrix or n-d array
-  ans[as.matrix(data[,1:ndim])] = data[,ndim+1]
-  dimnames(ans) = labels
-  ans
 }

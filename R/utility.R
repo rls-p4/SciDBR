@@ -72,7 +72,8 @@ scidb = function(name, gc, `data.frame`)
   {
     query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape,escape)
   }
-  query = iquery(query, `return`=TRUE)
+  query = iquery(query, `return`=TRUE, binary=FALSE)
+# XXX NOTE that we need binary=FALSE here to avoid a terrible recursion
   logical_plan = query$logical_plan
   schema = gsub("^.*<","<",query$schema, perl=TRUE)
   obj = scidb_from_schemastring(schema, name, `data.frame`)
@@ -266,7 +267,7 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
     scidbquery(query="load_library('linear_algebra')",release=1,resp=FALSE,stream=0L),
     error=invisible)
 # Save available operators
-  assign("ops",iquery("list('operators')",return=TRUE),envir=.scidbenv)
+  assign("ops",iquery("list('operators')",`return`=TRUE),envir=.scidbenv)
 # Update the scidb.version option
   v = scidbls(type="libraries")[1,]
   if("major" %in% names(v))
@@ -727,11 +728,10 @@ raw2scidb = function(X,name,gc=TRUE,...)
   stop("Not implemented yet")
 }
 
-
-
+# binary=FALSE is needed by some queries, don't get rid of it.
 iquery = function(query, `return`=FALSE,
                   afl=TRUE, iterative=FALSE,
-                  n=10000, excludecol, binary=FALSE, ...)
+                  n=Inf, excludecol, binary=TRUE, ...)
 {
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
@@ -1090,9 +1090,18 @@ show_commit_log = function()
 
 # This is a workhorse SciDB data munger
 # query is a query string, not a scidb object.
+# ... options
+# project a character vector of desired dimensions/attributes to return
 scidb_unpack_to_dataframe = function(query, ...)
 {
   DEBUG = FALSE
+  scidbarray = NULL
+  projected = FALSE
+  if((inherits(query,"scidb") || inherits(query,"scidbdf")))
+  {
+    scidbarray = query
+    query = query@name
+  }
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
   buffer = 100000L
   row_names = NULL
@@ -1106,10 +1115,20 @@ scidb_unpack_to_dataframe = function(query, ...)
     if(!is.na(argsbuf) && argsbuf < 100e6) buffer = as.integer(argsbuf)
   }
   if(!is.null(args$row.names)) row_names = args$row.names
-  up = TRUE
-  if(!is.null(args$unpack)) up = args$unpack
-  if(up) x = scidb(sprintf("unpack(%s,row)",query), data.frame=TRUE)
-  else x = scidb(sprintf("project(unpack(%s,row),%s)",query,scidb_attributes(x)), data.frame=TRUE)
+  if(!is.null(args$project))
+  {
+    if(!is.null(scidbarray) && all(args$project %in% scidb_attributes(scidbarray)))
+    {
+      x = scidb(sprintf("project(%s,%s)",query,paste(args$project,collapse=",")))
+      projected = TRUE
+    } else
+    {
+      x = scidb(sprintf("project(unpack(%s,row),%s)",query,paste(args$project,collapse=",")), data.frame=TRUE)
+    }
+  } else
+  {
+    x = scidb(sprintf("unpack(%s,row)",query), data.frame=TRUE)
+  }
   N = scidb_nullable(x)
   TYPES = scidb_types(x)
   ns = rep("",length(N))
@@ -1140,10 +1159,11 @@ scidb_unpack_to_dataframe = function(query, ...)
   ans = c()
   cnames = c(names(x),"lines","p")
   rnames = c()
+  n = ncol(x)
+  if(projected) n = 1
   while(p<len)
   {
 dt2 = proc.time()
-    n = ncol(x)
     tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, N, BUF, as.double(p))
     names(tmp) = cnames
     lines = tmp[[n+1]]

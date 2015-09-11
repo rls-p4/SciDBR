@@ -4,8 +4,8 @@
 \description{Issue SciDB queries and optionally return output in a data frame.}
 \usage{
 iquery(query, `return` = FALSE, afl = TRUE,
-       iterative = FALSE, n = 10000, excludecol,
-       binary = FALSE, ...)
+       iterative = FALSE, n = Inf, excludecol,
+       binary = TRUE, ...)
 }
 \arguments{
   \item{query}{A SciDB query string (character). Separate multiple queries
