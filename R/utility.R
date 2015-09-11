@@ -227,6 +227,27 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
     id = id[[length(id)]]
     assign("uid",id,envir=.scidbenv)
   }
+# Try to load the accelerated_load_tools, then load_tools, then
+# prototype_load_tools libraries:
+  got_load = tryCatch(
+    {
+      scidbquery(query="load_library('accelerated_load_tools')",
+               release=1,resp=FALSE, stream=0L)
+      TRUE
+    }, error=function(e) FALSE)
+  if(!got_load) got_load = tryCatch(
+    {
+      scidbquery(query="load_library('load_tools')",
+               release=1,resp=FALSE, stream=0L)
+      TRUE
+    }, error=function(e) FALSE)
+  if(!got_load) got_load = tryCatch(
+    {
+      scidbquery(query="load_library('prototype_load_tools')",
+               release=1,resp=FALSE, stream=0L)
+      TRUE
+    }, error=function(e) FALSE)
+  if(!got_load) warning("The load_tools SciDB plugin can't be found. load_tools is required to upload data.frames from R to SciDB. You can install the plugin from https://github.com/Paradigm4/load_tools")
 # Try to load the dense_linear_algebra library
   tryCatch(
     scidbquery(query="load_library('dense_linear_algebra')",
@@ -558,13 +579,8 @@ df2scidb = function(X,
   if(missing(start)) start=1
   start = as.numeric(start)
   if(missing(gc)) gc=FALSE
-  if(missing(nullable)) nullable = TRUE
-  if(length(nullable)==1) nullable = rep(nullable, ncol(X))
-  if(length(nullable)!=ncol(X)) stop ("nullable must be either of length 1 or ncol(X)")
-  if(!is.null(types) && length(types)!=ncol(X)) stop("types must match the number of columns of X")
-  n1 = nullable
-  nullable = rep("",ncol(X))
-  if(any(n1)) nullable[n1] = "NULL"
+  if(!missing(nullable)) warning("The nullable option has been deprecated. All uploaded attributes will be nullable by default. Use the `replaceNA` function to change this.")
+  nullable = TRUE
   anames = make.names(names(X),unique=TRUE)
   anames = gsub("\\.","_",anames,perl=TRUE)
   if(length(anames)!=ncol(X)) anames=make.names(1:ncol(X))
@@ -581,68 +597,74 @@ df2scidb = function(X,
   m = ceiling(nrow(X) / chunkSize)
 
 # Default type is string
-  typ = rep(paste("string",nullable),ncol(X))
-  args = "<"
+  typ = rep("string",ncol(X))
+  dcast = anames
   if(!is.null(types)) {
-    for(j in 1:ncol(X)) typ[j]=paste(types[j],nullable[j])
+    for(j in 1:ncol(X)) typ[j] = types[j]
   } else {
     for(j in 1:ncol(X)) {
       if("numeric" %in% class(X[,j])) 
-        typ[j] = paste("double",nullable[j])
+        typ[j] = "double"
       else if("integer" %in% class(X[,j])) 
-        typ[j] = paste("int32",nullable[j])
+        typ[j] = "int32"
       else if("logical" %in% class(X[,j])) 
-        typ[j] = paste("bool",nullable[j])
+        typ[j] = "bool"
       else if("character" %in% class(X[,j])) 
-        typ[j] = paste("string",nullable[j])
+        typ[j] = "string"
       else if("factor" %in% class(X[,j])) 
       {
         if("scidb_factor" %in% class(X[,j]))
         {
-          typ[j] = paste("int64 NULL")
+          typ[j] = paste("int64")
           Xj = X[,j]
           levels(Xj) = levels_scidb(Xj)
           X[,j] = as.vector(Xj)
         }
         else
-          typ[j] = paste("string",nullable[j])
+          typ[j] = "string"
       }
       else if("POSIXct" %in% class(X[,j])) 
       {
         warning("Converting R POSIXct to SciDB datetime as UTC time. Subsecond times rounded to seconds.")
 #        X[,j] = as.integer(X[,j])
         X[,j] = format(X[,j],tz="UTC")
-        typ[j] = paste("datetime",nullable[j])
+        typ[j] = "datetime"
       }
     }  
   }
-  for(j in 1:ncol(X)) {
-    args = paste(args,anames[j],":",typ[j],sep="")
-    if(j<ncol(X)) args=paste(args,",",sep="")
-    else args=paste(args,">")
+  for(j in 1:ncol(X))
+  {
+    if(typ[j] == "datetime") dcast[j] = sprintf("%s, datetime(a%d)",anames[j],j-1)
+    else if(typ[j] == "string") dcast[j] = sprintf("%s, a%d", anames[j], j-1)
+    else dcast[j] = sprintf("%s, dcast(a%d, %s(null))", anames[j], j-1, typ[j])
   }
+  args = sprintf("<%s>", paste(anames, ":", typ, " null", collapse=","))
 
-  SCHEMA = paste(args,"[",dimlabel,"=",sprintf("%.0f",start),":",sprintf("%.0f",(nrow(X)+start-1)),",",sprintf("%.0f",chunkSize),",", rowOverlap,"]",sep="")
-
+  SCHEMA = paste(args,"[",dimlabel,"=",noE(start),":",noE(nrow(X)+start-1),",",noE(chunkSize),",", noE(rowOverlap),"]",sep="")
   if(schema_only) return(SCHEMA)
+
+
+# Write frame to local file for upload. XXX This is inefficient. Is there a way
+# to directly upload through RCurl?
+  tf = tempfile()
+  write.table(X,file=tf,sep="\t",row.names=FALSE,col.names=FALSE,quote=FALSE)
 
 # Obtain a session from the SciDB http service for the upload process
   session = getSession()
   on.exit(GET("/release_session",list(id=session)) ,add=TRUE)
 
-# Create SciDB input string from the data frame
-  scidbInput = .df2scidb(X,chunkSize,start)
-
 # Post the input string to the SciDB http service
   uri = URI("upload_file",list(id=session))
   hdr = digest_auth("POST",uri)
-  tmp = tryCatch(postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=hdr,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0)), error=invisible)
+  tmp = tryCatch(postForm(uri=uri, uploadedfile=fileUpload(tf),.opts=curlOptions(httpheader=hdr,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0)), error=invisible)
   tmp = tmp[[1]]
   tmp = gsub("\r","",tmp)
   tmp = gsub("\n","",tmp)
+  unlink(tf)
 
-# Load query
-  query = sprintf("store(input(%s, '%s'),%s)",SCHEMA, tmp, name)
+# Generate a load_tools query
+  LOAD = sprintf("apply(parse(split('%s'),'num_attributes=%d'),%s)",tmp,ncol(X),paste(dcast,collapse=","))
+  query = sprintf("store(redimension(%s,%s),%s)",LOAD, SCHEMA, name)
   scidbquery(query, async=FALSE, release=1, session=session, stream=0L)
   scidb(name,`data.frame`=TRUE,gc=gc)
 }
