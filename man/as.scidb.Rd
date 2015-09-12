@@ -17,7 +17,7 @@ as.scidb(X, name = tmpnam(), chunksize, overlap, start, chunkSize, gc=TRUE, ...)
   \item{overlap}{(Not yet supported)}
   \item{start}{A vector of SciDB array starting dimension numeric index value or values.}
   \item{chunkSize}{(Same as \code{chunksize} argument, for backwards compatibility -- use \code{chunksize} instead)}
-  \item{gc}{Set to TRUE to remove SciDB array when R object is garbage collected or R exists. FALSE means SciDB array persists.}
+  \item{gc}{Set to TRUE to remove SciDB array when R object is garbage collected or R exits. FALSE means SciDB array persists.}
   \item{\dots}{ additional optional arguments, also passed to \code{df2scidb} (see \code{\link{df2scidb}}).}
 }
 \details{
