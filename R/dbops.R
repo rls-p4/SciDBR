@@ -336,18 +336,24 @@ unique_scidb = function(x, incomparables=FALSE, sort=TRUE, ...)
     new_attrs = new_attrs[x@attributes %in% "i"] = make.unique_(x@attributes,"i")
     x = attribute_rename(x,x@attributes,new_attrs)
   }
+  got_cu = any(grepl("^cu$",.scidbenv$ops))
   if(sort)
   {
-# XXX XXX There is a problem here if there is an attribute named 'n' (see sort function
-# below)...this must be fixed.
-    rs = sprintf("%s[n=0:%s,%s,0]",build_attr_schema(x,I=1),.scidb_DIM_MAX,noE(min(1e6,prod(dim(x)))))
+    dimname = make.unique_(scidb_attributes(x),"n")
+    rs = sprintf("%s[%s=0:%s,%s,0]",build_attr_schema(x,I=1),dimname,.scidb_DIM_MAX,noE(min(1e6,prod(dim(x)))))
     if(length(x@attributes)>1)
     {
-      query = sprintf("uniq(redimension(sort(project(%s,%s)),%s))",x@name,x@attributes[[1]],rs)
+      if(got_cu)
+        query = sprintf("uniq(redimension(sort(cu(project(%s,%s))),%s))",x@name,x@attributes[[1]],rs)
+      else
+        query = sprintf("uniq(redimension(sort(project(%s,%s)),%s))",x@name,x@attributes[[1]],rs)
     }
     else
     {
-      query = sprintf("uniq(redimension(sort(%s),%s))",x@name,rs)
+      if(got_cu)
+        query = sprintf("uniq(redimension(sort(cu(%s)),%s))",x@name,rs)
+      else
+        query = sprintf("uniq(redimension(sort(cu(%s)),%s))",x@name,rs)
     }
   } else
   {

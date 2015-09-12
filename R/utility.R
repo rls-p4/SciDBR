@@ -266,6 +266,10 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
   tryCatch(
     scidbquery(query="load_library('linear_algebra')",release=1,resp=FALSE,stream=0L),
     error=invisible)
+# Try to load the chunk_unique library
+  tryCatch(
+    scidbquery(query="load_library('cu')",release=1,resp=FALSE,stream=0L),
+    error=invisible)
 # Save available operators
   assign("ops",iquery("list('operators')",`return`=TRUE,binary=FALSE),envir=.scidbenv)
 # Update the scidb.version option
