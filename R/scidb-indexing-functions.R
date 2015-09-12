@@ -188,8 +188,12 @@ materialize = function(x, drop=FALSE)
     warnonce("unpack")
     return(iquery(x, return=TRUE,n=Inf))
   }
-  type = names(.scidbtypes[.scidbtypes==scidb_types(x)])
 # Check for types that are not fully supported yet.
+  if(scidb_types(x)=="binary")
+  {
+    return(scidb_unpack_to_dataframe(x, project=scidb_attributes(x)[[1]]))
+  }
+  type = names(.scidbtypes[.scidbtypes==scidb_types(x)])
   xstart = as.numeric(scidb_coordinate_start(x))
   attr = .get_attribute(x)
   if(length(type)<1)

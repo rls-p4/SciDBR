@@ -71,6 +71,7 @@ int scmp (const char *a, const char *b)
  * uint16        integer
  * int32         integer
  * string        character
+ * binary        raw 
  *
  * Other types are not supported and will throw an error.
  */
@@ -90,6 +91,9 @@ SEXP scidb_type_vector (const char *type, int len)
   } else if(scmp(type,"string") || scmp(type,"char"))
   {
     return NEW_CHARACTER(len);
+  } else if(scmp(type,"binary"))
+  {
+    return NEW_LIST(len);
   }
   error("Unsupported type %s", type);
   return R_NilValue;
@@ -101,7 +105,7 @@ SEXP scidb_type_vector (const char *type, int len)
  * nullable is an integer, 0 meaning not nullable 1 nullable.
  * vec is the output vector of appropriate R type from scidb_type_vector
  * i is the position in vec to place the converted value
- * This is effective but gross! Someone, please improve!
+ * This is effective but gross! Someone, please improve! XXX
  */
 void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
 {
@@ -300,6 +304,24 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     (*p)+=len;
     SET_STRING_ELT(vec,i,mkChar(buf));
     free(buf);
+    return;
+  }
+  else if(scmp(type,"binary"))
+  {
+    unsigned int len = (unsigned int)*((unsigned int*)*p);
+    (*p)+=4;
+    if(isnull)
+    {
+      (*p)+=len;
+// XXX No NA_RAW type in R. Error out here?
+      return;
+    }
+    SEXP buf;
+    PROTECT(buf = allocVector(RAWSXP, len));
+    memcpy(RAW(buf), *p, len);
+    SET_VECTOR_ELT(vec,i,buf);
+    UNPROTECT(1);
+    (*p)+=len;
     return;
   }
   error("Unsupported type %s",type);
