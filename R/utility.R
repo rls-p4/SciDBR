@@ -1196,7 +1196,7 @@ if(DEBUG) cat("  R buffer ",p,"/",len," bytes parsing time",(proc.time()-dt2)[3]
 dt2 = proc.time()
     if(lines>0)
     {
-      if(TYPES=="binary")
+      if(length(TYPES)==1 && TYPES=="binary")
       {
 if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
         return(tmp[[1]][1:n])
