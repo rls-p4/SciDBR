@@ -151,14 +151,7 @@ is.temp = function(name)
     if(missing(name) || is.null(name))
     {
       newarray = tmpnam()
-      if(temp)
-      {
-# SciDB temporary array syntax varies with SciDB version
-        TEMP = "'TEMP'"
-        if(compare_versions(options("scidb.version")[[1]],14.12)) TEMP="true"
-        query   = sprintf("create_array(%s, %s, %s)", newarray, schema, TEMP)
-        iquery(query, `return`=FALSE)
-      }
+      if(temp) create_temp_array(newarray, schema)
     }
     else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
@@ -651,6 +644,8 @@ df2scidb = function(X,
 
 # Write frame to local file for upload. XXX This is inefficient. Is there a way
 # to directly upload through RCurl?
+# Yes:
+#tmp = tryCatch(postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=hdr,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0)), error=invisible)
   tf = tempfile()
   write.table(X,file=tf,sep="\t",row.names=FALSE,col.names=FALSE,quote=FALSE)
 
@@ -729,7 +724,31 @@ df2scidb = function(X,
 # raw value to special 1-element SciDB array
 raw2scidb = function(X,name,gc=TRUE,...)
 {
-  stop("Not implemented yet")
+  if(!is.raw(X)) stop("X must be a raw value")
+# Obtain a session from shim for the upload process
+  session = getSession()
+  if(length(session)<1) stop("SciDB http session error")
+  on.exit(GET("/release_session",list(id=session)) ,add=TRUE)
+
+  fn = tempfile()
+  val = writeBin(.Call("scidb_raw",X,PACKAGE="scidb"),con=fn)
+  url = URI("/upload_file",list(id=session))
+  hdr = digest_auth("POST",url)
+  ans = tryCatch(postForm(uri=url, uploadedfile=fileUpload(filename=fn),.opts=curlOptions(httpheader=hdr,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0)), error=invisible)
+  unlink(fn)
+  ans = ans[[1]]
+  ans = gsub("\r","",ans)
+  ans = gsub("\n","",ans)
+  schema = "<val:binary null>[i=0:0,1,0]"
+  args = list(...)
+  if(!is.null(args$temp))
+  {
+    if(temp) create_temp_array(name, schema)
+  }
+
+  query = sprintf("store(input(%s,'%s',0,'(binary null)'),%s)",schema, ans, name)
+  iquery(query)
+  scidb(name,gc=gc)
 }
 
 # binary=FALSE is needed by some queries, don't get rid of it.
@@ -1446,4 +1465,15 @@ rewrite_subset_expression = function(expr, sci)
     return(sprintf("filter(between(%s,%s),%s)",sci@name,paste(b,collapse=","),ans))
   }
   sprintf("filter(%s,%s)",sci@name,paste(ans,collapse=" "))
+}
+
+
+# Internal function
+create_temp_array = function(name, schema)
+{
+# SciDB temporary array syntax varies with SciDB version
+  TEMP = "'TEMP'"
+  if(compare_versions(options("scidb.version")[[1]],14.12)) TEMP="true"
+  query   = sprintf("create_array(%s, %s, %s)", name, schema, TEMP)
+  iquery(query, `return`=FALSE)
 }
