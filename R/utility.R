@@ -426,7 +426,7 @@ type= c("arrays","operators","functions","types","aggregates","instances","queri
               verbose=FALSE, n=Inf)
 {
   type = match.arg(type)
-  Q = iquery(paste("list('",type,"')",sep=""), return=TRUE, n=n)
+  Q = iquery(paste("list('",type,"')",sep=""), return=TRUE, n=n, binary=FALSE)
 
   if(dim(Q)[1]==0) return(NULL)
   z=Q[,-1,drop=FALSE]
