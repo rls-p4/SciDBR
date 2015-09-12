@@ -267,7 +267,7 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
     scidbquery(query="load_library('linear_algebra')",release=1,resp=FALSE,stream=0L),
     error=invisible)
 # Save available operators
-  assign("ops",iquery("list('operators')",`return`=TRUE),envir=.scidbenv)
+  assign("ops",iquery("list('operators')",`return`=TRUE,binary=FALSE),envir=.scidbenv)
 # Update the scidb.version option
   v = scidbls(type="libraries")[1,]
   if("major" %in% names(v))
