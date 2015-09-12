@@ -743,7 +743,7 @@ raw2scidb = function(X,name,gc=TRUE,...)
   args = list(...)
   if(!is.null(args$temp))
   {
-    if(temp) create_temp_array(name, schema)
+    if(args$temp) create_temp_array(name, schema)
   }
 
   query = sprintf("store(input(%s,'%s',0,'(binary null)'),%s)",schema, ans, name)
