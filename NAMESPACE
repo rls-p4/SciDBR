@@ -8,7 +8,6 @@ import("RCurl", iterators)
 importFrom("zoo", na.locf)
 importFrom("digest", digest)
 importFrom("codetools", makeCodeWalker, walkCode)
-importFrom("base64enc", base64decode, base64encode)
 
 # Functions
 export("translate")
