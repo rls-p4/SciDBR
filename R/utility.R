@@ -1380,8 +1380,17 @@ rewrite_subset_expression = function(expr, sci)
     }
     op = paste(op,collapse="")
     s = as.character(x)
-    if(!(s %in% c(dims, scidb_attributes(sci))))
-      s = tryCatch(as.character(eval(x,pf)), error=function(e) as.character(x))
+    if(!(s %in% c(dims, scidb_attributes(sci),">","<","!","|","=","&")))
+    {
+      NF = sys.nframe()
+      f  = function(x,n)
+      {
+        n = n + 1
+        if(n==10) return(as.character(x))
+        tryCatch(as.character(eval(x,parent.frame(n))), error=function(e) f(x,n))
+      }
+      s = f(x, 0)
+    }
     attr(s,"what") = "element"
     if("character" %in% class(x)) attr(s,"what") = "character"
     if(nchar(gsub("null","",gsub("[0-9 \\-\\.]+","",s),ignore.case=TRUE))==0)
