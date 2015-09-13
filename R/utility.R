@@ -1380,7 +1380,7 @@ rewrite_subset_expression = function(expr, sci)
     s = as.character(x)
     if(!(s %in% c(dims,attr,">","<","!","|","=","&","||","&&","!=","==","<=",">=")))
     {
-      test = lapply(c(globalenv(),sys.frames(),frames), function(f)  # perhaps overkill
+      test = lapply(c(globalenv(),frames), function(f)  # perhaps overkill
       {
         tryCatch(eval(x,f), error=function(e) e)
       })
@@ -1389,8 +1389,9 @@ rewrite_subset_expression = function(expr, sci)
         test = test[!grepl("condition",lapply(test,class))]
         if(length(test)>0)
         {
-          if(DEBUG) cat("Replacing symbol",s,"with",as.character(test[[length(test)]]),"\n")
-          s = as.character(test[[length(test)]])
+          if(DEBUG) cat("Replacing symbol",s,"with")
+          s = tryCatch(as.character(test[[length(test)]]), error=function(e) s)
+          if(DEBUG) cat(s,"\n")
         }
       }
     }
