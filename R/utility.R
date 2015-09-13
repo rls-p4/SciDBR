@@ -1385,6 +1385,7 @@ rewrite_subset_expression = function(expr, sci)
       NF = sys.nframe()
 DEBUG = options("scidb.debug")
 if(is.null(DEBUG)) DEBUG = FALSE
+else DEBUG = DEBUG[[1]]
       f  = function(x,n)
       {
         n = n + 1
