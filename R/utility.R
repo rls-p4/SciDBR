@@ -1349,18 +1349,17 @@ oldURLencode = function (URL, reserved = FALSE)
 }
 
 
-
-
-
-
-#@params
-#'expr an R 'language' type object to parse
-#'sci a SciDB array 
+#' A somewhat nightmarish internal function
+#' @params
+#' expr an R 'language' type object to parse
+#' sci a SciDB array 
 rewrite_subset_expression = function(expr, sci)
 {
   dims = dimensions(sci)
   n = length(dims)
   template = rep("",2*n)
+  DEBUG = FALSE
+  if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
 
   .toList = makeCodeWalker(call=function(e, w) lapply(e, walkCode, w),
                            leaf=function(e, w) e)
@@ -1370,37 +1369,30 @@ rewrite_subset_expression = function(expr, sci)
 # Substitute evaluated R scalars for variables where possible (but not more
 # complext R expressions).  The output is a list that can be parsed by the
 # `.compose_r` function below.
-  pf = parent.frame()
-  .annotate = function(x, dims=NULL, op="")
+  .annotate = function(x, dims=NULL, attr=NULL, frames, op="")
   {
     if(is.list(x))
     {
       if(length(x)>1) op = c(op,as.character(x[[1]]))
-      return(lapply(x, .annotate, dims, op))
+      return(lapply(x, .annotate, dims, attr, frames, op))
     }
     op = paste(op,collapse="")
     s = as.character(x)
-    if(!(s %in% c(dims, scidb_attributes(sci),">","<","!","|","=","&")))
+    if(!(s %in% c(dims,attr,">","<","!","|","=","&","||","&&","!=","==","<=",">=")))
     {
-      NF = sys.nframe()
-DEBUG = options("scidb.debug")
-if(is.null(DEBUG)) DEBUG = FALSE
-else DEBUG = DEBUG[[1]]
-      f  = function(x,n)
+      test = lapply(c(globalenv(),sys.frames(),frames), function(f)  # perhaps overkill
       {
-        n = n + 1
-        if(n==NF) return(as.character(x))
-        tryCatch(
-{
-if(DEBUG)
-{
-  cat(s,n,"\n")
-  print(ls(parent.frame(n)))
-}
-  as.character(eval(x,parent.frame(n)))
-}, error=function(e) f(x,n))
+        tryCatch(eval(x,f), error=function(e) e)
+      })
+      if(length(test)>0)
+      {
+        test = test[!grepl("condition",lapply(test,class))]
+        if(length(test)>0)
+        {
+          if(DEBUG) cat("Replacing symbol",s,"with",as.character(test[[length(test)]]),"\n")
+          s = as.character(test[[length(test)]])
+        }
       }
-      s = f(x, 0)
     }
     attr(s,"what") = "element"
     if("character" %in% class(x)) attr(s,"what") = "character"
@@ -1457,7 +1449,9 @@ if(DEBUG)
     as.character(x)
   }
 
-  ans = .compose_r(.annotate(walkCode(expr, .toList), dims))
+
+
+  ans = .compose_r(.annotate(walkCode(expr, .toList), dims=dims, attr=scidb_attributes(sci), frames=sys.frames()))
   i   = grepl("::",ans)
   ans = gsub("==","=",gsub("!","not",gsub("\\|","or",gsub("\\|\\|","or", gsub("&","and",gsub("&&","and",gsub("!=","<>",ans)))))))
   if(any(i))
