@@ -1439,7 +1439,7 @@ rewrite_subset_expression = function(expr, sci)
 
   ans = .compose_r(.annotate(walkCode(expr, .toList), dims))
   i   = grepl("::",ans)
-  ans = gsub("==","=",gsub("!","not",gsub("\\|","or",gsub("\\|\\|","or", gsub("&","and",gsub("&&","and",ans))))))
+  ans = gsub("==","=",gsub("!","not",gsub("\\|","or",gsub("\\|\\|","or", gsub("&","and",gsub("&&","and",gsub("!=","<>",ans)))))))
   if(any(i))
   {
 # Compose the betweens in a highly non-elegant way
