@@ -1383,11 +1383,21 @@ rewrite_subset_expression = function(expr, sci)
     if(!(s %in% c(dims, scidb_attributes(sci),">","<","!","|","=","&")))
     {
       NF = sys.nframe()
+DEBUG = options("scidb.debug")
+if(is.null(DEBUG)) DEBUG = FALSE
       f  = function(x,n)
       {
         n = n + 1
-        if(n==10) return(as.character(x))
-        tryCatch(as.character(eval(x,parent.frame(n))), error=function(e) f(x,n))
+        if(n==NF) return(as.character(x))
+        tryCatch(
+{
+if(DEBUG)
+{
+  cat(s,n,"\n")
+  print(ls(parent.frame(n)))
+}
+  as.character(eval(x,parent.frame(n)))
+}, error=function(e) f(x,n))
       }
       s = f(x, 0)
     }
