@@ -110,12 +110,25 @@ summary.scidb = function(x)
   if(!all(unlist(lapply(i,checkseq)))) stop("Assignment is limited to contiguous blocks for now.")
   d = sapply(i, length) # dimensions
   s = sapply(i, function(u) u[1]) # origin
+  if(is.scidb(value))
+  {
+    y = translate(value,s)
+    ans = merge(x, y, by.x=dimensions(x), by.y=dimensions(y),merge=TRUE)@name
+    ans = sprintf("store(%s,%s)",ans,x@name)
+    iquery(ans)
+    return(x)
+  } else
+  {
 # Note, ordered by rows thanks to aperm
-  if(!is.array(value)) value = array(value)
-  v = as.scidb(as.vector(aperm(value)), nullable=scidb_nullable(x)[ai], attr=a, reshape=FALSE)
-  reschema = sprintf("%s%s", build_attr_schema(v),
+    if(!is.array(value)) value = array(value)
+    v = as.scidb(as.vector(aperm(value)), nullable=scidb_nullable(x)[ai], attr=a, reshape=FALSE)
+    reschema = sprintf("%s%s", build_attr_schema(v),
               build_dim_schema(x, newstart=s, newlen=d))
-  merge(x, redimension(reshape(v, schema=reschema), schema=schema(x)), merge=TRUE)
+    ans = merge(x, redimension(reshape(v, schema=reschema), schema=schema(x)), merge=TRUE)
+    ans = sprintf("store(%s,%s)",ans,x@name)
+    iquery(ans)
+  }
+  x
 }
 
 # Array subsetting wrapper.

@@ -1199,7 +1199,7 @@ dt2 = proc.time()
       if(length(TYPES)==1 && TYPES=="binary")
       {
 if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
-        return(tmp[[1]][1:n])
+        return(lapply(1:n, function(j) tmp[[j]][1:lines]))
       }
       len_out = length(tmp[[1]])
       if(!is.null(row_names))
