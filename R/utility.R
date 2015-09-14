@@ -929,13 +929,18 @@ translate = function(x, origin="origin")
 {
   if(is.numeric(origin))
   {
+    oldstart = as.numeric(scidb_coordinate_start(x))
+    oldend   = as.numeric(scidb_coordinate_end(x))
+    if(any(is.na(c(oldstart,oldend)))) stop("numeric translate requires a bounded array. Consider using redimension.")
     newstart = scidb:::noE(origin)
-    newend   = rep("*",length(newstart))
+    d = oldend - oldstart
+    newend   = as.character(as.numeric(newstart) + d)
+    unend   = rep("*",length(newstart))
     reschema = sprintf("%s%s",scidb:::build_attr_schema(x),
-                 scidb:::build_dim_schema(x,newend=newend))
+                 scidb:::build_dim_schema(x,newstart=newstart,newend=newend))
     newschema = sprintf("%s%s", scidb:::build_attr_schema(x),
-                  scidb:::build_dim_schema(x, newstart=newstart, newend=newend))
-    query = sprintf("reshape(redimension(%s,%s),%s)",x@name,reschema,newschema)
+                  scidb:::build_dim_schema(x, newstart=newstart, newend=unend))
+    query = sprintf("redimension(reshape(%s,%s),%s)",x@name,reschema,newschema)
     return(scidb(query))
   }
   else if(origin=="origin")
