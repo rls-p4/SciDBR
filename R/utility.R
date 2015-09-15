@@ -927,7 +927,7 @@ compare_versions = function(x,y)
 }
 
 # translate array coordinate system
-translate = function(x, origin="origin")
+translate = function(x, origin="origin", ...)
 {
   if(is.numeric(origin))
   {
