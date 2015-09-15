@@ -340,20 +340,19 @@ unique_scidb = function(x, incomparables=FALSE, sort=TRUE, ...)
   if(sort)
   {
     dimname = make.unique_(scidb_attributes(x),"n")
-    rs = sprintf("%s[%s=0:%s,%s,0]",build_attr_schema(x,I=1),dimname,.scidb_DIM_MAX,noE(min(1e6,prod(dim(x)))))
     if(length(x@attributes)>1)
     {
       if(got_cu)
-        query = sprintf("uniq(redimension(sort(cu(project(%s,%s))),%s))",x@name,x@attributes[[1]],rs)
+        query = sprintf("uniq(sort(cu(project(%s,%s))))",x@name,x@attributes[[1]])
       else
-        query = sprintf("uniq(redimension(sort(project(%s,%s)),%s))",x@name,x@attributes[[1]],rs)
+        query = sprintf("uniq(sort(project(%s,%s)))",x@name,x@attributes[[1]])
     }
     else
     {
       if(got_cu)
-        query = sprintf("uniq(redimension(sort(cu(%s)),%s))",x@name,rs)
+        query = sprintf("uniq(sort(cu(%s)))",x@name)
       else
-        query = sprintf("uniq(redimension(sort(cu(%s)),%s))",x@name,rs)
+        query = sprintf("uniq(sort(cu(%s)))",x@name)
     }
   } else
   {
