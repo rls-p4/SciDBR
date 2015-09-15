@@ -342,14 +342,14 @@ unique_scidb = function(x, incomparables=FALSE, sort=TRUE, ...)
     dimname = make.unique_(scidb_attributes(x),"n")
     if(length(x@attributes)>1)
     {
-      if(got_cu)
+      if(got_cu && scidb_types(x)[[1]] == "string")
         query = sprintf("uniq(sort(cu(project(%s,%s))))",x@name,x@attributes[[1]])
       else
         query = sprintf("uniq(sort(project(%s,%s)))",x@name,x@attributes[[1]])
     }
     else
     {
-      if(got_cu)
+      if(got_cu && scidb_types(x)[[1]] == "string")
         query = sprintf("uniq(sort(cu(%s)))",x@name)
       else
         query = sprintf("uniq(sort(cu(%s)))",x@name)
