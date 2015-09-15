@@ -887,9 +887,11 @@ make_nullable = function(x)
   cast(x,sprintf("%s%s",build_attr_schema(x,nullable=TRUE),build_dim_schema(x)))
 }
 
+# Internal utility function used to format numbers
 noE = function(w) sapply(w,
   function(x)
   {
+    if(is.infinite(x)) return("*")
     if(is.character(x)) return(x)
     sprintf("%.0f",x)
   })
@@ -930,17 +932,16 @@ translate = function(x, origin="origin")
   if(is.numeric(origin))
   {
     oldstart = as.numeric(scidb_coordinate_start(x))
-    oldend   = as.numeric(scidb_coordinate_end(x))
-    if(any(is.na(c(oldstart,oldend)))) stop("numeric translate requires a bounded array. Consider using redimension.")
     newstart = scidb:::noE(origin)
-    d = oldend - oldstart
-    newend   = as.character(as.numeric(newstart) + d)
+    d = noE(origin - oldstart)
+    dims = dimensions(x)
+    new_indices = make.unique_(dims, rep("i",length(dims)))
+    expr = paste(dims, d, sep="+")
+    expr = paste(paste(new_indices,expr,sep=","), collapse=",")
     unend   = rep("*",length(newstart))
-    reschema = sprintf("%s%s",scidb:::build_attr_schema(x),
-                 scidb:::build_dim_schema(x,newstart=newstart,newend=newend))
     newschema = sprintf("%s%s", scidb:::build_attr_schema(x),
-                  scidb:::build_dim_schema(x, newstart=newstart, newend=unend))
-    query = sprintf("redimension(reshape(%s,%s),%s)",x@name,reschema,newschema)
+                  scidb:::build_dim_schema(x, newnames=new_indices, newstart=newstart, newend=unend))
+    query = sprintf("redimension(apply(%s, %s),%s)",x@name,expr,newschema)
     return(scidb(query))
   }
   else if(origin=="origin")
