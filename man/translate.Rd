@@ -7,12 +7,13 @@ translate
 Translate the starting coordinates of a SciDB array.
 }
 \usage{
-translate(x, origin="origin", ...)
+translate(x, origin="origin", newstart, newchunk)
 }
 \arguments{
   \item{x}{A SciDB array object of class scidb or scidbdf.}
   \item{oriting}{Either the string "origin" indicating zero, or a vector of new starting indices for each dimension of the array \code{x}}
-  \item{...}{Optional additional arguments will be added in the future.}
+  \item{newstart}{Optional vector of new array starting coordinates. Defaults to origin.}
+  \item{newchunk}{Optional vector of new array chunk sizes.}
 }
 \value{
 A \code{scidb} object with translated origin.
