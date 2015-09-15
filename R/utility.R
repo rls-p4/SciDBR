@@ -931,8 +931,9 @@ translate = function(x, origin="origin")
 {
   if(is.numeric(origin))
   {
+    if(is.missing(newchunk)) newchunk = scidb_coordinate_chunksize(x)
     oldstart = as.numeric(scidb_coordinate_start(x))
-    newstart = scidb:::noE(origin)
+    if(is.missing(newstart)) newstart = scidb:::noE(origin)
     d = noE(origin - oldstart)
     dims = dimensions(x)
     new_indices = make.unique_(dims, rep("i",length(dims)))
@@ -940,7 +941,7 @@ translate = function(x, origin="origin")
     expr = paste(paste(new_indices,expr,sep=","), collapse=",")
     unend   = rep("*",length(newstart))
     newschema = sprintf("%s%s", scidb:::build_attr_schema(x),
-                  scidb:::build_dim_schema(x, newnames=new_indices, newstart=newstart, newend=unend))
+                  scidb:::build_dim_schema(x, newnames=new_indices, newstart=newstart, newend=unend, newchunk=newchunk))
     query = sprintf("redimension(apply(%s, %s),%s)",x@name,expr,newschema)
     return(scidb(query))
   }

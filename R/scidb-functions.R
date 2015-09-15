@@ -112,7 +112,7 @@ summary.scidb = function(x)
   s = sapply(i, function(u) u[1]) # origin
   if(is.scidb(value))
   {
-    y = translate(value,s)
+    y = translate(value,s, newstart=scidb_coordinate_start(x), newchunk=scidb_coordinate_chunksize(x))
     ans = merge(x, y, by.x=dimensions(x), by.y=dimensions(y),merge=TRUE)@name
     ans = sprintf("store(%s,%s)",ans,x@name)
     iquery(ans)
