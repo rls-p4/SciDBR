@@ -931,9 +931,9 @@ translate = function(x, origin="origin", ...)
 {
   if(is.numeric(origin))
   {
-    if(is.missing(newchunk)) newchunk = scidb_coordinate_chunksize(x)
+    if(missing(newchunk)) newchunk = scidb_coordinate_chunksize(x)
     oldstart = as.numeric(scidb_coordinate_start(x))
-    if(is.missing(newstart)) newstart = scidb:::noE(origin)
+    if(missing(newstart)) newstart = scidb:::noE(origin)
     d = noE(origin - oldstart)
     dims = dimensions(x)
     new_indices = make.unique_(dims, rep("i",length(dims)))
