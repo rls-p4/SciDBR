@@ -231,7 +231,9 @@ materialize = function(x, drop=FALSE)
   p     = prod(d)
   newshape = rep(1,length(d))
   newshape[1] = p
-  if(length(d)>1) data  = scidb_unpack_to_dataframe(reshape(x,shape=newshape), project=attr)
+  newchunk = rep(1,length(d))
+  newchunk[1] = 1000000
+  if(length(d)>1) data  = scidb_unpack_to_dataframe(reshape(x,shape=newshape,chunks=newchunk), project=attr)
   else data  = scidb_unpack_to_dataframe(x, project=attr)
   nelem = nrow(data)
   if(is.null(nelem)) nelem = 0
