@@ -337,7 +337,7 @@ as.scidb = function(X,
   }
   if(do_reshape)
   {
-    query = sprintf("store(reshape(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
+    query = sprintf("store(reshape(input(%s,'%s', -2, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
   }
   else
   {
