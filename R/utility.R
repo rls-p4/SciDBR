@@ -715,7 +715,7 @@ df2scidb = function(X,
   ans = gsub("\r","",ans)
   ans = gsub("\n","",ans)
 
-  query = sprintf("store(redimension(input(%s,'%s',0,'(double null,double null, double null)'),%s),%s)",schema1d, ans, schema, name)
+  query = sprintf("store(redimension(input(%s,'%s',-2,'(double null,double null, double null)'),%s),%s)",schema1d, ans, schema, name)
   iquery(query)
   scidb(name,gc=gc)
 }
@@ -746,7 +746,7 @@ raw2scidb = function(X,name,gc=TRUE,...)
     if(args$temp) create_temp_array(name, schema)
   }
 
-  query = sprintf("store(input(%s,'%s',0,'(binary null)'),%s)",schema, ans, name)
+  query = sprintf("store(input(%s,'%s',-2,'(binary null)'),%s)",schema, ans, name)
   iquery(query)
   scidb(name,gc=gc)
 }

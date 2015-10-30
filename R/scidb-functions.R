@@ -346,10 +346,10 @@ as.scidb = function(X,
       schema = sprintf(
         "< %s : int64>  [%s=%.0f:*,%.0f,%.0f]", dimname, attr_name, start[[1]],
          min(nrow(X),chunkSize), overlap[[1]])
-      query = sprintf("store(redimension(input(%s,'%s', 0, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
+      query = sprintf("store(redimension(input(%s,'%s', -2, '(%s null)'),%s),%s)",load_schema,ans,type,schema,name)
     } else
     {
-      query = sprintf("store(input(%s,'%s', 0, '(%s null)'),%s)",load_schema,ans,type,name)
+      query = sprintf("store(input(%s,'%s', -2, '(%s null)'),%s)",load_schema,ans,type,name)
     }
   }
   iquery(query)
