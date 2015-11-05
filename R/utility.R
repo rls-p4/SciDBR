@@ -448,7 +448,7 @@ scidbls = function(...) scidblist(...)
 # stream: Set to 0L or 1L to control streaming, otherwise use package options
 # Example values of save:
 # save="dcsv"
-# save="lcsv+"
+# save="csv+"
 # save="(double NULL, int32)"
 #
 # Returns the HTTP session in each case
@@ -764,7 +764,7 @@ iquery = function(query, `return`=FALSE,
   if(missing(excludecol)) excludecol=NA
   if(iterative)
   {
-    sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0,interrupt=TRUE)
+    sessionid = scidbquery(query,afl,async=FALSE,save="csv+",release=0,interrupt=TRUE)
     return(iqiter(con=sessionid,n=n,excludecol=excludecol,...))
   }
   qsplit = strsplit(query,";")[[1]]
@@ -781,7 +781,7 @@ iquery = function(query, `return`=FALSE,
       }
       ans = tryCatch(
        {
-        sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0, interrupt=TRUE)
+        sessionid = scidbquery(query,afl,async=FALSE,save="csv+",release=0, interrupt=TRUE)
         dt1 = proc.time()
         result = tryCatch(
           {
