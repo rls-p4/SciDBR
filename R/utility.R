@@ -1357,9 +1357,8 @@ oldURLencode = function (URL, reserved = FALSE)
 
 
 #' A somewhat nightmarish internal function
-#' @params
-#' expr an R 'language' type object to parse
-#' sci a SciDB array 
+#' @param expr an R 'language' type object to parse
+#' @param sci a SciDB array 
 rewrite_subset_expression = function(expr, sci)
 {
   dims = dimensions(sci)
