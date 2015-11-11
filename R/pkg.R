@@ -56,7 +56,7 @@ TRAP = function()
 # The scidb.version option is set during scidbconnect(). However, users
 # may carefully override it to enable certain bug fixes specific to older
 # versions of SciDB.
-  options(scidb.version=13.9)
+  options(scidb.version=15.7)
 # Set this to 32 for SciDB version 13.6
   options(scidb.gemm_chunk_size=1000)
 # Default shim port and host.

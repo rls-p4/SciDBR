@@ -33,11 +33,15 @@
 # An environment to hold connection state
 .scidbenv = new.env()
 
-# Force evaluation of an expression that yields a scidb or scidbdf object,
-# storing result to a SciDB array when eval=TRUE.
-# name: (character) optional SciDB array name to store to
-# gc: (logical) optional, when TRUE tie result to R garbage collector
-# temp (logical, optional): when TRUE store as a SciDB temp array
+#' Evaluate an Expression to \code{scidb} or \code{scidbdf} objects
+#'
+#' Force evaluation of an expression that yields a \code{scidb} or \code{scidbdf} object,
+#' storing the result to a SciDB array when \code{eval=TRUE}.
+#' @param exp A SciDB expression or \code{scidb} or \code{scidbdf} object
+#' @param name (character) optional SciDB array name to store as
+#' @param gc (logical) optional, when TRUE tie result to R garbage collector
+#' @param temp (logical, optional): when TRUE store as a SciDB temp array
+#' @export
 scidbeval = function(expr, eval=TRUE, name, gc=TRUE, temp=FALSE)
 {
   ans = eval(expr)
@@ -199,14 +203,12 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
     assign("authenv",new.env(),envir=.scidbenv)
     if(auth_type=="scidb")
     {
-      auth = GET(resource="login",list(username=username, password=password),header=FALSE)
-      if(nchar(auth)<1) stop("Authentication error")
+      auth = paste(username, password, sep=":")
       assign("auth",auth,envir=.scidbenv)
     } else # HTTP basic digest auth
     {
       assign("digest",paste(username,password,sep=":"),envir=.scidbenv)
     }
-    reg.finalizer(.scidbenv$authenv, function(e) scidblogout(), onexit=TRUE)
   }
 
 # Use the query ID from a query as a unique ID for automated
@@ -279,14 +281,6 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
   invisible()
 }
 
-scidblogout = function()
-{
-  if(exists("auth",envir=.scidbenv) && exists("host",envir=.scidbenv))
-  {
-    GET(resource="logout",header=FALSE)
-  }
-}
-
 scidbdisconnect = function()
 {
 # forces call to scidblogout via finalizer, see scidbconnect:
@@ -318,10 +312,9 @@ tmpnam = function(prefix="R_array")
 }
 
 # Return a shim session ID or error
-# This will also return an authenticaion token string if one is available.
 getSession = function()
 {
-  session = GET("/new_session",header=FALSE)
+  session = GET("/new_session")
   if(length(session)<1) stop("SciDB http session error; are you connecting to a valid SciDB host?")
   session = gsub("\r","",session)
   session = gsub("\n","",session)
@@ -358,50 +351,23 @@ URI = function(resource="", args=list())
   ans
 }
 
-# Send an HTTP GET message to the shim service
-# resource: URI service name
-# args: named list of HTTP GET query parameters
-# header: TRUE=return the HTTP response header, FALSE=don't return it
-# async: Doesn't really do anything, should be removed XXX
-# interrupt: Set to FALSE to disable SIGINT, otherwise handle gracefully.
-# ...: additional curl options passed to getURI
-#
-# returns NULL if async=TRUE or the return value of RCurl getURI otherwise
-GET = function(resource, args=list(), header=TRUE, async=FALSE, interrupt=FALSE, ...)
+#' Send an HTTP GET message to a shim service expecting to recieve a character response
+#' @param service name
+#' @param args named list of HTTP GET query parameters
+#' @return response body as character
+GET = function(resource, args=list())
 {
-  if(!(substr(resource,1,1)=="/")) resource = paste("/",resource,sep="")
+  if(!(substr(resource,1,1)=="/")) resource = paste("/", resource, sep="")
   uri = URI(resource, args)
   uri = oldURLencode(uri)
-  uri = gsub("\\+","%2B",uri,perl=TRUE)
-  on.exit(sigint(SIG_DFL)) # Reset signal handler on exit
-  callback = curl_signal_trap
-  interrupt = interrupt && scidb.interrupt()   # Check package override
-  if(interrupt)
-  {
-    sigreset ()
-    sigint(TRAP())          # Handle SIGINT
-  } else
-  {
-    sigint(SIG_IGN)          # Ignore SIGINT
-  }
-#  digest = curlopts()
-  digest = digest_auth("GET",uri)
-  if(async)
-  {
-    getURI(url=uri,
-      .opts=c(list(header=header,
-                 'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),
-                 'ssl.verifypeer'=0,
-                 noprogress=!interrupt, progressfunction=curl_signal_trap),
-                 list(...), httpheader=digest),
-      async=TRUE)
-    return(NULL)
-  }
-# The gsub is here because basic digest authentication might return TWO
-# concatenated responses: the first a 401 auth error as the digest
-# authentication is negotiated and the 2nd potentially the desired response (or
-# maybe another error). We strip everything up to the last response with gsub.
-  gsub(".*\\r\\n\\r\\nHTTP","HTTP",getURI(url=uri, .opts=c(list(header=header,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=!interrupt, progressfunction=curl_signal_trap),list(...),httpheader=digest)))
+  uri = gsub("\\+","%2B", uri, perl=TRUE)
+  h = new_handle()
+  handle_setheaders(h, .list=list(`Authorization`=digest_auth("GET", uri)))
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+                              ssl_verifypeer=0))
+  ans = curl_fetch_memory(uri, h)
+  if(ans$status_code > 300) stop("HTTP error", ans$status_code)
+  rawToChar(ans$content)
 }
 
 # Check if array exists
@@ -411,16 +377,16 @@ GET = function(resource, args=list(), header=TRUE, async=FALSE, interrupt=FALSE,
   return(name %in% Q)
 }
 
-# scidblist: A convenience wrapper for list().
-# Input:
-# type (character), one of the indicated list types
-# verbose (boolean), include attribute and dimension data when type="arrays"
-# n: maximum lines of output to return
-# Output:
-# A list.
+#' A convenience wrapper for SciDB list().
+#' @param type (character), one of the indicated list types
+#' @param  verbose (boolean), include attribute and dimension data when type="arrays"
+#' @param n maximum lines of output to return
+#' @return a list.
+#' @export
 scidblist = function(pattern,
-type= c("arrays","operators","functions","types","aggregates","instances","queries","libraries"),
-              verbose=FALSE, n=Inf)
+                     type= c("arrays", "operators", "functions", "types",
+                             "aggregates", "instances", "queries", "libraries"),
+                     verbose=FALSE, n=Inf)
 {
   type = match.arg(type)
   Q = iquery(paste("list('",type,"')",sep=""), return=TRUE, n=n, binary=FALSE)
@@ -462,7 +428,7 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
   {
     if(!is.null(options("scidb.stream")[[1]]) && TRUE==options("scidb.stream")[[1]]) STREAM=1L
   } else STREAM = as.integer(stream)
-  sessionid=session
+  sessionid = session
   if(is.null(session))
   {
 # Obtain a session from shim
@@ -478,35 +444,22 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
     {
       if(is.null(save))
         GET("/execute_query",list(id=sessionid,release=release,
-             query=query,afl=as.integer(afl), stream=0L),
-             interrupt=interrupt)
+             query=query,afl=as.integer(afl), stream=0L))
       else
         GET("/execute_query",list(id=sessionid,release=release,
-            save=save,query=query,afl=as.integer(afl),stream=STREAM), 
-            interrupt=interrupt)
+            save=save,query=query,afl=as.integer(afl),stream=STREAM))
     }, error=function(e)
     {
-# User cancel? Note not interruptable.
-      GET("/cancel", list(id=sessionid,async='1'), async=TRUE)
+# User cancel?
+      GET("/cancel", list(id=sessionid,async='1'))
       GET("/release_session", list(id=sessionid))
-      "HTTP/1.0 206 ERROR"
+      stop("cancelled")
     }, interrupt=function(e)
     {
-      GET("/cancel", list(id=sessionid,async='1'), async=TRUE)
+      GET("/cancel", list(id=sessionid,async='1'))
       GET("/release_session", list(id=sessionid))
-      "HTTP/1.0 206 ERROR"
+      stop("cancelled")
     })
-  w = ans
-  err = 200
-  if(nchar(w)>9)
-    err = as.integer(strsplit(substr(w,1,20)," ")[[1]][[2]])
-  if(err==206)
-  {
-    stop("HTTP request canceled\n")
-  } else if(err>206)
-  {
-    stop(strsplit(w,"\r\n\r\n")[[1]][[2]])
-  }
   if(DEBUG) cat("Query time",(proc.time()-t1)[3],"\n")
   if(resp) return(list(session=sessionid, response=ans))
   sessionid
@@ -655,7 +608,7 @@ df2scidb = function(X,
 
 # Post the input string to the SciDB http service
   uri = URI("upload_file",list(id=session))
-  hdr = digest_auth("POST",uri)
+  hdr = digest_auth("POST", uri)
   tmp = tryCatch(postForm(uri=uri, uploadedfile=fileUpload(tf),.opts=curlOptions(httpheader=hdr,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0)), error=invisible)
   tmp = tmp[[1]]
   tmp = gsub("\r","",tmp)
@@ -752,24 +705,27 @@ raw2scidb = function(X,name,gc=TRUE,...)
 }
 
 # binary=FALSE is needed by some queries, don't get rid of it.
+
+#' Run a SciDB query, optionally returning the result.
+#' @param query a single SciDB query string
+#' @param return if \code{TRUE}, return the result
+#' @param afl \code{TRUE} for AFL queries, required for now (AQL not yet supported)
+#' @param n maximum number of bytes/lines to return
+#' @param excludecol exclude a column from the result
+#' @param binary set to \code{FALSE} to read result from SciDB in text form
+#' @param ... additional options passed to \code{read.table} when \code{binary=FALSE}
+#' @export
 iquery = function(query, `return`=FALSE,
-                  afl=TRUE, iterative=FALSE,
-                  n=Inf, excludecol, binary=TRUE, ...)
+                  afl=TRUE, n=Inf, excludecol, binary=TRUE, ...)
 {
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
   if(!afl && `return`) stop("return=TRUE may only be used with AFL statements")
-  if(iterative && !`return`) stop("Iterative result requires return=TRUE")
   if(is.scidb(query) || is.scidbdf(query))  query=query@name
   if(missing(excludecol)) excludecol=NA
-  if(iterative)
-  {
-    sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0,interrupt=TRUE)
-    return(iqiter(con=sessionid,n=n,excludecol=excludecol,...))
-  }
   qsplit = strsplit(query,";")[[1]]
   m = 1
-  if(n==Inf) n = -1    # Indicate to shim that we want all the lines of output
+  if(n==Inf) n = -1    # Indicate to shim that we want all the output
   for(query in qsplit)
   {
 # Only return the last query, mimicking command-line iquery.
@@ -785,7 +741,7 @@ iquery = function(query, `return`=FALSE,
         dt1 = proc.time()
         result = tryCatch(
           {
-            GET("/read_lines",list(id=sessionid,n=as.integer(n+1)),header=FALSE,interrupt=TRUE)
+            GET("/read_lines",list(id=sessionid,n=as.integer(n+1)))
           },
           error=function(e)
           {
@@ -842,7 +798,7 @@ iqiter = function (con, n = 1, excludecol, ...)
     if(init) {
       ans = tryCatch(
        {
-        result = GET("/read_lines",list(id=con,n=n),header=FALSE)
+        result = GET("/read_lines",list(id=con,n=n))
         val = textConnection(result)
         ret=read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,nrows=n,...)
         close(val)
@@ -855,7 +811,7 @@ iqiter = function (con, n = 1, excludecol, ...)
     } else {
       ans = tryCatch(
        {
-        result = GET("/read_lines",list(id=con,n=n),header=FALSE)
+        result = GET("/read_lines",list(id=con,n=n))
         val = textConnection(result)
         ret = read.table(val,sep=",",stringsAsFactors=FALSE,header=FALSE,nrows=n,...)
         close(val)
@@ -933,15 +889,15 @@ translate = function(x, origin="origin", newstart, newchunk)
   {
     if(missing(newchunk)) newchunk = scidb_coordinate_chunksize(x)
     oldstart = as.numeric(scidb_coordinate_start(x))
-    if(missing(newstart)) newstart = scidb:::noE(origin)
+    if(missing(newstart)) newstart = noE(origin)
     d = noE(origin - oldstart)
     dims = dimensions(x)
     new_indices = make.unique_(dims, rep("i",length(dims)))
     expr = paste(dims, d, sep="+")
     expr = paste(paste(new_indices,expr,sep=","), collapse=",")
     unend   = rep("*",length(newstart))
-    newschema = sprintf("%s%s", scidb:::build_attr_schema(x),
-                  scidb:::build_dim_schema(x, newnames=new_indices, newstart=newstart, newend=unend, newchunk=newchunk))
+    newschema = sprintf("%s%s", build_attr_schema(x),
+                  build_dim_schema(x, newnames=new_indices, newstart=newstart, newend=unend, newchunk=newchunk))
     query = sprintf("redimension(apply(%s, %s),%s)",x@name,expr,newschema)
     return(scidb(query))
   }
@@ -949,7 +905,7 @@ translate = function(x, origin="origin", newstart, newchunk)
   {
     N = paste(rep("null",2*length(dimensions(x))),collapse=",")
     query = sprintf("subarray(%s,%s)",x@name,N)
-    return(scidb:::.scidbeval(query,`eval`=FALSE,depend=list(x),gc=TRUE))
+    return(.scidbeval(query,`eval`=FALSE,depend=list(x),gc=TRUE))
   }
   else if(!is.scidb(origin)) stop("origin must be either 'origin', numeric coordinates, or another SciDB array")
 # translate by same-named subset of dimensions between arrays
@@ -1258,13 +1214,13 @@ digest_auth = function(method, uri, realm="", nonce="123456")
   user = up[1]
   pwd  = up[2]
   if(is.na(pwd)) pwd=""
-  ha1=digest(sprintf("%s:%s:%s",user,realm,pwd,algo="md5"),serialize=FALSE)
-  ha2=digest(sprintf("%s:%s", method,  uri, algo="md5"),serialize=FALSE)
+  ha1=digest(sprintf("%s:%s:%s", user, realm, pwd, algo="md5"), serialize=FALSE)
+  ha2=digest(sprintf("%s:%s", method,  uri, algo="md5"), serialize=FALSE)
   cnonce="MDc1YmFhOWFkY2M0YWY2MDAwMDBlY2JhMDAwMmYxNTI="
   nc="00000001"
   qop="auth"
-  response=digest(sprintf("%s:%s:%s:%s:%s:%s",ha1,nonce,nc,cnonce,qop,ha2),algo="md5",serialize=FALSE)
-  sprintf('Authorization: Digest username="%s", realm=%s, nonce="%s", uri="%s", cnonce="%s", nc=%s, qop=%s, response="%s"', user, realm, nonce, uri, cnonce, nc, qop, response)
+  response=digest(sprintf("%s:%s:%s:%s:%s:%s", ha1, nonce, nc, cnonce, qop, ha2), algo="md5", serialize=FALSE)
+  sprintf('Digest username="%s", realm=%s, nonce="%s", uri="%s", cnonce="%s", nc=%s, qop=%s, response="%s"', user, realm, nonce, uri, cnonce, nc, qop, response)
 }
 
 # Return extra curl options defined by the active connection

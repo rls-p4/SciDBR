@@ -8,6 +8,7 @@ import("RCurl", iterators)
 importFrom("zoo", na.locf)
 importFrom("digest", digest)
 importFrom("codetools", makeCodeWalker, walkCode)
+importFrom("curl", new_handle, handle_setopt, handle_setheaders, curl_fetch_memory, curl)
 
 # Functions
 export("translate")
