@@ -75,13 +75,12 @@ TRAP = function()
 # encrypted session to work. Set this TRUE for stronger security (help avoid MTM)
 # in SSL connections.
   options(scidb.verifyhost=FALSE)
-# Set to FALSE to disable user-interruptable HTTP transactions.
-  options(scidb.interrupt=TRUE)
 # Set to TRUE to enable experimental shim stream protocol, avoids copying query
 # output to data file on server # (see https://github.com/Paradigm4/shim).
   options(scidb.stream=FALSE)
 }
 
+# Reset the various package options
 .onUnload = function(libpath)
 {
   options(scidb.index.sequence.limit=c())
@@ -93,8 +92,9 @@ TRAP = function()
   options(scidb.default_shim_host=c())
   options(scidb.gemm_bug=c())
   options(scidb.verifyhost=c())
-  options(scidb.interrupt=c())
   options(scidb.stream=c())
+  options(scidb.version=c())
+  options(shim.version=c())
 }
 
 # scidb array object type map.

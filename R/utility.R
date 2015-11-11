@@ -159,7 +159,7 @@ is.temp = function(name)
     }
     else newarray = name
     query = sprintf("store(%s,%s)",expr,newarray)
-    scidbquery(query, interrupt=TRUE, stream=0L)
+    scidbquery(query, stream=0L)
     ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)
     if(temp) ans@gc$temp = TRUE
 # This is a fix for a SciDB issue that can unexpectedly change schema
@@ -278,6 +278,9 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
   {
     options(scidb.gemm_bug=FALSE) # Yay
   }
+# Update the shim.version option
+  options(shim.version=GET("/version"))
+
   invisible()
 }
 
@@ -321,15 +324,6 @@ getSession = function()
   session
 }
 
-# Returns the eponymous package option setting used to globally overried
-# interrupt handling. TRUE means abide by interrupts, FALSE ignore.
-scidb.interrupt = function()
-{
-  ans = options("scidb.interrupt")[[1]]
-  if(is.null(ans)) ans=TRUE
-  tryCatch(as.logical(ans), error=function(e) TRUE)
-}
-
 # Supply the base SciDB URI from the global host, port and auth
 # parameters stored in the .scidbenv package environment.
 # Every function that needs to talk to the shim interface should use
@@ -354,8 +348,9 @@ URI = function(resource="", args=list())
 #' Send an HTTP GET message to a shim service expecting to recieve a character response
 #' @param service name
 #' @param args named list of HTTP GET query parameters
+#' @param err set to \code{FALSE} to ignore errors
 #' @return response body as character
-GET = function(resource, args=list())
+GET = function(resource, args=list(), err=TRUE)
 {
   if(!(substr(resource,1,1)=="/")) resource = paste("/", resource, sep="")
   uri = URI(resource, args)
@@ -366,8 +361,16 @@ GET = function(resource, args=list())
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
                               ssl_verifypeer=0))
   ans = curl_fetch_memory(uri, h)
-  if(ans$status_code > 300) stop("HTTP error", ans$status_code)
+  if(ans$status_code > 299 && err) stop("HTTP error", ans$status_code)
   rawToChar(ans$content)
+}
+
+POST = function(resource, data, args=list())
+{
+# check for new shim simple post option (/upload), otherwise use
+# multipart/file upload (/upload_file)
+  simple = grepl("?15\\.7.*",scidb:::GET("/version"))
+# XXX FINISH ME ME
 }
 
 # Check if array exists
@@ -410,7 +413,6 @@ scidbls = function(...) scidblist(...)
 # release: Set to zero preserve web session until manually calling release_session
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
 # resp(logical): return http response
-# interrupt: Set to TRUE to enable user interrupt
 # stream: Set to 0L or 1L to control streaming, otherwise use package options
 # Example values of save:
 # save="dcsv"
@@ -419,7 +421,7 @@ scidbls = function(...) scidblist(...)
 #
 # Returns the HTTP session in each case
 scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
-                      release=1, session=NULL, resp=FALSE, interrupt=FALSE, stream)
+                      release=1, session=NULL, resp=FALSE, stream)
 {
   DEBUG = FALSE
   STREAM = 0L
@@ -577,7 +579,6 @@ df2scidb = function(X,
       else if("POSIXct" %in% class(X[,j])) 
       {
         warning("Converting R POSIXct to SciDB datetime as UTC time. Subsecond times rounded to seconds.")
-#        X[,j] = as.integer(X[,j])
         X[,j] = format(X[,j],tz="UTC")
         typ[j] = "datetime"
       }
@@ -604,7 +605,7 @@ df2scidb = function(X,
 
 # Obtain a session from the SciDB http service for the upload process
   session = getSession()
-  on.exit(GET("/release_session",list(id=session)) ,add=TRUE)
+  on.exit(GET("/release_session",list(id=session), err=FALSE) ,add=TRUE)
 
 # Post the input string to the SciDB http service
   uri = URI("upload_file",list(id=session))
@@ -647,7 +648,7 @@ df2scidb = function(X,
 # Obtain a session from shim for the upload process
   session = getSession()
   if(length(session)<1) stop("SciDB http session error")
-  on.exit(GET("/release_session",list(id=session)) ,add=TRUE)
+  on.exit(GET("/release_session",list(id=session), err=FALSE) ,add=TRUE)
 
 # Compute the indices and assemble message to SciDB in the form
 # double,double,double for indices i,j and data val.
@@ -681,7 +682,7 @@ raw2scidb = function(X,name,gc=TRUE,...)
 # Obtain a session from shim for the upload process
   session = getSession()
   if(length(session)<1) stop("SciDB http session error")
-  on.exit(GET("/release_session",list(id=session)) ,add=TRUE)
+  on.exit(GET("/release_session",list(id=session), err=FALSE) ,add=TRUE)
 
   fn = tempfile()
   val = writeBin(.Call("scidb_raw",X,PACKAGE="scidb"),con=fn)
@@ -737,7 +738,7 @@ iquery = function(query, `return`=FALSE,
       }
       ans = tryCatch(
        {
-        sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0, interrupt=TRUE)
+        sessionid = scidbquery(query,afl,async=FALSE,save="lcsv+",release=0)
         dt1 = proc.time()
         result = tryCatch(
           {
@@ -773,7 +774,7 @@ iquery = function(query, `return`=FALSE,
            })
     } else
     {
-      ans = scidbquery(query, afl, async=FALSE, release=1, interrupt=TRUE, stream=0L)
+      ans = scidbquery(query, afl, async=FALSE, release=1, stream=0L)
     }
     m = m + 1
   }
@@ -983,57 +984,6 @@ scidbdfcc = function(x)
   cat("\n")
 }
 
-# The RCurl package does not handle interruption well, sometimes segfaulting.
-#
-# Here is an example:
-#
-#    sigint(TRAP())
-#    x=getBinaryURL(url,
-#        .opts=list(noprogress=FALSE, progressfunction=curl_signal_trap))
-#    sigint(SIG_DFL)
-#
-# Note that users might have to hold down CTRL+C a while because of the tiny
-# time window it's available.
-sigint = function(val)
-{
-  .Call("sig",as.integer(val),PACKAGE="scidb")
-}
-sigstate = function()
-{
-  .Call("state",PACKAGE="scidb")
-}
-sigreset = function()
-{
-  .Call("reset",PACKAGE="scidb")
-}
-curl_signal_trap = function(down,up)
-{
-# Unforunately, RStudio doesn't seem to let us set up custom signal handlers.
-  if(TRAP() == SIG_IGN)
-  {
-    k = tryCatch(
-    {
-      sigint(SIG_DFL)    # Enable SIGINT
-      Sys.sleep(0.02)    # Just plain ugly
-      sigint(SIG_IGN)    # Disable
-      0L
-    }, interrupt = function(e)
-    {
-      cat("Canceling...\n",file=stderr())
-      1L
-    })
-    return(k)
-  }
-# Fast custom signal handler
-  k = sigstate()
-  if(k>0)
-  {
-    cat("Canceling...\n",file=stderr())
-    return(1L)
-  }
-  0L
-}
-
 # Walk the dependency graph, setting all upstreams array to persist
 # Define a generic persist
 persist = function(x, remove=FALSE, ...) UseMethod("persist")
@@ -1092,7 +1042,6 @@ scidb_unpack_to_dataframe = function(query, ...)
   buffer = 100000L
   row_names = NULL
   args = list(...)
-  interrupt = scidb.interrupt()
   if(!is.null(args$buffer))
   {
     argsbuf = tryCatch(as.integer(args$buffer),warning=function(e) NA)
@@ -1121,26 +1070,23 @@ scidb_unpack_to_dataframe = function(query, ...)
   ns[N] = "null"
   format_string = paste(paste(TYPES,ns),collapse=",")
   format_string = sprintf("(%s)",format_string)
-  sessionid = scidbquery(x@name, save=format_string, async=FALSE, release=0, interrupt=TRUE)
-# Release the session on exit
-  on.exit( GET("/release_session",list(id=sessionid)) ,add=TRUE)
+  sessionid = scidbquery(x@name, save=format_string, async=FALSE, release=0)
+  on.exit( GET("/release_session",list(id=sessionid), err=FALSE) ,add=TRUE)
 
   dt2 = proc.time()
-  r = URI("/read_bytes",list(id=sessionid,n=0))
-  sigint(TRAP())
-  BUF = tryCatch(
-        { 
-          getBinaryURL(r, .opts=c(curlopts(),list('ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0, noprogress=!interrupt, progressfunction=curl_signal_trap)))
-        }, error=function(e)
-        { 
-          GET("/release_session",list(id=sessionid))
-          sigint(SIG_DFL)
-          stop("canceled")
-        })
-  sigint(SIG_DFL)
+  uri = URI("/read_bytes",list(id=sessionid,n=0))
+  h = new_handle()
+  handle_setheaders(h, .list=list(`Authorization`=digest_auth("GET", uri)))
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+                              ssl_verifypeer=0))
+  resp = curl_fetch_memory(uri, h)
+  if(resp$status_code > 299) stop("HTTP error", resp$status_code)
+# Explicitly reap the handle to avoid shor-term build up of socket descriptors
+  rm(h)
+  gc()
   if(DEBUG) cat("Data transfer time",(proc.time()-dt2)[3],"\n")
   dt1 = proc.time()
-  len = length(BUF)
+  len = length(resp$content)
   p = 0
   ans = c()
   cnames = c(names(x),"lines","p")
@@ -1149,19 +1095,19 @@ scidb_unpack_to_dataframe = function(query, ...)
   if(projected) n = length(args$project)
   while(p<len)
   {
-dt2 = proc.time()
-    tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, N, BUF, as.double(p))
+    dt2 = proc.time()
+    tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, N, resp$content, as.double(p))
     names(tmp) = cnames
     lines = tmp[[n+1]]
     p_old = p
     p     = tmp[[n+2]]
-if(DEBUG) cat("  R buffer ",p,"/",len," bytes parsing time",(proc.time()-dt2)[3],"\n")
-dt2 = proc.time()
+    if(DEBUG) cat("  R buffer ",p,"/",len," bytes parsing time",(proc.time()-dt2)[3],"\n")
+    dt2 = proc.time()
     if(lines>0)
     {
       if("binary" %in% TYPES)
       {
-if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
+        if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
         return(lapply(1:n, function(j) tmp[[j]][1:lines]))
       }
       len_out = length(tmp[[1]])
@@ -1182,9 +1128,9 @@ if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
       if(is.null(ans)) ans = data.frame(tmp[1:n],stringsAsFactors=FALSE)
       else ans = rbind(ans,data.frame(tmp[1:n],stringsAsFactors=FALSE))
     }
-if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
+    if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
   }
-dt2 = proc.time()
+  dt2 = proc.time()
   if(!is.null(row_names))
   {
     if(is.numeric(row_names) && length(row_names)==1)
@@ -1195,7 +1141,7 @@ dt2 = proc.time()
       rownames(ans) = row_names
     }
   }
-if(DEBUG) cat("  R rownames assignment",(proc.time()-dt2)[3],"\n")
+  if(DEBUG) cat("  R rownames assignment",(proc.time()-dt2)[3],"\n")
   if(DEBUG) cat("Total R parsing time",(proc.time()-dt1)[3],"\n")
   ans
 }

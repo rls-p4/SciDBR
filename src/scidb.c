@@ -27,7 +27,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <math.h>
-#include <signal.h>
 #include <string.h>
 #ifdef WIN32
 #include <windows.h>
@@ -43,17 +42,6 @@
 
 #define NOT_MISSING 255
 #define IS_MISSING 0
-
-/* sig_int is used to detect user SIGINT signals */
-static volatile int sig_int = 0;
-
-#ifndef WIN32
-static void
-handler (int s, siginfo_t *i, void *x)
-{
-  sig_int = 1;
-}
-#endif
 
 typedef struct
 {
@@ -209,68 +197,4 @@ scidb_raw (SEXP A)
     }
   UNPROTECT(1);
   return ans;
-}
-
-void
-reset_sig ()
-{
-  sig_int = 0;
-}
-
-SEXP
-state ()
-{
-  return ScalarInteger(sig_int);
-}
-
-SEXP
-reset ()
-{
-  reset_sig();
-  return R_NilValue;
-}
-
-/* Enable or disable SIGINT
-   I = 1: Ignore SIGINT
-   I = 2: Use custom handler
-   ELSE : Use default handler
- */
-SEXP
-sig (SEXP I)
-{
-  int i = INTEGER (I)[0];
-#ifdef WIN32
-  switch (i)
-  {
-    case 1:
-      signal(SIGINT, SIG_IGN);
-      break;
-    case 2:
-      signal(SIGINT, SIG_IGN);
-      break;
-    default:
-      signal(SIGINT, SIG_DFL);
-  }
-#else
-  int j;
-  struct sigaction action;
-  memset (&action, 0, sizeof(action));
-  action.sa_sigaction = handler;
-  action.sa_flags = SA_SIGINFO;
- 
-  switch (i)
-    {
-    case 1:
-      signal (SIGINT, SIG_IGN);
-      break;
-    case 2:
-      j = sigaction(SIGINT, &action, NULL);
-      if(j<0) error("Error setting signal handler");
-      break;
-    default:
-      reset_sig();
-      signal (SIGINT, SIG_DFL);
-    }
-#endif
-  return R_NilValue;
 }
