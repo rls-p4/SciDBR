@@ -690,15 +690,10 @@ raw2scidb = function(X,name,gc=TRUE,...)
   if(length(session)<1) stop("SciDB http session error")
   on.exit(GET("/release_session",list(id=session), err=FALSE) ,add=TRUE)
 
-  fn = tempfile()
-  val = writeBin(.Call("scidb_raw",X,PACKAGE="scidb"),con=fn)
-  url = URI("/upload_file",list(id=session))
-  hdr = digest_auth("POST",url)
-  ans = tryCatch(postForm(uri=url, uploadedfile=fileUpload(filename=fn),.opts=curlOptions(httpheader=hdr,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0)), error=invisible)
-  unlink(fn)
-  ans = ans[[1]]
-  ans = gsub("\r","",ans)
-  ans = gsub("\n","",ans)
+  bytes = .Call("scidb_raw", X, PACKAGE="scidb")
+  ans = POST(bytes, list(id=session))
+  ans = gsub("\n", "", gsub("\r", "", ans))
+
   schema = "<val:binary null>[i=0:0,1,0]"
   args = list(...)
   if(!is.null(args$temp))
