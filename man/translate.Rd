@@ -11,7 +11,7 @@ translate(x, origin="origin", newstart, newchunk)
 }
 \arguments{
   \item{x}{A SciDB array object of class scidb or scidbdf.}
-  \item{oriting}{Either the string "origin" indicating zero, or a vector of new starting indices for each dimension of the array \code{x}}
+  \item{origin}{Either the string "origin" indicating zero, or a vector of new starting indices for each dimension of the array \code{x}}
   \item{newstart}{Optional vector of new array starting coordinates. Defaults to origin.}
   \item{newchunk}{Optional vector of new array chunk sizes.}
 }

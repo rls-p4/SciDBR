@@ -1,6 +1,6 @@
 useDynLib(scidb)
 import(methods)
-importFrom("Matrix",nnzero, sparseMatrix, unpack, sparseVector)
+importFrom("Matrix",nnzero, sparseMatrix, unpack, sparseVector, Matrix)
 importFrom("utils", head, tail)
 importFrom("stats", aggregate, sd, var, reshape, glm, glm.fit, phyper, qhyper, quantile, dist, kmeans)
 importFrom("graphics", image, hist)
