@@ -13,8 +13,11 @@ library("scidb")
 host = Sys.getenv("SCIDB_TEST_HOST")
 if(nchar(host)>0)
 {
+for(stream in c(FALSE, TRUE))
+{
   scidbconnect(host)
   options(scidb.debug=TRUE)
+  options(scidb.stream=stream)
 
 # Upload
   data("iris")
@@ -91,7 +94,6 @@ if(nchar(host)>0)
 # Test named index
  X <- as.scidb(morley, name="morely")
  X[1:4, c("Run","Speed")][]
-
-
+}
 }
 gc()
