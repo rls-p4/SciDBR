@@ -4,8 +4,7 @@
 \description{Issue SciDB queries and optionally return output in a data frame.}
 \usage{
 iquery(query, `return` = FALSE, afl = TRUE,
-       iterative = FALSE, n = Inf, excludecol,
-       binary = TRUE, ...)
+       n = Inf, binary = TRUE, ...)
 }
 \arguments{
   \item{query}{A SciDB query string (character). Separate multiple queries
@@ -13,12 +12,8 @@ iquery(query, `return` = FALSE, afl = TRUE,
   \item{return}{Set to TRUE to return output. Otherwise don't return
                 query output. Only available when \code{afl=TRUE}}
   \item{afl}{TRUE indicates query is in AFL form, FALSE indicates AQL. }
-  \item{iterative}{Set to TRUE to return a result iterator. FALSE returns
-                   entire result at once.}
-  \item{n}{Maximum number of rows to return when iterating through results.
+  \item{n}{Maximum number of rows to return.
            Set to \code{Inf} to return everything. Ignored when binary=TRUE.}
-  \item{excludecol}{An optional numeric range of columns to exclude from
-                    iterative results (only applies when iterative=TRIE).}
   \item{binary}{TRUE indicates efficient binary transfer method. Set to
                 FALSE to use read.table and UTF8 encoded text transfer, parsed
                 by \code{read.table} (more flexible parsing for unusual types).}
@@ -56,8 +51,6 @@ function. When this option is selected, any \code{...} arguments are passed
 directly to \code{read.table}. You can limit the number of returned results
 to \code{n} when this option is set.
 
-Select \code{iterative=TRUE} to return an iterator that iterators over \code{n}
-output rows at a time. This option only supports delimted text transfers.
 }
 \value{
 If \code{return=TRUE}, return the query result in data frame form (similar to the
@@ -68,9 +61,6 @@ If \code{return}=FALSE, return the query ID number.
 SciDB errors encountered during query processing are propagated to R and can
 be handled with normal R error handling mechanisms.
 
-Set \code{itreative=TRUE} to return a result iterator. Use the iterator \code{nextElem}
-function to iteratively return results, a maximum of \code{n} results at a time. See
-help in the \code{iterators} package for examples and options.
 }
 \author{
 B. W. Lewis <blewis@paradigm4.com>
@@ -78,18 +68,4 @@ B. W. Lewis <blewis@paradigm4.com>
 \examples{
 \dontrun{
 iquery("list('instances')",return=TRUE)
-
-# A simple example that iterates through results using foreach
-# Build an array with 1 million numbers from zero to 1.
-iquery("store(build(<x:double>[i=1:1000000,100000,0],i/1000000),X)")
-# Apply a function and return result in an iterator:
-i <- iquery("apply(X, y, sin(x))", return=TRUE, iterative=TRUE)
-
-# Sum up x and y (and dimension i too)
-library("foreach")
-foreach(j=i, .combine=function(...)colSums(rbind(...))) %do% colSums(j)
-
-# Compare with the much faster equivalent inside SciDB:
-iquery("aggregate(apply(X, y, sin(x)),sum(x),sum(y))", return=TRUE)
-
 }}

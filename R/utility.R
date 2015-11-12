@@ -361,12 +361,17 @@ GET = function(resource, args=list(), err=TRUE)
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
                               ssl_verifypeer=0))
   ans = curl_fetch_memory(uri, h)
-  if(ans$status_code > 299 && err) stop("HTTP error", ans$status_code)
+  if(ans$status_code > 299 && err)
+  {
+    msg = sprintf("HTTP error %s", ans$status_code)
+    if(ans$status_code >= 500) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
+    stop(msg)
+  }
   rawToChar(ans$content)
 }
 
 # Normally called with raw data and args=list(id=whatever)
-POST = function(data, args=list())
+POST = function(data, args=list(), err=TRUE)
 {
 # check for new shim simple post option (/upload), otherwise use
 # multipart/file upload (/upload_file)
@@ -381,7 +386,7 @@ POST = function(data, args=list())
     handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
                                 ssl_verifypeer=0, post=TRUE, postfieldsize=length(data), postfields=data))
     ans = curl_fetch_memory(uri, h)
-    if(ans$status_code > 299 && err) stop("HTTP error", ans$status_code)
+    if(ans$status_code > 299 && err) stop("HTTP error ", ans$status_code)
     return(rawToChar(ans$content))
   }
   uri = URI("/upload_file", args)
@@ -713,18 +718,16 @@ raw2scidb = function(X,name,gc=TRUE,...)
 #' @param return if \code{TRUE}, return the result
 #' @param afl \code{TRUE} for AFL queries, required for now (AQL not yet supported)
 #' @param n maximum number of bytes/lines to return
-#' @param excludecol exclude a column from the result
 #' @param binary set to \code{FALSE} to read result from SciDB in text form
 #' @param ... additional options passed to \code{read.table} when \code{binary=FALSE}
 #' @export
 iquery = function(query, `return`=FALSE,
-                  afl=TRUE, n=Inf, excludecol, binary=TRUE, ...)
+                  afl=TRUE, n=Inf, binary=TRUE, ...)
 {
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
   if(!afl && `return`) stop("return=TRUE may only be used with AFL statements")
   if(is.scidb(query) || is.scidbdf(query))  query=query@name
-  if(missing(excludecol)) excludecol=NA
   qsplit = strsplit(query,";")[[1]]
   m = 1
   if(n==Inf) n = -1    # Indicate to shim that we want all the output
@@ -781,62 +784,6 @@ iquery = function(query, `return`=FALSE,
   }
   if(!(`return`)) return(invisible())
   ans
-}
-
-iqiter = function (con, n = 1, excludecol, ...)
-{
-  if(missing(excludecol)) excludecol=NA
-  dostop = function(s=TRUE)
-  {
-    GET("/release_session",list(id=con))
-    if(s) stop("StopIteration",call.=FALSE)
-  }
-  if (!is.numeric(n) || length(n) != 1 || n < 1)
-    stop("n must be a numeric value >= 1")
-  init = TRUE
-  header = c()
-  nextEl = function() {
-    if (is.null(con)) dostop()
-    if(init) {
-      ans = tryCatch(
-       {
-        result = GET("/read_lines",list(id=con,n=n))
-        val = textConnection(result)
-        ret=read.table(val,sep=",",stringsAsFactors=FALSE,header=TRUE,nrows=n,...)
-        close(val)
-        ret
-       }, error = function(e) {dostop()},
-          warning = function(w) {dostop()}
-      )
-      header <<- colnames(ans)
-      init <<- FALSE
-    } else {
-      ans = tryCatch(
-       {
-        result = GET("/read_lines",list(id=con,n=n))
-        val = textConnection(result)
-        ret = read.table(val,sep=",",stringsAsFactors=FALSE,header=FALSE,nrows=n,...)
-        close(val)
-        ret
-       }, error = function(e) {dostop()},
-          warning = function(w) {dostop()}
-      )
-      colnames(ans) = header
-    }
-    if(!is.na(excludecol) && excludecol<=ncol(ans))
-    {
-      rownames(ans) = ans[,excludecol]
-      ans=ans[,-excludecol, drop=FALSE]
-    }
-    ans
-  }
-  it = list(nextElem = nextEl, gc=new.env())
-  class(it) = c("abstractiter", "iter")
-  it$gc$remove = TRUE
-  reg.finalizer(it$gc, function(e) if(e$remove) 
-                  tryCatch(dostop(FALSE),error=function(e) stop(e)),
-                  onexit=TRUE)
-  it
 }
 
 # Internal utility function, make every attribute of an array nullable
@@ -1168,15 +1115,6 @@ digest_auth = function(method, uri, realm="", nonce="123456")
   qop="auth"
   response=digest(sprintf("%s:%s:%s:%s:%s:%s", ha1, nonce, nc, cnonce, qop, ha2), algo="md5", serialize=FALSE)
   sprintf('Digest username="%s", realm=%s, nonce="%s", uri="%s", cnonce="%s", nc=%s, qop=%s, response="%s"', user, realm, nonce, uri, cnonce, nc, qop, response)
-}
-
-# Return extra curl options defined by the active connection
-curlopts = function()
-{
-  ans = c()
-  if(exists("digest",envir=.scidbenv))
-    ans=c(ans,list(userpwd=get("digest",envir=.scidbenv)))
-  ans
 }
 
 # Internal warning function

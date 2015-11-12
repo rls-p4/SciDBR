@@ -336,7 +336,7 @@ unique_scidb = function(x, incomparables=FALSE, sort=TRUE, ...)
     new_attrs = new_attrs[x@attributes %in% "i"] = make.unique_(x@attributes,"i")
     x = attribute_rename(x,x@attributes,new_attrs)
   }
-  got_cu = any(grepl("^cu$",.scidbenv$ops))
+  got_cu = any(grepl("^cu$",.scidbenv$ops$name))
   if(sort)
   {
     dimname = make.unique_(scidb_attributes(x),"n")
@@ -352,7 +352,7 @@ unique_scidb = function(x, incomparables=FALSE, sort=TRUE, ...)
       if(got_cu && scidb_types(x)[[1]] == "string")
         query = sprintf("uniq(sort(cu(%s)))",x@name)
       else
-        query = sprintf("uniq(sort(cu(%s)))",x@name)
+        query = sprintf("uniq(sort(%s))",x@name)
     }
   } else
   {

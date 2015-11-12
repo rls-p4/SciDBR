@@ -1,7 +1,8 @@
 \name{order_scidb}
+\alias{order_scidb}
 \title{Methods for Function \code{order} in Package \pkg{scidb}}
 \description{
-\code{order}
+\code{order_scidb}
 returns a permutation which rearranges its first argument
 into ascending or descending order.
 }

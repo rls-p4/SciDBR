@@ -309,22 +309,9 @@ as.scidb = function(X,
   on.exit( GET("/release_session",list(id=session)) ,add=TRUE)
 
 # Upload the data
-# XXX I couldn't get RCurl to work using the fileUpload(contents=x), with 'x'
-# a raw vector. But we need RCurl to support SSL. As a work-around, we save
-# the object. This extra local copy sucks and must be improved !!! XXX
-# XXX The bug is in RCurl's curl.c addFormElement function.
-# XXX
-  fn = tempfile()
-  bytes = writeBin(.Call("scidb_raw",as.vector(t(X)),PACKAGE="scidb"),con=fn)
-  url = URI("upload_file",list(id=session))
-# RCurl madness! postForm with digest auth errors out, even when it
-# succeeds! XXX
-  hdr = digest_auth("POST",url)
-  ans = tryCatch(postForm(uri = url, uploadedfile = fileUpload(filename=fn), .opts = c(curlopts(),curlOptions(httpheader=hdr,'ssl.verifypeer'=0,'ssl.verifyhost'=as.integer(options("scidb.verifyhost"))))), error=invisible)
-  unlink(fn)
-  ans = ans[[1]]
-  ans = gsub("\r","",ans)
-  ans = gsub("\n","",ans)
+  bytes = .Call("scidb_raw", as.vector(t(X)), PACKAGE="scidb")
+  ans = POST(bytes, list(id=session))
+  ans = gsub("\n", "", gsub("\r", "", ans))
   if(DEBUG)
   {
     cat("Data upload time",(proc.time()-td1)[3],"\n")
