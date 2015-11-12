@@ -474,11 +474,11 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
   ans = tryCatch(
     {
       if(is.null(save))
-        GET("/execute_query",list(id=sessionid,release=release,
-             query=query,afl=as.integer(afl), stream=0L))
+        GET("/execute_query", list(id=sessionid, release=release,
+             query=query, afl=as.integer(afl), stream=0L))
       else
-        GET("/execute_query",list(id=sessionid,release=release,
-            save=save,query=query,afl=as.integer(afl),stream=STREAM))
+        GET("/execute_query", list(id=sessionid,release=release,
+            save=save, query=query, afl=as.integer(afl), stream=STREAM))
     }, error=function(e)
     {
 # User cancel?
@@ -693,7 +693,7 @@ raw2scidb = function(X,name,gc=TRUE,...)
 # Obtain a session from shim for the upload process
   session = getSession()
   if(length(session)<1) stop("SciDB http session error")
-  on.exit(GET("/release_session",list(id=session), err=FALSE) ,add=TRUE)
+  on.exit(GET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
 
   bytes = .Call("scidb_raw", X, PACKAGE="scidb")
   ans = POST(bytes, list(id=session))
@@ -746,15 +746,15 @@ iquery = function(query, `return`=FALSE,
         dt1 = proc.time()
         result = tryCatch(
           {
-            GET("/read_lines",list(id=sessionid,n=as.integer(n+1)))
+            GET("/read_lines", list(id=sessionid, n=as.integer(n+1)))
           },
           error=function(e)
           {
-             GET("/cancel",list(id=sessionid))
-             GET("/release_session",list(id=sessionid))
+             GET("/cancel", list(id=sessionid))
+             GET("/release_session", list(id=sessionid), err=FALSE)
              stop(e)
           })
-        GET("/release_session",list(id=sessionid))
+        GET("/release_session", list(id=sessionid), err=FALSE)
         if(DEBUG) cat("Data transfer time",(proc.time()-dt1)[3],"\n")
         dt1 = proc.time()
 # Handle escaped quotes

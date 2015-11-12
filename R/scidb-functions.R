@@ -306,7 +306,7 @@ as.scidb = function(X,
   td1 = proc.time()
 # Obtain a session from shim for the upload process
   session = getSession()
-  on.exit( GET("/release_session",list(id=session)) ,add=TRUE)
+  on.exit( GET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
 
 # Upload the data
   bytes = .Call("scidb_raw", as.vector(t(X)), PACKAGE="scidb")
