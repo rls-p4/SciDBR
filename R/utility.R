@@ -658,6 +658,7 @@ df2scidb = function(X,
       nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],
       min(ncol(X),colChunkSize), colOverlap)
   schema1d = sprintf("<i:int64 null, j:int64 null, val : %s null>[idx=0:*,100000,0]",type)
+
 # Obtain a session from shim for the upload process
   session = getSession()
   if(length(session)<1) stop("SciDB http session error")
@@ -667,22 +668,14 @@ df2scidb = function(X,
 # double,double,double for indices i,j and data val.
   dp = diff(X@p)
   j  = rep(seq_along(dp),dp) - 1
-# Upload the data
-# XXX I couldn't get RCurl to work using the fileUpload(contents=x), with 'x'
-# a raw vector. But we need RCurl to support SSL. As a work-around, we save
-# the object. This copy sucks and must be fixed. XXX problem is in RCurl, see
-# scidb-functions.R.
-  fn = tempfile()
-  bytes = writeBin(.Call("scidb_raw",as.vector(t(matrix(c(X@i + start[[1]],j + start[[2]], X@x),length(X@x)))),PACKAGE="scidb"),con=fn)
-  url = URI("/upload_file",list(id=session))
-  hdr = digest_auth("POST",url)
-  ans = tryCatch(postForm(uri = url, uploadedfile = fileUpload(filename=fn), .opts=curlOptions(httpheader=hdr,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0)), error=invisible)
-  unlink(fn)
-  ans = ans[[1]]
-  ans = gsub("\r","",ans)
-  ans = gsub("\n","",ans)
 
-  query = sprintf("store(redimension(input(%s,'%s',-2,'(double null,double null, double null)'),%s),%s)",schema1d, ans, schema, name)
+# Upload the data
+  bytes = .Call("scidb_raw",as.vector(t(matrix(c(X@i + start[[1]],j + start[[2]], X@x),length(X@x)))),PACKAGE="scidb")
+  ans = POST(bytes, list(id=session))
+  ans = gsub("\n", "", gsub("\r", "", ans))
+
+# redimension into a matrix
+  query = sprintf("store(redimension(input(%s,'%s',-2,'(double null,double null,double null)'),%s),%s)",schema1d, ans, schema, name)
   iquery(query)
   scidb(name,gc=gc)
 }
