@@ -357,7 +357,7 @@ GET = function(resource, args=list(), err=TRUE)
   uri = oldURLencode(uri)
   uri = gsub("\\+","%2B", uri, perl=TRUE)
   h = new_handle()
-  handle_setheaders(h, .list=list(`Authorization`=digest_auth("GET", uri)))
+  handle_setheaders(h, .list=list(Authorization=digest_auth("GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
                               ssl_verifypeer=0))
   ans = curl_fetch_memory(uri, h)
@@ -365,12 +365,36 @@ GET = function(resource, args=list(), err=TRUE)
   rawToChar(ans$content)
 }
 
-POST = function(resource, data, args=list())
+# Normally called with raw data and args=list(id=whatever)
+POST = function(data, args=list())
 {
 # check for new shim simple post option (/upload), otherwise use
 # multipart/file upload (/upload_file)
-  simple = grepl("?15\\.7.*",scidb:::GET("/version"))
-# XXX FINISH ME ME
+  simple = grepl("?15\\.7.*", getOption("shim.version"))
+  if(simple)
+  {
+    uri = URI("/upload", args)
+    uri = oldURLencode(uri)
+    uri = gsub("\\+","%2B", uri, perl=TRUE)
+    h = new_handle()
+    handle_setheaders(h, .list=list(Authorization=digest_auth("POST", uri)))
+    handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+                                ssl_verifypeer=0, post=TRUE, postfieldsize=length(data), postfields=data))
+    ans = curl_fetch_memory(uri, h)
+    if(ans$status_code > 299 && err) stop("HTTP error", ans$status_code)
+    return(rawToChar(ans$content))
+  }
+  uri = URI("/upload_file", args)
+  uri = oldURLencode(uri)
+  uri = gsub("\\+","%2B", uri, perl=TRUE)
+  h = new_handle()
+  handle_setheaders(h, .list=list(Authorization=digest_auth("POST", uri)))
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+                              ssl_verifypeer=0))
+  handle_setform(h, .list=list(file=data))
+  ans = curl_fetch_memory(uri, h)
+  if(ans$status_code > 299 && err) stop("HTTP error", ans$status_code)
+  return(rawToChar(ans$content))
 }
 
 # Check if array exists
@@ -453,13 +477,13 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
     }, error=function(e)
     {
 # User cancel?
-      GET("/cancel", list(id=sessionid,async='1'))
-      GET("/release_session", list(id=sessionid))
-      stop("cancelled")
+      GET("/cancel", list(id=sessionid), err=FALSE)
+      GET("/release_session", list(id=sessionid), err=FALSE)
+      stop(as.character(e))
     }, interrupt=function(e)
     {
-      GET("/cancel", list(id=sessionid,async='1'))
-      GET("/release_session", list(id=sessionid))
+      GET("/cancel", list(id=sessionid), err=FALSE)
+      GET("/release_session", list(id=sessionid), err=FALSE)
       stop("cancelled")
     })
   if(DEBUG) cat("Query time",(proc.time()-t1)[3],"\n")
@@ -595,29 +619,18 @@ df2scidb = function(X,
   SCHEMA = paste(args,"[",dimlabel,"=",noE(start),":",noE(nrow(X)+start-1),",",noE(chunkSize),",", noE(rowOverlap),"]",sep="")
   if(schema_only) return(SCHEMA)
 
-
-# Write frame to local file for upload. XXX This is inefficient. Is there a way
-# to directly upload through RCurl?
-# Yes:
-#tmp = tryCatch(postForm(uri=uri, uploadedfile=fileUpload(contents=scidbInput,filename="scidb",contentType="application/octet-stream"),.opts=curlOptions(httpheader=hdr,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0)), error=invisible)
-  tf = tempfile()
-  write.table(X,file=tf,sep="\t",row.names=FALSE,col.names=FALSE,quote=FALSE)
-
 # Obtain a session from the SciDB http service for the upload process
   session = getSession()
-  on.exit(GET("/release_session",list(id=session), err=FALSE) ,add=TRUE)
+  on.exit(GET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
 
-# Post the input string to the SciDB http service
-  uri = URI("upload_file",list(id=session))
-  hdr = digest_auth("POST", uri)
-  tmp = tryCatch(postForm(uri=uri, uploadedfile=fileUpload(tf),.opts=curlOptions(httpheader=hdr,'ssl.verifyhost'=as.integer(options("scidb.verifyhost")),'ssl.verifypeer'=0)), error=invisible)
-  tmp = tmp[[1]]
-  tmp = gsub("\r","",tmp)
-  tmp = gsub("\n","",tmp)
-  unlink(tf)
+  ncolX = ncol(X)
+  X = charToRaw(paste(capture.output(write.table(X, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)), collapse="\n"))
+  tmp = POST(X, list(id=session))
+  tmp = gsub("\n", "", gsub("\r", "", tmp))
 
 # Generate a load_tools query
-  LOAD = sprintf("apply(parse(split('%s'),'num_attributes=%d'),%s)",tmp,ncol(X),paste(dcast,collapse=","))
+  LOAD = sprintf("apply(parse(split('%s'),'num_attributes=%d'),%s)", tmp,
+                 ncolX, paste(dcast, collapse=","))
   query = sprintf("store(redimension(%s,%s),%s)",LOAD, SCHEMA, name)
   scidbquery(query, async=FALSE, release=1, session=session, stream=0L)
   scidb(name,`data.frame`=TRUE,gc=gc)
