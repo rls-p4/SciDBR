@@ -183,20 +183,20 @@ materialize = function(x, drop=FALSE)
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
   t1 = proc.time()
 # If x has multiple attributes, warn.
-  if(length(x@attributes)>1)
+  if(length(x@attributes) > 1)
   {
     warnonce("unpack")
-    return(iquery(x, return=TRUE,n=Inf))
+    return(iquery(x, return=TRUE, n=Inf))
   }
 # Check for types that are not fully supported yet.
-  if(scidb_types(x)=="binary")
+  if(scidb_types(x) == "binary")
   {
     return(scidb_unpack_to_dataframe(x, project=scidb_attributes(x)[[1]]))
   }
-  type = names(.scidbtypes[.scidbtypes==scidb_types(x)])
+  type = names(.scidbtypes[.scidbtypes == scidb_types(x)])
   xstart = as.numeric(scidb_coordinate_start(x))
   attr = .get_attribute(x)
-  if(length(type)<1)
+  if(length(type) < 1)
   {
     u = unpack(x)[]
     ans = tryCatch(
@@ -205,35 +205,35 @@ materialize = function(x, drop=FALSE)
       },error = function(e)
       {
         n = length(dim(x))
-        array(dim=apply(u[,1:n,drop=FALSE],2,function(x){max(x)+1}))
+        array(dim=apply(u[, 1:n, drop=FALSE], 2, function(x){max(x) + 1}))
       })
     i = as.matrix(u[,1:length(dim(x))])
     for(j in 1:length(dim(x))) i[,j] = i[,j] + 1 - xstart[j]
     ans[i] = u[,ncol(u)]
-    if(DEBUG) cat("  R array formation time",(proc.time()-t1)[3],"\n")
+    if(DEBUG) cat("  R array formation time",(proc.time() - t1)[3],"\n")
     return(ans)
   }
 
   d     = dim(x)
   ndim  = length(dimensions(x))
-  N     = paste(rep("null",2*ndim),collapse=",")
+  N     = paste(rep("null", 2 * ndim), collapse=",")
   query = x@name
 
 # Bail as soon as possible
   if(any(is.infinite(dim(x))))
   {
     warnonce("toobig")
-    if(DEBUG) cat("  R array formation time",(proc.time()-t1)[3],"\n")
+    if(DEBUG) cat("  R array formation time",(proc.time() - t1)[3],"\n")
     return(scidb_unpack_to_dataframe(query))
   }
 # Speculatively try dense, the reshape forces SciDB to return results in order
 # (not in chunk order)
   p     = prod(d)
-  newshape = rep(1,length(d))
+  newshape = rep(1, length(d))
   newshape[1] = p
-  newchunk = rep(1,length(d))
+  newchunk = rep(1, length(d))
   newchunk[1] = 1000000
-  if(length(d)>1) data  = scidb_unpack_to_dataframe(reshape(x,shape=newshape,chunks=newchunk), project=attr)
+  if(length(d) > 1) data  = scidb_unpack_to_dataframe(reshape(x, shape=newshape, chunks=newchunk), project=attr)
   else data  = scidb_unpack_to_dataframe(x, project=attr)
   nelem = nrow(data)
   if(is.null(nelem)) nelem = 0
@@ -242,15 +242,12 @@ materialize = function(x, drop=FALSE)
   {
     if(ndim==1)
     {
-      data = as.vector(data[,1])
-      names(data) = seq(from=as.numeric(scidb_coordinate_start(x)[1]), length.out=p)
+      data = data[,1,drop=TRUE]
       if(DEBUG) cat("  R array formation time",(proc.time()-t1)[3],"\n")
       return(data)
     } else if(ndim==2)
     {
       data = matrix(data[,1], nrow=d[1], ncol=d[2], byrow=TRUE)
-      rownames(data) = seq(from=as.numeric(scidb_coordinate_start(x)[1]), length.out=d[1])
-      colnames(data) = seq(from=as.numeric(scidb_coordinate_start(x)[2]), length.out=d[2])
       if(DEBUG) cat("  R array formation time",(proc.time()-t1)[3],"\n")
       return(data)
     } else  # n-d array case, filled  by row

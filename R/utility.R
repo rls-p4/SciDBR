@@ -1041,7 +1041,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   rnames = c()
   n = ncol(x)
   if(projected) n = length(args$project)
-  while(p<len)
+  while(p < len)
   {
     dt2 = proc.time()
     tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, N, resp$content, as.double(p))
