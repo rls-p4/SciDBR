@@ -105,7 +105,6 @@ SEXP scidb_type_vector (const char *type, int len)
  * nullable is an integer, 0 meaning not nullable 1 nullable.
  * vec is the output vector of appropriate R type from scidb_type_vector
  * i is the position in vec to place the converted value
- * This is effective but gross! Someone, please improve! XXX
  */
 void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
 {
@@ -296,8 +295,6 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
       return;
     }
 // XXX bounds checks ? how long can a string be in SciDB?
-// XXX Use a stack buffer here unless the string exceeds a buffer length
-// XXX for efficiency's sake... XXX FIX ME
     char *buf = (char *)calloc(len,1);
     if(!buf) error("out of memory");
     memcpy(buf, *p, len);
