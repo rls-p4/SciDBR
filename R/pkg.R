@@ -27,24 +27,6 @@
 # END_COPYRIGHT
 #
 
-# Signal constants
-SIG_DFL = 0L # Default SIGINT signal handler
-SIG_IGN = 1L # Ignore SIGINT
-SIG_TRP = 2L # A custom signal handler (see scidb.c)
-
-TRAP = function()
-{
-# RStudio does not let us set up a custom signal handler, and this has also
-# been problematic to set up on non-Console Windows R processes.  We check for
-# these special cases and resort to a more basic method to gracefully trap
-# SIGINT and bail out of RCurl sessions.
-  if(Sys.getenv("RSTUDIO")=="1" || "windows" %in% tolower(Sys.info()["sysname"]))
-  {
-    return(SIG_IGN)
-  }
-  SIG_TRP
-}
-
 .onAttach = function(libname,pkgname)
 {
   packageStartupMessage("   ____    _ ___  ___\n  / __/___(_) _ \\/ _ )\n _\\ \\/ __/ / // / _  |\n/___/\\__/_/____/____/     Copyright 2015, Paradigm4, Inc.\n\n* The 'substitute' function has been removed. Use 'replaceNA' instead.\n* Use of the eval parameter in scidb functions is deprecated, use the\n  'scidbeval' function instead."    , domain = NULL, appendLF = TRUE)

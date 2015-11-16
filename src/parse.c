@@ -369,7 +369,7 @@ SEXP scidb_parse (SEXP M, SEXP TYPES, SEXP NULLABLE, SEXP DATA, SEXP OFFSET)
     for(j=0;j<n;++j)
     {
       col = VECTOR_ELT(ans,j);
-// XXX Add max bytes allowed to read here...
+// XXX Add max bytes allowed to read here ?...
       scidb_value(&p, CHAR(STRING_ELT(TYPES,j)), INTEGER(NULLABLE)[j], col, i);
       if(p-q >= s)
       {

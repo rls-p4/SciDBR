@@ -141,6 +141,11 @@ replaceNA = function(x, value, `attribute`, `eval`=FALSE, ...)
     ba = paste("build(",lapply(attribute,function(a) build_attr_schema(x,I=a,nullable=FALSE),newnames="____"),"[i=0:0,1,0]",",",value,")",sep="")
   }
   query = x@name
+  i = which(scidb_types(x) == "binary")
+  if(length(i) > 0)
+  {
+    ba[i] = "build(<____:binary>[i=0:0,1,0],'{0}[()]',true)"
+  } 
   for(j in 1:length(ba))
   {
     query = sprintf("substitute(%s,%s,%s)",query,ba[j],scidb_attributes(x)[j])
