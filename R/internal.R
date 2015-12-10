@@ -524,7 +524,7 @@ URI = function(resource="", args=list())
 }
 
 #' Send an HTTP GET message to a shim service expecting to recieve a character response
-#' @param service name
+#' @param resource service name
 #' @param args named list of HTTP GET query parameters
 #' @param err set to \code{FALSE} to ignore errors
 #' @return response body as character
@@ -553,7 +553,10 @@ POST = function(data, args=list(), err=TRUE)
 {
 # check for new shim simple post option (/upload), otherwise use
 # multipart/file upload (/upload_file)
-  simple = grepl("?15\\.7.*", getOption("shim.version"))
+  shimspl = strsplit(options("shim.version")[[1]],"\\.")[[1]][[1]]
+  shim_yr = as.integer(gsub("[A-z]","",shimspl[1]))
+  shim_mo = as.integer(shimspl[2])
+  simple = shim_yr >= 15 && shim_mo >= 12 || shim_yr >= 16
   if(simple)
   {
     uri = URI("/upload", args)
@@ -574,8 +577,12 @@ POST = function(data, args=list(), err=TRUE)
   handle_setheaders(h, .list=list(Authorization=digest_auth("POST", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
                               ssl_verifypeer=0))
-  handle_setform(h, .list=list(file=data))
+  tmpf = tempfile()
+  if(is.character(data)) data = charToRaw(data)
+  writeBin(data, tmpf)
+  handle_setform(h, file=form_file(tmpf))
   ans = curl_fetch_memory(uri, h)
+  unlink(tmpf)
   if(ans$status_code > 299 && err) stop("HTTP error", ans$status_code)
   return(rawToChar(ans$content))
 }
