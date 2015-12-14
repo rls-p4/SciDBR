@@ -152,11 +152,11 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
     id = id[[length(id)]]
     assign("uid",id,envir=.scidbenv)
   }
-# Try to load the accelerated_load_tools, then load_tools, then
+# Try to load the accelerated_io_tools, then load_tools, then
 # prototype_load_tools libraries:
   got_load = tryCatch(
     {
-      scidbquery(query="load_library('accelerated_load_tools')",
+      scidbquery(query="load_library('accelerated_io_tools')",
                release=1,resp=FALSE, stream=0L)
       TRUE
     }, error=function(e) FALSE)
