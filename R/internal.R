@@ -553,10 +553,12 @@ POST = function(data, args=list(), err=TRUE)
 {
 # check for new shim simple post option (/upload), otherwise use
 # multipart/file upload (/upload_file)
-  shimspl = strsplit(options("shim.version")[[1]],"\\.")[[1]][[1]]
+  shimspl = strsplit(options("shim.version")[[1]],"\\.")[[1]]
   shim_yr = as.integer(gsub("[A-z]","",shimspl[1]))
-  shim_mo = as.integer(shimspl[2])
-  simple = shim_yr >= 15 && shim_mo >= 12 || shim_yr >= 16
+  shim_mo = as.integer(gsub("[A-z]","",shimspl[2]))
+  if(is.na(shim_yr)) shim_yr = 14
+  if(is.na(shim_mo)) shim_mo = 1
+  simple = (shim_yr >= 15 && shim_mo >= 12) || shim_yr >= 16
   if(simple)
   {
     uri = URI("/upload", args)
