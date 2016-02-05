@@ -31,16 +31,17 @@ scidbdfcc = function(x)
 }
 
 
-# This is a workhorse SciDB data munger
-# query is a query string, not a scidb object.
-# ... options
-# project a character vector of desired dimensions/attributes to return
+#' Unpack and return a SciDB query expression to a data frame
+#' @param query A SciDB query expression or scidbdf object
+#' @param ... optional extra arguments
+#' @keywords internal
+#' @importFrom curl new_handle handle_setheaders handle_setopt curl_fetch_memory
 scidb_unpack_to_dataframe = function(query, ...)
 {
   DEBUG = FALSE
   scidbarray = NULL
   projected = FALSE
-  if((inherits(query,"scidb") || inherits(query,"scidbdf")))
+  if(inherits(query,"scidbdf"))
   {
     scidbarray = query
     query = query@name
@@ -65,11 +66,11 @@ scidb_unpack_to_dataframe = function(query, ...)
       projected = TRUE
     } else
     {
-      x = scidb(sprintf("project(unpack(%s,row),%s)",query,paste(args$project,collapse=",")), data.frame=TRUE)
+      x = scidb(sprintf("project(unpack(%s,row),%s)", query, paste(args$project, collapse=",")))
     }
   } else
   {
-    x = scidb(sprintf("unpack(%s,row)",query), data.frame=TRUE)
+    x = scidb(sprintf("unpack(%s,row)",query))
   }
   N = scidb_nullable(x)
   TYPES = scidb_types(x)
@@ -77,7 +78,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   ns[N] = "null"
   format_string = paste(paste(TYPES,ns),collapse=",")
   format_string = sprintf("(%s)",format_string)
-  sessionid = scidbquery(x@name, save=format_string, async=FALSE, release=0)
+  sessionid = scidbquery(x@name, save=format_string, release=0)
   on.exit( GET("/release_session",list(id=sessionid), err=FALSE) ,add=TRUE)
 
   dt2 = proc.time()
@@ -103,7 +104,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   while(p < len)
   {
     dt2 = proc.time()
-    tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, N, resp$content, as.double(p))
+    tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, N, resp$content, as.double(p), PACKAGE="scidb")
     names(tmp) = cnames
     lines = tmp[[n+1]]
     p_old = p
@@ -132,8 +133,8 @@ scidb_unpack_to_dataframe = function(query, ...)
       avg_bytes_per_line = ceiling((p - p_old)/lines)
       buffer = ceiling(1.3*(len - p)/avg_bytes_per_line) # Engineering factor
 # Assemble the data frame
-      if(is.null(ans)) ans = data.frame(tmp[1:n],stringsAsFactors=FALSE)
-      else ans = rbind(ans,data.frame(tmp[1:n],stringsAsFactors=FALSE))
+      if(is.null(ans)) ans = data.frame(tmp[1:n], stringsAsFactors=FALSE)
+      else ans = rbind(ans, data.frame(tmp[1:n], stringsAsFactors=FALSE))
     }
     if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
   }
@@ -153,7 +154,13 @@ scidb_unpack_to_dataframe = function(query, ...)
   ans
 }
 
-# Convenience function for digest authentication.
+#' Convenience function for digest authentication.
+#' @param method digest method
+#' @param uri uri
+#' @param realm realm
+#' @param nonce nonce
+#' @keywords internal
+#' @importFrom digest digest
 digest_auth = function(method, uri, realm="", nonce="123456")
 {
   if(exists("authtype",envir=.scidbenv))
@@ -418,9 +425,6 @@ create_temp_array = function(name, schema)
 # depend: (optional list) An optional list of other scidb or scidbdf objects
 #         that this expression depends on (preventing their garbage collection
 #         if other references to them go away).
-# data.frame: (optional, logical) If TRUE, return a data.frame object, false
-#             return a scidb object. Default is missing, in which case an
-#             automatic decision is made about the object return class.
 # schema, temp: (optional) used to create SciDB temp arrays
 #               (requires scidb >= 14.8)
 #
@@ -429,7 +433,7 @@ create_temp_array = function(name, schema)
 #
 # NOTE
 # Only AFL supported.
-`.scidbeval` = function(expr,eval,name,gc=TRUE, depend, `data.frame`, schema, temp)
+`.scidbeval` = function(expr,eval,name,gc=TRUE, depend, schema, temp)
 {
   ans = c()
   if(missing(depend)) depend=c()
@@ -447,24 +451,24 @@ create_temp_array = function(name, schema)
       if(temp) create_temp_array(newarray, schema)
     }
     else newarray = name
-    query = sprintf("store(%s,%s)",expr,newarray)
+    query = sprintf("store(%s,%s)", expr, newarray)
     scidbquery(query, stream=0L)
-    ans = scidb(newarray,gc=gc,`data.frame`=`data.frame`)
+    ans = scidb(newarray, gc=gc)
     if(temp) ans@gc$temp = TRUE
 # This is a fix for a SciDB issue that can unexpectedly change schema
 # bounds. And another fix to allow unexpected dimname and attribute name
 # changes. Arrgh.
-    if(schema!="" && !compare_schema(ans, schema, ignore_attributes=TRUE, ignore_dimnames=TRUE))
+    if(schema != "" && !compare_schema(ans, schema, ignore_attributes=TRUE, ignore_dimnames=TRUE))
     {
       ans = repart(ans, schema)
     }
   } else
   {
-    ans = scidb(expr,gc=gc,`data.frame`=`data.frame`)
+    ans = scidb(expr, gc=gc)
 # Assign dependencies
-    if(length(depend)>0)
+    if(length(depend) > 0)
     {
-      assign("depend",depend,envir=ans@gc)
+      assign("depend", depend, envir=ans@gc)
     }
   }
   ans
@@ -523,11 +527,6 @@ URI = function(resource="", args=list())
   ans
 }
 
-#' Send an HTTP GET message to a shim service expecting to recieve a character response
-#' @param resource service name
-#' @param args named list of HTTP GET query parameters
-#' @param err set to \code{FALSE} to ignore errors
-#' @return response body as character
 GET = function(resource, args=list(), err=TRUE)
 {
   if(!(substr(resource,1,1)=="/")) resource = paste("/", resource, sep="")
@@ -598,9 +597,7 @@ POST = function(data, args=list(), err=TRUE)
 
 # Basic low-level query. Returns query id. This is an internal function.
 # query: a character query string
-# afl: TRUE indicates use AFL, FALSE AQL
-# async: Does not do anything right now. Maybe in the future.
-# save: Save format query string or NULL. If async=TRUE, save is ignored.
+# save: Save format query string or NULL.
 # release: Set to zero preserve web session until manually calling release_session
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
 # resp(logical): return http response
@@ -611,8 +608,7 @@ POST = function(data, args=list(), err=TRUE)
 # save="(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
-                      release=1, session=NULL, resp=FALSE, stream)
+scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, stream)
 {
   DEBUG = FALSE
   STREAM = 0L
@@ -637,10 +633,10 @@ scidbquery = function(query, afl=TRUE, async=FALSE, save=NULL,
     {
       if(is.null(save))
         GET("/execute_query", list(id=sessionid, release=release,
-             query=query, afl=as.integer(afl), stream=0L))
+             query=query, afl=0L, stream=0L))
       else
         GET("/execute_query", list(id=sessionid,release=release,
-            save=save, query=query, afl=as.integer(afl), stream=STREAM))
+            save=save, query=query, afl=0L, stream=STREAM))
     }, error=function(e)
     {
 # User cancel?
@@ -726,20 +722,6 @@ raw2scidb = function(X, name, gc=TRUE, ...)
   query = sprintf("store(input(%s,'%s',-2,'(binary null)'),%s)",schema, ans, name)
   iquery(query)
   scidb(name,gc=gc)
-}
-
-# If a scidb object has the "sparse" attribute set, return that. Otherwise
-# interrogate the backing array to determine if it's sparse or not.  Set
-# count=FALSE to skip the count and return TRUE if the attribute is not set.
-is.sparse = function(x, count=TRUE)
-{
-  ans = attr(x,"sparse")
-  if(is.null(ans) && !count) return(TRUE)
-  if(is.null(ans))
-  {
-    return(count(x) < prod(dim(x)))
-  }
-  ans
 }
 
 # Check for scidb missing flag

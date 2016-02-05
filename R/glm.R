@@ -1,32 +1,3 @@
-#
-#    _____      _ ____  ____
-#   / ___/_____(_) __ \/ __ )
-#   \__ \/ ___/ / / / / __  |
-#  ___/ / /__/ / /_/ / /_/ / 
-# /____/\___/_/_____/_____/  
-#
-#
-#
-# BEGIN_COPYRIGHT
-#
-# This file is part of SciDB.
-# Copyright (C) 2008-2014 SciDB, Inc.
-#
-# SciDB is free software: you can redistribute it and/or modify
-# it under the terms of the AFFERO GNU General Public License as published by
-# the Free Software Foundation.
-#
-# SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
-# INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
-# NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
-# the AFFERO GNU General Public License for the complete license terms.
-#
-# You should have received a copy of the AFFERO GNU General Public License
-# along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
-#
-# END_COPYRIGHT
-#
-
 # A really basic prototype glm function, limited to simple formulas and
 # treatment contrast encoding. cf glm.
 glm_scidb = function(formula, family=gaussian(), `data`, `weights`)
@@ -46,7 +17,7 @@ glm_scidb = function(formula, family=gaussian(), `data`, `weights`)
 }
 
 # cf glm.fit
-glm.fit_scidb = function(x,y,weights=NULL,family=gaussian(),intercept)
+glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
 {
   nobs = length(y)
   got_glm = length(grep("glm",.scidbenv$ops[,2]))>0
@@ -61,7 +32,7 @@ glm.fit_scidb = function(x,y,weights=NULL,family=gaussian(),intercept)
   {
     weights = build(1.0,nrow(x),start=as.numeric(scidb_coordinate_start(x)[1]),chunksize=xchunks[1])
   }
-  if(!is.scidb(y))
+  if(!is.scidbdf(y))
   {
     y = as.scidb(y)
   }
@@ -386,12 +357,12 @@ predict.glm_scidb = function(object, ...) #newdata=NULL, type=c("link","response
 # This is an internally-used utility that traverses the SciDB elements of
 # a glm_scidb object, applying the function f with optional arguments ...
 # to each. It's used by persist.glm_scidb and others.
-.traverse.glm_scidb = function(x,f,...)
+.traverse.glm_scidb = function(x, f, ...)
 {
   f(x$coefficients, ...)
   f(x$stderr, ...)
   f(x$tval, ...)
-  if(is.scidb(x$pval) || is.scidbdf(x$pval)) f(x$pval, ...)
+  if(is.scidbdf(x$pval)) f(x$pval, ...)
   f(x$weights, ...)
   f(x$x, ...)
   f(x$y, ...)

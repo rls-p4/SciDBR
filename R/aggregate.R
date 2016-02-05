@@ -1,89 +1,4 @@
-#
-#    _____      _ ____  ____
-#   / ___/_____(_) __ \/ __ )
-#   \__ \/ ___/ / / / / __  |
-#  ___/ / /__/ / /_/ / /_/ / 
-# /____/\___/_/_____/_____/  
-#
-#
-#
-# BEGIN_COPYRIGHT
-#
-# This file is part of SciDB.
-# Copyright (C) 2008-2014 SciDB, Inc.
-#
-# SciDB is free software: you can redistribute it and/or modify
-# it under the terms of the AFFERO GNU General Public License as published by
-# the Free Software Foundation.
-#
-# SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
-# INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
-# NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
-# the AFFERO GNU General Public License for the complete license terms.
-#
-# You should have received a copy of the AFFERO GNU General Public License
-# along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
-#
-# END_COPYRIGHT
-#
-
 # Nifty aggregation-related functions
-
-`sweep_scidb` = function(x, MARGIN, STATS, FUN="-", `eval`=FALSE, `name`)
-{
-  if(!is.scidb(x)) stop("x must be a scidb object")
-  if(!is.scidb(STATS) && !is.scidbdf(STATS)) stop("STATS must be a scidb or scidbdf object")
-  if(length(MARGIN)!=1) stop("MARGIN must indicate a single dimension")
-  if(length(dimensions(STATS))>1) stop("STATS must be a one-dimensional SciDB array")
-  if(is.numeric(MARGIN)) MARGIN = dimensions(x)[MARGIN]
-  xattr = .get_attribute(x)
-  sattr = .get_attribute(STATS)
-  if(missing(`name`)) `name` = xattr
-  if(!(MARGIN %in% dimensions(STATS)))
-  {
-# Make sure coordinate axis along MARGIN are named the same in each array
-    old = sprintf("%s=",dimensions(STATS)[1])
-    new = sprintf("%s=",MARGIN)
-    schema = gsub(old,new,schema(STATS))
-    query = sprintf("cast(%s,%s)",STATS@name,schema)
-    STATS = .scidbeval(query,eval=FALSE, depend=list(x))
-  }
-# Check for potential attribute name conflicts and adjust.
-  if(length(intersect(scidb_attributes(x), scidb_attributes(STATS)))>0)
-  {
-    STATS = cast(STATS,paste(build_attr_schema(STATS,"V_"),build_dim_schema(STATS)),`eval`=FALSE)
-  }
-# Handle infix notation
-  if(nchar(FUN)==1)
-  {
-    FUN = sprintf("%s %s %s",scidb_attributes(x), FUN, scidb_attributes(STATS))
-  }
-  replaceNA(
-  attribute_rename(
-    project(
-      bind(
-        merge(x,STATS,by=MARGIN,eval=FALSE)
-        ,"_sweep",FUN,eval=FALSE),"_sweep",eval=FALSE),
-    "_sweep", `name`, eval=FALSE), eval=`eval`)
-}
-
-# A very limited version of R's apply.
-`apply_scidb` = function(X,MARGIN,FUN,`eval`=FALSE,...)
-{
-  if(!is.scidb(X)) stop("X must be a scidb object")
-  if(length(MARGIN)!=1) stop("MARGIN must indicate a single dimension")
-  if(is.numeric(MARGIN)) MARGIN = dimensions(X)[MARGIN]
-# Check for common function names and map to SciDB expressions
-  if(is.function(FUN))
-  {
-    M = match.call()
-    fn = .scidbfun(FUN)
-    if(is.null(fn))
-      stop("Apply requires a valid SciDB aggregate function")
-    FUN = paste(sprintf("%s(%s) as %s",fn,X@attributes,X@attributes),collapse=",")
-  }
-  aggregate(X,MARGIN,FUN,eval=FALSE,unpack=FALSE)
-}
 
 # x:   A scidb, scidbdf object
 # by:  A list of character vector of dimension and or attribute names of x, or,
@@ -110,7 +25,7 @@
   }
 
 # XXX Why limit this to the first `by` element?
-  if(class(`by`[[1]]) %in% c("scidb","scidbdf"))
+  if(class(`by`[[1]]) %in% "scidbdf")
   {
 # We are grouping by attributes in another SciDB array `by`. We assume that
 # x and by have conformable dimensions to join along!
@@ -178,7 +93,7 @@
 # We estimate rational chunk sizes here.
     app = paste(paste("ApproxDC(",n,")",sep=""),collapse=",")
     aq = sprintf("aggregate(project(%s,%s),%s)",x@name,paste(n,collapse=","),app)
-    acounts = iquery(aq,return=TRUE,n=Inf)  # acounts[2],acounts[3],...
+    acounts = iquery(aq,return=TRUE)  # acounts[2],acounts[3],...
     chunka = acounts[-1]
     dima = paste(paste(n,"=0:",.scidb_DIM_MAX,",",noE(chunka),",0",sep=""), collapse=",")
     D = paste(build_dim_schema(x,bracket=FALSE),dima,sep=",")

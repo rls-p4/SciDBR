@@ -1,42 +1,12 @@
-#
-#    _____      _ ____  ____
-#   / ___/_____(_) __ \/ __ )
-#   \__ \/ ___/ / / / / __  |
-#  ___/ / /__/ / /_/ / /_/ / 
-# /____/\___/_/_____/_____/  
-#
-#
-#
-# BEGIN_COPYRIGHT
-#
-# This file is part of SciDB.
-# Copyright (C) 2008-2014 SciDB, Inc.
-#
-# SciDB is free software: you can redistribute it and/or modify
-# it under the terms of the AFFERO GNU General Public License as published by
-# the Free Software Foundation.
-#
-# SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
-# INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
-# NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
-# the AFFERO GNU General Public License for the complete license terms.
-#
-# You should have received a copy of the AFFERO GNU General Public License
-# along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
-#
-# END_COPYRIGHT
-#
-
 setGeneric("c")
-setGeneric('is.scidbdf', function(x) standardGeneric('is.scidbdf'))
+setGeneric("head")
+setGeneric("is.scidbdf", function(x) standardGeneric("is.scidbdf"))
+setGeneric("unpack", unpack_scidb)
 
-# XXX This is a prototype. Right now the attribute list must match.
-# XXX rbind on dataframes should call this
-setMethod(c,signature(x="scidbdf"),
-function(x,y,`eval`=FALSE)
+#' @export
+setMethod(c, signature(x="scidbdf"),
+function(x, y)
 {
-  if(is.scidb(y)) y = scidb(y,`data.frame`=TRUE)
-  if(!is.scidbdf(y)) y = as.scidb(y)
   if(as.numeric(scidb_coordinate_bounds(x)$length) < as.numeric(.scidb_DIM_MAX))
   {
     s = sprintf("%s%s",build_attr_schema(x),build_dim_schema(x,newend=.scidb_DIM_MAX))
@@ -50,16 +20,17 @@ function(x,y,`eval`=FALSE)
   s = sprintf("redimension(%s, %s)",s, scma)
   s = sprintf("cast(%s, %s%s)", s,build_attr_schema(y), build_dim_schema(x))
   s = sprintf("merge(%s, %s)", x@name, s)
-  .scidbeval(s, `data.frame`=TRUE, gc=TRUE, `eval`=eval, depend=list(x,y))
+  .scidbeval(s, gc=TRUE, depend=list(x, y))
 })
 
-# Head and tail are not very efficient, but they're nifty!  XXX
+#' @export
 setMethod("head", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
   iqdf(x, n)[,-c(1,2)]
 })
 
+#' @export
 setMethod("tail", signature(x="scidbdf"),
 function(x, n=6L, ...)
 {
@@ -69,51 +40,55 @@ function(x, n=6L, ...)
   ans[start:end,][]
 })
 
+#' @export
 setMethod("Filter",signature(f="character",x="scidbdf"),
   function(f, x)
   {
     filter_scidb(x,f)
   })
 
+#' @export
 setMethod('is.scidbdf', signature(x='scidbdf'),
   function(x) return(TRUE))
+#' @export
 setMethod('is.scidbdf', definition=function(x) return(FALSE))
 
+#' @export
 setMethod('print', signature(x='scidbdf'),
   function(x) {
     show(x)
   })
 
-setMethod("na.locf",signature(object="scidbdf"), na.locf_scidb)
+#' @export
 setMethod("hist",signature(x="scidbdf"), hist_scidb)
 
+#' @export
 setMethod('show', 'scidbdf',
   function(object) {
-    v = ifelse(length(object@attributes)<2, "variable", "variables")
+    v = ifelse(length(object@attributes) < 2, "variable", "variables")
     l = scidb_coordinate_bounds(object)$length
     if(as.numeric(l) > 4e18) l = "*"
     cat(sprintf("SciDB 1-D array: %s obs. of %d %s.\n", l,
         length(object@attributes),v))
   })
 
-setMethod("regrid", signature(x="scidbdf"),
-  function(x, grid, expr)
-  {
-    if(missing(expr)) expr = paste(sprintf("max(%s)",x@attributes),collapse=",")
-    query = sprintf("regrid(%s, %s, %s)",
-               x@name, paste(noE(grid),collapse=","), expr)
-    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
-  })
-setMethod("xgrid", signature(x="scidbdf"),
-  function(x, grid)
-  {
-    query = sprintf("xgrid(%s, %s)", x@name, paste(noE(grid),collapse=","))
-    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
-  })
+#setMethod("regrid", signature(x="scidbdf"),
+#  function(x, grid, expr)
+#  {
+#    if(missing(expr)) expr = paste(sprintf("max(%s)",x@attributes),collapse=",")
+#    query = sprintf("regrid(%s, %s, %s)",
+#               x@name, paste(noE(grid),collapse=","), expr)
+#    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
+#  })
+#setMethod("xgrid", signature(x="scidbdf"),
+#  function(x, grid)
+#  {
+#    query = sprintf("xgrid(%s, %s)", x@name, paste(noE(grid),collapse=","))
+#    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
+#  })
 setMethod("unpack",signature(x="scidbdf"),unpack_scidb)
-
+#' @export
 setMethod("aggregate", signature(x="scidbdf"), aggregate_scidb)
-setMethod("reshape", signature(data="scidbdf"), reshape_scidb)
 
 scidbdf_grand = function(x, op)
 {
@@ -122,139 +97,112 @@ scidbdf_grand = function(x, op)
 }
 
 # The following methods return data to R
+#' @export
 setMethod("sum", signature(x="scidbdf"),
 function(x)
 {
   scidbdf_grand(x, "sum")
 })
 
+#' @export
 setMethod("median", signature(x="scidbdf"),
 function(x)
 {
   scidbdf_grand(x, "median")
 })
 
+#' @export
 setMethod("mean", signature(x="scidbdf"),
 function(x)
 {
   scidbdf_grand(x, "avg")
 })
 
+#' @export
 setMethod("min", signature(x="scidbdf"),
 function(x)
 {
   scidbdf_grand(x, "min")
 })
 
+#' @export
 setMethod("max", signature(x="scidbdf"),
 function(x)
 {
   scidbdf_grand(x, "max")
 })
 
+#' @export
 setMethod("sd", signature(x="scidbdf"),
 function(x)
 {
   scidbdf_grand(x, "stdev")
 })
 
+#' @export
 setMethod("var", signature(x="scidbdf"),
 function(x)
 {
   scidbdf_grand(x, "var")
 })
 
+#' @export
 log.scidbdf = function(x, base=exp(1))
 {
   log_scidb(x,base) 
 }
 
+#' @export
 setMethod("sin", signature(x="scidbdf"),
   function(x)
   {
     fn_scidb(x, "sin")
   })
+#' @export
 setMethod("cos", signature(x="scidbdf"),
   function(x)
   {
     fn_scidb(x, "cos")
   })
+#' @export
 setMethod("tan", signature(x="scidbdf"),
   function(x)
   {
     fn_scidb(x, "tan")
   })
+#' @export
 setMethod("asin", signature(x="scidbdf"),
   function(x)
   {
     fn_scidb(x, "asin")
   })
+#' @export
 setMethod("acos", signature(x="scidbdf"),
   function(x)
   {
     fn_scidb(x, "acos")
   })
+#' @export
 setMethod("atan", signature(x="scidbdf"),
   function(x)
   {
     fn_scidb(x, "atan")
   })
+#' @export
 setMethod("abs", signature(x="scidbdf"),
   function(x)
   {
     fn_scidb(x, "abs")
   })
+#' @export
 setMethod("sqrt", signature(x="scidbdf"),
   function(x)
   {
     fn_scidb(x, "sqrt")
   })
+#' @export
 setMethod("exp", signature(x="scidbdf"),
   function(x)
   {
     fn_scidb(x, "exp")
   })
-# Non-traditional masking binary comparison operators
-setMethod("%lt%",signature(x="scidbdf", y="ANY"),
-  function(x,y)
-  {
-    .compare(x,y,"<",traditional=FALSE)
-  },
-  valueClass="scidbdf"
-)
-setMethod("%gt%",signature(x="scidbdf", y="ANY"),
-  function(x,y)
-  {
-    .compare(x,y,">",traditional=FALSE)
-  },
-  valueClass="scidbdf"
-)
-setMethod("%<=%",signature(x="scidbdf", y="ANY"),
-  function(x,y)
-  {
-    .compare(x,y,"<=",traditional=FALSE)
-  },
-  valueClass="scidbdf"
-)
-setMethod("%>=%",signature(x="scidbdf", y="ANY"),
-  function(x,y)
-  {
-    .compare(x,y,">=",traditional=FALSE)
-  },
-  valueClass="scidbdf"
-)
-setMethod("%==%",signature(x="scidbdf", y="ANY"),
-  function(x,y)
-  {
-    .compare(x,y,"==",traditional=FALSE)
-  },
-  valueClass="scidbdf"
-)
-setMethod("%!=%",signature(x="scidbdf", y="ANY"),
-  function(x,y)
-  {
-    .compare(x,y,"!=",traditional=FALSE)
-  },
-  valueClass="scidbdf"
-)
-setGeneric("head")

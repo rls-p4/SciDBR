@@ -1,43 +1,11 @@
-#
-#    _____      _ ____  ____
-#   / ___/_____(_) __ \/ __ )
-#   \__ \/ ___/ / / / / __  |
-#  ___/ / /__/ / /_/ / /_/ / 
-# /____/\___/_/_____/_____/  
-#
-#
-#
-# BEGIN_COPYRIGHT
-#
-# This file is part of SciDB.
-# Copyright (C) 2008-2014 SciDB, Inc.
-#
-# SciDB is free software: you can redistribute it and/or modify
-# it under the terms of the AFFERO GNU General Public License as published by
-# the Free Software Foundation.
-#
-# SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
-# INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
-# NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
-# the AFFERO GNU General Public License for the complete license terms.
-#
-# You should have received a copy of the AFFERO GNU General Public License
-# along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
-#
-# END_COPYRIGHT
-#
-
 # The functions and methods defined below are based closely on native SciDB
-# functions, some of which have weak or limited analogs in R. The functions
-# defined below work with objects of class scidb (arrays), scidbdf (data
-# frames). They can be efficiently nested by explicitly setting eval=FALSE on
-# inner functions, deferring computation until eval=TRUE.
+# functions, some of which have weak or limited analogs in R.
 
 # SciDB rename wrapper
 # Note! that the default garbage collection option here is to *not* remove.
 rename = function(A, name=A@name, gc)
 {
-  if(!(inherits(A,"scidb") || inherits(A,"scidbdf"))) stop("`A` must be a scidb object.")
+  if(!(inherits(A, "scidbdf"))) stop("`A` must be a scidb object.")
   if(missing(gc)) gc = FALSE
   query = sprintf("rename(%s,%s)",A@name, name)
   iquery(query)
@@ -46,7 +14,7 @@ rename = function(A, name=A@name, gc)
 
 remove_old_versions = function( stored_array )
 {
-  if(!(inherits(stored_array,"scidb") || inherits(stored_array,"scidbdf"))) stop("`stored_array` must be a scidb object.")
+  if(!(inherits(stored_array,"scidbdf"))) stop("`stored_array` must be a scidb object.")
   versions_query = sprintf("aggregate(versions(%s), max(version_id) as max_version)", stored_array@name)
   versions = iqdf(versions_query, n=Inf)
   max_version = versions$max_version
@@ -69,7 +37,7 @@ unpack_scidb = function(x, `eval`=FALSE)
 
 attribute_rename = function(x, old, `new`, `eval`=FALSE)
 {
-  if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
+  if(!(is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
   atr = scidb_attributes(x)
   if(missing(old)) old=x@attributes
 # Positional attributes
@@ -86,7 +54,7 @@ attribute_rename = function(x, old, `new`, `eval`=FALSE)
 
 dimension_rename = function(x, old, `new`, `eval`=FALSE)
 {
-  if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
+  if(!(is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
   if(missing(old)) old = dimensions(x)
   dnames = dimensions(x)
   if(!is.numeric(old))
@@ -103,7 +71,7 @@ dimension_rename = function(x, old, `new`, `eval`=FALSE)
 
 slice = function(x, d, n, `eval`=FALSE)
 {
-  if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
+  if(!(is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
   N = length(dimensions(x))
   i = d
   if(is.character(d))
@@ -122,7 +90,7 @@ slice = function(x, d, n, `eval`=FALSE)
 # SciDB substitute wrapper. Default behavior strips nulls in a clever way.
 replaceNA = function(x, value, `attribute`, `eval`=FALSE, ...)
 {
-  if(!(is.scidb(x) || is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
+  if(!(is.scidbdf(x))) stop("Requires a scidb or scidbdf object")
   if(!any(scidb_nullable(x))) return(x)
   if(missing(attribute))
   {
@@ -155,13 +123,13 @@ replaceNA = function(x, value, `attribute`, `eval`=FALSE, ...)
 
 subarray = function(x, limits, between=FALSE, `eval`=FALSE)
 {
-  if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  if(!is.scidbdf(x))stop("Invalid SciDB object")
   if(missing(limits)) limits=paste(rep("null",2*length(dimensions(x))),collapse=",")
   else if(is.character(limits))
   {
 # Assume user has supplied a schema string
     limits = paste(between_coordinate_bounds(limits),collapse=",")
-  } else if(is.scidb(limits) || is.scidbdf(limits))
+  } else if(is.scidbdf(limits))
   {
 # User has supplied an array
     limits = paste(between_coordinate_bounds(schema(limits)),collapse=",")
@@ -181,9 +149,9 @@ subarray = function(x, limits, between=FALSE, `eval`=FALSE)
 
 cast = function(x, schema, `eval`=FALSE)
 {
-  if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  if(!(class(x) %in% c("scidbdf"))) stop("Invalid SciDB object")
   if(missing(schema)) stop("Missing cast schema")
-  if(is.scidb(schema) || is.scidbdf(schema)) schema = schema(schema) # wow!
+  if(is.scidbdf(schema)) schema = schema(schema) # wow!
   query = sprintf("cast(%s,%s)",x@name,schema)
   .scidbeval(query,eval,depend=list(x))
 }
@@ -206,13 +174,11 @@ build = function(data, dim, names, type,
     }
   }
 # Special case:
-  if(is.scidb(dim) || is.scidbdf(dim))
+  if(is.scidbdf(dim))
   {
     schema = sprintf("%s%s",build_attr_schema(dim,I=1),build_dim_schema(dim))
     query = sprintf("build(%s,%s)",schema,data)
     ans = .scidbeval(query,eval)
-# We know that the output of build is not sparse
-    attr(ans,"sparse") = FALSE
     return(ans)
   }
   if(missing(start)) start = rep(0,length(dim))
@@ -240,15 +206,13 @@ build = function(data, dim, names, type,
   query = sprintf("build(%s,%s)",schema,data)
   if(missing(name)) return(.scidbeval(query,eval))
   ans = .scidbeval(query,eval,name)
-# We know that the output of build is not sparse
-  attr(ans,"sparse") = FALSE
   ans
 }
 
 # Count the number of non-empty cells
 count = function(x)
 {
-  if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  if(!(class(x) %in% c("scidbdf"))) stop("Invalid SciDB object")
   iquery(sprintf("aggregate(%s, count(*) as count)",x@name),return=TRUE)$count
 }
 
@@ -258,14 +222,14 @@ count = function(x)
 # attributes: a character vector describing the list of attributes to project onto
 # eval: a boolean value. If TRUE, the query is executed returning a scidb array.
 #       If FALSE, a promise object describing the query is returned.
-project = function(X,attributes,`eval`=FALSE)
+project = function(X, attributes, `eval`=FALSE)
 {
   xname = X
   if(is.logical(attributes))
     attributes = X@attributes[which(attributes)]
   if(is.numeric(attributes))
     attributes = X@attributes[attributes]
-  if(class(X) %in% c("scidbdf","scidb")) xname = X@name
+  if(class(X) %in% c("scidbdf")) xname = X@name
   query = sprintf("project(%s,%s)", xname,paste(attributes,collapse=","))
   .scidbeval(query,eval,depend=list(X))
 }
@@ -273,16 +237,16 @@ project = function(X,attributes,`eval`=FALSE)
 # This is the SciDB filter operation, not the R timeseries one.  X is either a
 # scidb, scidbdf object.  expr is either a character SciDB filter expression or
 # an R language object.
-`filter_scidb` = function(X,expr,`eval`=FALSE)
+`filter_scidb` = function(X, expr)
 {
-  if(!(class(X) %in% c("scidbdf","scidb"))) stop("X must be a scidb or scidbdf object")
+  if(!(class(X) %in% c("scidbdf"))) stop("X must be a scidb or scidbdf object")
   xname = X@name
   isdf = "scidbdf" %in% class(X)
   ischar = tryCatch( is.character(expr), error=function(e) FALSE)
   if(ischar)
   {
 # Check for special filter cases and adjust expr
-    if(length(scidb_attributes(X))==2 && nchar(expr)==1)
+    if(length(scidb_attribRtes(X)) == 2 && nchar(expr) == 1)
     {
       expr = paste(scidb_attributes(X), collapse=expr)
     }
@@ -291,7 +255,7 @@ project = function(X,attributes,`eval`=FALSE)
   {
     query = rewrite_subset_expression(substitute(expr), X)
   }
-  .scidbeval(query,eval,depend=list(X), `data.frame`=isdf)
+  .scidbeval(query, eval, depend=list(X))
 }
 
 
@@ -301,9 +265,9 @@ project = function(X,attributes,`eval`=FALSE)
   if(missing(new_attr)) new_attr=paste(attr,"index",sep="_")
   al = scidb_alias(X,I)
   xname = X
-  if(class(X) %in% c("scidb","scidbdf")) xname=X@name
+  if(class(X) %in% c("scidbdf")) xname=X@name
   iname = I
-  if(class(I) %in% c("scidb","scidbdf"))
+  if(class(I) %in% c("scidbdf"))
   {
     if(length(scidb_attributes(I))>1) I = project(I,1)
     if(scidb_nullable(I)) I = replaceNA(I)
@@ -317,7 +281,7 @@ project = function(X,attributes,`eval`=FALSE)
 bind = function(X, name, FUN, `eval`=FALSE)
 {
   aname = X
-  if(class(X) %in% c("scidb","scidbdf")) aname=X@name
+  if(class(X) %in% c("scidbdf")) aname=X@name
 # Auto-generate names like X_n:
   if(missing(name))
   {
@@ -361,12 +325,12 @@ unique_scidb = function(x, incomparables=FALSE, sort=TRUE, ...)
     }
   } else
   {
-    query = sprintf("uniq(%s)",x@name)
+    query = sprintf("uniq(%s)", x@name)
   }
-  .scidbeval(query,eval,depend=list(x),`data.frame`=TRUE)
+  .scidbeval(query, eval, depend=list(x))
 }
 
-sort_scidb = function(X, decreasing = FALSE, ...)
+sort_scidb = function(X, decreasing=FALSE, ...)
 {
   mc = list(...)
   if(!is.null(mc$na.last))

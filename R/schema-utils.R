@@ -1,32 +1,3 @@
-#
-#    _____      _ ____  ____
-#   / ___/_____(_) __ \/ __ )
-#   \__ \/ ___/ / / / / __  |
-#  ___/ / /__/ / /_/ / /_/ / 
-# /____/\___/_/_____/_____/  
-#
-#
-#
-# BEGIN_COPYRIGHT
-#
-# This file is part of SciDB.
-# Copyright (C) 2008-2014 SciDB, Inc.
-#
-# SciDB is free software: you can redistribute it and/or modify
-# it under the terms of the AFFERO GNU General Public License as published by
-# the Free Software Foundation.
-#
-# SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
-# INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
-# NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
-# the AFFERO GNU General Public License for the complete license terms.
-#
-# You should have received a copy of the AFFERO GNU General Public License
-# along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
-#
-# END_COPYRIGHT
-#
-
 # Functions for parsing and building SciDB schema strings.
 # A SciDB schema string looks like:
 # <attribute_1:type_1 NULL DEFAULT VALUE, attribute_2:type_2, ...>
@@ -38,7 +9,7 @@
   if(is.character(x)) s = x
   else
   {
-    if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
+    if(!(inherits(x,"scidbdf"))) return(NULL)
     s = schema(x)
   }
   d = gsub("\\]","",strsplit(s,"\\[")[[1]][[2]])
@@ -65,7 +36,7 @@
   if(is.character(x)) s = x
   else
   {
-    if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
+    if(!(inherits(x,"scidbdf"))) return(NULL)
     s = schema(x)
   }
   strsplit(strsplit(strsplit(strsplit(s,">")[[1]][1],"<")[[1]][2],",")[[1]],":")
@@ -136,7 +107,7 @@ scidb_coordinate_bounds = function(x)
 # A between-style string of coordinate bounds
 between_coordinate_bounds = function(s)
 {
-  if((inherits(s,"scidb") || inherits(s,"scidbdf"))) s = schema(s)
+  if((inherits(s,"scidbdf"))) s = schema(s)
   paste(t(matrix(unlist(lapply(strsplit(gsub("\\].*","",gsub(".*\\[","",s,perl=TRUE),perl=TRUE),"=")[[1]][-1],function(x)strsplit(strsplit(x,",")[[1]][1],":")[[1]])),2,byrow=FALSE)),collapse=",")
 }
 
@@ -165,41 +136,25 @@ scidb_coordinate_overlap = function(x)
 # Return the SciDB schema of x
 schema = function(x)
 {
-  if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(NULL)
+  if(!(inherits(x,"scidbdf"))) return(NULL)
   gsub(".*<","<",x@schema)
 }
 
 # Construct a scidb promise from a SciDB schema string s.
 # s: schema character string
 # expr: SciDB expression or array name
-# data.frame: logical
-scidb_from_schemastring = function(s, expr=character(), `data.frame`)
+scidb_from_schemastring = function(s, expr=character())
 {
   attributes = scidb_attributes(s)
   dimensions = dimensions(s)
-  if(missing(`data.frame`)) `data.frame` = ( (length(dimensions)==1) &&  (length(attributes)>1))
-  if(length(dimensions)>1 && `data.frame`)
-    stop("SciDB data frame objects can only be associated with 1-D SciDB arrays")
 
-  if(`data.frame`)
-  {
-# Set default column types
-    return(new("scidbdf",
-                schema=gsub("^.*<","<",s,perl=TRUE),
-                name=expr,
-                attributes=attributes,
-                dimensions=dimensions,
-                gc=new.env()))
-  }
-
-  new("scidb",
-      name=expr,
-      schema=gsub("^.*<","<",s,perl=TRUE),
-      attributes=attributes,
-      dimensions=dimensions,
-      gc=new.env())
+  return(new("scidbdf",
+              schema=gsub("^.*<","<",s,perl=TRUE),
+              name=expr,
+              attributes=attributes,
+              dimensions=dimensions,
+              gc=new.env()))
 }
-
 
 # Build the attribute part of a SciDB array schema from a scidb, scidbdf object.
 # Set prefix to add a character prefix to all attribute names.
@@ -213,7 +168,7 @@ build_attr_schema = function(A, prefix="", I, newnames, nullable, newtypes)
 {
   if(missing(I) || length(I)==0) I = rep(TRUE,length(scidb_attributes(A)))
   if(is.character(A)) A = scidb_from_schemastring(A)
-  if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  if(!(class(A) %in% c("scidbdf"))) stop("Invalid SciDB object")
   if(is.character(I)) I = which(scidb_attributes(A) %in% I)
   if(is.logical(I)) I = which(I)
   N = rep("", length(scidb_nullable(A)[I]))
@@ -244,7 +199,7 @@ build_dim_schema = function(A, bracket=TRUE, I,
                             newend, newchunk, newoverlap)
 {
   if(is.character(A)) A = scidb_from_schemastring(A)
-  if(!(class(A) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  if(!(class(A) %in% c("scidbdf"))) stop("Invalid SciDB object")
   dims = dimensions(A)
   bounds = scidb_coordinate_bounds(A)
   start =  bounds$start
@@ -334,8 +289,8 @@ compare_schema = function(s1, s2,
 {
   if(is.character(s1)) s1 = scidb_from_schemastring(s1)
   if(is.character(s2)) s2 = scidb_from_schemastring(s2)
-  if(!(class(s1) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
-  if(!(class(s2) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  if(!(class(s1) %in% c("scidbdf"))) stop("Invalid SciDB object")
+  if(!(class(s2) %in% c("scidbdf"))) stop("Invalid SciDB object")
   if(missing(s1_attribute_index)) s1_attribute_index=1:length(scidb_attributes(s1))
   if(missing(s2_attribute_index)) s2_attribute_index=1:length(scidb_attributes(s2))
   if(missing(s1_dimension_index)) s1_dimension_index=1:length(dimensions(s1))
@@ -382,7 +337,7 @@ strdiff = function(x,y)
 aliases = function(x)
 {
   ans = c()
-  if(!(inherits(x,"scidb") || inherits(x,"scidbdf"))) return(ans)
+  if(!(inherits(x,"scidbdf"))) return(ans)
   logical_schema = grep("^>>schema",strsplit(x@logical_plan,"\n")[[1]], value=TRUE)
   if(length(logical_schema) < 1) return(NULL)
   logical_schema = gsub("].*","]",logical_schema)

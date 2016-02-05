@@ -1,35 +1,15 @@
-#
-#    _____      _ ____  ____
-#   / ___/_____(_) __ \/ __ )
-#   \__ \/ ___/ / / / / __  |
-#  ___/ / /__/ / /_/ / /_/ / 
-# /____/\___/_/_____/_____/  
-#
-#
-#
-# BEGIN_COPYRIGHT
-#
-# This file is part of SciDB.
-# Copyright (C) 2008-2014 SciDB, Inc.
-#
-# SciDB is free software: you can redistribute it and/or modify
-# it under the terms of the AFFERO GNU General Public License as published by
-# the Free Software Foundation.
-#
-# SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
-# INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
-# NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
-# the AFFERO GNU General Public License for the complete license terms.
-#
-# You should have received a copy of the AFFERO GNU General Public License
-# along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
-#
-# END_COPYRIGHT
-#
+#' SciDB/R Interface
+#'
+#' @name scidb-package
+#' 
+#' @useDynLib scidb
+#' @seealso \code{\link{scidb}}, \code{\link{iquery}}
+#' @docType package
+NULL
 
 .onAttach = function(libname,pkgname)
 {
-  packageStartupMessage("   ____    _ ___  ___\n  / __/___(_) _ \\/ _ )\n _\\ \\/ __/ / // / _  |\n/___/\\__/_/____/____/     Copyright 2015, Paradigm4, Inc.\n\n* The 'substitute' function has been removed. Use 'replaceNA' instead.\n* Use of the eval parameter in scidb functions is deprecated, use the\n  'scidbeval' function instead."    , domain = NULL, appendLF = TRUE)
+  packageStartupMessage("   ____    _ ___  ___\n  / __/___(_) _ \\/ _ )\n _\\ \\/ __/ / // / _  |\n/___/\\__/_/____/____/     Copyright 2015, Paradigm4, Inc.\n\n"    , domain = NULL, appendLF = TRUE)
 
 # Maximum allowed sequential index limit (for larger, use between)
   options(scidb.index.sequence.limit=1000000)

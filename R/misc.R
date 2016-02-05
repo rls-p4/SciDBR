@@ -17,7 +17,7 @@ order_scidb = function(x, attribute=1, decreasing = FALSE)
 factor_scidb = function(x, levels)
 {
   if(!(is.vector(x) ||  is.factor(x))) stop("x must be an R factor or vector object")
-  if(!any(class(levels) %in% c("scidb","scidbdf"))) stop("levels must be an object of class scidb or scidbdf")
+  if(!any(class(levels) %in% "scidbdf")) stop("levels must be an object of class scidbdf")
 
   if(!is.factor(x)) x = factor(x)
   l = index_lookup(as.scidb(levels(x)), levels)
@@ -98,7 +98,7 @@ peek = function(x, n=50L, prob=1)
 
 rank_scidb = function(x,na.last=TRUE,ties.method = c("average", "first", "random", "max", "min"))
 {
-  if(!is.scidb(x)) stop("x must be a scidb vector object")
+  if(!is.scidbdf(x)) stop("x must be a scidb vector object")
   if(length(dim(x))>1) stop("x must be a scidb vector object")
   attribute=scidb_attributes(x)[1]
   dimension=""
@@ -115,7 +115,7 @@ kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
   if(nstart!=1 || algorithm!="Lloyd") stop("This version limited to Lloyd's method with nstart=1")
 # If we have a recent enough SciDB version, use temp arrays.
   temp = compare_versions(options("scidb.version")[[1]],14.8)
-  if(!is.scidb(x)) stop("x must be a scidb object")
+  if(!is.scidbdf(x)) stop("x must be a scidb object")
   x = project(x, x@attributes[1])
   x = attribute_rename(x,new="val")
   x = dimension_rename(x,new=c("i","j"))
@@ -200,34 +200,6 @@ dist_scidb = function(x, method=c("euclidean","manhattan","maximum"))
   M
 }
 
-# Note fill_sparse=TRUE is not yet supported but will be...
-na.locf_scidb = function(object, along=dimensions(object)[1],fill_sparse=FALSE, `eval`=FALSE)
-{
-  dnames = dimensions(object)
-  i = which(dnames == along)
-  if(length(along)!=1 || length(i)!=1) stop("Please specify exactly one dimension to run along.")
-# Make object nullable
-  object = make_nullable(object)
-# Set up a bounding box that contains the data.
-  aname = make.unique_(c(object@attributes, dnames),dnames)
-  expr = paste(paste("min(",aname,"), max(", aname,")",sep=""),collapse=",")
-  limits = matrix(unlist(aggregate(bind(object, aname, dnames), FUN=expr, unpack=FALSE)[]),nrow=2)
-# limits is a 2 x length(dim(object)) matrix. The first row contains the min
-# dim values, and the 2nd row the max dim values.
-  reschema = sprintf("%s%s",build_attr_schema(object),
-               build_dim_schema(object,newend=limits[2,],newstart=limits[1,]))
-  object = redimension(object, reschema)
-
-# Build a null-merge array
-#  object = merge(object, project(merge(build("null",dim=object,type="double"),apply(object,1,min), merge=fill_sparse),1:length(object@attributes)),merge=TRUE)
-  object = merge(object,project(merge(bind(attribute_rename(apply(object,1,min),new=paste(object@attributes,"___",sep="")),"price","double(null)"),apply(object,2,min)),object@attributes),merge=TRUE)
-
-# Run the na.locf
-  impute = paste(paste("last_value(",object@attributes,") as ", object@attributes ,sep=""),collapse=",")
-  query = sprintf("cumulate(%s, %s, %s)", object@name, impute, along)
-  .scidbeval(query,depend=list(object),`eval`=eval,gc=TRUE)
-}
-
 hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `eval`=FALSE, `plot`=TRUE, ...)
 {
   if(length(x@attributes)>1) stop("Histogram requires a single-attribute array.")
@@ -250,10 +222,10 @@ hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `eval`=FALSE,
   if(!materialize)
   {
 # Return a SciDB array that represents the histogram breaks and counts
-    return(.scidbeval(query,depend=list(x,M),`eval`=`eval`,gc=TRUE,`data.frame`=TRUE))
+    return(.scidbeval(query, depend=list(x,M), `eval`=`eval`, gc=TRUE))
   }
 # Return a standard histogram object
-  ans = as.list(.scidbeval(query,depend=list(x,M),`eval`=`eval`,gc=TRUE,`data.frame`=TRUE)[])
+  ans = as.list(.scidbeval(query, depend=list(x,M), `eval`=`eval`, gc=TRUE)[])
 # Cull the trailing zero bin to correspond to R's output
   if(`right`) ans$counts = ans$counts[-1]
   else ans$counts = ans$counts[-length(ans$counts)]
@@ -277,6 +249,7 @@ all.equal.scidbdf = function ( target, current , ...)
 {
   all.equal.scidb( target, current )
 }
+
 all.equal.scidb = function ( target, current , ...)
 {
   array1 = target

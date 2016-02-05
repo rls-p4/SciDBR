@@ -1,15 +1,24 @@
 Package: scidb
 Type: Package
 Title: An R interface to SciDB
-Version: 1.3-0
+Version: 2.0.0
 Date: 2015-09-07
-Author: Paradigm4, B. W. Lewis 
+Author: Paradigm4, B. W. Lewis
 Maintainer: B. W. Lewis <blewis@illposed.net>
 Copyright: Paradigm4, Inc.
 Description: An R interface to the SciDB array database (http://scidb.org).
 BugReports: https://github.com/Paradigm4/SciDBR/issues
 URL: http://paradigm4.github.io/SciDBR
-Depends: R (>= 3.0.0), methods
-Imports: Matrix, utils, stats, zoo, graphics, digest, codetools, curl
+Depends:
+    R (>= 3.0.0),
+    methods
+Imports:
+    utils,
+    stats,
+    graphics,
+    digest,
+    codetools,
+    curl
 License: AGPL-3
 LazyLoad: yes
+RoxygenNote: 5.0.0

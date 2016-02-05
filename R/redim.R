@@ -27,14 +27,22 @@
 # END_COPYRIGHT
 #
 
-# Array redimension, repart, reshape operations.
-reshape_scidb = function(data, schema, shape, dimnames, start, chunks, `eval`=FALSE)
+#' SciDB reshape operator
+#' @param x a \code{scidbdf} object
+#' @param schema optional new schema
+#' @param shape optional vector of new array coordinate dimensions
+#' @param dimnames optional new vector of array coordniate dimension name
+#' @param start optional vector of new array starting coordinate index values
+#' @param chunks optional vector of new array chunk sizes
+#' @return a \code{scidbf} object
+#' @export
+reshape_scidb = function(x, schema, shape, dimnames, start, chunks)
 {
   if(!missing(schema))
   {
-    if(is.scidb(schema)||is.scidbdf(schema)) schema=schema(schema) # <- that's nutty notation Malkovich!
-    query = sprintf("reshape(%s,%s)",data@name,schema)
-    return(.scidbeval(query,eval,depend=list(data)))
+    if(is.scidbdf(schema)) schema=schema(schema) # <- that's nutty notation Malkovich!
+    query = sprintf("reshape(%s,%s)",x@name,schema)
+    return(.scidbeval(query,eval,depend=list(x)))
   }
   if(missing(shape)) stop("Missing dimension shape")
   N = length(shape)
@@ -48,12 +56,20 @@ reshape_scidb = function(data, schema, shape, dimnames, start, chunks, `eval`=FA
   }
   if(missing(start)) start = rep(0,N)
   shape = shape - 1 + start
-  D = build_dim_schema(data, newstart=start, newnames=dimnames, newend=shape, newchunk=chunks)
-  query = sprintf("reshape(%s,%s%s)",data@name,build_attr_schema(data),D)
-  .scidbeval(query,eval,depend=list(data))
+  D = build_dim_schema(x, newstart=start, newnames=dimnames, newend=shape, newchunk=chunks)
+  query = sprintf("reshape(%s,%s%s)", x@name,build_attr_schema(x), D)
+  .scidbeval(query, eval, depend=list(x))
 }
 
-repart = function(x, schema, upper, chunk, overlap, `eval`=FALSE)
+#' SciDB repart operator
+#' @param x a \code{scidbdf} object
+#' @param schema optional new schema
+#' @param upper optional vector of new array coordinate dimensions
+#' @param chunk optional vector of new array chunk sizes
+#' @param overlap optional vector of new array chunk overlaps
+#' @return a \code{scidbf} object
+#' @export
+repart = function(x, schema, upper, chunk, overlap)
 {
   if(!missing(schema))
   {
@@ -69,20 +85,21 @@ repart = function(x, schema, upper, chunk, overlap, `eval`=FALSE)
   .scidbeval(query,eval,depend=list(x))
 }
 
-# SciDB redimension wrapper
-#
-# Either supply schema or dim. dim is a list of new dimensions made up from the
-# attributes and existing dimensions. FUN is a limited scidb aggregation
-# expression.
-redimension = function(x, schema, dim, FUN)
+#' SciDB redimension operator
+#' @param x a \code{scidbdf} object
+#' @param schema optional new schema
+#' @param dim optional vector of dimension and attribute names to redimension along
+#' @return a \code{scidbf} object
+#' @export
+redimension = function(x, schema, dim)
 {
-  if(!(class(x) %in% c("scidb","scidbdf"))) stop("Invalid SciDB object")
+  if(!(class(x) %in% "scidbdf")) stop("Invalid SciDB object")
 # NB SciDB NULL is not allowed along a coordinate axis prior to SciDB 12.11,
 # which could lead to a run time error here.
   if(missing(schema)) schema = NULL
   if(missing(dim)) dim = NULL
   s = schema
-  if((class(s) %in% c("scidb","scidbdf"))) s = schema(s)
+  if((class(s) %in% "scidbdf")) s = schema(s)
   dnames = c()
   if(!is.null(dim))
   {
@@ -138,7 +155,7 @@ redimension = function(x, schema, dim, FUN)
       f = paste(paste("min(",a,"), max(",a,")",sep=""),collapse=",")
 # Explicitly bounding this dimension is nice, but not necessary. Can
 # just use a '*' bound instead (cheaper)--see commented line... XXX
-      m = matrix(aggregate(x, FUN=f, unpack=FALSE)[],ncol=2,byrow=TRUE)
+      m = matrix(aggregate(x, unpack=FALSE)[],ncol=2,byrow=TRUE)
 #      m = cbind(rep("0",length(a)), rep("*",length(a)))
       p = prod(as.numeric(scidb_coordinate_chunksize(x)[-id]))
       chunk = ceiling((1e6/p)^(1/length(ia)))
@@ -157,27 +174,6 @@ redimension = function(x, schema, dim, FUN)
   if(isTRUE(compare_schema(x,s)))
   {
     return(x)
-  }
-  if(!missing(FUN))
-  {
-    fn = NULL
-    if(is.function(FUN))
-    {
-# convert to aggregation expression that can be parsed by aparser
-# special count case (usually what is desired)
-      if(isTRUE(all.equal(FUN,count)) || isTRUE(all.equal(FUN,length)))
-        fn = "count(*) as count"
-      else
-        fn = paste(sprintf("%s(%s) as %s",.scidbfun(FUN),scidb_attributes(s),scidb_attributes(s)), collapse=",")
-    }
-    if(is.character(FUN)) fn = FUN
-    if(is.null(fn))
-      stop("`FUN` requires a function or SciDB aggregation expression")
-    if(is.null(schema))
-    {
-      s = sprintf("%s%s",aparser(x,fn), build_dim_schema(s))
-    }
-    s = sprintf("%s, %s", s, fn)
   }
   query = sprintf("redimension(%s,%s)",x@name,s)
   ans = .scidbeval(query,`eval`=FALSE,depend=list(x))

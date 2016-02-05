@@ -1,37 +1,8 @@
-#
-#    _____      _ ____  ____
-#   / ___/_____(_) __ \/ __ )
-#   \__ \/ ___/ / / / / __  |
-#  ___/ / /__/ / /_/ / /_/ / 
-# /____/\___/_/_____/_____/  
-#
-#
-#
-# BEGIN_COPYRIGHT
-#
-# This file is part of SciDB.
-# Copyright (C) 2008-2014 SciDB, Inc.
-#
-# SciDB is free software: you can redistribute it and/or modify
-# it under the terms of the AFFERO GNU General Public License as published by
-# the Free Software Foundation.
-#
-# SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
-# INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
-# NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
-# the AFFERO GNU General Public License for the complete license terms.
-#
-# You should have received a copy of the AFFERO GNU General Public License
-# along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
-#
-# END_COPYRIGHT
-#
-
 # Auxillary merge functions for each special case follow. The main function
-# appears athe bottom of this file.
+# appears at the bottom of this file.
 
 # Special case 1: full set cross product
-merge_scidb_cross = function(x,y)
+merge_scidb_cross = function(x, y)
 {
 # New attribute schema for y that won't conflict with x:
   newas = build_attr_schema(y,newnames=make.unique_(x@attributes,y@attributes))
@@ -59,7 +30,7 @@ merge_scidb_cross = function(x,y)
   return(.scidbeval(query,FALSE,depend=list(x,y)))
 }
 
-merge_scidb_on_attributes = function(x,y,by.x,by.y)
+merge_scidb_on_attributes = function(x, y, by.x, by.y)
 {
   `eval`=FALSE
   by.x = by.x[[1]]  # Limitation: only one attribute for now
@@ -101,7 +72,7 @@ merge_scidb_on_attributes = function(x,y,by.x,by.y)
 # `all` is an optional argument that, if TRUE, indicates outer join. It only
 #       applies in limited settings. The default is inner join.
 #
-`merge_scidb` = function(x,y,`by`,...)
+`merge_scidb` = function(x, y, `by`, ...)
 {
   mc = list(...)
   al = scidb_alias(x,y)
