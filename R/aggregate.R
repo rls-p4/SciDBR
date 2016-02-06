@@ -1,11 +1,4 @@
-# Nifty aggregation-related functions
-
-# x:   A scidb, scidb object
-# by:  A list of character vector of dimension and or attribute names of x, or,
-#      a scidb or scidb object that will be cross_joined to x and then
-#      grouped by attribues of by.
-# FUN: A SciDB aggregation expresion
-`aggregate_scidb` = function(x,by,FUN,`eval`=FALSE,window,variable_window,unpack)
+aggregate_scidb = function(x, by, FUN, window, variable_window, unpack)
 {
   if(missing(unpack)) unpack=FALSE
   if(missing(`by`))
@@ -33,8 +26,6 @@
     n = x@attributes[length(x@attributes)]
     `by`[[1]] = n
   }
-# A bug up to SciDB 13.6 unpack prevents us from using eval=FALSE
-  if(!eval && !compare_versions(options("scidb.version")[[1]],13.9)) stop("eval=FALSE not supported by aggregate due to a bug in SciDB <= 13.6")
 
   b = `by`
   new_dim_name = make.names_(c(unlist(b),"row"))
@@ -119,15 +110,15 @@
     query = sprintf("aggregate(%s, %s)", query, FUN)
   else
     query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
-  if(unpack) query = sprintf("unpack(%s,%s)",query,new_dim_name)
-  .scidbeval(query,eval,gc=TRUE,depend=list(x))
+  if(unpack) query = sprintf("unpack(%s,%s)",query, new_dim_name)
+  .scidbeval(query, gc=TRUE,depend=list(x))
 }
 
 # The new (SciDB 13.9) cumulate
-`cumulate` = function(x, expression, dimension, `eval`=FALSE)
+cumulate = function(x, expression, dimension)
 {
   if(missing(dimension)) dimension = dimensions(x)[[1]]
   if(is.numeric(dimension)) dimension = dimensions(x)[dimension]
   query = sprintf("cumulate(%s, %s, %s)",x@name,expression,dimension)
-  .scidbeval(query,eval,depend=list(x))
+  .scidbeval(query, depend=list(x))
 }
