@@ -39,13 +39,8 @@ scidbcc = function(x)
 scidb_unpack_to_dataframe = function(query, ...)
 {
   DEBUG = FALSE
-  scidbarray = NULL
   projected = FALSE
-  if(inherits(query,"scidb"))
-  {
-    scidbarray = query
-    query = query@name
-  }
+  if(!inherits(query, "scidb")) query = scidb(query)
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
   buffer = 100000L
   args = list(...)
@@ -54,9 +49,9 @@ scidb_unpack_to_dataframe = function(query, ...)
     argsbuf = tryCatch(as.integer(args$buffer),warning=function(e) NA)
     if(!is.na(argsbuf) && argsbuf < 100e6) buffer = as.integer(argsbuf)
   }
-  dims = paste(paste(dimensions(x), dimensions(x), sep=","), collapse=",") # Note! much faster than unpack
-  ndim = length(dimensions(x))
-  x = scidb(sprintf("apply(%s, %s)",query, dims))
+  dims = paste(paste(dimensions(query), dimensions(query), sep=","), collapse=",") # Note! much faster than unpack
+  ndim = length(dimensions(query))
+  x = scidb(sprintf("apply(%s, %s)", query, dims))
   N = scidb_nullable(x)
   TYPES = scidb_types(x)
   ns = rep("",length(N))
