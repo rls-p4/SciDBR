@@ -51,7 +51,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   }
   dims = paste(paste(dimensions(query), dimensions(query), sep=","), collapse=",") # Note! much faster than unpack
   ndim = length(dimensions(query))
-  x = scidb(sprintf("apply(%s, %s)", query, dims))
+  x = scidb(sprintf("apply(%s, %s)", query@name, dims))
   N = scidb_nullable(x)
   TYPES = scidb_types(x)
   ns = rep("",length(N))
