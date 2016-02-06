@@ -4,15 +4,12 @@
 \alias{scidbremove}
 \title{Remove one or more scidb arrays}
 \usage{
-scidbremove(x, error = warning, async, force, warn = TRUE,
-  recursive = FALSE)
+scidbremove(x, error = warning, force, warn = TRUE, recursive = FALSE)
 }
 \arguments{
 \item{x}{(character): a vector or single character string listing array names}
 
 \item{error}{(function): error handler. Use stop or warn, for example.}
-
-\item{async}{(optional boolean): If TRUE use expermental shim async option for speed}
 
 \item{force}{(optional boolean): If TRUE really remove this array, even if scidb.safe_remove=TRUE}
 

@@ -3,75 +3,60 @@
 # An environment to hold connection state
 .scidbenv = new.env()
 
-# Map scidbdf object column classes into R, adding an extra integer at the start for the index!
-scidbdfcc = function(x)
+# Map scidb object column classes into R, adding an extra integer at the start for the index!
+scidbcc = function(x)
 {
   if(!is.null(options("scidb.test")[[1]]))
   {
     cat("Using old method for data.frame import")
     return(NA)
   }
-  c("integer",as.vector(unlist(lapply(.scidbdftypes[scidb_types(x)],function(x) ifelse(is.null(x),NA,x)))))
+  c("integer",as.vector(unlist(lapply(.scidbtypes[scidb_types(x)],function(x) ifelse(is.null(x),NA,x)))))
 }
 
 .scidbstr = function(object)
 {
   name = substr(object@name,1,35)
   if(nchar(object@name)>35) name = paste(name,"...",sep="")
-  dn = "\nDimension:"
-  if(length(dimensions(object))>1) dn = "\nDimensions:"
-  cat("SciDB expression: ",name)
-  cat("\nSciDB schema: ",schema(object))
-  cat("\n\nAttributes:\n")
-  cat(paste(capture.output(print(data.frame(attribute=object@attributes,type=scidb_types(object),nullable=scidb_nullable(object)))),collapse="\n"))
+  dn = "\nDimension"
+  if(length(dimensions(object))>1) dn = "\nDimensions"
+  cat("SciDB expression ",name)
+  cat("\nSciDB schema ",schema(object))
   cat(dn,"\n")
   bounds = scidb_coordinate_bounds(object)
   cat(paste(capture.output(print(data.frame(dimension=dimensions(object),start=bounds$start,end=bounds$end,chunk=scidb_coordinate_chunksize(object),row.names=NULL,stringsAsFactors=FALSE))),collapse="\n"))
+  cat("\nAttributes\n")
+  cat(paste(capture.output(print(data.frame(attribute=object@attributes,type=scidb_types(object),nullable=scidb_nullable(object)))),collapse="\n"))
   cat("\n")
 }
 
 
-#' Unpack and return a SciDB query expression to a data frame
-#' @param query A SciDB query expression or scidbdf object
+#' Unpack and return a SciDB query expression as a data frame
+#' @param query A SciDB query expression or scidb object
 #' @param ... optional extra arguments
 #' @keywords internal
-#' @importFrom curl new_handle handle_setheaders handle_setopt curl_fetch_memory
+#' @importFrom curl new_handle handle_setheaders handle_setopt curl_fetch_memory handle_setform form_file
 scidb_unpack_to_dataframe = function(query, ...)
 {
   DEBUG = FALSE
   scidbarray = NULL
   projected = FALSE
-  if(inherits(query,"scidbdf"))
+  if(inherits(query,"scidb"))
   {
     scidbarray = query
     query = query@name
   }
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
   buffer = 100000L
-  row_names = NULL
   args = list(...)
   if(!is.null(args$buffer))
   {
     argsbuf = tryCatch(as.integer(args$buffer),warning=function(e) NA)
-# Potential problem here if args$buffer is bogus or '*' or whatever.
-# Deal with it. XXX FIX ME
     if(!is.na(argsbuf) && argsbuf < 100e6) buffer = as.integer(argsbuf)
   }
-  if(!is.null(args$row.names)) row_names = args$row.names
-  if(!is.null(args$project))
-  {
-    if(!is.null(scidbarray) && all(args$project %in% scidb_attributes(scidbarray)))
-    {
-      x = scidb(sprintf("project(%s,%s)",query,paste(args$project,collapse=",")))
-      projected = TRUE
-    } else
-    {
-      x = scidb(sprintf("project(unpack(%s,row),%s)", query, paste(args$project, collapse=",")))
-    }
-  } else
-  {
-    x = scidb(sprintf("unpack(%s,row)",query))
-  }
+  dims = paste(paste(dimensions(x), dimensions(x), sep=","), collapse=",") # Note! much faster than unpack
+  ndim = length(dimensions(x))
+  x = scidb(sprintf("apply(%s, %s)",query, dims))
   N = scidb_nullable(x)
   TYPES = scidb_types(x)
   ns = rep("",length(N))
@@ -89,7 +74,7 @@ scidb_unpack_to_dataframe = function(query, ...)
                               ssl_verifypeer=0))
   resp = curl_fetch_memory(uri, h)
   if(resp$status_code > 299) stop("HTTP error", resp$status_code)
-# Explicitly reap the handle to avoid shor-term build up of socket descriptors
+# Explicitly reap the handle to avoid short-term build up of socket descriptors
   rm(h)
   gc()
   if(DEBUG) cat("Data transfer time",(proc.time()-dt2)[3],"\n")
@@ -97,9 +82,9 @@ scidb_unpack_to_dataframe = function(query, ...)
   len = length(resp$content)
   p = 0
   ans = c()
-  cnames = c(names(x),"lines","p")
+  cnames = c(scidb_attributes(x),"lines","p")  # we are unpacking to a SciDB array, ignore dims
+  n = length(scidb_attributes(x))
   rnames = c()
-  n = ncol(x)
   if(projected) n = length(args$project)
   while(p < len)
   {
@@ -119,15 +104,6 @@ scidb_unpack_to_dataframe = function(query, ...)
         return(lapply(1:n, function(j) tmp[[j]][1:lines]))
       }
       len_out = length(tmp[[1]])
-      if(!is.null(row_names))
-      {
-        if(is.numeric(row_names) && length(row_names) == 1)
-        {
-          rnames = c(rnames,tmp[[row_names]][1:lines])
-          tmp = tmp[-row_names]
-          n = n -1
-        }
-      }
       if(lines < len_out) tmp = lapply(tmp[1:n],function(x) x[1:lines])
 # Let's adaptively re-estimate a buffer size
       avg_bytes_per_line = ceiling((p - p_old)/lines)
@@ -139,17 +115,11 @@ scidb_unpack_to_dataframe = function(query, ...)
     if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
   }
   dt2 = proc.time()
-  if(!is.null(row_names))
-  {
-    if(is.numeric(row_names) && length(row_names)==1)
-    {
-      rownames(ans) = rnames
-    } else
-    {
-      rownames(ans) = row_names
-    }
-  }
-  if(DEBUG) cat("  R rownames assignment",(proc.time()-dt2)[3],"\n")
+# reorder so that dimensions appear to the left
+  n = ncol(ans)
+  na = 1:(n - ndim)
+  nd = (n - ndim + 1):n
+  ans = ans[, c(nd, na)]
   if(DEBUG) cat("Total R parsing time",(proc.time()-dt1)[3],"\n")
   ans
 }
@@ -186,14 +156,13 @@ digest_auth = function(method, uri, realm="", nonce="123456")
 # Internal warning function
 warnonce = (function() {
   state = list(
-    unpack="The array contains multiple SciDB attributes, returning as an unpacked dataframe.",
-    missing="An array might contain missing values (R NA/SciDB 'null'-able attribute).\n Missing values are not yet understood by SciDB multiplication operators\n and any missing values have been replaced with zero (see replaceNA).",
+    count="Use `count` for an exact count of data elements.",
     nonum="Note: The R sparse Matrix package does not support certain value types like\ncharacter strings",
     toobig="Array coordinates are too big or infinite! Returning data in unpacked data.frame form, or try using `bound`."
   )
   function(warn) {
     if(!is.null(state[warn][[1]])) {
-      warning(state[warn], call.=FALSE)
+      message(state[warn])
       s <<- state
       s[warn] = c()
       state <<- s
@@ -263,9 +232,11 @@ oldURLencode = function (URL, reserved = FALSE)
 }
 
 
-#' A somewhat nightmarish internal function
+#' Nightmarish internal function that converts R expressions to SciDB expressions
 #' @param expr an R 'language' type object to parse
 #' @param sci a SciDB array 
+#' @keywords internal
+#' @importFrom codetools makeCodeWalker walkCode
 rewrite_subset_expression = function(expr, sci)
 {
   dims = dimensions(sci)
@@ -422,24 +393,25 @@ create_temp_array = function(name, schema)
 #                 If FALSE, infer output schema but don't evaluate.
 # name: (optional character) If supplied, name for stored array when eval=TRUE
 # gc: (optional logical) If TRUE, tie SciDB object to  garbage collector.
-# depend: (optional list) An optional list of other scidb or scidbdf objects
+# depend: (optional list) An optional list of other scidb or scidb objects
 #         that this expression depends on (preventing their garbage collection
 #         if other references to them go away).
 # schema, temp: (optional) used to create SciDB temp arrays
 #               (requires scidb >= 14.8)
 #
 # OUTPUT
-# A `scidb` or `scidbdf` array object.
+# A `scidb` or `scidb` array object.
 #
 # NOTE
 # Only AFL supported.
-`.scidbeval` = function(expr,eval,name,gc=TRUE, depend, schema, temp)
+`.scidbeval` = function(expr, eval, name, gc=TRUE, depend, schema, temp)
 {
   ans = c()
-  if(missing(depend)) depend=c()
-  if(missing(schema)) schema=""
-  if(missing(temp)) temp=FALSE
-  if(!is.list(depend)) depend=list(depend)
+  if(missing(eval)) eval = FALSE
+  if(missing(depend)) depend = c()
+  if(missing(schema)) schema = ""
+  if(missing(temp)) temp = FALSE
+  if(!is.list(depend)) depend = list(depend)
 # Address bug #45. Try to cheaply determine if expr refers to a named array
 # or an AFL expression. If it's a named array, then eval must be set TRUE.
   if(!grepl("\\(", expr, perl=TRUE)) eval = TRUE

@@ -28,7 +28,7 @@
 #
 
 #' SciDB reshape operator
-#' @param x a \code{scidbdf} object
+#' @param x a \code{scidb} object
 #' @param schema optional new schema
 #' @param shape optional vector of new array coordinate dimensions
 #' @param dimnames optional new vector of array coordniate dimension name
@@ -40,7 +40,7 @@ reshape_scidb = function(x, schema, shape, dimnames, start, chunks)
 {
   if(!missing(schema))
   {
-    if(is.scidbdf(schema)) schema=schema(schema) # <- that's nutty notation Malkovich!
+    if(is.scidb(schema)) schema=schema(schema) # <- that's nutty notation Malkovich!
     query = sprintf("reshape(%s,%s)",x@name,schema)
     return(.scidbeval(query,eval,depend=list(x)))
   }
@@ -62,7 +62,7 @@ reshape_scidb = function(x, schema, shape, dimnames, start, chunks)
 }
 
 #' SciDB repart operator
-#' @param x a \code{scidbdf} object
+#' @param x a \code{scidb} object
 #' @param schema optional new schema
 #' @param upper optional vector of new array coordinate dimensions
 #' @param chunk optional vector of new array chunk sizes
@@ -86,20 +86,20 @@ repart = function(x, schema, upper, chunk, overlap)
 }
 
 #' SciDB redimension operator
-#' @param x a \code{scidbdf} object
+#' @param x a \code{scidb} object
 #' @param schema optional new schema
 #' @param dim optional vector of dimension and attribute names to redimension along
 #' @return a \code{scidbf} object
 #' @export
 redimension = function(x, schema, dim)
 {
-  if(!(class(x) %in% "scidbdf")) stop("Invalid SciDB object")
+  if(!(class(x) %in% "scidb")) stop("Invalid SciDB object")
 # NB SciDB NULL is not allowed along a coordinate axis prior to SciDB 12.11,
 # which could lead to a run time error here.
   if(missing(schema)) schema = NULL
   if(missing(dim)) dim = NULL
   s = schema
-  if((class(s) %in% "scidbdf")) s = schema(s)
+  if((class(s) %in% "scidb")) s = schema(s)
   dnames = c()
   if(!is.null(dim))
   {

@@ -7,7 +7,7 @@
 is.temp(name)
 }
 \arguments{
-\item{name}{a character name of a SciDB array or a \code{scidbdf} object}
+\item{name}{a character name of a SciDB array or a \code{scidb} object}
 }
 \value{
 logical value indicating if \code{name} is temporary

@@ -7,14 +7,14 @@ setGeneric("phyper", function(x, ...) stats::phyper(x,...))
 setOldClass("qhyper")
 setGeneric("qhyper", function(x, ...) stats::qhyper(x,...))
 
-setMethod("phyper", signature(x="scidbdf"),
+setMethod("phyper", signature(x="scidb"),
   function(x, q, m, n, k, new="p",`eval`=FALSE)
   {
     query = sprintf("hygecdf(%s,%s,%s,%s)",q,m,n,k)
     bind(x, new, query, `eval`=eval)
   })
 
-setMethod("qhyper", signature(x="scidbdf"),
+setMethod("qhyper", signature(x="scidb"),
   function(x, p, m, n, k, new="q", `eval`=FALSE)
   {
     query = sprintf("ihygecdf(%s,%s,%s,%s)",p,m,n,k)
@@ -22,7 +22,7 @@ setMethod("qhyper", signature(x="scidbdf"),
   })
 
 # Input
-# a: SciDB array (scidb or scidbdf object)
+# a: SciDB array (scidb or scidb object)
 # x: YES/YES count
 # m,n,k: Marginal counts (see doc)
 # alternative: {"two.sided", "greater", "less"}

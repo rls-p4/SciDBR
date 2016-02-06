@@ -7,7 +7,7 @@
 repart(x, schema, upper, chunk, overlap)
 }
 \arguments{
-\item{x}{a \code{scidbdf} object}
+\item{x}{a \code{scidb} object}
 
 \item{schema}{optional new schema}
 

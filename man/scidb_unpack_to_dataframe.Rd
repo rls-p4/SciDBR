@@ -2,17 +2,17 @@
 % Please edit documentation in R/internal.R
 \name{scidb_unpack_to_dataframe}
 \alias{scidb_unpack_to_dataframe}
-\title{Unpack and return a SciDB query expression to a data frame}
+\title{Unpack and return a SciDB query expression as a data frame}
 \usage{
 scidb_unpack_to_dataframe(query, ...)
 }
 \arguments{
-\item{query}{A SciDB query expression or scidbdf object}
+\item{query}{A SciDB query expression or scidb object}
 
 \item{...}{optional extra arguments}
 }
 \description{
-Unpack and return a SciDB query expression to a data frame
+Unpack and return a SciDB query expression as a data frame
 }
 \keyword{internal}
 

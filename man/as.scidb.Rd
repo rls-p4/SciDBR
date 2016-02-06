@@ -8,7 +8,7 @@ Data are uploaded as TSV.}
 as.scidb(X, name = tmpnam(), start, gc = TRUE, ...)
 }
 \arguments{
-\item{X}{an R data frame or raw value}
+\item{X}{an R data frame, raw value, Matrix, matrix, or vector object}
 
 \item{name}{a SciDB array name to use}
 
@@ -19,7 +19,7 @@ as.scidb(X, name = tmpnam(), start, gc = TRUE, ...)
 \item{...}{other options, see \code{\link{df2scidb}}}
 }
 \value{
-A \code{scidbdf} object
+A \code{scidb} object
 }
 \description{
 Upload R data to SciDB

@@ -1,3 +1,36 @@
+#' Upload R data to SciDB
+#' Data are uploaded as TSV.
+#' @param X an R data frame, raw value, Matrix, matrix, or vector object
+#' @param name a SciDB array name to use
+#' @param start starting SciDB integer coordinate index
+#' @param gc set to FALSE to disconnect the SciDB array from R's garbage collector
+#' @param ... other options, see \code{\link{df2scidb}}
+#' @return A \code{scidb} object
+#' @export
+as.scidb = function(X,
+                    name=tmpnam(),
+                    start,
+                    gc=TRUE, ...)
+{
+  if(inherits(X, "raw"))
+  {
+    return(raw2scidb(X, name=name, gc=gc,...))
+  }
+  if(inherits(X, "data.frame"))
+  {
+    return(df2scidb(X, name=name, gc=gc, start=start, ...))
+  }
+  if(inherits(X, "dgCMatrix"))
+  {
+    return(.Matrix2scidb(X, name=name, start=start, gc=gc, ...))
+  }
+  if(inherits(X, "matrix") || inherits(X, "vector"))
+  {
+    return(matvec2scidb(X, name=name, start=start, gc=gc, ...))
+  }
+  stop("X must be a data frame or raw value")
+}
+
 #' Internal function to upload an R data frame to SciDB
 #' @param X a data frame
 #' @param name SciDB array name
@@ -9,7 +42,7 @@
 #' @param schema_only set to \code{TRUE} to just return the SciDB schema (don't upload)
 #' @param gc set to \code{TRUE} to connect SciDB array to R's garbage collector
 #' @param start SciDB coordinate index starting value
-#' @return A \code{\link{scidbdf}} object, or a character schema string if \code{schema_only=TRUE}.
+#' @return A \code{\link{scidb}} object, or a character schema string if \code{schema_only=TRUE}.
 #' @keywords internal
 df2scidb = function(X,
                     name=tmpnam(),
@@ -101,36 +134,149 @@ df2scidb = function(X,
   LOAD = sprintf("apply(parse(split('%s'),'num_attributes=%d'),%s)", tmp,
                  ncolX, paste(dcast, collapse=","))
   query = sprintf("store(redimension(%s,%s),%s)", LOAD, SCHEMA, name)
-  scidbquery(query, async=FALSE, release=1, session=session, stream=0L)
+  scidbquery(query, release=1, session=session, stream=0L)
   scidb(name, gc=gc)
 }
 
 
 
-#' Upload R data to SciDB
-#' Data are uploaded as TSV.
-#' @param X an R data frame or raw value
-#' @param name a SciDB array name to use
-#' @param start starting SciDB integer coordinate index
-#' @param gc set to FALSE to disconnect the SciDB array from R's garbage collector
-#' @param ... other options, see \code{\link{df2scidb}}
-#' @return A \code{scidbdf} object
-#' @export
-as.scidb = function(X,
-                    name=tmpnam(),
-                    start,
-                    gc=TRUE, ...)
+
+
+.Matrix2scidb = function(X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0,0), gc=TRUE, ...)
 {
-  if(inherits(X, "raw"))
-  {
-    return(raw2scidb(X, name=name, gc=gc,...))
+  D = dim(X)
+  N = Matrix::nnzero(X)
+  rowOverlap=0L
+  colOverlap=0L
+  if(length(start)<1) stop ("Invalid starting coordinates")
+  if(length(start)>2) start = start[1:2]
+  if(length(start)<2) start = c(start, 0)
+  start = as.integer(start)
+  type = .Rtypes[[typeof(X@x)]]
+  if(is.null(type)) {
+    stop(paste("Unupported data type. The package presently supports: ",
+       paste(unique(names(.Rtypes)), collapse=" "), ".", sep=""))
   }
-  if(inherits(X, "data.frame"))
-  {
-    if(missing(chunksize))
-      return(df2scidb(X, name=name, gc=gc, start=start, ...))
-    else
-      return(df2scidb(X, name=name, chunkSize=as.numeric(chunksize[[1]]), gc=gc, start=start,...))
+  if(type!="double") stop("Sorry, the package only supports double-precision sparse matrices right now.")
+  schema = sprintf(
+      "< val : %s null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
+      nrow(X)-1+start[[1]], min(nrow(X),rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],
+      min(ncol(X),colChunkSize), colOverlap)
+  schema1d = sprintf("<i:int64 null, j:int64 null, val : %s null>[idx=0:*,100000,0]",type)
+
+# Obtain a session from shim for the upload process
+  session = getSession()
+  if(length(session)<1) stop("SciDB http session error")
+  on.exit(GET("/release_session",list(id=session), err=FALSE) ,add=TRUE)
+
+# Compute the indices and assemble message to SciDB in the form
+# double,double,double for indices i,j and data val.
+  dp = diff(X@p)
+  j  = rep(seq_along(dp),dp) - 1
+
+# Upload the data
+  bytes = .Call("scidb_raw",as.vector(t(matrix(c(X@i + start[[1]],j + start[[2]], X@x),length(X@x)))),PACKAGE="scidb")
+  ans = POST(bytes, list(id=session))
+  ans = gsub("\n", "", gsub("\r", "", ans))
+
+# redimension into a matrix
+  query = sprintf("store(redimension(input(%s,'%s',-2,'(double null,double null,double null)'),%s),%s)",schema1d, ans, schema, name)
+  iquery(query)
+  scidb(name,gc=gc)
+}
+
+
+matvec2scidb = function(X,
+                         name=tmpnam(),
+                         start,
+                         gc=TRUE, ...)
+{
+# Check for a bunch of optional hidden arguments
+  args = list(...)
+  attr_name = "val"
+  nullable = TRUE
+  if(!is.null(args$nullable)) nullable = as.logical(args$nullable) # control nullability
+  if(!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
+  do_reshape = TRUE
+  nd_reshape = NULL
+  type = force_type = .Rtypes[[typeof(X)]]
+  if(is.null(type)) {
+    stop(paste("Unupported data type. The package presently supports: ",
+       paste(unique(names(.Rtypes)), collapse=" "), ".", sep=""))
   }
-  stop("X must be a data frame or raw value")
+  if(!is.null(args$reshape)) do_reshape = as.logical(args$reshape) # control reshape
+  if(!is.null(args$type)) force_type = as.character(args$type) # limited type conversion
+  chunkSize = c(min(1000L, nrow(X)), min(1000L, ncol(X)))
+  chunkSize = as.numeric(chunkSize)
+  if(length(chunkSize) == 1) chunkSize = c(chunkSize, chunkSize)
+  overlap = c(0,0)
+  if(missing(start)) start = c(0,0)
+  start     = as.numeric(start)
+  if(length(start) ==1) start = c(start, start)
+  D = dim(X)
+  start = as.integer(start)
+  overlap = as.integer(overlap)
+  dimname = make.unique_(attr_name, "i")
+  if(is.null(D))
+  {
+# X is a vector
+    if(!is.vector(X)) stop ("X must be a matrix or a vector")
+    do_reshape = FALSE
+    chunkSize = min(chunkSize[[1]], length(X))
+    X = as.matrix(X)
+    schema = sprintf(
+        "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
+        nrow(X) - 1 + start[[1]], min(nrow(X), chunkSize), overlap[[1]])
+    load_schema = schema
+  } else if(length(D) > 2)
+  {
+    nd_reshape = dim(X)
+    do_reshape = FALSE
+    X = as.matrix(as.vector(aperm(X)))
+    schema = sprintf(
+        "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
+        nrow(X) - 1 + start[[1]], min(nrow(X), chunkSize), overlap[[1]])
+    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type, length(X))
+  } else {
+# X is a matrix
+    schema = sprintf(
+      "< %s : %s  null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, start[[1]],
+      nrow(X) - 1 + start[[1]], chunkSize[[1]], overlap[[1]], start[[2]], ncol(X) - 1 + start[[2]],
+      chunkSize[[2]], overlap[[2]])
+    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type,  length(X))
+  }
+  if(!is.matrix(X)) stop ("X must be a matrix or a vector")
+
+  DEBUG = FALSE
+  if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
+  td1 = proc.time()
+# Obtain a session from shim for the upload process
+  session = getSession()
+  on.exit( GET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
+
+# Upload the data
+  bytes = .Call("scidb_raw", as.vector(t(X)), PACKAGE="scidb")
+  ans = POST(bytes, list(id=session))
+  ans = gsub("\n", "", gsub("\r", "", ans))
+  if(DEBUG)
+  {
+    cat("Data upload time", (proc.time() - td1)[3], "\n")
+  }
+
+# Load query
+  if(!is.null(nd_reshape))
+  {
+    return(scidbeval(reshape_scidb(scidb(sprintf("input(%s,'%s', 0, '(%s null)')",load_schema, ans, type)), shape=nd_reshape),name=name))
+  }
+  if(do_reshape)
+  {
+    query = sprintf("store(reshape(input(%s,'%s', -2, '(%s null)'),%s),%s)",load_schema, ans, type, schema, name)
+  } else
+  {
+    query = sprintf("store(input(%s,'%s', -2, '(%s null)'),%s)",load_schema, ans, type, name)
+  }
+  iquery(query)
+  ans = scidb(name, gc=gc)
+  if(!nullable) ans = replaceNA(ans)
+  ans
 }

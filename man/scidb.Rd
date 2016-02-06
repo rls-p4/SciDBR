@@ -12,7 +12,7 @@ scidb(name, gc = FALSE)
 \item{gc}{a logical value, \code{TRUE} means connect the SciDB array to R's garbage collector}
 }
 \value{
-a \code{scidbdf} object
+a \code{scidb} object
 }
 \description{
 Create an R reference to a SciDB array or expression.

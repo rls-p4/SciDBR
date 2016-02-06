@@ -29,7 +29,7 @@ df2scidb(X, name = tmpnam(), dimlabel = "row", chunkSize, rowOverlap = 0L,
 \item{start}{SciDB coordinate index starting value}
 }
 \value{
-A \code{\link{scidbdf}} object, or a character schema string if \code{schema_only=TRUE}.
+A \code{\link{scidb}} object, or a character schema string if \code{schema_only=TRUE}.
 }
 \description{
 Internal function to upload an R data frame to SciDB

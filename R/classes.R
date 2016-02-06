@@ -13,7 +13,7 @@
 # dimensions = a character vector of SciDB dimension names
 # attributes = character vector of array attribute names  (derived from the schema)
 
-setClass("scidbdf",
+setClass("scidb",
          representation(name="character",
                         schema="character",
                         attributes="character",

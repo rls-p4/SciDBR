@@ -1,10 +1,10 @@
 setGeneric("c")
 setGeneric("head")
-setGeneric("is.scidbdf", function(x) standardGeneric("is.scidbdf"))
+setGeneric("is.scidb", function(x) standardGeneric("is.scidb"))
 setGeneric("unpack", unpack_scidb)
 
 #' @export
-setMethod(c, signature(x="scidbdf"),
+setMethod(c, signature(x="scidb"),
 function(x, y)
 {
   if(as.numeric(scidb_coordinate_bounds(x)$length) < as.numeric(.scidb_DIM_MAX))
@@ -24,14 +24,14 @@ function(x, y)
 })
 
 #' @export
-setMethod("head", signature(x="scidbdf"),
+setMethod("head", signature(x="scidb"),
 function(x, n=6L, ...)
 {
   iqdf(x, n)[,-c(1,2)]
 })
 
 #' @export
-setMethod("tail", signature(x="scidbdf"),
+setMethod("tail", signature(x="scidb"),
 function(x, n=6L, ...)
 {
   ans = x[x[,1],]
@@ -41,38 +41,34 @@ function(x, n=6L, ...)
 })
 
 #' @export
-setMethod("Filter",signature(f="character",x="scidbdf"),
+setMethod("Filter",signature(f="character",x="scidb"),
   function(f, x)
   {
     filter_scidb(x,f)
   })
 
 #' @export
-setMethod('is.scidbdf', signature(x='scidbdf'),
+setMethod('is.scidb', signature(x='scidb'),
   function(x) return(TRUE))
 #' @export
-setMethod('is.scidbdf', definition=function(x) return(FALSE))
+setMethod('is.scidb', definition=function(x) return(FALSE))
 
 #' @export
-setMethod('print', signature(x='scidbdf'),
+setMethod('print', signature(x='scidb'),
   function(x) {
     show(x)
   })
 
 #' @export
-setMethod("hist",signature(x="scidbdf"), hist_scidb)
+setMethod("hist",signature(x="scidb"), hist_scidb)
 
 #' @export
-setMethod('show', 'scidbdf',
+setMethod('show', 'scidb',
   function(object) {
-    v = ifelse(length(object@attributes) < 2, "variable", "variables")
-    l = scidb_coordinate_bounds(object)$length
-    if(as.numeric(l) > 4e18) l = "*"
-    cat(sprintf("SciDB 1-D array: %s obs. of %d %s.\n", l,
-        length(object@attributes),v))
+    .scidbstr(object)
   })
 
-#setMethod("regrid", signature(x="scidbdf"),
+#setMethod("regrid", signature(x="scidb"),
 #  function(x, grid, expr)
 #  {
 #    if(missing(expr)) expr = paste(sprintf("max(%s)",x@attributes),collapse=",")
@@ -80,17 +76,17 @@ setMethod('show', 'scidbdf',
 #               x@name, paste(noE(grid),collapse=","), expr)
 #    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
 #  })
-#setMethod("xgrid", signature(x="scidbdf"),
+#setMethod("xgrid", signature(x="scidb"),
 #  function(x, grid)
 #  {
 #    query = sprintf("xgrid(%s, %s)", x@name, paste(noE(grid),collapse=","))
 #    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
 #  })
-setMethod("unpack",signature(x="scidbdf"),unpack_scidb)
+setMethod("unpack",signature(x="scidb"),unpack_scidb)
 #' @export
-setMethod("aggregate", signature(x="scidbdf"), aggregate_scidb)
+setMethod("aggregate", signature(x="scidb"), aggregate_scidb)
 
-scidbdf_grand = function(x, op)
+scidb_grand = function(x, op)
 {
   query = sprintf("aggregate(%s, %s(%s) as %s)", x@name, op, x@attributes[1], x@attributes[1])
   iquery(query, `return`=TRUE)[,2]
@@ -98,110 +94,110 @@ scidbdf_grand = function(x, op)
 
 # The following methods return data to R
 #' @export
-setMethod("sum", signature(x="scidbdf"),
+setMethod("sum", signature(x="scidb"),
 function(x)
 {
-  scidbdf_grand(x, "sum")
+  scidb_grand(x, "sum")
 })
 
 #' @export
-setMethod("median", signature(x="scidbdf"),
+setMethod("median", signature(x="scidb"),
 function(x)
 {
-  scidbdf_grand(x, "median")
+  scidb_grand(x, "median")
 })
 
 #' @export
-setMethod("mean", signature(x="scidbdf"),
+setMethod("mean", signature(x="scidb"),
 function(x)
 {
-  scidbdf_grand(x, "avg")
+  scidb_grand(x, "avg")
 })
 
 #' @export
-setMethod("min", signature(x="scidbdf"),
+setMethod("min", signature(x="scidb"),
 function(x)
 {
-  scidbdf_grand(x, "min")
+  scidb_grand(x, "min")
 })
 
 #' @export
-setMethod("max", signature(x="scidbdf"),
+setMethod("max", signature(x="scidb"),
 function(x)
 {
-  scidbdf_grand(x, "max")
+  scidb_grand(x, "max")
 })
 
 #' @export
-setMethod("sd", signature(x="scidbdf"),
+setMethod("sd", signature(x="scidb"),
 function(x)
 {
-  scidbdf_grand(x, "stdev")
+  scidb_grand(x, "stdev")
 })
 
 #' @export
-setMethod("var", signature(x="scidbdf"),
+setMethod("var", signature(x="scidb"),
 function(x)
 {
-  scidbdf_grand(x, "var")
+  scidb_grand(x, "var")
 })
 
 #' @export
-log.scidbdf = function(x, base=exp(1))
+log.scidb = function(x, base=exp(1))
 {
   log_scidb(x,base) 
 }
 
 #' @export
-setMethod("sin", signature(x="scidbdf"),
+setMethod("sin", signature(x="scidb"),
   function(x)
   {
     fn_scidb(x, "sin")
   })
 #' @export
-setMethod("cos", signature(x="scidbdf"),
+setMethod("cos", signature(x="scidb"),
   function(x)
   {
     fn_scidb(x, "cos")
   })
 #' @export
-setMethod("tan", signature(x="scidbdf"),
+setMethod("tan", signature(x="scidb"),
   function(x)
   {
     fn_scidb(x, "tan")
   })
 #' @export
-setMethod("asin", signature(x="scidbdf"),
+setMethod("asin", signature(x="scidb"),
   function(x)
   {
     fn_scidb(x, "asin")
   })
 #' @export
-setMethod("acos", signature(x="scidbdf"),
+setMethod("acos", signature(x="scidb"),
   function(x)
   {
     fn_scidb(x, "acos")
   })
 #' @export
-setMethod("atan", signature(x="scidbdf"),
+setMethod("atan", signature(x="scidb"),
   function(x)
   {
     fn_scidb(x, "atan")
   })
 #' @export
-setMethod("abs", signature(x="scidbdf"),
+setMethod("abs", signature(x="scidb"),
   function(x)
   {
     fn_scidb(x, "abs")
   })
 #' @export
-setMethod("sqrt", signature(x="scidbdf"),
+setMethod("sqrt", signature(x="scidb"),
   function(x)
   {
     fn_scidb(x, "sqrt")
   })
 #' @export
-setMethod("exp", signature(x="scidbdf"),
+setMethod("exp", signature(x="scidb"),
   function(x)
   {
     fn_scidb(x, "exp")

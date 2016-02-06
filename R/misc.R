@@ -17,11 +17,11 @@ order_scidb = function(x, attribute=1, decreasing = FALSE)
 factor_scidb = function(x, levels)
 {
   if(!(is.vector(x) ||  is.factor(x))) stop("x must be an R factor or vector object")
-  if(!any(class(levels) %in% "scidbdf")) stop("levels must be an object of class scidbdf")
+  if(!any(class(levels) %in% "scidb")) stop("levels must be an object of class scidb")
 
   if(!is.factor(x)) x = factor(x)
   l = index_lookup(as.scidb(levels(x)), levels)
-  class(l) = "scidbdf"  # just make sure...
+  class(l) = "scidb"  # just make sure...
   l = l[]
   attr(x, "scidb_levels") = l[,2]
   attr(x, "scidb_index") = levels
@@ -98,7 +98,7 @@ peek = function(x, n=50L, prob=1)
 
 rank_scidb = function(x,na.last=TRUE,ties.method = c("average", "first", "random", "max", "min"))
 {
-  if(!is.scidbdf(x)) stop("x must be a scidb vector object")
+  if(!is.scidb(x)) stop("x must be a scidb vector object")
   if(length(dim(x))>1) stop("x must be a scidb vector object")
   attribute=scidb_attributes(x)[1]
   dimension=""
@@ -115,7 +115,7 @@ kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
   if(nstart!=1 || algorithm!="Lloyd") stop("This version limited to Lloyd's method with nstart=1")
 # If we have a recent enough SciDB version, use temp arrays.
   temp = compare_versions(options("scidb.version")[[1]],14.8)
-  if(!is.scidbdf(x)) stop("x must be a scidb object")
+  if(!is.scidb(x)) stop("x must be a scidb object")
   x = project(x, x@attributes[1])
   x = attribute_rename(x,new="val")
   x = dimension_rename(x,new=c("i","j"))
@@ -245,7 +245,7 @@ hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `eval`=FALSE,
 
 # Return TRUE if array1 has the same dimensions, same attributes and types and
 # same data at the same coordinates False otherwise
-all.equal.scidbdf = function ( target, current , ...)
+all.equal.scidb = function ( target, current , ...)
 {
   all.equal.scidb( target, current )
 }
@@ -320,7 +320,7 @@ antijoin = function(array1, array2)
 }
 
 
-quantile.scidbdf = function(x, probs=seq(0,1,0.25), type=7, ...)
+quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
 {
   quantile.scidb(x,probs,type,...)
 }

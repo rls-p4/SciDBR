@@ -1,8 +1,8 @@
-#' Evaluate an Expression to \code{scidb} or \code{scidbdf} objects
+#' Evaluate an Expression to \code{scidb} or \code{scidb} objects
 #'
-#' Force evaluation of an expression that yields a \code{scidb} or \code{scidbdf} object,
+#' Force evaluation of an expression that yields a \code{scidb} or \code{scidb} object,
 #' storing the result to a SciDB array when \code{eval=TRUE}.
-#' @param exp A SciDB expression or \code{scidb} or \code{scidbdf} object
+#' @param exp A SciDB expression or \code{scidb} or \code{scidb} object
 #' @param name (character) optional SciDB array name to store as
 #' @param gc (logical) optional, when TRUE tie result to R garbage collector
 #' @param temp (logical, optional): when TRUE store as a SciDB temp array
@@ -10,7 +10,7 @@
 scidbeval = function(expr, eval=TRUE, name, gc=TRUE, temp=FALSE)
 {
   ans = eval(expr)
-  if(!(inherits(ans,"scidbdf"))) return(ans)
+  if(!(inherits(ans,"scidb"))) return(ans)
 # If expr is a stored temp array, then re-use its name
   if(!is.null(ans@gc$temp) && ans@gc$temp && missing(name)) name=ans@name
   .scidbeval(ans@name, `eval`=eval, name=name, gc=gc, schema=ans@schema, temp=temp)
@@ -19,12 +19,12 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE, temp=FALSE)
 #' Create an R reference to a SciDB array or expression.
 #' @param name a character string name of a stored SciDB array or a valid SciDB AFL expression
 #' @param gc a logical value, \code{TRUE} means connect the SciDB array to R's garbage collector
-#' @return a \code{scidbdf} object
+#' @return a \code{scidb} object
 #' @export
 scidb = function(name, gc=FALSE)
 {
   if(missing(name)) stop("array or expression must be specified")
-  if(is.scidbdf(name))
+  if(is.scidb(name))
   {
     query = name@name
     return(.scidbeval(name@name, eval=FALSE, gc=gc, depend=list(name)))
@@ -64,12 +64,12 @@ scidb = function(name, gc=FALSE)
 }
 
 #' Is the object a temporary SciDB array
-#' @param name a character name of a SciDB array or a \code{scidbdf} object
+#' @param name a character name of a SciDB array or a \code{scidb} object
 #' @return logical value indicating if \code{name} is temporary
 #' @export
 is.temp = function(name)
 {
-  if(is.scidbdf(name))
+  if(is.scidb(name))
   {
     if(!is.null(name@gc$temp)) return(name@gc$temp)
     name = name@name
@@ -248,16 +248,14 @@ scidbls = function(...) scidblist(...)
 #' Remove one or more scidb arrays
 #' @param x (character): a vector or single character string listing array names
 #' @param error (function): error handler. Use stop or warn, for example.
-#' @param async (optional boolean): If TRUE use expermental shim async option for speed
 #' @param force (optional boolean): If TRUE really remove this array, even if scidb.safe_remove=TRUE
 #' @param recursive (optional boolean): If TRUE, recursively remove this array and its dependency graph
 #' @return \code{NULL}
 #' @export
-scidbremove = function(x, error=warning, async, force, warn=TRUE, recursive=FALSE) UseMethod("scidbremove")
-scidbremove.default = function(x, error=warning, async, force, warn=TRUE, recursive=FALSE)
+scidbremove = function(x, error=warning, force, warn=TRUE, recursive=FALSE) UseMethod("scidbremove")
+scidbremove.default = function(x, error=warning, force, warn=TRUE, recursive=FALSE)
 {
   if(is.null(x)) return(invisible())
-  if(missing(async)) async=FALSE
   if(missing(force)) force=FALSE
   errfun=error
 
@@ -265,24 +263,24 @@ scidbremove.default = function(x, error=warning, async, force, warn=TRUE, recurs
   if(is.null(safe)) safe = TRUE
   if(!safe) force=TRUE
   uid = get("uid",envir=.scidbenv)
-  if(is.scidbdf(x)) x = list(x)
+  if(is.scidb(x)) x = list(x)
   for(y in x)
   {
 # Depth-first, a bad way to traverse this XXX improve
-    if(recursive && (is.scidbdf(y)) && !is.null(unlist(y@gc$depend)))
+    if(recursive && (is.scidb(y)) && !is.null(unlist(y@gc$depend)))
     {
-      for(z in y@gc$depend) scidbremove(z,error,async,force,warn,recursive)
+      for(z in y@gc$depend) scidbremove(z,error,force,warn,recursive)
     }
-    if(is.scidbdf(y)) y = y@name
+    if(is.scidb(y)) y = y@name
     if(grepl("\\(",y)) next  # Not a stored array
     query = sprintf("remove(%s)",y)
     if(grepl(sprintf("^R_array.*%s$",uid),y,perl=TRUE))
     {
-      tryCatch( scidbquery(query,async=async, release=1, stream=0L),
+      tryCatch( scidbquery(query, release=1, stream=0L),
                 error=function(e) if(!recursive && warn)errfun(e))
     } else if(force)
     {
-      tryCatch( scidbquery(query,async=async, release=1, stream=0L),
+      tryCatch( scidbquery(query, release=1, stream=0L),
                 error=function(e) if(!recursive && warn)errfun(e))
     } else if(warn)
     {
@@ -305,7 +303,7 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
 {
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
-  if(is.scidbdf(query))  query=query@name
+  if(is.scidb(query))  query=query@name
   qsplit = strsplit(query,";")[[1]]
   m = 1
   n = -1    # Indicate to shim that we want all the output
@@ -364,8 +362,8 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
   ans
 }
 
-#' Recursively set all arrays in a \code{scidbdf} dependency graph to persist.
-#' @param x a \code{\link{scidbdf}} object
+#' Recursively set all arrays in a \code{scidb} dependency graph to persist.
+#' @param x a \code{\link{scidb}} object
 #' @param gc \code{TRUE} connects arrays to R's garbage collector
 #' @export
 persist = function(x, gc=FALSE) UseMethod("persist")
@@ -373,7 +371,7 @@ persist.default = function(x, gc=FALSE)
 {
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
-  if(!is.scidbdf(x)) return(invisible())
+  if(!is.scidb(x)) return(invisible())
   if(DEBUG) cat("Persisting ",x@name,"\n")
   x@gc$remove = gc
   if(is.null(unlist(x@gc$depend))) return()
@@ -391,7 +389,7 @@ persist.glm_scidb = function(x, gc=FALSE)
 }
 
 # A special remove function for complicated model objects
-scidbremove.glm_scidb = function(x, error=warning, async=FALSE, force=FALSE, warn=TRUE, recursive=TRUE)
+scidbremove.glm_scidb = function(x, error=warning,  force=FALSE, warn=TRUE, recursive=TRUE)
 {
-  .traverse.glm_scidb(x, scidbremove, error, async, force, warn, recursive)
+  .traverse.glm_scidb(x, scidbremove, error, force, warn, recursive)
 }

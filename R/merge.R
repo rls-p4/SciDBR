@@ -12,9 +12,9 @@ merge_scidb_cross = function(x, y)
   chunk_elements = prod(c(as.numeric(chunky),as.numeric(chunkx)))
 # Only compute these counts if we need to
   pdx = prod(dim(x))
-  if(is.scidbdf(x)) pdx = dim(x)[1]
+  if(is.scidb(x)) pdx = dim(x)[1]
   pdy = prod(dim(y))
-  if(is.scidbdf(y)) pdy = dim(y)[1]
+  if(is.scidb(y)) pdy = dim(y)[1]
   if(chunk_elements>1e6 && pdx==count(x) && pdy==count(y))
     {
       NC = length(chunkx) + length(chunky)
@@ -60,10 +60,10 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
 }
 
 # SciDB join, cross_join, and merge wrapper internal function to support merge
-# on various classes (scidb, scidbdf). This is an internal function to support
+# on various classes (scidb, scidb). This is an internal function to support
 # R's merge on various SciDB objects.
 #
-# x and y are SciDB array references of any kind (scidb, scidbdf)
+# x and y are SciDB array references of any kind (scidb, scidb)
 # `by` is either a single character indicating a dimension name common to both
 #      arrays to join on, or a two-element list of character vectors of array
 #      dimensions to join on.

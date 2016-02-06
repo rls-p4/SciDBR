@@ -61,7 +61,7 @@ NULL
 
 # scidb array object type map.
 # R type -> SciDB type
-.scidbtypes = list(
+.Rtypes = list(
   double="double",
   double="int64",
   double="uint64",
@@ -72,7 +72,7 @@ NULL
 
 # These types are used to infer dataframe column classes.
 # SciDB type -> R type
-.scidbdftypes = list(
+.scidbtypes = list(
   double="double",
   int64="double",
   uint64="double",

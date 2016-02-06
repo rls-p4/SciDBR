@@ -2,7 +2,7 @@
 % Please edit documentation in R/utility.R
 \name{scidbeval}
 \alias{scidbeval}
-\title{Evaluate an Expression to \code{scidb} or \code{scidbdf} objects}
+\title{Evaluate an Expression to \code{scidb} or \code{scidb} objects}
 \usage{
 scidbeval(expr, eval = TRUE, name, gc = TRUE, temp = FALSE)
 }
@@ -13,10 +13,10 @@ scidbeval(expr, eval = TRUE, name, gc = TRUE, temp = FALSE)
 
 \item{temp}{(logical, optional): when TRUE store as a SciDB temp array}
 
-\item{exp}{A SciDB expression or \code{scidb} or \code{scidbdf} object}
+\item{exp}{A SciDB expression or \code{scidb} or \code{scidb} object}
 }
 \description{
-Force evaluation of an expression that yields a \code{scidb} or \code{scidbdf} object,
+Force evaluation of an expression that yields a \code{scidb} or \code{scidb} object,
 storing the result to a SciDB array when \code{eval=TRUE}.
 }
 

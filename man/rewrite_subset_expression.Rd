@@ -2,7 +2,7 @@
 % Please edit documentation in R/internal.R
 \name{rewrite_subset_expression}
 \alias{rewrite_subset_expression}
-\title{A somewhat nightmarish internal function}
+\title{Nightmarish internal function that converts R expressions to SciDB expressions}
 \usage{
 rewrite_subset_expression(expr, sci)
 }
@@ -12,6 +12,7 @@ rewrite_subset_expression(expr, sci)
 \item{sci}{a SciDB array}
 }
 \description{
-A somewhat nightmarish internal function
+Nightmarish internal function that converts R expressions to SciDB expressions
 }
+\keyword{internal}
 

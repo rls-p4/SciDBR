@@ -2,7 +2,7 @@
 # treatment contrast encoding. cf glm.
 glm_scidb = function(formula, family=gaussian(), `data`, `weights`)
 {
-  if(!is.scidbdf(data)) stop("data must be a scidbdf object")
+  if(!is.scidb(data)) stop("data must be a scidb object")
   if(is.character(formula)) formula=as.formula(formula)
   wts = NULL
   if(!missing(weights)) wts = weights
@@ -32,7 +32,7 @@ glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
   {
     weights = build(1.0,nrow(x),start=as.numeric(scidb_coordinate_start(x)[1]),chunksize=xchunks[1])
   }
-  if(!is.scidbdf(y))
+  if(!is.scidb(y))
   {
     y = as.scidb(y)
   }
@@ -155,7 +155,7 @@ summary.glm_scidb = function(object, ...)
 }
 
 # A limited version of a model matrix builder for linear models,
-# cf model.matrix and model.frame. Returns a model matrix for the scidbdf
+# cf model.matrix and model.frame. Returns a model matrix for the scidb
 # object and the formula. String-valued variables in data are converted to
 # treatment contrasts, and if present a sparse model matrix is returned.
 # Returns a list of:
@@ -171,7 +171,7 @@ summary.glm_scidb = function(object, ...)
 #          that the factor encoding and baseline are reproducible.
 model_scidb = function(formula, data, factors=NULL)
 {
-  if(!is.scidbdf(data)) stop("data must be a scidbdf object")
+  if(!is.scidb(data)) stop("data must be a scidb object")
   if(is.character(formula)) formula=as.formula(formula)
   dummy = data.frame(matrix(NA,ncol=length(scidb_attributes(data))))
   names(dummy) = scidb_attributes(data)
@@ -362,7 +362,7 @@ predict.glm_scidb = function(object, ...) #newdata=NULL, type=c("link","response
   f(x$coefficients, ...)
   f(x$stderr, ...)
   f(x$tval, ...)
-  if(is.scidbdf(x$pval)) f(x$pval, ...)
+  if(is.scidb(x$pval)) f(x$pval, ...)
   f(x$weights, ...)
   f(x$x, ...)
   f(x$y, ...)

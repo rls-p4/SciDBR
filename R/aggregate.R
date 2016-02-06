@@ -1,8 +1,8 @@
 # Nifty aggregation-related functions
 
-# x:   A scidb, scidbdf object
+# x:   A scidb, scidb object
 # by:  A list of character vector of dimension and or attribute names of x, or,
-#      a scidb or scidbdf object that will be cross_joined to x and then
+#      a scidb or scidb object that will be cross_joined to x and then
 #      grouped by attribues of by.
 # FUN: A SciDB aggregation expresion
 `aggregate_scidb` = function(x,by,FUN,`eval`=FALSE,window,variable_window,unpack)
@@ -25,7 +25,7 @@
   }
 
 # XXX Why limit this to the first `by` element?
-  if(class(`by`[[1]]) %in% "scidbdf")
+  if(class(`by`[[1]]) %in% "scidb")
   {
 # We are grouping by attributes in another SciDB array `by`. We assume that
 # x and by have conformable dimensions to join along!

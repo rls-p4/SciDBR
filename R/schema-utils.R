@@ -9,7 +9,7 @@
   if(is.character(x)) s = x
   else
   {
-    if(!(inherits(x,"scidbdf"))) return(NULL)
+    if(!(inherits(x,"scidb"))) return(NULL)
     s = schema(x)
   }
   d = gsub("\\]","",strsplit(s,"\\[")[[1]][[2]])
@@ -36,7 +36,7 @@
   if(is.character(x)) s = x
   else
   {
-    if(!(inherits(x,"scidbdf"))) return(NULL)
+    if(!(inherits(x,"scidb"))) return(NULL)
     s = schema(x)
   }
   strsplit(strsplit(strsplit(strsplit(s,">")[[1]][1],"<")[[1]][2],",")[[1]],":")
@@ -47,29 +47,40 @@
   c(scidb_attributes(x), dimensions(x))
 }
 
-# Return a vector of SciDB attribute names of x. This is the implementation
-# of the names method for scidb and scidbdf objects.
+#' SciDB array attribute names
+#' @param x a \code{\link{scidb}} array object
+#' @return character vector of SciDB attribute names.
+#' @export
 scidb_attributes = function(x)
 {
   a = .attsplitter(x)
   unlist(lapply(a,function(x) x[[1]]))
 }
 
-# Return a vector of SciDB attribute types of x.
+#' SciDB array attribute types
+#' @param x a \code{\link{scidb}} array object
+#' @return character vector of SciDB attribute types
+#' @export
 scidb_types = function(x)
 {
   a = .attsplitter(x)
   unlist(lapply(a, function(x) strsplit(x[2]," ")[[1]][1]))
 }
 
-# Return a logical vector indicating attribute nullability
+#' SciDB array attribute nullability
+#' @param x a \code{\link{scidb}} array object
+#' @return logical vector of SciDB attribute nullability
+#' @export
 scidb_nullable = function(x)
 {
   a = .attsplitter(x)
   unlist(lapply(a, function(x) length(strsplit(x[2]," ")[[1]])>1))
 }
 
-# Return a vector of dimension names of the SciDB object x.
+#' SciDB array dimension names
+#' @param x a \code{\link{scidb}} array object
+#' @return character vector of SciDB dimension names
+#' @export
 dimensions = function(x)
 {
   d = .dimsplitter(x)
@@ -83,8 +94,10 @@ dimensions = function(x)
   h
 }
 
-# Returns a list of character-valued vectors of starting and
-# ending coordinate bounds
+#' SciDB array coordinate bounds
+#' @param x a \code{\link{scidb}} array object
+#' @return list of character-valued vectors of starting and ending coordinate bounds
+#' @export
 scidb_coordinate_bounds = function(x)
 {
   d = .dimsplitter(x)
@@ -107,48 +120,72 @@ scidb_coordinate_bounds = function(x)
 # A between-style string of coordinate bounds
 between_coordinate_bounds = function(s)
 {
-  if((inherits(s,"scidbdf"))) s = schema(s)
+  if((inherits(s,"scidb"))) s = schema(s)
   paste(t(matrix(unlist(lapply(strsplit(gsub("\\].*","",gsub(".*\\[","",s,perl=TRUE),perl=TRUE),"=")[[1]][-1],function(x)strsplit(strsplit(x,",")[[1]][1],":")[[1]])),2,byrow=FALSE)),collapse=",")
 }
 
+#' SciDB array coordinate start
+#' @param x a \code{\link{scidb}} array object
+#' @return character-valued vector of starting coordinate bounds
+#' @export
 scidb_coordinate_start = function(x)
 {
   scidb_coordinate_bounds(x)$start
 }
 
+#' SciDB array coordinate end
+#' @param x a \code{\link{scidb}} array object
+#' @return character-valued vector of end coordinate bounds
+#' @export
 scidb_coordinate_end = function(x)
 {
   scidb_coordinate_bounds(x)$end
 }
 
+#' SciDB array coordinate chunksize
+#' @param x a \code{\link{scidb}} array object
+#' @return character-valued vector of SciDB coordinate chunk sizes
+#' @export
 scidb_coordinate_chunksize = function(x)
 {
   d = .dimsplitter(x)
   unlist(lapply(d[-1],function(x)x[2]))
 }
 
+#' SciDB array coordinate overlap
+#' @param x a \code{\link{scidb}} array object
+#' @return character-valued vector of SciDB coordinate overlap
+#' @export
 scidb_coordinate_overlap = function(x)
 {
   d = .dimsplitter(x)
   unlist(lapply(d[-1],function(x)x[3]))
 }
 
-# Return the SciDB schema of x
+#' SciDB array schema
+#' @param x a \code{\link{scidb}} array object
+#' @return character-valued SciDB array schema
+#' @export
 schema = function(x)
 {
-  if(!(inherits(x,"scidbdf"))) return(NULL)
+  if(!(inherits(x,"scidb"))) return(NULL)
   gsub(".*<","<",x@schema)
 }
 
-# Construct a scidb promise from a SciDB schema string s.
-# s: schema character string
-# expr: SciDB expression or array name
+#' SciDB array from a schema string
+#' @param s schema character string
+#' @param expr a character SciDB array name or array expression
+#' @note This function creates a virtual SciDB array object from a schema string and optional expression.
+#' It does not contact the database nor does it create the array explicitly in SciDB. The function only
+#' creates an R \code{\link{scidb}} array object with the indicated schema and expression.
+#' @return \code{\link{scidb}} reference object
+#' @export
 scidb_from_schemastring = function(s, expr=character())
 {
   attributes = scidb_attributes(s)
   dimensions = dimensions(s)
 
-  return(new("scidbdf",
+  return(new("scidb",
               schema=gsub("^.*<","<",s,perl=TRUE),
               name=expr,
               attributes=attributes,
@@ -156,7 +193,7 @@ scidb_from_schemastring = function(s, expr=character())
               gc=new.env()))
 }
 
-# Build the attribute part of a SciDB array schema from a scidb, scidbdf object.
+# Build the attribute part of a SciDB array schema from a scidb, scidb object.
 # Set prefix to add a character prefix to all attribute names.
 # I: optional vector of dimension indices to use, if missing use all
 # newnames: optional vector of new dimension names, must be the same length
@@ -168,7 +205,7 @@ build_attr_schema = function(A, prefix="", I, newnames, nullable, newtypes)
 {
   if(missing(I) || length(I)==0) I = rep(TRUE,length(scidb_attributes(A)))
   if(is.character(A)) A = scidb_from_schemastring(A)
-  if(!(class(A) %in% c("scidbdf"))) stop("Invalid SciDB object")
+  if(!(class(A) %in% c("scidb"))) stop("Invalid SciDB object")
   if(is.character(I)) I = which(scidb_attributes(A) %in% I)
   if(is.logical(I)) I = which(I)
   N = rep("", length(scidb_nullable(A)[I]))
@@ -187,8 +224,8 @@ build_attr_schema = function(A, prefix="", I, newnames, nullable, newtypes)
 }
 
 # Build the dimension part of a SciDB array schema from a scidb,
-# scidbdf object.
-# A: A scidb or scidbdf object
+# scidb object.
+# A: A scidb or scidb object
 # bracket: if TRUE, enclose dimension expression in square brackets
 # I: optional vector of dimension indices to use, if missing use all
 # newnames, newstart, newend, newchunk, newoverlap, newlen:
@@ -199,7 +236,7 @@ build_dim_schema = function(A, bracket=TRUE, I,
                             newend, newchunk, newoverlap)
 {
   if(is.character(A)) A = scidb_from_schemastring(A)
-  if(!(class(A) %in% c("scidbdf"))) stop("Invalid SciDB object")
+  if(!(class(A) %in% c("scidb"))) stop("Invalid SciDB object")
   dims = dimensions(A)
   bounds = scidb_coordinate_bounds(A)
   start =  bounds$start
@@ -289,8 +326,8 @@ compare_schema = function(s1, s2,
 {
   if(is.character(s1)) s1 = scidb_from_schemastring(s1)
   if(is.character(s2)) s2 = scidb_from_schemastring(s2)
-  if(!(class(s1) %in% c("scidbdf"))) stop("Invalid SciDB object")
-  if(!(class(s2) %in% c("scidbdf"))) stop("Invalid SciDB object")
+  if(!(class(s1) %in% c("scidb"))) stop("Invalid SciDB object")
+  if(!(class(s2) %in% c("scidb"))) stop("Invalid SciDB object")
   if(missing(s1_attribute_index)) s1_attribute_index=1:length(scidb_attributes(s1))
   if(missing(s2_attribute_index)) s2_attribute_index=1:length(scidb_attributes(s2))
   if(missing(s1_dimension_index)) s1_dimension_index=1:length(dimensions(s1))
@@ -337,7 +374,7 @@ strdiff = function(x,y)
 aliases = function(x)
 {
   ans = c()
-  if(!(inherits(x,"scidbdf"))) return(ans)
+  if(!(inherits(x,"scidb"))) return(ans)
   logical_schema = grep("^>>schema",strsplit(x@logical_plan,"\n")[[1]], value=TRUE)
   if(length(logical_schema) < 1) return(NULL)
   logical_schema = gsub("].*","]",logical_schema)

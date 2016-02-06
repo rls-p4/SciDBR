@@ -7,7 +7,7 @@
 reshape_scidb(x, schema, shape, dimnames, start, chunks)
 }
 \arguments{
-\item{x}{a \code{scidbdf} object}
+\item{x}{a \code{scidb} object}
 
 \item{schema}{optional new schema}
 
