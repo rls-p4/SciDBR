@@ -400,14 +400,13 @@ create_temp_array = function(name, schema)
 #               (requires scidb >= 14.8)
 #
 # OUTPUT
-# A `scidb` or `scidb` array object.
+# A `scidb` array object.
 #
 # NOTE
 # Only AFL supported.
-`.scidbeval` = function(expr, eval, name, gc=TRUE, depend, schema, temp)
+`.scidbeval` = function(expr, eval=FALSE, name, gc=TRUE, depend, schema, temp)
 {
   ans = c()
-  if(missing(eval)) eval = FALSE
   if(missing(depend)) depend = c()
   if(missing(schema)) schema = ""
   if(missing(temp)) temp = FALSE

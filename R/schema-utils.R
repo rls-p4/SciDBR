@@ -369,6 +369,7 @@ strdiff = function(x,y)
            gsub(sprintf("^%s",x[[i]]), "", y[[i]])
          }))
 }
+
 # Internal function used to infer aliases in use by comparing the output of
 # show and explain_logical. Returns NULL if no aliasing can be determined.
 aliases = function(x)
