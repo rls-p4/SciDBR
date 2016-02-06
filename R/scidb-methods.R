@@ -153,17 +153,22 @@ setMethod("unpack",signature(x="scidb"),unpack_scidb)
 #' # an R data frame)--also note any valid SciDB aggregation expression may
 #' # be used:
 #' y <- as.scidb(data.frame(sample(1:4, 150, replace=TRUE)))
-#' a <- aggregate(x, by=y, FUN="avg(Petal_Width) as apw, min(Sepal_Length) as msl")
+#' aggregate(x, by=y, FUN="avg(Petal_Width) as apw, min(Sepal_Length) as msl")[]
 #' 
 #' # Use the window argument to perform moving window aggregates along coordinate
 #' # systems. You need to supply a window across all the array dimesions.
 #' set.seed(1)
-#' A <- as.scidb(matrix(rnorm(20), nrow=5))
+#' a <- matrix(rnorm(20), nrow=5)
+#' A <- as.scidb(a)
 #' # Compute a moving window aggregate only along the rows summing two rows at
 #' # a time (returning result to R). The notation (0,1,0,0) means apply the
 #' # aggregate over the current row (0) and (1) following row, and just over
-#' # the current column (that is, a window size of one).
-#' aggregate(A, FUN=sum, window=c(0,1,0,0))[]
+#' # the current column (that is, a window size of one), returned in a data frame.
+#' x <- aggregate(A, FUN=sum, window=c(0,1,0,0))[]
+#' # Convert the returned data frame to a matrix:
+#' X <- matrix(0, 5, 4)
+#' X[as.matrix(x[,1:2] + 1)] <- x[,3]
+#' X
 #' # The above aggregate is equivalent to, for example:
 #' apply(a, 2, function(x) x + c(x[-1], 0))
 #' 
@@ -173,15 +178,15 @@ setMethod("unpack",signature(x="scidb"),unpack_scidb)
 #' # difference.
 #' 
 #' # First, create an array with empty values:
-#' B <- A > 0
-#' # Here is what B looks like:
+#' B <- subset(A, val > 0)
+#' # Here is what B looks like (in data frame form):
 #' B[]
 #' # Now, run a moving window aggregate along the rows with window just like
 #' # the above example:
 #' aggregate(B, FUN=sum, window=c(0,1,0,0))[]
 #' # And now, a moving window along only the data values down the rows, note
 #' # that we need to specify the dimension with by=:
-#' aggregate(B, by="i", FUN="sum(val)", variable_window=c(0,1))[]
+#' aggregate(B, by="i", FUN=sum, variable_window=c(0,1))[]
 #' }
 setMethod("aggregate", signature(x="scidb"), aggregate_scidb)
 

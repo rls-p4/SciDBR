@@ -114,7 +114,19 @@ aggregate_scidb = function(x, by, FUN, window, variable_window, unpack)
   .scidbeval(query, gc=TRUE,depend=list(x))
 }
 
-# The new (SciDB 13.9) cumulate
+#' SciDB Cumulative Aggregation
+#' Use \code{cumulate} function to compute running operations along data,
+#' for example cumulative sums.
+#' @param x SciDB array
+#' @param expression any valid SciDB aggregate expression, expressed as a character string
+#' @param optional array dimension name (character) or 1-based dimension index to run along (default is to use the first dimension)
+#' @return SciDB array
+#' @examples
+#' \dontrun{
+#' x <- as.scidb(iris)
+#' y <- cumulate(x, "sum(Petal_Width)")
+#' }
+#' @export
 cumulate = function(x, expression, dimension)
 {
   if(missing(dimension)) dimension = dimensions(x)[[1]]
