@@ -214,7 +214,7 @@ count = function(x)
 }
 
 #' Project onto a subset of SciDB array attributes
-#' 
+#'
 #' @param x \code{scidb} array object
 #' @param attributes a character vector of array attribute names or a numeric vector of attribute positions
 #' @return a new \code{scidb} array object
@@ -298,7 +298,6 @@ bind = function(x, name, FUN, `eval`=FALSE)
 unique_scidb = function(x, incomparables=FALSE, sort=TRUE, ...)
 {
   mc = list(...)
-  `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
   if(incomparables!=FALSE) warning("The incomparables option is not available yet.")
   if(any(x@attributes %in% "i"))
   {
@@ -328,7 +327,7 @@ unique_scidb = function(x, incomparables=FALSE, sort=TRUE, ...)
   {
     query = sprintf("uniq(%s)", x@name)
   }
-  .scidbeval(query, eval, depend=list(x))
+  .scidbeval(query, depend=list(x))
 }
 
 sort_scidb = function(x, decreasing=FALSE, ...)
@@ -359,18 +358,120 @@ sort_scidb = function(x, decreasing=FALSE, ...)
   .scidbeval(query,eval,depend=list(x))
 }
 
-# S3 methods
+#' SciDB \code{merge}, \code{cross_join}, and \code{join} operations.
+#'
+#' Only one of either \code{by} or both \code{by.x} and \code{by.y} may be
+#' specified.  If none of the \code{by.x},\code{by.y} arguments are specified, and
+#' \code{by=NULL} the result is the Cartesian cross product of \code{x} and
+#' \code{y}.  The default value of \code{by} performs a \code{cross_join} or
+#' \code{join} along common array dimensions. The \code{by} arguments may
+#' be specified by name or 1-based integer dimension index.
+#'
+#' If only \code{by} is specified, the dimension names or attribute name in
+#' \code{by} are assumed to be common across \code{x} and \code{y}.  Otherwise
+#' dimension names or attribute names are matched across the names listed in
+#' \code{by.x} and \code{by.y}, respectively.
+#'
+#' If dimension names are specified and \code{by} contains all the dimensions
+#' in each array, then the SciDB \code{join} operator is used, otherwise SciDB's
+#' \code{cross_join} operator is used. In each either case, the output is a cross
+#' product set of the two arrays along the specified dimensions.
+#'
+#' If \code{by} or each of \code{by.x} and \code{by.y} list a single attribute
+#' name, the indicated attributes will be lexicographically ordered as categorical
+#' variables and SciDB will redimension each array along new coordinate systems
+#' defined by the attributes, and then those redimensioned arrays will be joined.
+#' This method limits joins along attributes to a single attribute from
+#' each array. The output array will contain additional columns showing the
+#' attribute factor levels used to join the arrays.
+#'
+#' Specify \code{merge=TRUE} to perform a SciDB merge operation instead
+#' of a SciDB join.
+#'
+#' If \code{all=FALSE} (the default), then a SQL-like `natural join`
+#' (an inner join) is performed. If \code{all=TRUE} then SQL-like `outer join`
+#' is performed, but this case has some limitiations; in particular the
+#' outer join is not available yet for the \code{merge=TRUE} case, for
+#' joining on SciDB attributes, or for joining on subsets of dimensions.
+#'
+#' The various SciDB \code{join} operators generally require that the arrays have
+#' identical partitioning (coordinate system bounds, chunk size, etc.) in the
+#' common dimensions.  The \code{merge} method attempts to rectify SciDB
+#' arrays along the specified dimensions as required before joining. Those
+#' dimensions must at least have common lower index bounds.
+#'
+#' The merge function may rename SciDB attributes and dimensions as required
+#' to avoid name conflicts in SciDB. See the last example for an
+#' illustration.
+#' @param x A \code{scidb} array
+#' @param y A \code{scidb} array
+#' @param by (Optional) Vector of common dimension or attribute names or dimension indices
+#"            to join on. See details below.
+#' @param by.x (Optional) Vector of dimension or attribute names or dimension indices
+#'                of array \code{x} to join on. See deails.
+#' @param by.y (Optional) Vector of dimension or attribute names or dimension indices
+#'                   of array \code{y} to join on. See deails.
+#' @param merge (Optional) If TRUE, perform a SciDB merge operation instead of join.
+#' @param all (Optional) If TRUE, perform outer join. Defaults to inner join.
+#' @return a SciDB array object
+#' @examples
+#' \dontrun{
+#' x <- as.scidb(iris,name="iris")
+#'
+#' a <- x$Species
+#' b <- x$Petal_Length
+#'
+#' c <- merge(a, b, by="row")
+#' merge(b, b, by="row", merge=TRUE)
+#'
+#'
+#' # Here is an example that joins on SciDB array attributes instead of
+#' # dimensions. It works by enumerating the attribute values and
+#' # redimensioning along those.
+#' set.seed(1)
+#' a <- as.scidb(data.frame(a=sample(10, 5), b=rnorm(5)))
+#' b <- as.scidb(data.frame(u=sample(10, 5), v=rnorm(5)))
+#' merge(x=a, y=b, by.x="a", by.y="u")[]
+#'
+#'
+#' # The following example joins on a subset of coordinate axes:
+#' x <- build(5.5, c(3, 3));                   print(schema(x))
+#' y <- build(1.1, c(3, 3), chunksize=c(2,1)); print(schema(y))
+#' z <- merge(x, y, by="i")
+#' print(schema(z))
+#' }
 #' @export
 `merge.scidb` = function(x, y, by=intersect(dimensions(x), dimensions(y)), ...) merge_scidb(x, y, by, ...)
 
+#' Sort a SciDB array
+#'
+#' @param x a SciDB array
+#' @param decreasing set to \code{TRUE} to sort in decreasing order
+#' @param ... optional SciDB-specific character vector of SciDB array attribute names to sort by
+#' @return a SciDB array
+#' @examples
+#' \dontrun{
+#' # Create a copy of the iris data frame in a 1-d SciDB array named "iris."
+#' # Note that SciDB attribute names will be changed to conform to SciDB
+#' # naming convention.
+#' x <- as.scidb(iris,name="iris")
+#'
+#' # Sort x by Petal_Width and Petal_Length:
+#' a <- sort(x, attributes=c("Petal_Width","Petal_Length"))
+#' }
 #' @export
 `sort.scidb` = function(x, decreasing=FALSE, ...) sort_scidb(x, decreasing, ...)
 
+#' Filter unique elements from a SciDB array
+#' @param x SciDB array
+#' @param incomparables ignored
+#' @param ... optional arguments: specify \code{sort=TRUE} to first sort values
+#' @return a SciDB array
 #' @export
 `unique.scidb` = function(x, incomparables=FALSE, ...) unique_scidb(x, incomparables, ...)
 
 #' Filter SciDB array values or dimensions
-#' @param x SciDB array object
+#' @param x SciDB array
 #' @param ... filter expression (see notes)
 #' @note
 #' Perform a SciDB \code{filter} operation on a SciDB array.  The \code{subset}
@@ -378,7 +479,7 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 #' SciDB filter operation.  The R expression form can include R scalar values and
 #' can generate more efficient SciDB queries in some cases as shown in the
 #' examples.
-#' 
+#'
 #' When \code{subset} is an R expression, conditions involving array dimensions
 #' will be translated to SciDB \code{between} statements when possible.  The R
 #' expression it must use valid R syntax, although no distinction are made between
@@ -390,11 +491,11 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 #' R objects like functions can't be used, however, because the logical
 #' expressions are ultimately evaluated by SciDB. Dimension values are
 #' treated as integer values.
-#' 
+#'
 #' Explicit grouping by parenthesis may be required to generate most
 #' optimal queries when attribute and dimension conditions are mixed together
 #' in an expression.
-#' 
+#'
 #' @export
 #' @return a SciDB array object
 #' @examples
@@ -407,20 +508,20 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 #' y <- subset(x, "Species = 'setosa'")
 #' # Using an R expression form is equivalent in this example
 #' z <- subset(x, Species = "setosa")
-#' 
+#'
 #' # The R expression form can generate better-optimized SciDB
 #' # expressions than the explicit form.
 #' # Compare a filter involving the 'row' dimension and
 #' # an attribute. Note the difference in the generated queries:
-#' 
+#'
 #' y <- subset(x, "Species = 'setosa' and row > 40")
 #' y@name
 #' # [1] "filter(R_array5494563bc4e1101849601199,Species = 'setosa' and row > 40)"
-#' 
+#'
 #' z <- subset(x, Species == 'setosa' & row > 40)
 #' z@name
 #' # [1] "filter(between(R_array5494563bc4e1101849601199,41,null),Species = 'setosa' )"
-#' 
+#'
 #' # Important things to note:
 #' # 1. The R expression form uses R syntax.
 #' # 2. The R expression form generates a SciDB query using between on

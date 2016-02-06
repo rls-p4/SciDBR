@@ -7,7 +7,7 @@
 \method{subset}{scidb}(x, ...)
 }
 \arguments{
-\item{x}{SciDB array object}
+\item{x}{SciDB array}
 
 \item{...}{filter expression (see notes)}
 }
