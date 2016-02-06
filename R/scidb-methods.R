@@ -1,7 +1,6 @@
 setGeneric("c")
 setGeneric("head")
 setGeneric("is.scidb", function(x) standardGeneric("is.scidb"))
-setGeneric("unpack", unpack_scidb)
 
 #' @export
 setMethod(c, signature(x="scidb"),
@@ -27,17 +26,14 @@ function(x, y)
 setMethod("head", signature(x="scidb"),
 function(x, n=6L, ...)
 {
-  iqdf(x, n)[,-c(1,2)]
+  iqdf(x, n)
 })
 
 #' @export
 setMethod("tail", signature(x="scidb"),
 function(x, n=6L, ...)
 {
-  ans = x[x[,1],]
-  end = as.numeric(scidb_coordinate_bounds(ans)$end)
-  start = max(0, end-n+1)
-  ans[start:end,][]
+  stop("Not yet supported")
 })
 
 #' @export
@@ -82,8 +78,6 @@ setMethod('show', 'scidb',
 #    query = sprintf("xgrid(%s, %s)", x@name, paste(noE(grid),collapse=","))
 #    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
 #  })
-
-setMethod("unpack",signature(x="scidb"),unpack_scidb)
 
 
 #' Aggregate a SciDB Array Grouped by a Subset of its Dimensions and/or Attributes

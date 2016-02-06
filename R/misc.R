@@ -71,7 +71,7 @@ bernoulli = function (x, prob , seed=sample(2^32 - 1 - 2^31, 1))
 }
 
 
-iqdf = function( x, n = 50L, prob = 1)
+iqdf = function( x, n = 6L, prob = 1)
 {
   result = x
   if ( class(result) == "character")
@@ -85,7 +85,8 @@ iqdf = function( x, n = 50L, prob = 1)
   result = unpack(result)
   if ( n > 0 && is.finite(n))
   {
-    return(result[0:n-1, ,drop=FALSE][])
+    filter = sprintf("%s < %s", dimensions(result), noE(n))
+    result = subset(result, filter)
   }
   result[]
 }
