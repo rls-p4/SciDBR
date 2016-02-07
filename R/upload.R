@@ -24,11 +24,7 @@ as.scidb = function(X,
   {
     return(.Matrix2scidb(X, name=name, start=start, gc=gc, ...))
   }
-  if(inherits(X, "matrix") || inherits(X, "vector"))
-  {
-    return(matvec2scidb(X, name=name, start=start, gc=gc, ...))
-  }
-  stop("X must be a data frame or raw value")
+  return(matvec2scidb(X, name=name, start=start, gc=gc, ...))
 }
 
 #' Internal function to upload an R data frame to SciDB
@@ -187,9 +183,9 @@ df2scidb = function(X,
 
 
 matvec2scidb = function(X,
-                         name=tmpnam(),
-                         start,
-                         gc=TRUE, ...)
+                        name=tmpnam(),
+                        start,
+                        gc=TRUE, ...)
 {
 # Check for a bunch of optional hidden arguments
   args = list(...)
@@ -220,7 +216,7 @@ matvec2scidb = function(X,
   if(is.null(D))
   {
 # X is a vector
-    if(!is.vector(X)) stop ("X must be a matrix or a vector")
+    if(!is.vector(X)) stop ("Unsupported object")
     do_reshape = FALSE
     chunkSize = min(chunkSize[[1]], length(X))
     X = as.matrix(X)

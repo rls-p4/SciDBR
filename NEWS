@@ -1,10 +1,12 @@
 CHANGES IN scidb 2.0.0:
 
-   o Removed scidb class--all objects are presented as data frames
+   o Big change: all SciDB arrays are presented as data frames
 
    o Removed scidb array arithmetic
 
    o Hugely simplified the package, improved data transfer performance
+
+   o Main ops are now: subset, project, transform, merge, aggregate
 
 CHANGES IN scidb 1.1-3:
 
