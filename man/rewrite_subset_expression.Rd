@@ -11,6 +11,9 @@ rewrite_subset_expression(expr, sci)
 
 \item{sci}{a SciDB array}
 }
+\value{
+character-valued SciDB expression
+}
 \description{
 Nightmarish internal function that converts R expressions to SciDB expressions
 }

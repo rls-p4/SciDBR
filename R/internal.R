@@ -112,9 +112,12 @@ scidb_unpack_to_dataframe = function(query, ...)
   dt2 = proc.time()
 # reorder so that dimensions appear to the left
   n = ncol(ans)
-  na = 1:(n - ndim)
-  nd = (n - ndim + 1):n
-  ans = ans[, c(nd, na)]
+  if(n > 0)
+  {
+    na = 1:(n - ndim)
+    nd = (n - ndim + 1):n
+    ans = ans[, c(nd, na)]
+  }
   if(DEBUG) cat("Total R parsing time",(proc.time()-dt1)[3],"\n")
   ans
 }
@@ -231,6 +234,7 @@ oldURLencode = function (URL, reserved = FALSE)
 #' @param expr an R 'language' type object to parse
 #' @param sci a SciDB array 
 #' @keywords internal
+#' @return character-valued SciDB expression
 #' @importFrom codetools makeCodeWalker walkCode
 rewrite_subset_expression = function(expr, sci)
 {
@@ -328,8 +332,6 @@ rewrite_subset_expression = function(expr, sci)
     if(attr(x,"what")=="character") return(sprintf("'%s'",as.character(x)))
     as.character(x)
   }
-
-
 
   ans = .compose_r(.annotate(walkCode(expr, .toList), dims=dims, attr=scidb_attributes(sci), frames=sys.frames()))
   i   = grepl("::",ans)

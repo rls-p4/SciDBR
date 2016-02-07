@@ -260,7 +260,35 @@ filter_scidb = function(x, expr)
 }
 
 
-`index_lookup` = function(x, I, attr, new_attr, `eval`=FALSE)
+#' SciDB index lookup operator
+#' The \code{index_lookup} function is a wrapper to the SciDB `index_lookup` operator.
+#' It produces a new SciDB dimension array that joins the unqiue indices defined in the array
+#' \code{I} with values looked up in array \code{X} for attribute \code{attr}. Use
+#' the \code{index_lookup} with the \code{unique} and \code{sort} functions.
+#' @param x SciDB array
+#' @param I single-attribute SciDB array
+#' @param attr character string attribute name from the \code{x} array
+#' @param new_attr optional name for the new attribute
+#' @return a SciDB array
+#' @note If \code{attr} is missing the first listed attribute in \code{x} will be used. If \code{I} has more than
+#' one attribute, only its first listed attribute is used.
+#' @examples
+#' \dontrun{
+#' data("iris")
+#' x <- as.scidb(iris)
+#' 
+#' # Create a unique list of elements of the "Species" attribute.
+#' # Note that we choose to defer evaluation of this expression.
+#' y <- unique(sort(project(x,"Species")), eval=FALSE)
+#'
+#' # Append a new attribute to the array x called "Species_index" that
+#' # enumerates the unique values of the "Species" attribute:
+#' z <- index_lookup(x, y, "Species", eval=FALSE)
+#'
+#' print(head(z))
+#' }
+#' @export
+`index_lookup` = function(x, I, attr, new_attr)
 {
   if(missing(attr)) attr = x@attributes[[1]]
   if(missing(new_attr)) new_attr=paste(attr,"index",sep="_")
@@ -275,24 +303,36 @@ filter_scidb = function(x, expr)
     iname=I@name
   }
   query = sprintf("index_lookup(%s as %s, %s as %s, %s.%s, %s)",xname, al[1], iname, al[2], al[1], attr, new_attr)
-  .scidbeval(query,eval,depend=list(x,I))
+  .scidbeval(query, depend=list(x,I))
 }
 
-# Sort of like cbind for data frames.
-bind = function(x, name, FUN, `eval`=FALSE)
+# supports transform/within
+bind = function(x, name, FUN)
 {
+  oldname = name
   aname = x
   if(class(x) %in% c("scidb")) aname=x@name
 # Auto-generate names like x_n:
   if(missing(name))
   {
-    name = rep("x",length(FUN))
+    name = rep("x", length(FUN))
   }
-  name = make.unique_(c(scidb_attributes(x),dimensions(x)), name)
-  if(length(name)!=length(FUN)) stop("name and FUN must be character vectors of identical length")
-  expr = paste(paste(name,FUN,sep=","),collapse=",")
-  query = sprintf("apply(%s, %s)",aname, expr)
-  .scidbeval(query,eval,depend=list(x))
+  name = make.unique_(c(scidb_attributes(x)), name)
+  if(length(name) != length(FUN)) stop("name and FUN must be character vectors of identical length")
+  expr = paste(paste(name, FUN, sep=","), collapse=",")
+  query = sprintf("apply(%s, %s)", aname, expr)
+  ans = .scidbeval(query, depend=list(x))
+  if(!all(oldname == name))
+  {
+    drop = setdiff(oldname, name)
+    a    = scidb_attributes(ans)
+    ans  = project(ans, setdiff(a, drop))
+    idx  = oldname != name
+    a1   = name[idx]
+    a2   = oldname[idx]
+    ans  = attribute_rename(ans, a1, a2)
+  }
+  ans
 }
 
 unique_scidb = function(x, incomparables=FALSE, sort=TRUE, ...)
@@ -528,3 +568,27 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 #' #    the dimensions when possible.
 #' }
 `subset.scidb` = function(x, ...) filter_scidb(x, ...)
+
+
+#' Transform a SciDB array using the SciDB 'apply' operator
+#' Use \code{transform} to add new derived attributes to a SciDB array, or to
+#' replace an existing attribute. New attribute names must not conflict with array
+#' dimension names.
+#' @param _data SciDB array
+#' @param ... named transformations, see example
+#' @return a SciDB array
+#' @examples
+#' \dontrun{
+#' x <- scidb("build(<v:double>[i=1:5,5,0], i)")
+#' y <- transform(x, a=2*v, v=3*v)
+#' }
+#' @export
+`transform.scidb` = function(`_data`, ...)
+{
+  a = as.list(match.call())[-(1:2)]
+  if(length(a) == 0) return()
+  n = names(a)
+  v = unlist(a)
+  names(v) = c()
+  bind(`_data`, n, v)
+}
