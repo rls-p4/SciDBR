@@ -69,12 +69,11 @@ dimnames.scidb = function(x)
 #' @export
 `$.scidb` = function(x, ...)
 {
-  M = match.call()
-  M[1] = call("[.scidb")
-  M[2] = x
-  M[4] = as.character(M[3])
-  M[3] = expression(NULL)
-  eval(M)
+  M = match.call()[-(1:2)]
+  if(length(M) == 0) return(x)
+  a = pmatch(unlist(as.character(M)), scidb_attributes(x))
+  if(is.na(a)) return(NULL)
+  project(x, scidb_attributes(x)[a])
 }
 
 # data.frame subsetting wrapper, limited to special [] case.
