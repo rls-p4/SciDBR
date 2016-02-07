@@ -570,17 +570,21 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 `subset.scidb` = function(x, ...) filter_scidb(x, ...)
 
 
-#' Transform a SciDB array using the SciDB 'apply' operator
+#' Transform SciDB array values
+#'
 #' Use \code{transform} to add new derived attributes to a SciDB array, or to
 #' replace an existing attribute. New attribute names must not conflict with array
 #' dimension names.
 #' @param _data SciDB array
-#' @param ... named transformations, see example
+#' @param ... named transformations, NOTE that SciDB expressions must be quoted (see example)
 #' @return a SciDB array
+#' @note The \code{transform} function at this time only supports quoted SciDB expressions.
+#' A future version may also support more general mixed R/SciDB expressions similarly to
+#' \code{\link{subset}}.
 #' @examples
 #' \dontrun{
 #' x <- scidb("build(<v:double>[i=1:5,5,0], i)")
-#' y <- transform(x, a=2*v, v=3*v)
+#' y <- transform(x, a="2*v", v="3*v")
 #' }
 #' @export
 `transform.scidb` = function(`_data`, ...)

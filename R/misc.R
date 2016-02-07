@@ -70,7 +70,15 @@ bernoulli = function (x, prob , seed=sample(2^32 - 1 - 2^31, 1))
   return (scidb(query))
 }
 
-
+#' Head-like SciDB array inspection
+#'
+#' Return the first part of an unpacked SciDB array as a data frame.
+#' @param x SciDB array
+#' @param n maximum number of rows to return
+#' @param prob sampling probability
+#' @note Setting the sampling probability low for huge arrays will improve performance.
+#' @seealso \code{\link{head}}
+#' @export
 iqdf = function( x, n = 6L, prob = 1)
 {
   result = x

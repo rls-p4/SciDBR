@@ -26,7 +26,7 @@ function(x, y)
 setMethod("head", signature(x="scidb"),
 function(x, n=6L, ...)
 {
-  iqdf(x, n)
+  iqdf(x, n)[,-1]
 })
 
 #' @export
