@@ -50,11 +50,14 @@ names.scidb = function(x)
 }
 
 #' @export
-`names<-.scidb` = function(x,value)
+`names<-.scidb` = function(x, value)
 {
-stop("XXX WRITE ME")
-  ans = attribute_rename(x,`new`=value)
-  ans
+  d = dimensions(x)
+  a = scidb_attributes(x)
+  if(length(value) != length(d) + length(a)) stop("Wrong number of names")
+  v1 = value[1:length(d)]
+  v2 = value[(length(d) + 1):length(value)]
+  attribute_rename(dimension_rename(x, `new`=v1), `new`=v2)
 }
 
 #' @export

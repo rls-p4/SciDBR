@@ -40,7 +40,7 @@ scidb = function(name, gc=FALSE)
     query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape, escape)
   }
   query = iquery(query, `return`=TRUE, binary=FALSE)
-# XXX NOTE that we need binary=FALSE here to avoid a terrible recursion
+# NOTE that we need binary=FALSE here to avoid a terrible recursion
   logical_plan = query$logical_plan
   schema = gsub("^.*<", "<", query$schema, perl=TRUE)
   obj = scidb_from_schemastring(schema, name)
