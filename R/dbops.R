@@ -261,6 +261,7 @@ filter_scidb = function(x, expr)
 
 
 #' SciDB index lookup operator
+#'
 #' The \code{index_lookup} function is a wrapper to the SciDB `index_lookup` operator.
 #' It produces a new SciDB dimension array that joins the unqiue indices defined in the array
 #' \code{I} with values looked up in array \code{X} for attribute \code{attr}. Use
@@ -279,11 +280,11 @@ filter_scidb = function(x, expr)
 #' 
 #' # Create a unique list of elements of the "Species" attribute.
 #' # Note that we choose to defer evaluation of this expression.
-#' y <- unique(sort(project(x,"Species")), eval=FALSE)
+#' y <- unique(sort(project(x,"Species")))
 #'
 #' # Append a new attribute to the array x called "Species_index" that
 #' # enumerates the unique values of the "Species" attribute:
-#' z <- index_lookup(x, y, "Species", eval=FALSE)
+#' z <- index_lookup(x, y, "Species")
 #'
 #' print(head(z))
 #' }
@@ -345,7 +346,7 @@ unique_scidb = function(x, incomparables=FALSE, sort=TRUE, ...)
     new_attrs = new_attrs[x@attributes %in% "i"] = make.unique_(x@attributes,"i")
     x = attribute_rename(x,x@attributes,new_attrs)
   }
-  got_cu = any(grepl("^cu$",.scidbenv$ops$name))
+  got_cu = any(grepl("^cu$", .scidbenv$ops$name))
   if(sort)
   {
     dimname = make.unique_(scidb_attributes(x),"n")

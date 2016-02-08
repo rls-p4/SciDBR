@@ -135,7 +135,7 @@ kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
   diff_name = NULL
   for(iter in 1:iter.max)
   {
-    centers = aggregate(x, by=list(group, "j"), FUN=mean, eval=TRUE)
+    centers = aggregate(x, by=list(group, "j"), FUN=mean)
     dist = scidbeval(
              aggregate(
                bind(

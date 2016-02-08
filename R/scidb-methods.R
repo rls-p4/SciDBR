@@ -82,7 +82,7 @@ setMethod('show', 'scidb',
 
 #' Aggregate a SciDB Array Grouped by a Subset of its Dimensions and/or Attributes
 #'
-#' Group the \code{scidb}, or \code{scidbdf} array object \code{x} by dimensions
+#' Group the \code{scidb} array object \code{x} by dimensions
 #' and/or attributes in the array.  applying the valid SciDB aggregation function
 #' \code{FUN} expressed as a character string to the groups. Set eval to TRUE to
 #' execute the aggregation and return a scidb object; set eval to FALSE to return
@@ -119,7 +119,7 @@ setMethod('show', 'scidb',
 #' values in a single dimension specified by the \code{by} argument. See below
 #' for examples. Moving window aggregates along data values are restricted
 #' to a single array dimension.
-#' @param x A \code{scidb} or \code{scidbdf} object.
+#' @param x A \code{scidb} object.
 #' @param by (Optional) Either a single character string or a list of array dimension and/or attribute names to group by;
 #' or a SciDB array reference object to group by. Not required for \code{windowed} and grand aggregates--see details.
 #' @param FUN A character string representing a SciDB aggregation expression or a reduction function.
@@ -127,10 +127,6 @@ setMethod('show', 'scidb',
 #' @param window (Optional) If specified, perform a moving window aggregate along the specified coordinate windows--see details below.
 #' @param variable_window (Optional) If specified, perform a moving window aggregate over successive data values along the
 #' coordinate dimension axis specified by \code{by}--see details below.
-#' @param unpack (Optional) If TRUE, return an unpacked SciDB result as a
-#'                scidbdf dataframe-like object. It's sometimes useful to
-#'                set this to FALSE if the aggregated result needs to be
-#'                joined with another array. Default=FALSE.
 #' @return a \code{scidb} object
 #' @export
 #' @examples

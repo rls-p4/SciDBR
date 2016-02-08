@@ -1,6 +1,5 @@
-aggregate_scidb = function(x, by, FUN, window, variable_window, unpack)
+aggregate_scidb = function(x, by, FUN, window, variable_window)
 {
-  if(missing(unpack)) unpack=FALSE
   if(missing(`by`))
   {
     `by`=""
@@ -94,23 +93,17 @@ aggregate_scidb = function(x, by, FUN, window, variable_window, unpack)
   }
   along = paste(b,collapse=",")
 
-# We use unpack to always return a data frame (a 1D scidb array). EXCEPT when
-# aggregating along a single integer coordinate axis (not along attributes or
-# multiple axes).
   if(!missing(window))
   {
-    unpack = FALSE
     query = sprintf("window(%s, %s, %s)",query,paste(noE(window),collapse=","),FUN)
   } else if(!missing(variable_window))
   {
-    unpack = FALSE
     query = sprintf("variable_window(%s, %s, %s, %s)",query,along,paste(noE(variable_window),collapse=","),FUN)
   } else
   if(nchar(along)<1)
     query = sprintf("aggregate(%s, %s)", query, FUN)
   else
     query = sprintf("aggregate(%s, %s, %s)",query, FUN, along)
-  if(unpack) query = sprintf("unpack(%s,%s)",query, new_dim_name)
   .scidbeval(query, gc=TRUE,depend=list(x))
 }
 

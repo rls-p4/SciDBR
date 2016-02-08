@@ -5,10 +5,10 @@
 \alias{aggregate,scidb-method}
 \title{Aggregate a SciDB Array Grouped by a Subset of its Dimensions and/or Attributes}
 \usage{
-\S4method{aggregate}{scidb}(x, by, FUN, window, variable_window, unpack)
+\S4method{aggregate}{scidb}(x, by, FUN, window, variable_window)
 }
 \arguments{
-\item{x}{A \code{scidb} or \code{scidbdf} object.}
+\item{x}{A \code{scidb} object.}
 
 \item{by}{(Optional) Either a single character string or a list of array dimension and/or attribute names to group by;
 or a SciDB array reference object to group by. Not required for \code{windowed} and grand aggregates--see details.}
@@ -20,18 +20,13 @@ or a SciDB array reference object to group by. Not required for \code{windowed} 
 \item{variable_window}{(Optional) If specified, perform a moving window aggregate over successive data values along the
 coordinate dimension axis specified by \code{by}--see details below.}
 
-\item{unpack}{(Optional) If TRUE, return an unpacked SciDB result as a
-scidbdf dataframe-like object. It's sometimes useful to
-set this to FALSE if the aggregated result needs to be
-joined with another array. Default=FALSE.}
-
 \item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \value{
 a \code{scidb} object
 }
 \description{
-Group the \code{scidb}, or \code{scidbdf} array object \code{x} by dimensions
+Group the \code{scidb} array object \code{x} by dimensions
 and/or attributes in the array.  applying the valid SciDB aggregation function
 \code{FUN} expressed as a character string to the groups. Set eval to TRUE to
 execute the aggregation and return a scidb object; set eval to FALSE to return

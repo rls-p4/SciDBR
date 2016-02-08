@@ -2,11 +2,7 @@
 % Please edit documentation in R/dbops.R
 \name{index_lookup}
 \alias{index_lookup}
-\title{SciDB index lookup operator
-The \code{index_lookup} function is a wrapper to the SciDB `index_lookup` operator.
-It produces a new SciDB dimension array that joins the unqiue indices defined in the array
-\code{I} with values looked up in array \code{X} for attribute \code{attr}. Use
-the \code{index_lookup} with the \code{unique} and \code{sort} functions.}
+\title{SciDB index lookup operator}
 \usage{
 index_lookup(x, I, attr, new_attr)
 }
@@ -23,7 +19,6 @@ index_lookup(x, I, attr, new_attr)
 a SciDB array
 }
 \description{
-SciDB index lookup operator
 The \code{index_lookup} function is a wrapper to the SciDB `index_lookup` operator.
 It produces a new SciDB dimension array that joins the unqiue indices defined in the array
 \code{I} with values looked up in array \code{X} for attribute \code{attr}. Use
@@ -40,11 +35,11 @@ x <- as.scidb(iris)
 
 # Create a unique list of elements of the "Species" attribute.
 # Note that we choose to defer evaluation of this expression.
-y <- unique(sort(project(x,"Species")), eval=FALSE)
+y <- unique(sort(project(x,"Species")))
 
 # Append a new attribute to the array x called "Species_index" that
 # enumerates the unique values of the "Species" attribute:
-z <- index_lookup(x, y, "Species", eval=FALSE)
+z <- index_lookup(x, y, "Species")
 
 print(head(z))
 }
