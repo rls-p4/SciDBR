@@ -2,7 +2,7 @@
 % Please edit documentation in R/redim.R
 \name{redimension}
 \alias{redimension}
-\title{SciDB redimension operator}
+\title{SciDB redimension operator wrapper function}
 \usage{
 redimension(x, schema, dim)
 }
@@ -17,6 +17,9 @@ redimension(x, schema, dim)
 a \code{scidbf} object
 }
 \description{
-SciDB redimension operator
+SciDB redimension operator wrapper function
+}
+\note{
+Redimension attributes must be of int64 type.
 }
 

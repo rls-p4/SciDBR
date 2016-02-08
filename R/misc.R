@@ -142,15 +142,14 @@ kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
                  merge(x, centers, by="j"),
                    "dist", "(val - val_avg)*(val - val_avg)"
                ),
-               by=list("i","group"),
-               FUN="sum(dist) as dist", unpack=FALSE)
+               by=list("i","group"), FUN="sum(dist) as dist")
             ,temp=temp, name=dist_name)
     dist_name = dist@name
     oldgroup = group
     group = scidbeval(redimension(
                Filter("dist = min",
                  merge(dist,
-                       aggregate(dist,by="i", FUN="min(dist) as min", unpack=FALSE),
+                       aggregate(dist,by="i", FUN="min(dist) as min"),
                        by="i")
                ),group), temp=temp)
 # This is a too expensive operation, improve...

@@ -56,10 +56,11 @@ repart = function(x, schema, upper, chunk, overlap)
   .scidbeval(query,eval,depend=list(x))
 }
 
-#' SciDB redimension operator
+#' SciDB redimension operator wrapper function
 #' @param x a \code{scidb} object
 #' @param schema optional new schema
 #' @param dim optional vector of dimension and attribute names to redimension along
+#' @note Redimension attributes must be of int64 type.
 #' @return a \code{scidbf} object
 #' @export
 redimension = function(x, schema, dim)
@@ -91,43 +92,19 @@ redimension = function(x, schema, dim)
     if(length(ia)>0)
     {
 # We'll be converting attributes to dimensions here.
-# First, we make sure that they are all int64. If not, we add a new
-# auxiliary attribute with index_lookup and dimension along that instead.
-      reindexed = FALSE
+# First, we make sure that they are all int64.
       xold = x
       for(nid in x@attributes[ia])
       {
         idx = which(x@attributes %in% nid)
-        if(scidb_types(x)[idx] != "int64")
-        {
-          reindexed = TRUE
-          didx = which(d %in% nid)
-          newat = sprintf("%s_index",nid)
-          newat = make.unique_(x@attributes, newat)
-          dnames[didx] = unique(xold[,nid])
-          names(dnames)[didx] = newat
-          x = index_lookup(x, unique(xold[,nid]), nid, newat)
-          d[didx] = newat
-        }
+        if(scidb_types(x)[idx] != "int64") stop("redimension attributes must be of type int64")
       }
-      if(reindexed)
-      {
-        ia = which(x@attributes %in% d)
-        as = build_attr_schema(x, I=-ia) # remove _index attributes
-      }
-# Note! we need to keep around the original nid attributes for the
-# index_lookups. This can screw with some aggregation functions.
-# In such cases, use aggregate for now. Eventually, maybe split
-# the nids out into a new array? XXX
 
 # Add the new dimension(s)
       a = x@attributes[ia]
       x@attributes = x@attributes[-ia]
       f = paste(paste("min(",a,"), max(",a,")",sep=""),collapse=",")
-# Explicitly bounding this dimension is nice, but not necessary. Can
-# just use a '*' bound instead (cheaper)--see commented line... XXX
-      m = matrix(aggregate(x, unpack=FALSE)[],ncol=2,byrow=TRUE)
-#      m = cbind(rep("0",length(a)), rep("*",length(a)))
+      m = cbind(rep("0",length(a)), rep("*",length(a)))
       p = prod(as.numeric(scidb_coordinate_chunksize(x)[-id]))
       chunk = ceiling((1e6/p)^(1/length(ia)))
       new = apply(m,1,paste,collapse=":")
@@ -137,7 +114,7 @@ redimension = function(x, schema, dim)
       ds = ifelse(length(ds)>0,paste(ds,new,sep=","),new)
     }
 # Re-order new dimension schema to fit order specified in `dim`
-    if(!reindexed) ds = paste(.dimsplit(sprintf("[%s]",ds))[dim],collapse=",")
+    ds = paste(.dimsplit(sprintf("[%s]",ds))[dim],collapse=",")
     s = sprintf("%s[%s]",as,ds)
   }
 # Check to see if the new schema is identical to the original schema.
