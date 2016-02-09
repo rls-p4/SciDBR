@@ -1,1 +1,3 @@
-lazy array metadata evaluation: set logical plan and schema + derived values as promises
+- lazy array metadata evaluation: set logical plan and schema + derived values as promises
+- rebuild tests
+- add back in misc functions

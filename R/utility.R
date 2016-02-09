@@ -252,8 +252,7 @@ scidbls = function(...) scidblist(...)
 #' @param recursive (optional boolean): If TRUE, recursively remove this array and its dependency graph
 #' @return \code{NULL}
 #' @export
-scidbremove = function(x, error=warning, force, warn=TRUE, recursive=FALSE) UseMethod("scidbremove")
-scidbremove.default = function(x, error=warning, force, warn=TRUE, recursive=FALSE)
+scidbremove = function(x, error=warning, force, warn=TRUE, recursive=FALSE)
 {
   if(is.null(x)) return(invisible())
   if(missing(force)) force=FALSE
@@ -289,6 +288,12 @@ scidbremove.default = function(x, error=warning, force, warn=TRUE, recursive=FAL
   }
   invisible()
 }
+#' Remove one or more scidb arrays
+#' @param x a vector or single character string listing array names
+#' @param error  error handler. Use stop or warn, for example.
+#' @param ... additional options for \code{\link{scidbremove}}
+#' @return \code{NULL}
+#' @export
 scidbrm = function(x, error=warning, ...) scidbremove(x, error, ...)
 
 

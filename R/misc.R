@@ -99,22 +99,16 @@ iqdf = function( x, n = 6L, prob = 1)
   result[]
 }
 
-peek = function(x, n=50L, prob=1)
-{
-  iqdf(x, n, prob)
-}
-
-
-rank_scidb = function(x,na.last=TRUE,ties.method = c("average", "first", "random", "max", "min"))
+rank_scidb = function(x, na.last=TRUE, ties.method = c("average", "first", "random", "max", "min"))
 {
   if(!is.scidb(x)) stop("x must be a scidb vector object")
-  if(length(dim(x))>1) stop("x must be a scidb vector object")
-  attribute=scidb_attributes(x)[1]
-  dimension=""
+  if(length(dim(x)) > 1) stop("x must be a scidb vector object")
+  attribute = scidb_attributes(x)[1]
+  dimension = ""
   ties.method = match.arg(ties.method)
-  op = ifelse(ties.method=="average","avg_rank","rank")
-  query = sprintf("%s(%s,%s%s)",op,x@name,attribute,dimension)
-  .scidbeval(query,depend=list(x),eval=TRUE)
+  op = ifelse(ties.method == "average", "avg_rank", "rank")
+  query = sprintf("%s(%s,%s%s)", op, x@name, attribute, dimension)
+  .scidbeval(query, depend=list(x), eval=TRUE)
 }
 
 kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
@@ -167,7 +161,7 @@ kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
 
 
 # distance function SLOOOOOW!
-dist_scidb = function(x, method=c("euclidean","manhattan","maximum"))
+dist_scidb = function(x, method=c("euclidean", "manhattan", "maximum"))
 {
   if(length(dim(x))!=2) stop("dist requires a numeric matrix")
   method = match.arg(method)
