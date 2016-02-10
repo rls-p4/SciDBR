@@ -495,7 +495,7 @@ URI = function(resource="", args=list())
   ans
 }
 
-GET = function(resource, args=list(), err=TRUE)
+GET = function(resource, args=list(), err=TRUE, binary=FALSE)
 {
   if(!(substr(resource,1,1)=="/")) resource = paste("/", resource, sep="")
   uri = URI(resource, args)
@@ -512,6 +512,7 @@ GET = function(resource, args=list(), err=TRUE)
     if(ans$status_code >= 500) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
     stop(msg)
   }
+  if(binary) return(ans$content)
   rawToChar(ans$content)
 }
 
@@ -525,7 +526,7 @@ POST = function(data, args=list(), err=TRUE)
   shim_mo = as.integer(gsub("[A-z]","",shimspl[2]))
   if(is.na(shim_yr)) shim_yr = 14
   if(is.na(shim_mo)) shim_mo = 1
-  simple = (shim_yr >= 15 && shim_mo >= 12) || shim_yr >= 16
+  simple = (shim_yr >= 15 && shim_mo >= 7) || shim_yr >= 16
   if(simple)
   {
     uri = URI("/upload", args)
@@ -555,6 +556,21 @@ POST = function(data, args=list(), err=TRUE)
   if(ans$status_code > 299 && err) stop("HTTP error", ans$status_code)
   return(rawToChar(ans$content))
 }
+
+CACHE = function(data, args=list(), err=TRUE)
+{
+  uri = URI("/cache", args)
+  uri = oldURLencode(uri)
+  uri = gsub("\\+","%2B", uri, perl=TRUE)
+  h = new_handle()
+  handle_setheaders(h, .list=list(Authorization=digest_auth("POST", uri)))
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+                              ssl_verifypeer=0, post=TRUE, postfieldsize=length(data), postfields=data))
+  ans = curl_fetch_memory(uri, h)
+  if(ans$status_code > 299 && err) stop("HTTP error ", ans$status_code)
+  rawToChar(ans$content)
+}
+
 
 # Check if array exists
 .scidbexists = function(name)

@@ -135,6 +135,17 @@ df2scidb = function(X,
 }
 
 
+cache = function(x)
+{
+  if(!is.raw(x)) stop("x must be a raw value")
+  CACHE(x, list(sync=0))
+}
+
+uncache = function(name, remove=FALSE)
+{
+  remove = as.integer(remove)
+  GET("/uncache", list(name=name, remove=remove), binary=TRUE)
+}
 
 
 
