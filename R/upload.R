@@ -135,10 +135,11 @@ df2scidb = function(X,
 }
 
 
-cache = function(x)
+cache = function(x, name)
 {
   if(!is.raw(x)) stop("x must be a raw value")
-  CACHE(x, list(sync=0))
+  if(missing(name)) return(CACHE(x, list(sync=0)))
+  CACHE(x, list(sync=0, name=name))
 }
 
 uncache = function(name, remove=FALSE)

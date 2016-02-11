@@ -571,7 +571,6 @@ CACHE = function(data, args=list(), err=TRUE)
   rawToChar(ans$content)
 }
 
-
 # Check if array exists
 .scidbexists = function(name)
 {
