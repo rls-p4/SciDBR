@@ -516,8 +516,11 @@ SGET = function(resource, args=list(), err=TRUE, binary=FALSE)
   rawToChar(ans$content)
 }
 
-# XXX add a generic get function (not using URI function above)
-GET = function(url)
+#' Basic HTTP GET request
+#' @param url a well-formed HTTP URL, will be url-encoded
+#' @return R raw binary HTTP content field
+#' @export
+GET_RAW = function(url)
 {
   uri = oldURLencode(url)
   h = new_handle()

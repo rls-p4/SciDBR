@@ -542,25 +542,24 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 #' @examples
 #' \dontrun{
 #' # Create a copy of the iris data frame in a 1-d SciDB array named "iris."
-#' # Note that SciDB attribute names will be changed to conform to SciDB
-#' # naming convention.
+#' # Variable names are changed to conform to SciDB attribute naming convention.
 #' x <- as.scidb(iris)
 #' # Filter the array explicitly using SciDB filter syntax
 #' y <- subset(x, "Species = 'setosa'")
 #' # Using an R expression form is equivalent in this example
 #' z <- subset(x, Species = "setosa")
 #'
-#' # The R expression form can generate better-optimized SciDB
+#' # The R expression form can sometimes generate better-optimized SciDB
 #' # expressions than the explicit form.
 #' # Compare a filter involving the 'row' dimension and
 #' # an attribute. Note the difference in the generated queries:
 #'
 #' y <- subset(x, "Species = 'setosa' and row > 40")
-#' y@name
+#' y@@name
 #' # [1] "filter(R_array5494563bc4e1101849601199,Species = 'setosa' and row > 40)"
 #'
 #' z <- subset(x, Species == 'setosa' & row > 40)
-#' z@name
+#' z@@name
 #' # [1] "filter(between(R_array5494563bc4e1101849601199,41,null),Species = 'setosa' )"
 #'
 #' # Important things to note:
