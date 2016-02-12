@@ -20,7 +20,7 @@ SciDB xgrid prolongation operator
 \dontrun{
 x <- as.scidb(iris)
 y <- regrid(x, 10, min)
-z <- xgrid(x, 10)
+z <- xgrid(y, 10)
 }
 }
 

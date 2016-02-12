@@ -135,17 +135,28 @@ df2scidb = function(X,
 }
 
 
-cache = function(x, name)
+#' Cache data in a SciDB server-side file
+#'
+#' @param x a raw R binary value
+#' @param name optional key name
+#' @param host optional SciDB shim host IP address or name
+#' @param port optional SciDB shim port number
+#' @param protocol optional SciDB shim protocol (http or https)
+#' @return A character URL that may be used to retrieve the data.
+#' @seealso GET_RAW
+#' @examples
+#' \dontrun{
+#' scidbconnect()
+#' a <- cache(serialize(iris, NULL))
+#' unserialize(GET_RAW(a))
+#' }
+#' @export
+cache = function(x, name, host=.scidbenv$host, port=.scidbenv$port, protocol=.scidbenv$protocol)
 {
   if(!is.raw(x)) stop("x must be a raw value")
-  if(missing(name)) return(CACHE(x, list(sync=0)))
-  CACHE(x, list(sync=0, name=name))
-}
-
-uncache = function(name, remove=FALSE)
-{
-  remove = as.integer(remove)
-  SGET("/uncache", list(name=name, remove=remove), binary=TRUE)
+  if(missing(name)) ans = CACHE(x, list(sync=0))
+  else ans = CACHE(x, list(sync=0, name=name))
+  sprintf("%s://%s:%s/uncache?name=%s", protocol, host, port, ans)
 }
 
 

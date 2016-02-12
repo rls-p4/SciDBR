@@ -517,8 +517,8 @@ SGET = function(resource, args=list(), err=TRUE, binary=FALSE)
 }
 
 #' Basic HTTP GET request
-#' @param url a well-formed HTTP URL, will be url-encoded
-#' @return R raw binary HTTP content field
+#' @param url a well-formed HTTP/HTTPS URL, will be url-encoded
+#' @return R raw binary content field
 #' @export
 GET_RAW = function(url)
 {

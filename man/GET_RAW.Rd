@@ -7,10 +7,10 @@
 GET_RAW(url)
 }
 \arguments{
-\item{url}{a well-formed HTTP URL, will be url-encoded}
+\item{url}{a well-formed HTTP/HTTPS URL, will be url-encoded}
 }
 \value{
-R raw binary HTTP content field
+R raw binary content field
 }
 \description{
 Basic HTTP GET request
