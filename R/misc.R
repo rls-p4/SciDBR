@@ -198,6 +198,7 @@ dist_scidb = function(x, method=c("euclidean", "manhattan", "maximum"))
   M
 }
 
+# XXX broken
 hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `plot`=TRUE, ...)
 {
   if(length(x@attributes)>1) stop("Histogram requires a single-attribute array.")
@@ -209,7 +210,7 @@ hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `plot`=TRUE, 
 # name of binning coordinates in output array:
   d = make.unique_(c(a,dimensions(x)), "bin")
   M = .scidbeval(sprintf("aggregate(%s, min(%s) as min, max(%s) as max)",x@name,a,a),`eval`=FALSE)
-  FILL = sprintf("slice(cross_join(build(<counts: uint64 null>[%s=0:%.0f,1000000,0],0),%s),i,0)", d, breaks,M@name)
+  FILL = sprintf("slice(cross_join(build(<counts: uint64 null>[%s=0:%.0f,1000000,0],0),%s),i,0)", d, breaks, M@name)
   if(`right`)
   {
     query = sprintf("project( apply( merge(redimension( substitute( apply(cross_join(%s,%s), %s,iif(%s=min,1,ceil(%.0f.0*(%s-min)/(0.0000001+max-min)))  ),build(<v:int64>[i=0:0,1,0],0),%s), <counts:uint64 null, min:%s null, max:%s null>[%s=0:%.0f,1000000,0], count(%s) as counts),%s), breaks, %s*(0.0000001+max-min)/%.0f.0 + min), breaks,counts)", x@name, M@name, d, a, breaks, a, d, t, t, d, breaks, d, FILL, d, breaks)

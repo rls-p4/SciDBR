@@ -5,7 +5,7 @@
 #' @param dimnames optional new vector of array coordniate dimension name
 #' @param start optional vector of new array starting coordinate index values
 #' @param chunks optional vector of new array chunk sizes
-#' @return a \code{scidbf} object
+#' @return a \code{scidb} object
 #' @export
 reshape_scidb = function(x, schema, shape, dimnames, start, chunks)
 {
@@ -38,7 +38,7 @@ reshape_scidb = function(x, schema, shape, dimnames, start, chunks)
 #' @param upper optional vector of new array coordinate dimensions
 #' @param chunk optional vector of new array chunk sizes
 #' @param overlap optional vector of new array chunk overlaps
-#' @return a \code{scidbf} object
+#' @return a \code{scidb} object
 #' @export
 repart = function(x, schema, upper, chunk, overlap)
 {
@@ -59,9 +59,18 @@ repart = function(x, schema, upper, chunk, overlap)
 #' SciDB redimension operator wrapper function
 #' @param x a \code{scidb} object
 #' @param schema optional new schema
-#' @param dim optional vector of dimension and attribute names to redimension along
+#' @param dim optional vector of dimension and/or attribute names to redimension along
 #' @note Redimension attributes must be of int64 type.
-#' @return a \code{scidbf} object
+#' @return a \code{scidb} object
+#' @examples
+#' \dontrun{
+#' x <- as.scidb(iris)
+#' y <- redimension(transform(x, i="int64(Petal_Width * 10)"), dim="i")
+#' z <- redimension(transform(x, i="int64(Petal_Width * 10)"), dim=c("row", "i"))
+#' schema(x)
+#' schema(y)
+#' schema(z)
+#' }
 #' @export
 redimension = function(x, schema, dim)
 {
@@ -75,21 +84,22 @@ redimension = function(x, schema, dim)
   dnames = c()
   if(!is.null(dim))
   {
-    d = unlist(dim)
+    d = unique(unlist(dim))
     dnames = vector("list",length(dim))
     ia = which(scidb_attributes(x) %in% d)
     if(is.numeric(d)) id = d
     else id = which(dimensions(x) %in% d)
-    if(length(ia)<1 && length(id)<1) stop("Invalid dimensions")
+    if(length(ia) < 1 && length(id) < 1) stop("Invalid dimensions")
     as = build_attr_schema(x, I=-ia)
-    if(length(id>0))
+    if(length(id > 0))
     {
+      if(is.null(s)) s = schema(x)
       ds = build_dim_schema(s, I=id, bracket=FALSE) # Note use of s here
     } else
     {
       ds = c()
     }
-    if(length(ia)>0)
+    if(length(ia) > 0)
     {
 # We'll be converting attributes to dimensions here.
 # First, we make sure that they are all int64.
@@ -103,27 +113,27 @@ redimension = function(x, schema, dim)
 # Add the new dimension(s)
       a = x@attributes[ia]
       x@attributes = x@attributes[-ia]
-      f = paste(paste("min(",a,"), max(",a,")",sep=""),collapse=",")
-      m = cbind(rep("0",length(a)), rep("*",length(a)))
-      p = prod(as.numeric(scidb_coordinate_chunksize(x)[-id]))
-      chunk = ceiling((1e6/p)^(1/length(ia)))
-      new = apply(m,1,paste,collapse=":")
-      new = paste(a,new,sep="=")
+      f = paste(paste("min(", a, "), max(", a, ")", sep=""), collapse=",")
+      m = cbind(rep("0", length(a)), rep("*", length(a)))
+      p = prod(as.numeric(scidb_coordinate_chunksize(x)[id]))
+      chunk = ceiling((1e6 / p) ^ (1 / length(ia)))
+      new = apply(m, 1, paste, collapse=":")
+      new = paste(a, new, sep="=")
       new = paste(new, noE(chunk), "0", sep=",")
-      new = paste(new,collapse=",")
-      ds = ifelse(length(ds)>0,paste(ds,new,sep=","),new)
+      new = paste(new, collapse=",")
+      ds = ifelse(length(ds) > 0, paste(ds, new, sep=","), new)
     }
 # Re-order new dimension schema to fit order specified in `dim`
-    ds = paste(.dimsplit(sprintf("[%s]",ds))[dim],collapse=",")
-    s = sprintf("%s[%s]",as,ds)
+    ds = paste(.dimsplit(sprintf("[%s]", ds))[dim], collapse=",")
+    s = sprintf("%s[%s]", as, ds)
   }
 # Check to see if the new schema is identical to the original schema.
 # If so, don't bother with redimension, and return the input
-  if(isTRUE(compare_schema(x,s)))
+  if(isTRUE(compare_schema(x, s)))
   {
     return(x)
   }
-  query = sprintf("redimension(%s,%s)",x@name,s)
-  ans = .scidbeval(query,`eval`=FALSE,depend=list(x))
+  query = sprintf("redimension(%s,%s)", x@name, s)
+  ans = .scidbeval(query, `eval`=FALSE, depend=list(x))
   ans
 }

@@ -20,7 +20,7 @@ reshape_scidb(x, schema, shape, dimnames, start, chunks)
 \item{chunks}{optional vector of new array chunk sizes}
 }
 \value{
-a \code{scidbf} object
+a \code{scidb} object
 }
 \description{
 SciDB reshape operator

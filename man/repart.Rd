@@ -18,7 +18,7 @@ repart(x, schema, upper, chunk, overlap)
 \item{overlap}{optional vector of new array chunk overlaps}
 }
 \value{
-a \code{scidbf} object
+a \code{scidb} object
 }
 \description{
 SciDB repart operator

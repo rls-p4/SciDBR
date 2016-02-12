@@ -11,15 +11,25 @@ redimension(x, schema, dim)
 
 \item{schema}{optional new schema}
 
-\item{dim}{optional vector of dimension and attribute names to redimension along}
+\item{dim}{optional vector of dimension and/or attribute names to redimension along}
 }
 \value{
-a \code{scidbf} object
+a \code{scidb} object
 }
 \description{
 SciDB redimension operator wrapper function
 }
 \note{
 Redimension attributes must be of int64 type.
+}
+\examples{
+\dontrun{
+x <- as.scidb(iris)
+y <- redimension(transform(x, i="int64(Petal_Width * 10)"), dim="i")
+z <- redimension(transform(x, i="int64(Petal_Width * 10)"), dim=c("row", "i"))
+schema(x)
+schema(y)
+schema(z)
+}
 }
 
