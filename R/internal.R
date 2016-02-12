@@ -40,6 +40,7 @@ scidb_unpack_to_dataframe = function(query, ...)
 {
   DEBUG = FALSE
   projected = FALSE
+  aio = length(grep("aio",scidb:::.scidbenv$ops)) > 0
   if(!inherits(query, "scidb")) query = scidb(query)
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
   buffer = 100000L
@@ -49,9 +50,16 @@ scidb_unpack_to_dataframe = function(query, ...)
     argsbuf = tryCatch(as.integer(args$buffer),warning=function(e) NA)
     if(!is.na(argsbuf) && argsbuf < 100e6) buffer = as.integer(argsbuf)
   }
-  dims = paste(paste(dimensions(query), dimensions(query), sep=","), collapse=",") # Note! much faster than unpack
   ndim = length(dimensions(query))
-  x = scidb(sprintf("apply(%s, %s)", query@name, dims))
+  if(aio)
+  {
+    dims = paste(paste(dimensions(query), dimensions(query), sep=","), collapse=",") # Note! can faster than unpack
+    x = scidb(sprintf("apply(%s, %s)", query@name, dims))
+  } else
+  {
+    dim = make.unique_(c(scidb_attributes(query), dimensions(query)), "i")
+    x = scidb(sprintf("unpack(%s, %s)", query@name, dim))
+  }
   N = scidb_nullable(x)
   TYPES = scidb_types(x)
   ns = rep("",length(N))
@@ -112,7 +120,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   dt2 = proc.time()
 # reorder so that dimensions appear to the left
   n = ncol(ans)
-  if(n > 0)
+  if(n > 0 && aio)
   {
     na = 1:(n - ndim)
     nd = (n - ndim + 1):n
@@ -155,8 +163,7 @@ digest_auth = function(method, uri, realm="", nonce="123456")
 warnonce = (function() {
   state = list(
     count="Use `count` for an exact count of data elements.",
-    nonum="Note: The R sparse Matrix package does not support certain value types like\ncharacter strings",
-    toobig="Array coordinates are too big or infinite! Returning data in unpacked data.frame form, or try using `bound`."
+    nonum="Note: The R sparse Matrix package does not support certain value types like\ncharacter strings"
   )
   function(warn) {
     if(!is.null(state[warn][[1]])) {

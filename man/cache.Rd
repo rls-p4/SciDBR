@@ -27,8 +27,14 @@ Cache data in a SciDB server-side file
 \examples{
 \dontrun{
 scidbconnect()
-a <- cache(serialize(iris, NULL))
+a <- cache(serialize(head(iris), NULL))
+print(a)
 unserialize(GET_RAW(a))
+
+# Use a specified key, including a directory name
+b <- cache(serialize(head(cars), NULL), "test/cars")
+print(b)
+unserialize(GET_RAW(b))
 }
 }
 \seealso{
