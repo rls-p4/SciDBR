@@ -59,7 +59,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   format_string = paste(paste(TYPES,ns),collapse=",")
   format_string = sprintf("(%s)",format_string)
   sessionid = scidbquery(x@name, save=format_string, release=0)
-  on.exit( GET("/release_session",list(id=sessionid), err=FALSE) ,add=TRUE)
+  on.exit( SGET("/release_session",list(id=sessionid), err=FALSE) ,add=TRUE)
 
   dt2 = proc.time()
   uri = URI("/read_bytes",list(id=sessionid,n=0))
@@ -467,7 +467,7 @@ tmpnam = function(prefix="R_array")
 # Return a shim session ID or error
 getSession = function()
 {
-  session = GET("/new_session")
+  session = SGET("/new_session")
   if(length(session)<1) stop("SciDB http session error; are you connecting to a valid SciDB host?")
   session = gsub("\r","",session)
   session = gsub("\n","",session)
@@ -495,7 +495,7 @@ URI = function(resource="", args=list())
   ans
 }
 
-GET = function(resource, args=list(), err=TRUE, binary=FALSE)
+SGET = function(resource, args=list(), err=TRUE, binary=FALSE)
 {
   if(!(substr(resource,1,1)=="/")) resource = paste("/", resource, sep="")
   uri = URI(resource, args)
@@ -514,6 +514,24 @@ GET = function(resource, args=list(), err=TRUE, binary=FALSE)
   }
   if(binary) return(ans$content)
   rawToChar(ans$content)
+}
+
+# XXX add a generic get function (not using URI function above)
+GET = function(url)
+{
+  uri = oldURLencode(url)
+  h = new_handle()
+  handle_setheaders(h, .list=list(Authorization=digest_auth("GET", uri)))
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+                              ssl_verifypeer=0))
+  ans = curl_fetch_memory(uri, h)
+  if(ans$status_code > 299)
+  {
+    msg = sprintf("HTTP error %s", ans$status_code)
+    if(ans$status_code >= 500) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
+    stop(msg)
+  }
+  ans$content
 }
 
 # Normally called with raw data and args=list(id=whatever)
@@ -615,21 +633,21 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
   ans = tryCatch(
     {
       if(is.null(save))
-        GET("/execute_query", list(id=sessionid, release=release,
+        SGET("/execute_query", list(id=sessionid, release=release,
              query=query, afl=0L, stream=0L))
       else
-        GET("/execute_query", list(id=sessionid,release=release,
+        SGET("/execute_query", list(id=sessionid,release=release,
             save=save, query=query, afl=0L, stream=STREAM))
     }, error=function(e)
     {
 # User cancel?
-      GET("/cancel", list(id=sessionid), err=FALSE)
-      GET("/release_session", list(id=sessionid), err=FALSE)
+      SGET("/cancel", list(id=sessionid), err=FALSE)
+      SGET("/release_session", list(id=sessionid), err=FALSE)
       stop(as.character(e))
     }, interrupt=function(e)
     {
-      GET("/cancel", list(id=sessionid), err=FALSE)
-      GET("/release_session", list(id=sessionid), err=FALSE)
+      SGET("/cancel", list(id=sessionid), err=FALSE)
+      SGET("/release_session", list(id=sessionid), err=FALSE)
       stop("cancelled")
     })
   if(DEBUG) cat("Query time",(proc.time()-t1)[3],"\n")
@@ -663,7 +681,7 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
 # Obtain a session from shim for the upload process
   session = getSession()
   if(length(session)<1) stop("SciDB http session error")
-  on.exit(GET("/release_session",list(id=session), err=FALSE) ,add=TRUE)
+  on.exit(SGET("/release_session",list(id=session), err=FALSE) ,add=TRUE)
 
 # Compute the indices and assemble message to SciDB in the form
 # double,double,double for indices i,j and data val.
@@ -690,7 +708,7 @@ raw2scidb = function(X, name, gc=TRUE, ...)
 # Obtain a session from shim for the upload process
   session = getSession()
   if(length(session)<1) stop("SciDB http session error")
-  on.exit(GET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
+  on.exit(SGET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
 
   bytes = .Call("scidb_raw", X, PACKAGE="scidb")
   ans = POST(bytes, list(id=session))

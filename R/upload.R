@@ -119,7 +119,7 @@ df2scidb = function(X,
 
 # Obtain a session from the SciDB http service for the upload process
   session = getSession()
-  on.exit(GET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
+  on.exit(SGET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
 
   ncolX = ncol(X)
   X = charToRaw(paste(capture.output(write.table(X, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)), collapse="\n"))
@@ -145,7 +145,7 @@ cache = function(x, name)
 uncache = function(name, remove=FALSE)
 {
   remove = as.integer(remove)
-  GET("/uncache", list(name=name, remove=remove), binary=TRUE)
+  SGET("/uncache", list(name=name, remove=remove), binary=TRUE)
 }
 
 
@@ -175,7 +175,7 @@ uncache = function(name, remove=FALSE)
 # Obtain a session from shim for the upload process
   session = getSession()
   if(length(session)<1) stop("SciDB http session error")
-  on.exit(GET("/release_session",list(id=session), err=FALSE) ,add=TRUE)
+  on.exit(SGET("/release_session",list(id=session), err=FALSE) ,add=TRUE)
 
 # Compute the indices and assemble message to SciDB in the form
 # double,double,double for indices i,j and data val.
@@ -260,7 +260,7 @@ matvec2scidb = function(X,
   td1 = proc.time()
 # Obtain a session from shim for the upload process
   session = getSession()
-  on.exit( GET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
+  on.exit( SGET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
 
 # Upload the data
   bytes = .Call("scidb_raw", as.vector(t(X)), PACKAGE="scidb")

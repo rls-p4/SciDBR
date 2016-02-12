@@ -209,7 +209,7 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
     options(scidb.gemm_bug=FALSE) # Yay
   }
 # Update the shim.version option
-  options(shim.version=GET("/version"))
+  options(shim.version=SGET("/version"))
 
   invisible()
 }
@@ -327,15 +327,15 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
         dt1 = proc.time()
         result = tryCatch(
           {
-            GET("/read_lines", list(id=sessionid, n=as.integer(n+1)))
+            SGET("/read_lines", list(id=sessionid, n=as.integer(n+1)))
           },
           error=function(e)
           {
-             GET("/cancel", list(id=sessionid))
-             GET("/release_session", list(id=sessionid), err=FALSE)
+             SGET("/cancel", list(id=sessionid))
+             SGET("/release_session", list(id=sessionid), err=FALSE)
              stop(e)
           })
-        GET("/release_session", list(id=sessionid), err=FALSE)
+        SGET("/release_session", list(id=sessionid), err=FALSE)
         if(DEBUG) cat("Data transfer time",(proc.time()-dt1)[3],"\n")
         dt1 = proc.time()
 # Handle escaped quotes
