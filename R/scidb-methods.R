@@ -37,13 +37,6 @@ function(x, n=6L, ...)
 })
 
 #' @export
-setMethod("Filter",signature(f="character",x="scidb"),
-  function(f, x)
-  {
-    filter_scidb(x,f)
-  })
-
-#' @export
 setMethod('is.scidb', signature(x='scidb'),
   function(x) return(TRUE))
 #' @export
@@ -64,20 +57,50 @@ setMethod('show', 'scidb',
     .scidbstr(object)
   })
 
-#setMethod("regrid", signature(x="scidb"),
-#  function(x, grid, expr)
-#  {
-#    if(missing(expr)) expr = paste(sprintf("max(%s)",x@attributes),collapse=",")
-#    query = sprintf("regrid(%s, %s, %s)",
-#               x@name, paste(noE(grid),collapse=","), expr)
-#    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
-#  })
-#setMethod("xgrid", signature(x="scidb"),
-#  function(x, grid)
-#  {
-#    query = sprintf("xgrid(%s, %s)", x@name, paste(noE(grid),collapse=","))
-#    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
-#  })
+regrid_scidb = function(x, grid, expr)
+  {
+    if(missing(expr)) expr = paste(sprintf("max(%s)", x@attributes), collapse=",")
+    if(is.function(expr))
+    {
+      expr = paste(as.character(as.list(match.call()$expr)), sprintf("(%s)", x@attributes), collapse=",")
+    }
+    query = sprintf("regrid(%s, %s, %s)",
+               x@name, paste(noE(grid), collapse=","), expr)
+    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
+  }
+setGeneric("regrid", function(x, grid, expr) standardGeneric("regrid"))
+#' SciDB regrid decimation operator
+#' @aliases regrid
+#' @param x SciDB array
+#' @param grid a vector of grid sizes as long as \code{length(dimensions(x))}
+#' @param expr optional aggregation function applied to every attribute on the grid, or a quoted SciDB aggregation expression
+#' @note The default aggregation function used in case \code{expr} is left missing is \code{max}.
+#' @examples
+#' \dontrun{
+#' x <- as.scidb(iris)
+#' regrid(x, 10, min)
+#' }
+#' @export
+setMethod("regrid", signature(x="scidb"), regrid_scidb)
+
+xgrid_scidb = function(x, grid)
+  {
+    query = sprintf("xgrid(%s, %s)", x@name, paste(noE(grid), collapse=","))
+    .scidbeval(query, eval=FALSE, gc=TRUE, depend=list(x))
+  }
+setGeneric("xgrid", function(x, grid, expr) standardGeneric("xgrid"))
+#' SciDB xgrid prolongation operator
+#' @aliases xgrid
+#' @param x SciDB array
+#' @param grid a vector of grid sizes as long as \code{length(dimensions(x))}
+#' @examples
+#' \dontrun{
+#' x <- as.scidb(iris)
+#' y <- regrid(x, 10, min)
+#' z <- xgrid(y, 10)
+#' }
+#' @export
+setMethod("xgrid", signature(x="scidb"), xgrid_scidb)
 
 
 #' Aggregate a SciDB Array Grouped by a Subset of its Dimensions and/or Attributes
@@ -179,120 +202,3 @@ setMethod('show', 'scidb',
 #' aggregate(B, by="i", FUN=sum, variable_window=c(0,1))[]
 #' }
 setMethod("aggregate", signature(x="scidb"), aggregate_scidb)
-
-scidb_grand = function(x, op)
-{
-  query = sprintf("aggregate(%s, %s(%s) as %s)", x@name, op, x@attributes[1], x@attributes[1])
-  iquery(query, `return`=TRUE)[,2]
-}
-
-# The following methods return data to R
-#' @export
-setMethod("sum", signature(x="scidb"),
-function(x)
-{
-  scidb_grand(x, "sum")
-})
-
-#' @export
-setMethod("median", signature(x="scidb"),
-function(x)
-{
-  scidb_grand(x, "median")
-})
-
-#' @export
-setMethod("mean", signature(x="scidb"),
-function(x)
-{
-  scidb_grand(x, "avg")
-})
-
-#' @export
-setMethod("min", signature(x="scidb"),
-function(x)
-{
-  scidb_grand(x, "min")
-})
-
-#' @export
-setMethod("max", signature(x="scidb"),
-function(x)
-{
-  scidb_grand(x, "max")
-})
-
-#' @export
-setMethod("sd", signature(x="scidb"),
-function(x)
-{
-  scidb_grand(x, "stdev")
-})
-
-#' @export
-setMethod("var", signature(x="scidb"),
-function(x)
-{
-  scidb_grand(x, "var")
-})
-
-#' @export
-log.scidb = function(x, base=exp(1))
-{
-  log_scidb(x,base) 
-}
-
-#' @export
-setMethod("sin", signature(x="scidb"),
-  function(x)
-  {
-    fn_scidb(x, "sin")
-  })
-#' @export
-setMethod("cos", signature(x="scidb"),
-  function(x)
-  {
-    fn_scidb(x, "cos")
-  })
-#' @export
-setMethod("tan", signature(x="scidb"),
-  function(x)
-  {
-    fn_scidb(x, "tan")
-  })
-#' @export
-setMethod("asin", signature(x="scidb"),
-  function(x)
-  {
-    fn_scidb(x, "asin")
-  })
-#' @export
-setMethod("acos", signature(x="scidb"),
-  function(x)
-  {
-    fn_scidb(x, "acos")
-  })
-#' @export
-setMethod("atan", signature(x="scidb"),
-  function(x)
-  {
-    fn_scidb(x, "atan")
-  })
-#' @export
-setMethod("abs", signature(x="scidb"),
-  function(x)
-  {
-    fn_scidb(x, "abs")
-  })
-#' @export
-setMethod("sqrt", signature(x="scidb"),
-  function(x)
-  {
-    fn_scidb(x, "sqrt")
-  })
-#' @export
-setMethod("exp", signature(x="scidb"),
-  function(x)
-  {
-    fn_scidb(x, "exp")
-  })
