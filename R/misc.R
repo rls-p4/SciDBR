@@ -1,6 +1,31 @@
-# This is a catch-all container file for useful miscellaneous functions. They
-# tend to be newer and somewhat more experimental than the other functions, and
-# maybe not quite as fully baked.
+#' Head-like SciDB array inspection
+#'
+#' Return the first part of an unpacked SciDB array as a data frame.
+#' @param x SciDB array
+#' @param n maximum number of rows to return
+#' @param prob sampling probability
+#' @note Setting the sampling probability low for huge arrays will improve performance.
+#' @seealso \code{\link{head}}
+#' @export
+iqdf = function( x, n = 6L, prob = 1)
+{
+  result = x
+  if ( class(result) == "character")
+  {
+    result = scidb(result)
+  }
+  if ( prob < 1 )
+  {
+    result = bernoulli(result, prob)
+  }
+  result = unpack(result)
+  if ( n > 0 && is.finite(n))
+  {
+    filter = sprintf("%s < %s", dimensions(result), noE(n))
+    result = subset(result, filter)
+  }
+  result[]
+}
 
 order_scidb = function(x, attribute=1, decreasing = FALSE)
 {
@@ -68,35 +93,6 @@ bernoulli = function (x, prob , seed=sample(2^32 - 1 - 2^31, 1))
   }
   query = sprintf("bernoulli(%s, %.16f, %d)", x@name, prob, seed)
   return (scidb(query))
-}
-
-#' Head-like SciDB array inspection
-#'
-#' Return the first part of an unpacked SciDB array as a data frame.
-#' @param x SciDB array
-#' @param n maximum number of rows to return
-#' @param prob sampling probability
-#' @note Setting the sampling probability low for huge arrays will improve performance.
-#' @seealso \code{\link{head}}
-#' @export
-iqdf = function( x, n = 6L, prob = 1)
-{
-  result = x
-  if ( class(result) == "character")
-  {
-    result = scidb(result)
-  }
-  if ( prob < 1 )
-  {
-    result = bernoulli(result, prob)
-  }
-  result = unpack(result)
-  if ( n > 0 && is.finite(n))
-  {
-    filter = sprintf("%s < %s", dimensions(result), noE(n))
-    result = subset(result, filter)
-  }
-  result[]
 }
 
 rank_scidb = function(x, na.last=TRUE, ties.method = c("average", "first", "random", "max", "min"))
@@ -202,7 +198,7 @@ dist_scidb = function(x, method=c("euclidean", "manhattan", "maximum"))
   M
 }
 
-hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `eval`=FALSE, `plot`=TRUE, ...)
+hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `plot`=TRUE, ...)
 {
   if(length(x@attributes)>1) stop("Histogram requires a single-attribute array.")
   if(length(breaks)>1) stop("The SciDB histogram function requires a single numeric value indicating the number of breaks.")
@@ -212,7 +208,7 @@ hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `eval`=FALSE,
   if(breaks < 1) stop("Too few breaks")
 # name of binning coordinates in output array:
   d = make.unique_(c(a,dimensions(x)), "bin")
-  M = .scidbeval(sprintf("aggregate(%s, min(%s) as min, max(%s) as max)",x@name,a,a),`eval`=TRUE)
+  M = .scidbeval(sprintf("aggregate(%s, min(%s) as min, max(%s) as max)",x@name,a,a),`eval`=FALSE)
   FILL = sprintf("slice(cross_join(build(<counts: uint64 null>[%s=0:%.0f,1000000,0],0),%s),i,0)", d, breaks,M@name)
   if(`right`)
   {
@@ -224,10 +220,10 @@ hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `eval`=FALSE,
   if(!materialize)
   {
 # Return a SciDB array that represents the histogram breaks and counts
-    return(.scidbeval(query, depend=list(x,M), `eval`=`eval`, gc=TRUE))
+    return(.scidbeval(query, depend=list(x,M), `eval`=FALSE, gc=TRUE))
   }
 # Return a standard histogram object
-  ans = as.list(.scidbeval(query, depend=list(x,M), `eval`=`eval`, gc=TRUE)[])
+  ans = as.list(.scidbeval(query, depend=list(x,M), `eval`=FALSE, gc=TRUE)[])
 # Cull the trailing zero bin to correspond to R's output
   if(`right`) ans$counts = ans$counts[-1]
   else ans$counts = ans$counts[-length(ans$counts)]
@@ -294,9 +290,17 @@ all.equal.scidb = function ( target, current , ...)
   return(TRUE)
 }
 
-# Given two arrays of same dimensionality, return any coordinates that do NOT
-# join. For all coordinates, the single attribute shall equal to 1 if those
-# coordinates exist in array1, or 2 if those coordinates exist in array2.
+#' Antijoin
+#'
+#' Given two arrays of same dimensionality, return any coordinates that do NOT
+#' join. For all coordinates, the single attribute shall equal to 1 if those
+#' coordinates exist in array1, or 2 if those coordinates exist in array2.
+#' @param array1 SciDB array
+#' @param array2 SciDB array
+#' @return A single-attribute SciDB array
+#' equal to 1 where the corresponding coordinates
+#' exist in array1, or 2 if those coordinates exist in array2
+#' @export
 antijoin = function(array1, array2)
 {
   a1dims = dimensions(array1)
@@ -322,16 +326,14 @@ antijoin = function(array1, array2)
 }
 
 
-quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
-{
-  quantile.scidb(x,probs,type,...)
-}
+#' @aliases quantile
+#' @export
 quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
 {
   np      = length(probs)
   probs   = pmax(0, pmin(1,probs))  # Filter bogus probabilities out
   if(length(probs)!=np) warning("Probabilities outside [0,1] have been removed.")
-  if(length(dim(x))>1) x = project(unpack(x),scidb_attributes(x)[1],eval=TRUE)
+  if(length(dim(x))>1) x = scidbeval(project(unpack(x), scidb_attributes(x)[1]), eval=TRUE)
   n = count(x) # * bounds are just wonderful
   x       = sort(x) # Full sort is wasteful! Only really need a partial sort.
   np      = length(probs)
@@ -360,7 +362,7 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
     gamma   = as.numeric(g!=0)
     idx     = (1-gamma)*pmax(j,1) + gamma*pmin(j+1,n)
     idx     = idx + start_index - 1
-    qs      = x[idx]
+    qs      = subset(x, paste(paste("n=", idx, sep=""), collapse=" or "))
   }
   if(type==7)
   {
@@ -369,11 +371,11 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
     hi    = ceiling(index)
     i     = index > lo
     gamma = (index - lo)*i + lo*(!i)
-    xlo   = as.numeric(x[lo][]) # Needed to cast potential sparse vectors
-    if(length(xlo)<1) stop("no data")
-    xhi   = as.numeric(x[hi][])
+    xlo   = subset(x, paste(paste("n=", lo, sep=""), collapse=" or "))[][,2]
+    if(length(xlo) < 1) stop("no data")
+    xhi   = subset(x, paste(paste("n=", hi, sep=""), collapse=" or "))[][,2]
     qs    = as.scidb((1 - gamma)*xlo + gamma*xhi)
   }
-  p = as.scidb(data.frame(probs=probs),start=as.numeric(scidb_coordinate_start(qs)[[1]]))
-  merge(p,qs,by.x=dimensions(p),by.y=dimensions(qs))
+  p = as.scidb(data.frame(probs=probs), start=as.numeric(scidb_coordinate_start(qs)[[1]]))
+  merge(p, qs, by.x=dimensions(p), by.y=dimensions(qs))
 }
