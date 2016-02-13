@@ -348,8 +348,8 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
         result = gsub("@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo","DEFAULT null", result, perl=TRUE)
         val = textConnection(result)
         ret = tryCatch({
-                read.table(val,sep=",", stringsAsFactors=FALSE, header=TRUE, ...)},
-                error=function(e){ warning(e);c()})
+                read.table(val, sep=",", stringsAsFactors=FALSE, header=TRUE, ...)},
+                error=function(e){ warning(e); c()})
         close(val)
         if(DEBUG) cat("R parsing time",(proc.time()-dt1)[3],"\n")
         ret

@@ -118,8 +118,16 @@ scidb_unpack_to_dataframe = function(query, ...)
     if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
   }
   dt2 = proc.time()
-# reorder so that dimensions appear to the left
+  if(is.null(ans))
+  {
+    n = length(dimensions(x)) + length(scidb_attributes(x))
+    ans = vector(mode="list", length=n)
+    names(ans) = c(dimensions(x), scidb_attributes(x))
+    class(ans) = "data.frame"
+    return(ans)
+  }
   n = ncol(ans)
+# reorder so that dimensions appear to the left
   if(n > 0 && aio)
   {
     na = 1:(n - ndim)
