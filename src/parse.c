@@ -339,7 +339,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
  */
 SEXP scidb_parse (SEXP M, SEXP TYPES, SEXP NULLABLE, SEXP DATA, SEXP OFFSET)
 {
-  int nullable, i=0,j;
+  int nullable, i = 0, j;
   SEXP col, val, ans;
   int m = INTEGER(M)[0];
   R_xlen_t n = XLENGTH(TYPES);
@@ -359,19 +359,19 @@ SEXP scidb_parse (SEXP M, SEXP TYPES, SEXP NULLABLE, SEXP DATA, SEXP OFFSET)
 // fill in the list with columns of an appropriate type and size
   for (j = 0; j < n; ++j)
   {
-    SET_VECTOR_ELT(ans,j, PROTECT(scidb_type_vector(CHAR(STRING_ELT(TYPES,j)), m)));
+    SET_VECTOR_ELT(ans, j, PROTECT(scidb_type_vector(CHAR(STRING_ELT(TYPES, j)), m)));
     protectCount++;
   }
 // Make sure starting condition is valid
-  if(p-q >= s) goto end;
+  if(p - q >= s) goto end;
   for(i=0;i<m;++i)
   {
     for(j=0;j<n;++j)
     {
-      col = VECTOR_ELT(ans,j);
+      col = VECTOR_ELT(ans, j);
 // XXX Add max bytes allowed to read here ?...
       scidb_value(&p, CHAR(STRING_ELT(TYPES,j)), INTEGER(NULLABLE)[j], col, i);
-      if(p-q >= s)
+      if(p - q >= s)
       {
         i++;
         goto end;
@@ -381,7 +381,7 @@ SEXP scidb_parse (SEXP M, SEXP TYPES, SEXP NULLABLE, SEXP DATA, SEXP OFFSET)
 
 end:
   SET_VECTOR_ELT(ans, n, ScalarInteger(i));
-  SET_VECTOR_ELT(ans, n+1, ScalarReal((double)(p-q)));
+  SET_VECTOR_ELT(ans, n + 1, ScalarReal((double)(p - q)));
   UNPROTECT (protectCount);
   return (ans);
 }

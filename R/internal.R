@@ -48,7 +48,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   if(!is.null(args$buffer))
   {
     argsbuf = tryCatch(as.integer(args$buffer),warning=function(e) NA)
-    if(!is.na(argsbuf) && argsbuf < 100e6) buffer = as.integer(argsbuf)
+    if(!is.na(argsbuf) && argsbuf <= 1e9) buffer = as.integer(argsbuf)
   }
   ndim = length(dimensions(query))
   if(aio)
@@ -110,14 +110,13 @@ scidb_unpack_to_dataframe = function(query, ...)
       if(lines < len_out) tmp = lapply(tmp[1:n],function(x) x[1:lines])
 # Let's adaptively re-estimate a buffer size
       avg_bytes_per_line = ceiling((p - p_old)/lines)
-      buffer = ceiling(1.3*(len - p)/avg_bytes_per_line) # Engineering factor
+      buffer = min(1e7, ceiling(1.3*(len - p)/avg_bytes_per_line)) # Engineering factors
 # Assemble the data frame
       if(is.null(ans)) ans = data.frame(tmp[1:n], stringsAsFactors=FALSE)
       else ans = rbind(ans, data.frame(tmp[1:n], stringsAsFactors=FALSE))
     }
-    if(DEBUG) cat("  R rbind/df assembly time",(proc.time()-dt2)[3],"\n")
+    if(DEBUG) cat("  R rbind/df assembly time",(proc.time() - dt2)[3],"\n")
   }
-  dt2 = proc.time()
   if(is.null(ans))
   {
     n = length(dimensions(x)) + length(scidb_attributes(x))
