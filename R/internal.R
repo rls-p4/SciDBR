@@ -18,15 +18,12 @@ scidbcc = function(x)
 {
   name = substr(object@name,1,35)
   if(nchar(object@name)>35) name = paste(name,"...",sep="")
-  dn = "\nDimension"
-  if(length(dimensions(object))>1) dn = "\nDimensions"
-  cat("SciDB expression ",name)
-  cat("\nSciDB schema ",schema(object))
-  cat(dn,"\n")
+  cat("SciDB expression ", name)
+  cat("\nSciDB schema ", schema(object), "\n")
   bounds = scidb_coordinate_bounds(object)
-  cat(paste(capture.output(print(data.frame(dimension=dimensions(object),start=bounds$start,end=bounds$end,chunk=scidb_coordinate_chunksize(object),row.names=NULL,stringsAsFactors=FALSE))),collapse="\n"))
-  cat("\nAttributes\n")
-  cat(paste(capture.output(print(data.frame(attribute=object@attributes,type=scidb_types(object),nullable=scidb_nullable(object)))),collapse="\n"))
+  d = data.frame(variable=dimensions(object), dimension=TRUE, type="int64", nullable=FALSE, start=bounds$start, end=bounds$end, chunk=scidb_coordinate_chunksize(object), row.names=NULL, stringsAsFactors=FALSE)
+  d = rbind(d, data.frame(variable=object@attributes, dimension=FALSE, type=scidb_types(object), nullable=scidb_nullable(object), start="", end="", chunk=""))
+  cat(paste(capture.output(print(d)), collapse="\n"))
   cat("\n")
 }
 
@@ -169,7 +166,7 @@ digest_auth = function(method, uri, realm="", nonce="123456")
 # Internal warning function
 warnonce = (function() {
   state = list(
-    count="Use `count` for an exact count of data elements.",
+    count="Use `count` for an exact count of data rows.",
     nonum="Note: The R sparse Matrix package does not support certain value types like\ncharacter strings"
   )
   function(warn) {
