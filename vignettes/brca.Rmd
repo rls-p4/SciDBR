@@ -1,0 +1,17 @@
+---
+title: "An R interface to SciDB"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    highlight: kate
+    toc: false
+    toc_depth: 4
+    mathjax: null
+vignette: >
+  %\VignetteIndexEntry{scidb}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+# SciDB
+
