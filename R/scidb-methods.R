@@ -49,6 +49,7 @@ setMethod('print', signature(x='scidb'),
   })
 
 #' @export
+#' @importFrom stats hist
 setMethod("hist",signature(x="scidb"), hist_scidb)
 
 #' @export
@@ -80,6 +81,7 @@ setGeneric("regrid", function(x, grid, expr) standardGeneric("regrid"))
 #' x <- as.scidb(iris)
 #' regrid(x, 10, min)
 #' }
+#' @importFrom stats aggregate
 #' @export
 setMethod("regrid", signature(x="scidb"), regrid_scidb)
 
