@@ -212,10 +212,11 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 
 
 #' List objects in a SciDB database
+#' @param pattern a regular-expression style search pattern
 #' @param type (character), one of the indicated list types
 #' @param verbose (boolean), include attribute and dimension data when type="arrays"
 #' @param n maximum lines of output to return
-#' @return a list
+#' @return a list of matching SciDB database objects
 #' @export
 scidblist = function(pattern,
                      type= c("arrays", "operators", "functions", "types",

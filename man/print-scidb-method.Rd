@@ -8,7 +8,7 @@
 \S4method{print}{scidb}(x)
 }
 \arguments{
-\item{object}{a \code{scidb} object}
+\item{x}{a \code{scidb} object}
 }
 \value{
 printed object summary

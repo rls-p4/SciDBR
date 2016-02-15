@@ -9,6 +9,8 @@ scidblist(pattern, type = c("arrays", "operators", "functions", "types",
   n = Inf)
 }
 \arguments{
+\item{pattern}{a regular-expression style search pattern}
+
 \item{type}{(character), one of the indicated list types}
 
 \item{verbose}{(boolean), include attribute and dimension data when type="arrays"}
@@ -16,7 +18,7 @@ scidblist(pattern, type = c("arrays", "operators", "functions", "types",
 \item{n}{maximum lines of output to return}
 }
 \value{
-a list
+a list of matching SciDB database objects
 }
 \description{
 List objects in a SciDB database

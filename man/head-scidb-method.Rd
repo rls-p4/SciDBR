@@ -9,6 +9,8 @@
 }
 \arguments{
 \item{x}{a \code{scidb} object}
+
+\item{n}{maximum number of rows to return}
 }
 \value{
 a data frame with the first part of the array data

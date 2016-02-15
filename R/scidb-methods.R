@@ -8,6 +8,7 @@ setGeneric("is.scidb", function(x) standardGeneric("is.scidb"))
 #' @param x \code{scidb} array object
 #' @param y \code{scidb} array object
 #' @return \code{scidb} array object
+#' @importFrom methods setMethod setGeneric
 #' @export
 setMethod(c, signature(x="scidb"),
 function(x, y)
@@ -30,6 +31,7 @@ function(x, y)
 
 #' Return the first part of a SciDB array
 #' @param x a \code{scidb} object
+#' @param n maximum number of rows to return
 #' @return a data frame with the first part of the array data
 #' @export
 setMethod("head", signature(x="scidb"),
@@ -42,8 +44,14 @@ function(x, n=6L, ...)
 #' @param x a \code{scidb} object
 #' @return \code{TRUE} if \code{x} has class "scidb"
 #' @export
-setMethod("is.scidb", signature(x="scidb"),
-  function(x) return(TRUE))
+setMethod("is.scidb", signature(x="ANY"),
+  function(x)
+  {
+    if(inherits(x, "scidb")) return(TRUE)
+    FALSE
+  }
+)
+
 
 #' Test if an object has class "scidb"
 #' @param x an R object
@@ -52,7 +60,7 @@ setMethod("is.scidb", signature(x="scidb"),
 setMethod("is.scidb", signature(x="scidb"), function(x) return(FALSE))
 
 #' Print a summary of a \code{scidb} object
-#' @param object a \code{scidb} object
+#' @param x a \code{scidb} object
 #' @return printed object summary
 #' @export
 setMethod("print", signature(x="scidb"),
@@ -60,6 +68,12 @@ setMethod("print", signature(x="scidb"),
     show(x)
   })
 
+#' Histogram
+#'
+#' Return and optionall plot a histogram from SciDB array values
+#' @param x a \code{scidb} object with a single numeric SciDB attribute
+#' @return an R histogram object
+#' @seealso \code{\link{hist}}
 #' @export
 #' @importFrom graphics hist
 setMethod("hist",signature(x="scidb"), hist_scidb)
