@@ -328,7 +328,7 @@ antijoin = function(array1, array2)
 
 
 #' @aliases quantile
-#' @importFrom stats, quantile
+#' @importFrom stats quantile
 #' @export
 quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
 {
