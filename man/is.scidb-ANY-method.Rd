@@ -2,6 +2,7 @@
 % Please edit documentation in R/scidb-methods.R
 \docType{methods}
 \name{is.scidb,ANY-method}
+\alias{is.scidb}
 \alias{is.scidb,ANY-method}
 \title{Test if an object has class "scidb"}
 \usage{

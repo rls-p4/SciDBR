@@ -7,20 +7,50 @@ setGeneric("phyper", function(x, ...) stats::phyper(x,...))
 setOldClass("qhyper")
 setGeneric("qhyper", function(x, ...) stats::qhyper(x,...))
 
+#' The Hypergeometric distribution
+#'
+#' Density and quantile function for the hypergeometric distribution.
+#' @param  x vector of quantiles representing the number of white balls
+#'           drawn without replacement from an urn which contains both
+#'           black and white balls.
+#' @param  q vector of quantiles representing the number of white balls
+#'           drawn without replacement from an urn which contains both
+#'           black and white balls.
+#' @param  m the number of white balls in the urn.
+#' @param  n the number of black balls in the urn.
+#' @param  k the number of balls drawn from the urn.
+#' @param new the name of the new attribute with the resulting probabilities
+#' @return a new \code{scidb} array object
+#' @seealso \code{\link{phyper}} \code{\link{qhyper}}
 #' @export
 setMethod("phyper", signature(x="scidb"),
-  function(x, q, m, n, k, new="p",`eval`=FALSE)
+  function(x, q, m, n, k, new="p")
   {
     query = sprintf("hygecdf(%s,%s,%s,%s)",q,m,n,k)
-    bind(x, new, query, `eval`=eval)
+    bind(x, new, query)
   })
 
+#' The Hypergeometric distribution
+#'
+#' Density and quantile function for the hypergeometric distribution.
+#' @param  x vector of quantiles representing the number of white balls
+#'           drawn without replacement from an urn which contains both
+#'           black and white balls.
+#' @param  q vector of quantiles representing the number of white balls
+#'           drawn without replacement from an urn which contains both
+#'           black and white balls.
+#' @param  m the number of white balls in the urn.
+#' @param  n the number of black balls in the urn.
+#' @param  k the number of balls drawn from the urn.
+#' @param new the name of the new attribute with the resulting probabilities
+#' @return a new \code{scidb} array object
+#' @seealso \code{\link{phyper}} \code{\link{qhyper}}
 #' @export
 setMethod("qhyper", signature(x="scidb"),
-  function(x, p, m, n, k, new="q", `eval`=FALSE)
+  function(x, p, m, n, k, new="q")
   {
     query = sprintf("ihygecdf(%s,%s,%s,%s)",p,m,n,k)
-    bind(x, new, query, `eval`=eval)
+    bind(x, new, query)
   })
 
 #' Fisher's Exact Test for Count Data

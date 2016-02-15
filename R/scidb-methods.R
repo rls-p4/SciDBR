@@ -40,16 +40,18 @@ function(x, n=6L)
   iqdf(x, n)[,-1]
 })
 
-is.scidb = function(x)
+#' Test if an object has class "scidb"
+#' @param x a \code{scidb} object
+#' @aliases is.scidb
+#' @return \code{TRUE} if \code{x} has class "scidb"
+#' @export
+setMethod("is.scidb", signature(x="ANY"), 
+function(x)
   {
     if(inherits(x, "scidb")) return(TRUE)
     FALSE
   }
-#' Test if an object has class "scidb"
-#' @param x a \code{scidb} object
-#' @return \code{TRUE} if \code{x} has class "scidb"
-#' @export
-setMethod("is.scidb", signature(x="ANY"), is.scidb)
+)
 
 
 #' Test if an object has class "scidb"
