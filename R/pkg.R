@@ -11,22 +11,13 @@ NULL
 {
   packageStartupMessage("   ____    _ ___  ___\n  / __/___(_) _ \\/ _ )\n _\\ \\/ __/ / // / _  |\n/___/\\__/_/____/____/     Copyright 2016, Paradigm4, Inc.\n\n"    , domain = NULL, appendLF = TRUE)
 
-# Maximum allowed sequential index limit (for larger, use between)
-  options(scidb.index.sequence.limit=1000000)
-# Maximum allowed elements in an array return result
-  options(scidb.max.array.elements=100000000)
 # The scidb.version option is set during scidbconnect(). However, users
 # may carefully override it to enable certain bug fixes specific to older
 # versions of SciDB.
   options(scidb.version=15.7)
-# Set this to 32 for SciDB version 13.6
-  options(scidb.gemm_chunk_size=1000)
 # Default shim port and host.
   options(scidb.default_shim_port=8080L)
   options(scidb.default_shim_host="localhost")
-# There was a bad gemm/gesvd/subarray bug until 14.3. When TRUE, this option
-# puts a reliable work-around in place (inserting sg everywhere).
-  options(scidb.gemm_bug=TRUE)
 # Make it harder to remove arrays. When this option is TRUE, users
 # have to specify scidbrm(array, force=TRUE) to remove arrays that do not
 # begin with "R_array".
@@ -39,20 +30,17 @@ NULL
   options(scidb.verifyhost=FALSE)
 # Set to TRUE to enable experimental shim stream protocol, avoids copying query
 # output to data file on server # (see https://github.com/Paradigm4/shim).
-  options(scidb.stream=FALSE)
+# THIS MUST BE SET TO FALSE FOR VERSIONS OF SCIDB < 15.7.
+  options(scidb.stream=TRUE)
 }
 
 # Reset the various package options
 .onUnload = function(libpath)
 {
-  options(scidb.index.sequence.limit=c())
-  options(scidb.max.array.elements=c())
   options(scidb.version=c())
-  options(scidb.gemm_chunk_size=c())
   options(scidb.safe_remove=c())
   options(scidb.default_shim_port=c())
   options(scidb.default_shim_host=c())
-  options(scidb.gemm_bug=c())
   options(scidb.verifyhost=c())
   options(scidb.stream=c())
   options(scidb.version=c())

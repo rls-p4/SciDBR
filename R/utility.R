@@ -203,11 +203,6 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
   {
     options(scidb.version=paste(v$major, v$minor, sep="."))
   }
-# Update the gemm_bug option
-  if(compare_versions(options("scidb.version")[[1]],14.3))
-  {
-    options(scidb.gemm_bug=FALSE) # Yay
-  }
 # Update the shim.version option
   options(shim.version=SGET("/version"))
 

@@ -22,7 +22,7 @@ SciDB is a free open-source database that organizes data in n-dimensional
 arrays.  SciDB features include ACID transactions, parallel processing,
 distributed storage, and efficient sparse array storage. SciDB arrays consist
 of a coordinate system whose coordinates are called _dimensions_, and one or
-more values called _attribtues_ of distinct types at each coordinate.
+more values called _attributes_ of distinct types at each coordinate.
 
 The `scidb` package provides two ways to interact with SciDB from R:
 
@@ -55,7 +55,7 @@ devtools::install_github("Paradigm4/SciDBR", ref="laboratory")
 
 "Stable" means that all CRAN checks and package unit tests pass. We try to
 make sure that the `scidb` package works with _all_ versions of SciDB but
-we only actively test agains the current release version of the database.
+we only actively test against the current release version of the database.
 
 
 ## Connecting to SciDB
@@ -126,7 +126,7 @@ iquery("build(<v:double>[i=1:2,2,0, j=1:3,1,0], i*j)", return=TRUE)
 The `scidb` function returns representations of  SciDB arrays as data
 frame-like R objects with class `scidb`. The objects display the SciDB
 coordinate dimensions and attributes as columns of a data frame. The `scidb`
-function acceps arbitrary SciDB AFL expressions or named SciDB arrays.
+function accepts arbitrary SciDB AFL expressions or named SciDB arrays.
 
 ```{r, eval=FALSE}
 x <- scidb("build(<v:double>[i=1:2,2,0, j=1:3,1,0], i*j)")
@@ -263,13 +263,13 @@ codes are translated to R missing values.)
 # Important operations on `scidb` values
 
 This section covers a few of the most important operations on `scidb` array
-values in R. With few excpetions, operations on SciDB array objects produce new
+values in R. With few exceptions, operations on SciDB array objects produce new
 SciDB array objects. Since objects are effectively SciDB array views,
 compositions of R operations build up increasingly complex SciDB queries.
 
-## Project
+## Project and slice
 
-Use `project`, or equivalently the data frame-like column subsetting notations
+Use `project`, or equivalently the data frame-like column subset notations
 `$` and `x[, c("column name 1", "column name 2"]` to  project the array object
 onto a subset of its SciDB attributes.
 
@@ -306,6 +306,29 @@ SciDB schema  <Species:string NULL DEFAULT null> [row=1:150,150,0]
 2  Species     FALSE string     TRUE                
 ```
 
+Use the `slice` function to slice out one dimension of a SciDB array
+at a specific coordinate value.
+```{r, eval=FALSE}
+(x <- scidb("build(<v:double>[i=1:2,2,0, j=1:3,1,0], i*j)"))
+```
+```
+SciDB expression  build(<v:double>[i=1:2,2,0, j=1:3,1...
+SciDB schema  <v:double> [i=1:2,2,0,j=1:3,1,0] 
+  variable dimension   type nullable start end chunk
+1        i      TRUE  int64    FALSE     1   2     2
+2        j      TRUE  int64    FALSE     1   3     1
+3        v     FALSE double    FALSE                
+```
+```{r, eval=FALSE}
+slice(x, "j", 2)
+```
+```
+SciDB expression  slice(build(<v:double>[i=1:2,2,0, j...
+SciDB schema  <v:double> [i=1:2,2,0] 
+  variable dimension   type nullable start end chunk
+1        i      TRUE  int64    FALSE     1   2     2
+2        v     FALSE double    FALSE                
+```
 
 ## Subset
 
@@ -315,7 +338,7 @@ forms:
 * Explicit AFL filter expressions
 * Implicit queries generated from R expressions
 
-The implict form can sometimes generate more efficient queries and
+The implicit form can sometimes generate more efficient queries and
 allows you to mix simple R scalar values in the SciDB expression. The
 following examples illustrate each form.
 
@@ -498,19 +521,184 @@ SciDB schema  <Petal_Width:double NULL DEFAULT null> [row=1:150,150,0,Species_in
 merge(a, y)
 ```
 ```
-SciDB expression  cross_join(project(R_array1ebfe561a...
-SciDB schema  <Petal_Length:double NULL DEFAULT null,Petal_Width:double NULL DEFAULT null> [row=1:150,150,0,Species_index=0:*,6667,0] 
+SciDB expression  cross_join(project(redimension(appl...
+SciDB schema  <Petal_Width:double NULL DEFAULT null,Petal_Length:double NULL DEFAULT null> [row=1:150,150,0,Species_index=0:*,6667,0] 
        variable dimension   type nullable start end chunk
 1           row      TRUE  int64    FALSE     1 150   150
 2 Species_index      TRUE  int64    FALSE     0   *  6667
-3  Petal_Length     FALSE double     TRUE                
-4   Petal_Width     FALSE double     TRUE                
+3   Petal_Width     FALSE double     TRUE                
+4  Petal_Length     FALSE double     TRUE                
 ```
+Many additional options are available, see `?merge.scidb` for examples.
 
-# Other SciDB operators
+### Array concatenation
+Use the `rbind` function to concatenate two SciDB arrays with identical
+dimensions and identical numbers of attributes of the same types
+along their last dimension. Here  is an example:
+```{r, eval=FALSE}
+i <- as.scidb(iris)
+x <- project(i, c("Petal_Length", "Petal_Width"))
+count(x)
+```
+```
+[1] 150
+```
+```{r, eval=FALSE}
+count(rbind(x, x))
+```
+```
+[1] 300
+```
+Note that the result has an unbounded last SciDB coordinate dimension.
+
+Use the `cbind` function to concatenate attributes across two SciDB arrays with
+identical dimensions (coordinate schema).
+```{r, eval=FALSE}
+x
+```
+```
+SciDB expression  project(R_arraya5d8655c582110299266...
+SciDB schema  <Petal_Length:double NULL DEFAULT null,Petal_Width:double NULL DEFAULT null> [row=1:150,150,0] 
+      variable dimension   type nullable start end chunk
+1          row      TRUE  int64    FALSE     1 150   150
+2 Petal_Length     FALSE double     TRUE                
+3  Petal_Width     FALSE double     TRUE                
+```
+```{r, eval=FALSE}
+cbind(x,x)
+```
+```
+SciDB expression  join(project(R_arraya5d8655c5821102...
+SciDB schema  <Petal_Length:double NULL DEFAULT null,Petal_Width:double NULL DEFAULT null,Petal_Length_1:double NULL DEFAULT null,Petal_Width_1:double NULL DEFAULT null> [row=1:150,150,0] 
+        variable dimension   type nullable start end chunk
+1            row      TRUE  int64    FALSE     1 150   150
+2   Petal_Length     FALSE double     TRUE                
+3    Petal_Width     FALSE double     TRUE                
+4 Petal_Length_1     FALSE double     TRUE                
+5  Petal_Width_1     FALSE double     TRUE                
+```
+Note that attribute names are adjusted as required to remain unique.
+
+### Antijon
+Use the `antijoin` function to return a logical-valued mask of array coordinates
+that _do not_ join between two arrays with the same coordinate schema.
+
+
+# Other SciDB operations
+
+The `scidb` package defines many additional SciDB-related functions besides the
+most important few outlined above.
+
+
+## SciDB schema-related functions
+
+The `cast` function works like the SciDB "cast" operator; use it to rename any
+part of a SciDB schema, or use the slightly more convenient `dimension_rename`
+and `attribute_rename` functions.
+
+The following functions return scalar or vector values to R (not SciDB array
+objects).  The `dimensions` and `scidb_attribute` functions return the names of
+the SciDB array dimension and attribute variables, respectively.  The
+`scidb_nullable`, `scidb_types`, `scidb_coordinate_bounds`, and `schema`
+functions return information about SciDB attributes and array schema.
+
+## SciDB schema/shape-altering operations
+
+We've already seen the very important `redimension` function. Use the
+`repart` function similarly to the SciDB "repart" operator to alter the
+SciDB array coordinate partitions. Use the `reshape` function to change
+the dimensionality of a SciDB array, and similarly the `unpack` function
+to flatten a SciDB array into a table.
+
+The `subarray` function is a wrapper for the SciDB "subarray" operator that
+filters an array along its coordinates and resets the top-left coordinate to
+the origin.
+
+## Filling in missing values
+
+Use the `replaceNA` function to replace missing values in SciDB arrays with a
+constant, similarly to the SciDB "substitute" operator (the name "substitute"
+already had a substantially different meaning in R, so we picked a different
+function name).
+
+
+## SciDB catalog operations
+
+Use `scidbremove` or, equivalently, `scidbrm` to remove SciDB arrays from the
+database (permanently!). Related to this topic, use `scidbeval` to control the
+connection of R's garbage collector to SciDB arrays associated with R
+variables. The `persist` function can be used to recursively modify the
+garbage-collection association for any R `scidb` array object, including all
+its dependencies.
+
+The `scidbls` function can be used to list arrays and many other SciDB database
+objects.
+
+Use the `remove_old_versions` function to remove all the old versions in the
+SciDB catalog of a named array, leaving only the last version.
+
+Use `rename` to rename a stored SciDB array in the database.
+
+The `count` function counts the number of elements in the specified SciDB array
+or expression just like the SciDB "op\_count" operator/macro.
+
 
 # Package options
 
-# Extras
+The following package options can be set with R's `options` function.
+The most interesting ones are the last two! Set
+`options(scidb.debug=TRUE)` to see interesting debugging information
+including all the issued SciDB queries. Set `options(scidb.stream=TRUE)`
+to avoid creating server-side data files which is most useful when you're
+downloading lots of data from SciDB into R.
 
-# Special note on the `curl` pacakge dependency
+```
+# The scidb.version option is set during scidbconnect(). However, users
+# may carefully override it to enable certain bug fixes specific to older
+# versions of SciDB.
+  options(scidb.version=15.7)
+
+# Default shim port and host.
+  options(scidb.default_shim_port=8080L)
+  options(scidb.default_shim_host="localhost")
+
+# Make it harder to remove arrays. When this option is TRUE, users
+# have to specify scidbrm(array, force=TRUE) to remove arrays that do not
+# begin with "R_array".
+  options(scidb.safe_remove=TRUE)
+
+# Disable SSL certificate host name checking by default. This is important mostly
+# for Amazon EC2 where hostnames rarely match their DNS names. If you enable this
+# then the shim SSL certificate CN entry *must* match the server host name for the
+# encrypted session to work. Set this TRUE for stronger security (help avoid MTM)
+# in SSL connections.
+  options(scidb.verifyhost=FALSE)
+
+# Set to TRUE to enable experimental shim stream protocol, avoids copying query
+# output to data file on server # (see https://github.com/Paradigm4/shim).
+# This must be set to FALSE on versions of SciDB prior to 15.7.
+  options(scidb.stream=TRUE)
+
+# Set to TRUE to enable debugging.
+  options(scidb.debug=FALSE)
+```
+
+# Special note on the `curl` package dependency
+
+Newer versions of the `scidb` package depend on  Jeroen Ooms' `curl` package,
+replacing the older `RCurl` dependency and fixing a number of memory,
+performance and stability issues.
+
+As of this writing, the `curl` package has one significant problem. Users are
+not able to cancel HTTP requests until data transfers begin. In the context of
+SciDB interaction, that means that users can't cancel a SciDB query until data
+starts flowing back to R.
+
+There exists an experimental version of the `curl` package that does add
+this capability, but at the cost of some additional CPU overhead. If you
+want to try that out, you can install it directly from GitHub using the
+`devtools` package with:
+
+```{r, eval=FALSE}
+devtools::install_github("jeroenooms/curl", ref=devtools::github_pull(55))
+```
