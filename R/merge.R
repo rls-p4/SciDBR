@@ -59,11 +59,9 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
   return(.scidbeval(query,eval,depend=list(x,y)))
 }
 
-# SciDB join, cross_join, and merge wrapper internal function to support merge
-# on various classes (scidb, scidb). This is an internal function to support
-# R's merge on various SciDB objects.
+# SciDB join, cross_join, and merge wrapper internal function
 #
-# x and y are SciDB array references of any kind (scidb, scidb)
+# x and y are SciDB array references
 # `by` is either a single character indicating a dimension name common to both
 #      arrays to join on, or a two-element list of character vectors of array
 #      dimensions to join on.
@@ -74,8 +72,14 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
 #
 `merge_scidb` = function(x, y, `by`, ...)
 {
+  if(length(dimensions(y)) > length(dimensions(x)))
+  {
+    z = y
+    y = x
+    x = z
+  }
   mc = list(...)
-  al = scidb_alias(x,y)
+  al = scidb_alias(x, y)
   by.x = by.y = NULL
   `all` = FALSE
   scidbmerge = FALSE
