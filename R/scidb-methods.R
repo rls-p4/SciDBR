@@ -30,13 +30,6 @@ function(x, n=6L, ...)
 })
 
 #' @export
-setMethod("tail", signature(x="scidb"),
-function(x, n=6L, ...)
-{
-  stop("Not yet supported")
-})
-
-#' @export
 setMethod('is.scidb', signature(x='scidb'),
   function(x) return(TRUE))
 #' @export

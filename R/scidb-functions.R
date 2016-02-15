@@ -1,3 +1,10 @@
+#' Combine attributes from two SciDB arrays
+#'
+#' Concatenate arrays with common dimension schema by combining their attributes.
+#' Equivalent to SciDB's "merge" operator, or \code{\link{aggregate}} with \code{merge=TRUE}.
+#' @param x \code{scidb} array object
+#' @param y \code{scidb} array object
+#' @return \code{scidb} array object
 #' @export
 cbind.scidb = function(x, y)
 {
@@ -13,42 +20,32 @@ cbind.scidb = function(x, y)
   merge(x, y, by=i)
 }
 
+#' Concatenate two SciDB arrays
+#'
+#' Concatenate two SciDB arrays with common schema along their last dimension.
+#' @param x \code{scidb} array object
+#' @param y \code{scidb} array object
+#' @return \code{scidb} array object
 #' @export
 rbind.scidb = function(x, y)
 {
   c(x, y)
 }
 
-#' @export
-`rownames<-.scidb` = function(x, value)
-{
-  stop("Not supported")
-}
 
-#' @export
-`dimnames<-.scidb` = function(x, value)
-{
-  stop("Not supported. Use names<- to change attribute and dimension names.")
-}
-
-#' @export
-row.names.scidb = function(x)
-{
-  NULL
-}
-
-#' @export
-`row.names<-.scidb` = function(x, value)
-{
-  stop("Not supported. Use names<- to change attribute and dimension names.")
-}
-
+#' SciDB dimension and attribute names
+#' @param x \code{scidb} array object
+#' @return Character vector of names
 #' @export
 names.scidb = function(x)
 {
   c(x@dimensions, x@attributes)
 }
 
+#' Renamed SciDB attributes and/or dimensions
+#' @param x \code{scidb} array object
+#' @param value a character vector with new dimension and attribute names, in that order
+#' @return \code{scidb} array object
 #' @export
 `names<-.scidb` = function(x, value)
 {
@@ -60,12 +57,22 @@ names.scidb = function(x)
   attribute_rename(dimension_rename(x, `new`=v1), `new`=v2)
 }
 
+#' Names of array dimensions
+#' @param x \code{scidb} array object
+#' @return a vector of SciDB array dimension names
 #' @export
 dimnames.scidb = function(x)
 {
   x@dimensions
 }
 
+#' Projection onto an array attribute (variable)
+#'
+#' Use data frame dollar sign notation to project onto a single array attribute
+#' @seealso \code{\link{project}}
+#' @param x \code{scidb} array object
+#' @param ... optional argument \code{drop=FALSE} not yet supported, but will be in a future version
+#' @return \code{scidb} array object
 #' @export
 `$.scidb` = function(x, ...)
 {
@@ -76,17 +83,29 @@ dimnames.scidb = function(x)
   project(x, scidb_attributes(x)[a])
 }
 
-# data.frame subsetting wrapper, limited to special [] case.
-# x: A Scidbdf array object
-# ...: list of dimensions
-# 
+#' Projection onto array attributes (variables) or special return data to R operator
+#'
+#' Use empty indexing brackets to download the values of the SciDB array to R in a data frame.
+#' @seealso \code{\link{project}}
+#' @param x \code{scidb} array object
+#' @param ... character vector of array attributes
+#' @return \code{scidb} array object
+#' @examples
+#' \dontrun{
+#' x <- as.scidb(head(iris))
+#' print(x)          # shows SciDB array structure
+#' print(x[])        # downloads data back to R
+#'
+#' x[, "Species"]    # data frame subset notation, returns a new SciDB array object
+#' x[, "Species"][]  # Downloads to R
+#' }
 #' @export
 `[.scidb` = function(x, ...)
 {
   M = match.call()
   M = M[3:length(M)]
   i = vapply(1:length(M), function(j) is.null(tryCatch(eval(M[j][[1]], parent.frame()), error=function(e) c())), TRUE)
-  if(! all(i)) stop("Use subset and project")
+  if(! all(i)) return(project(x, unlist(list(...))))
   scidb_unpack_to_dataframe(x)
 }
 
