@@ -370,3 +370,62 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
   p = as.scidb(data.frame(probs=probs), start=as.numeric(scidb_coordinate_start(qs)[[1]]))
   merge(p, qs, by.x=dimensions(p), by.y=dimensions(qs))
 }
+
+
+# SciDB build wrapper, intended to act something like the R 'array' function. Internal.
+build = function(data, dim, names, type,
+                 start, name, chunksize, overlap, gc=TRUE, `eval`=FALSE)
+{
+  if(missing(type))
+  {
+    type = typeof(data)
+    if(is.character(data))
+    {
+      if(length(grep("\\(",data))>0) type="double"
+      else
+      {
+        type = "string"
+        data = sprintf("'%s'",data)
+      }
+    }
+  }
+# Special case:
+  if(is.scidb(dim))
+  {
+    schema = sprintf("%s%s",build_attr_schema(dim,I=1),build_dim_schema(dim))
+    query = sprintf("build(%s,%s)",schema,data)
+    ans = .scidbeval(query,eval)
+# We know that the output of build is not sparse
+    attr(ans,"sparse") = FALSE
+    return(ans)
+  }
+  if(missing(start)) start = rep(0,length(dim))
+  if(missing(overlap)) overlap = rep(0,length(dim))
+  if(missing(chunksize))
+  {
+    chunksize = rep(ceiling(1e6^(1/length(dim))),length(dim))
+  }
+  if(length(start)!=length(dim)) stop("Mismatched dimension/start lengths")
+  if(length(chunksize)!=length(dim)) stop("Mismatched dimension/chunksize lengths")
+  if(length(overlap)!=length(dim)) stop("Mismatched dimension/overlap lengths")
+  if(missing(names))
+  {
+    names = c("val", letters[9:(8+length(dim))])
+  }
+# No scientific notation please
+  chunksize = noE(chunksize)
+  overlap = noE(overlap)
+  dim = noE(dim + (start - 1))
+  start = noE(start)
+  schema = paste("<",names[1],":",type,">",sep="")
+  schema = paste(schema, paste("[",paste(paste(paste(
+        paste(names[-1],start,sep="="), dim, sep=":"),
+        chunksize, overlap, sep=","), collapse=","),"]",sep=""), sep="")
+  query = sprintf("build(%s,%s)",schema,data)
+  if(missing(name)) return(.scidbeval(query,eval))
+  ans = .scidbeval(query,eval,name)
+# We know that the output of build is not sparse
+  attr(ans,"sparse") = FALSE
+  ans
+}
+
