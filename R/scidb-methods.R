@@ -2,13 +2,19 @@ setGeneric("c")
 setGeneric("head")
 setGeneric("is.scidb", function(x) standardGeneric("is.scidb"))
 
+#' Concatenate two SciDB arrays
+#'
+#' Concatenate two SciDB arrays with common schema along their last dimension.
+#' @param x \code{scidb} array object
+#' @param y \code{scidb} array object
+#' @return \code{scidb} array object
 #' @export
 setMethod(c, signature(x="scidb"),
 function(x, y)
 {
   if(as.numeric(scidb_coordinate_bounds(x)$length) < as.numeric(.scidb_DIM_MAX))
   {
-    s = sprintf("%s%s",build_attr_schema(x),build_dim_schema(x,newend=.scidb_DIM_MAX))
+    s = sprintf("%s%s",build_attr_schema(x), build_dim_schema(x, newend=.scidb_DIM_MAX))
     x = redimension(x,s)
   }
   i = count(x) + as.numeric(scidb_coordinate_start(x)) - as.numeric(scidb_coordinate_start(y))
@@ -22,6 +28,9 @@ function(x, y)
   .scidbeval(s, gc=TRUE, depend=list(x, y))
 })
 
+#' Return the first part of a SciDB array
+#' @param x a \code{scidb} object
+#' @return a data frame with the first part of the array data
 #' @export
 setMethod("head", signature(x="scidb"),
 function(x, n=6L, ...)
@@ -29,14 +38,24 @@ function(x, n=6L, ...)
   iqdf(x, n)[,-1]
 })
 
+#' Test if an object has class "scidb"
+#' @param x a \code{scidb} object
+#' @return \code{TRUE} if \code{x} has class "scidb"
 #' @export
-setMethod('is.scidb', signature(x='scidb'),
+setMethod("is.scidb", signature(x="scidb"),
   function(x) return(TRUE))
-#' @export
-setMethod('is.scidb', definition=function(x) return(FALSE))
 
+#' Test if an object has class "scidb"
+#' @param x an R object
+#' @return \code{TRUE} if \code{x} has class "scidb"
 #' @export
-setMethod('print', signature(x='scidb'),
+setMethod("is.scidb", signature(x="scidb"), function(x) return(FALSE))
+
+#' Print a summary of a \code{scidb} object
+#' @param object a \code{scidb} object
+#' @return printed object summary
+#' @export
+setMethod("print", signature(x="scidb"),
   function(x) {
     show(x)
   })
@@ -45,8 +64,11 @@ setMethod('print', signature(x='scidb'),
 #' @importFrom graphics hist
 setMethod("hist",signature(x="scidb"), hist_scidb)
 
+#' Print a summary of a \code{scidb} object
+#' @param object a \code{scidb} object
+#' @return printed object summary
 #' @export
-setMethod('show', 'scidb',
+setMethod("show", "scidb",
   function(object) {
     .scidbstr(object)
   })
