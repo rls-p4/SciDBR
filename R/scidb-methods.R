@@ -22,7 +22,7 @@ function(x, y)
   j = make.unique_(y@attributes, "j")
   fun = sprintf("%s + %.0f", dimensions(y), i)
   s = sprintf("apply(%s, %s, %s)",y@name, j, fun)
-  scma = sprintf("%s%s",build_attr_schema(y), build_dim_schema(x,newname=j))
+  scma = sprintf("%s%s",build_attr_schema(y), build_dim_schema(x, newnames=j))
   s = sprintf("redimension(%s, %s)",s, scma)
   s = sprintf("cast(%s, %s%s)", s,build_attr_schema(y), build_dim_schema(x))
   s = sprintf("merge(%s, %s)", x@name, s)
@@ -35,7 +35,7 @@ function(x, y)
 #' @return a data frame with the first part of the array data
 #' @export
 setMethod("head", signature(x="scidb"),
-function(x, n=6L, ...)
+function(x, n=6L)
 {
   iqdf(x, n)[,-1]
 })
@@ -72,6 +72,11 @@ setMethod("print", signature(x="scidb"),
 #'
 #' Return and optionall plot a histogram from SciDB array values
 #' @param x a \code{scidb} object with a single numeric SciDB attribute
+#' @param breaks a single number giving the number of cells for the histogram
+#' @param right logical; if \code{TRUE}, the histogram cells are right-closed (left open) intervals
+#' @param materialize logical; if \code{TRUE}, return the histogram object to R
+#' @param plot logical; if \code{TRUE} plot the output
+#' @param ... further arguments and graphical parameters passed to plotting routinesif \code{plot=TRUE}
 #' @return an R histogram object
 #' @seealso \code{\link{hist}}
 #' @export

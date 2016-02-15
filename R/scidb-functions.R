@@ -118,10 +118,19 @@ dimnames.scidb = function(x)
   ans
 }
 
+#' Set SciDB array dimension shape
+#'
+#' This function uses \code{\link{reshape_scidb}} to change array
+#' dimensionality. Does not work with unbounded arrays.
+#' @param x a \code{scidb} object
+#' @param value a vector of dimension bounds
+#' @note The product of the vector of new dimension bounds must equal the product of the old dimension bounds.
+#' @seealso \code{\link{reshape_scidb}}
+#' @return a \code{scidb} object
 #' @export
 `dim<-.scidb` = function(x, value)
 {
-  reshape(x, shape=value)
+  reshape_scidb(x, shape=value)
 }
 
 #' @export

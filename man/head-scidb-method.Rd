@@ -5,7 +5,7 @@
 \alias{head,scidb-method}
 \title{Return the first part of a SciDB array}
 \usage{
-\S4method{head}{scidb}(x, n = 6L, ...)
+\S4method{head}{scidb}(x, n = 6L)
 }
 \arguments{
 \item{x}{a \code{scidb} object}

@@ -35,10 +35,10 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
   `eval`=FALSE
   by.x = by.x[[1]]  # Limitation: only one attribute for now
   by.y = by.y[[1]]  # Ditto
-  al = scidb_alias(x,y)  # new alias names
-  lkup = unique(project(x,by.x),attributes=by.x)
-  XI = index_lookup(x,lkup,by.x,`eval`=FALSE)
-  YI = index_lookup(y,lkup,by.y,`eval`=FALSE)
+  al = scidb_alias(x, y)  # new alias names
+  lkup = unique(project(x, by.x), attributes=by.x)
+  XI = index_lookup(x, lkup, by.x)
+  YI = index_lookup(y, lkup, by.y)
 
   new_dim_name = make.unique_(c(dimensions(x),dimensions(y)),"row")
   a = XI@attributes %in% paste(by.x,"index",sep="_")

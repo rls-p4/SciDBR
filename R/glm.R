@@ -267,8 +267,8 @@ model_scidb = function(formula, data, factors=NULL)
 
   schema = sprintf("%s%s",build_attr_schema(M),
     build_dim_schema(M,newstart=c(0,0),newend=newend,newchunk=newchunk))
-  M = reshape(M, shape=c(nrow(M), ncol(M)))  # Reset origin without moving data
-  M = redimension(M,schema=schema)           # Redimension to get extra columns
+  M = reshape_scidb(M, shape=c(nrow(M), ncol(M)))  # Reset origin without moving data
+  M = redimension(M, schema=schema)           # Redimension to get extra columns
 
 # Merge in the contrasts
   col = length(vars)
@@ -300,7 +300,7 @@ model_scidb = function(formula, data, factors=NULL)
     schema = sprintf("%s%s",
              build_attr_schema(y,newnames=c("index","val","j")),
              build_dim_schema(y,newnames="i"))
-    y = redimension(reshape(cast(y,schema),shape=nrow(y)),M)
+    y = redimension(reshape_scidb(cast(y, schema), shape=nrow(y)),M)
 # ... merge into M
     M = merge(M,y,merge=TRUE) # eval this?
   }

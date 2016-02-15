@@ -10,6 +10,16 @@
 }
 \arguments{
 \item{x}{a \code{scidb} object with a single numeric SciDB attribute}
+
+\item{breaks}{a single number giving the number of cells for the histogram}
+
+\item{right}{logical; if \code{TRUE}, the histogram cells are right-closed (left open) intervals}
+
+\item{materialize}{logical; if \code{TRUE}, return the histogram object to R}
+
+\item{plot}{logical; if \code{TRUE} plot the output}
+
+\item{...}{further arguments and graphical parameters passed to plotting routinesif \code{plot=TRUE}}
 }
 \value{
 an R histogram object

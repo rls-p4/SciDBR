@@ -1,3 +1,4 @@
+
 #' Head-like SciDB array inspection
 #'
 #' Return the first part of an unpacked SciDB array as a data frame.
@@ -27,14 +28,6 @@ iqdf = function( x, n = 6L, prob = 1)
   result[]
 }
 
-order_scidb = function(x, attribute=1, decreasing = FALSE)
-{
-  if(length(dim(x))>1) stop("order_scidb requires a 1-d SciDB array")
-  if(is.numeric(attribute)) attribute = scidb_attributes(x)[attribute]
-  new_attr = make.unique_(.scidb_names(x),"i")
-  y = project(bind(cumulate(bind(x,"__one__","int64(1)"),"sum(__one__) as __sum__"),new_attr,"__sum__-1"), new_attr)
-  scidbeval(bound(project(sort(merge(x,y,by.x=1,by.y=1), attributes=attribute, decreasing=decreasing), new_attr)))
-}
 
 # factor_scidb and levels_scidb define an experimental new hybrid class of
 # R factors with levels from a SciDB indexing array. They're intended to make
@@ -60,21 +53,17 @@ levels_scidb = function(x)
   attr(x, "scidb_levels")
 }
 
+#' Unbound SciDB array dimensions
+#'
+#' This function sets each dimension upper bound to '*' (that is, unspecified)
+#' @param x a \code{scidb} object
+#' @return a \code{scidb} object with unbounded dimension
+#' @export
 unbound = function(x)
 {
-  new_lengths = rep("*",length(x@dimensions))
+  new_lengths = rep("*", length(x@dimensions))
   new_dims = build_dim_schema(x, newlen=new_lengths)
-  schema = sprintf("%s%s",build_attr_schema(x),new_dims)
-  redimension(x, schema=schema)
-}
-
-bound = function(x)
-{
-  d = sprintf("_%s",dimensions(x))
-  a = bind(x, c("_", d), c("int64(0)",dimensions(x)))
-  a = redimension(a, dim="_", FUN=paste(sprintf("max(%s) as %s",d, d),collapse=","))
-  m = a[]
-  schema = sprintf("%s%s", build_attr_schema(x), build_dim_schema(x, newend=noE(m)))
+  schema = sprintf("%s%s", build_attr_schema(x), new_dims)
   redimension(x, schema=schema)
 }
 
