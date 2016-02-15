@@ -15,6 +15,9 @@
 
 \item{expr}{optional aggregation function applied to every attribute on the grid, or a quoted SciDB aggregation expression}
 }
+\value{
+a \code{scidb} object
+}
 \description{
 SciDB regrid decimation operator
 }

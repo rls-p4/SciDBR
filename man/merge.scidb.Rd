@@ -11,20 +11,22 @@
 
 \item{y}{A \code{scidb} array}
 
-\item{by}{(Optional) Vector of common dimension or attribute names or dimension indices}
+\item{by}{optional vector of common dimension or attribute names or dimension indices
+to join on. See details below.}
 
-\item{by.x}{(Optional) Vector of dimension or attribute names or dimension indices
-of array \code{x} to join on. See deails.}
-
-\item{by.y}{(Optional) Vector of dimension or attribute names or dimension indices
-of array \code{y} to join on. See deails.}
-
-\item{merge}{(Optional) If TRUE, perform a SciDB merge operation instead of join.}
-
-\item{all}{(Optional) If TRUE, perform outer join. Defaults to inner join.}
+\item{...}{optional additional agruments:
+\code{fillin} is an optional argument specifying a value used to fill
+           attributes as required by merge, it defaults to null;
+\code{all} is an optional argument that, if TRUE, indicates outer join. It only
+           applies in limited settings (the default is inner join);
+\code{merge} if \code{TRUE}, perform a SciDB merge operation instead of join.
+\code{by.x} optional vector of dimension or attribute names or dimension indices
+               of array \code{x} to join on;
+\code{by.y} optional vector of dimension or attribute names or dimension indices
+                  of array \code{y} to join on;}
 }
 \value{
-a SciDB array object
+a \code{scidb} object
 }
 \description{
 Only one of either \code{by} or both \code{by.x} and \code{by.y} may be

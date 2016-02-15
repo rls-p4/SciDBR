@@ -7,13 +7,15 @@
 scidbremove(x, error = warning, force, warn = TRUE, recursive = FALSE)
 }
 \arguments{
-\item{x}{(character): a vector or single character string listing array names}
+\item{x}{(character), a vector or single character string listing array names}
 
-\item{error}{(function): error handler. Use stop or warn, for example.}
+\item{error}{(function), optional error handler function; use stop or warn, for example}
 
-\item{force}{(optional boolean): If TRUE really remove this array, even if scidb.safe_remove=TRUE}
+\item{force}{(optional boolean), if TRUE really remove this array, even if scidb.safe_remove=TRUE}
 
-\item{recursive}{(optional boolean): If TRUE, recursively remove this array and its dependency graph}
+\item{warn}{(optional boolean), if FALSE supress warnings}
+
+\item{recursive}{(optional boolean), if TRUE, recursively remove this array and its dependency graph}
 }
 \value{
 \code{NULL}

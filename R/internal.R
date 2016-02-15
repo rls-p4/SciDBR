@@ -37,7 +37,7 @@ scidb_unpack_to_dataframe = function(query, ...)
 {
   DEBUG = FALSE
   projected = FALSE
-  aio = length(grep("aio",scidb:::.scidbenv$ops)) > 0
+  aio = length(grep("aio", .scidbenv$ops)) > 0
   if(!inherits(query, "scidb")) query = scidb(query)
   if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
   buffer = 100000L

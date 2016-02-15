@@ -2,10 +2,11 @@
 #'
 #' Force evaluation of an expression that yields a \code{scidb} or \code{scidb} object,
 #' storing the result to a SciDB array when \code{eval=TRUE}.
-#' @param exp A SciDB expression or \code{scidb} or \code{scidb} object
-#' @param name (character) optional SciDB array name to store as
+#' @param expr a quoted SciDB expression \code{scidb} object
+#' @param eval \code{FALSE} do not evaluate the expression in SciDB (leave as a view)
+#' @param name (character) optional SciDB array name to store result to
 #' @param gc (logical) optional, when TRUE tie result to R garbage collector
-#' @param temp (logical, optional): when TRUE store as a SciDB temp array
+#' @param temp (logical, optional), when TRUE store as a SciDB temp array
 #' @export
 scidbeval = function(expr, eval=TRUE, name, gc=TRUE, temp=FALSE)
 {
@@ -241,10 +242,11 @@ scidbls = function(...) scidblist(...)
 
 
 #' Remove one or more scidb arrays
-#' @param x (character): a vector or single character string listing array names
-#' @param error (function): error handler. Use stop or warn, for example.
-#' @param force (optional boolean): If TRUE really remove this array, even if scidb.safe_remove=TRUE
-#' @param recursive (optional boolean): If TRUE, recursively remove this array and its dependency graph
+#' @param x (character), a vector or single character string listing array names
+#' @param error (function), optional error handler function; use stop or warn, for example
+#' @param force (optional boolean), if TRUE really remove this array, even if scidb.safe_remove=TRUE
+#' @param warn (optional boolean), if FALSE supress warnings
+#' @param recursive (optional boolean), if TRUE, recursively remove this array and its dependency graph
 #' @return \code{NULL}
 #' @export
 scidbremove = function(x, error=warning, force, warn=TRUE, recursive=FALSE)

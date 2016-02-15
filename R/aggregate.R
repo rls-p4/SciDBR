@@ -112,8 +112,9 @@ aggregate_scidb = function(x, by, FUN, window, variable_window)
 #' for example cumulative sums.
 #' @param x SciDB array
 #' @param expression any valid SciDB aggregate expression, expressed as a character string
-#' @param optional array dimension name (character) or 1-based dimension index to run along (default is to use the first dimension)
-#' @return SciDB array
+#' @param dimension optional array dimension name (character) or 1-based dimension index to run along
+#'        (default is to use the first dimension)
+#' @return a \code{scidb} object
 #' @examples
 #' \dontrun{
 #' x <- as.scidb(iris)

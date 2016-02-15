@@ -82,6 +82,7 @@ setGeneric("regrid", function(x, grid, expr) standardGeneric("regrid"))
 #' regrid(x, 10, min)
 #' }
 #' @importFrom stats aggregate
+#' @return a \code{scidb} object
 #' @export
 setMethod("regrid", signature(x="scidb"), regrid_scidb)
 
@@ -145,12 +146,11 @@ setMethod("xgrid", signature(x="scidb"), xgrid_scidb)
 #' for examples. Moving window aggregates along data values are restricted
 #' to a single array dimension.
 #' @param x A \code{scidb} object.
-#' @param by (Optional) Either a single character string or a list of array dimension and/or attribute names to group by;
-#' or a SciDB array reference object to group by. Not required for \code{windowed} and grand aggregates--see details.
-#' @param FUN A character string representing a SciDB aggregation expression or a reduction function.
-#' @param eval (Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.
-#' @param window (Optional) If specified, perform a moving window aggregate along the specified coordinate windows--see details below.
-#' @param variable_window (Optional) If specified, perform a moving window aggregate over successive data values along the
+#' @param by optional single character string or a list of array dimension and/or attribute names to group by;
+#' or a \code{scidb} object to group by. Not required for \code{windowed} and grand aggregates--see details.
+#' @param FUN a character string representing a SciDB aggregation expression or a reduction function.
+#' @param window optional, if specified, perform a moving window aggregate along the specified coordinate windows--see details below.
+#' @param variable_window optional, if specified, perform a moving window aggregate over successive data values along the
 #' coordinate dimension axis specified by \code{by}--see details below.
 #' @return a \code{scidb} object
 #' @export

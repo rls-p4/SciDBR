@@ -7,13 +7,15 @@
 scidbeval(expr, eval = TRUE, name, gc = TRUE, temp = FALSE)
 }
 \arguments{
-\item{name}{(character) optional SciDB array name to store as}
+\item{expr}{a quoted SciDB expression \code{scidb} object}
+
+\item{eval}{\code{FALSE} do not evaluate the expression in SciDB (leave as a view)}
+
+\item{name}{(character) optional SciDB array name to store result to}
 
 \item{gc}{(logical) optional, when TRUE tie result to R garbage collector}
 
-\item{temp}{(logical, optional): when TRUE store as a SciDB temp array}
-
-\item{exp}{A SciDB expression or \code{scidb} or \code{scidb} object}
+\item{temp}{(logical, optional), when TRUE store as a SciDB temp array}
 }
 \description{
 Force evaluation of an expression that yields a \code{scidb} or \code{scidb} object,

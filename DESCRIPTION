@@ -14,9 +14,10 @@ URL: http://paradigm4.github.io/SciDBR
 VignetteBuilder: knitr
 Depends:
     R (>= 3.0.0),
-    methods
 Imports:
+    methods,
     utils,
+    Matrix,
     stats,
     graphics,
     digest,

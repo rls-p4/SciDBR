@@ -10,17 +10,15 @@
 \arguments{
 \item{x}{A \code{scidb} object.}
 
-\item{by}{(Optional) Either a single character string or a list of array dimension and/or attribute names to group by;
-or a SciDB array reference object to group by. Not required for \code{windowed} and grand aggregates--see details.}
+\item{by}{optional single character string or a list of array dimension and/or attribute names to group by;
+or a \code{scidb} object to group by. Not required for \code{windowed} and grand aggregates--see details.}
 
-\item{FUN}{A character string representing a SciDB aggregation expression or a reduction function.}
+\item{FUN}{a character string representing a SciDB aggregation expression or a reduction function.}
 
-\item{window}{(Optional) If specified, perform a moving window aggregate along the specified coordinate windows--see details below.}
+\item{window}{optional, if specified, perform a moving window aggregate along the specified coordinate windows--see details below.}
 
-\item{variable_window}{(Optional) If specified, perform a moving window aggregate over successive data values along the
+\item{variable_window}{optional, if specified, perform a moving window aggregate over successive data values along the
 coordinate dimension axis specified by \code{by}--see details below.}
-
-\item{eval}{(Optional) If true, execute the query and store the reult array. Otherwise defer evaluation.}
 }
 \value{
 a \code{scidb} object

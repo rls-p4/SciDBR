@@ -13,10 +13,11 @@ cumulate(x, expression, dimension)
 
 \item{expression}{any valid SciDB aggregate expression, expressed as a character string}
 
-\item{optional}{array dimension name (character) or 1-based dimension index to run along (default is to use the first dimension)}
+\item{dimension}{optional array dimension name (character) or 1-based dimension index to run along
+(default is to use the first dimension)}
 }
 \value{
-SciDB array
+a \code{scidb} object
 }
 \description{
 SciDB Cumulative Aggregation

@@ -446,15 +446,19 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 #' illustration.
 #' @param x A \code{scidb} array
 #' @param y A \code{scidb} array
-#' @param by (Optional) Vector of common dimension or attribute names or dimension indices
-#"            to join on. See details below.
-#' @param by.x (Optional) Vector of dimension or attribute names or dimension indices
-#'                of array \code{x} to join on. See deails.
-#' @param by.y (Optional) Vector of dimension or attribute names or dimension indices
-#'                   of array \code{y} to join on. See deails.
-#' @param merge (Optional) If TRUE, perform a SciDB merge operation instead of join.
-#' @param all (Optional) If TRUE, perform outer join. Defaults to inner join.
-#' @return a SciDB array object
+#' @param by optional vector of common dimension or attribute names or dimension indices
+#'            to join on. See details below.
+#' @param ... optional additional agruments:
+#' \code{fillin} is an optional argument specifying a value used to fill
+#'            attributes as required by merge, it defaults to null;
+#' \code{all} is an optional argument that, if TRUE, indicates outer join. It only
+#'            applies in limited settings (the default is inner join);
+#' \code{merge} if \code{TRUE}, perform a SciDB merge operation instead of join.
+#' \code{by.x} optional vector of dimension or attribute names or dimension indices
+#'                of array \code{x} to join on;
+#' \code{by.y} optional vector of dimension or attribute names or dimension indices
+#'                   of array \code{y} to join on;
+#' @return a \code{scidb} object
 #' @examples
 #' \dontrun{
 #' x <- as.scidb(iris,name="iris")
