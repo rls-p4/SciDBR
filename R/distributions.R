@@ -36,13 +36,13 @@ setMethod("phyper", signature(x="scidb"),
 #' @param  x vector of quantiles representing the number of white balls
 #'           drawn without replacement from an urn which contains both
 #'           black and white balls.
-#' @param  q vector of quantiles representing the number of white balls
+#' @param  p vector of quantiles representing the number of white balls
 #'           drawn without replacement from an urn which contains both
 #'           black and white balls.
 #' @param  m the number of white balls in the urn.
 #' @param  n the number of black balls in the urn.
 #' @param  k the number of balls drawn from the urn.
-#' @param new the name of the new attribute with the resulting probabilities
+#' @param new the name of the new attribute with the resulting quantiles
 #' @return a new \code{scidb} array object
 #' @seealso \code{\link{phyper}} \code{\link{qhyper}}
 #' @export

@@ -12,17 +12,17 @@
 drawn without replacement from an urn which contains both
 black and white balls.}
 
+\item{p}{vector of quantiles representing the number of white balls
+drawn without replacement from an urn which contains both
+black and white balls.}
+
 \item{m}{the number of white balls in the urn.}
 
 \item{n}{the number of black balls in the urn.}
 
 \item{k}{the number of balls drawn from the urn.}
 
-\item{new}{the name of the new attribute with the resulting probabilities}
-
-\item{q}{vector of quantiles representing the number of white balls
-drawn without replacement from an urn which contains both
-black and white balls.}
+\item{new}{the name of the new attribute with the resulting quantiles}
 }
 \value{
 a new \code{scidb} array object
