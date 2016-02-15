@@ -49,7 +49,7 @@ setMethod('print', signature(x='scidb'),
   })
 
 #' @export
-#' @importFrom stats hist
+#' @importFrom graphics hist
 setMethod("hist",signature(x="scidb"), hist_scidb)
 
 #' @export
