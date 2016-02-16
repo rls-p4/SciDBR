@@ -1,4 +1,6 @@
-Thanks for trying out the SciDB package for R. I hope you enjoy using it.
+[![CRAN version](http://www.r-pkg.org/badges/version/irlba)](http://cran.rstudio.com/web/packages/scidb/index.html)
+![](http://cranlogs.r-pkg.org/badges/scidb)
+[![codecov.io](https://codecov.io/github/paradigm4/scidbr/coverage.svg?branch=laboratory)](https://codecov.io/github/paradigm4/scidbr?branch=laboratory)
 
 Install the package from CRAN with
 ```
@@ -19,25 +21,24 @@ connect to SciDB from R.  See http://github.com/paradigm4/shim  for source code
 and installation instructions.
 
 Developers please note that R CMD check-style unit tests are skipped unless a
-system environment variable named SCIDB_TEST_HOST is set to the host name or
+system environment variable named SCIDB\_TEST\_HOST is set to the host name or
 I.P. address of SciDB. See the tests directory for test code.
 
-Wiki
-===
+## Wiki
 Check out (and feel free to contribute to) examples in the wiki pages for
 this project here:
 
 https://github.com/Paradigm4/SciDBR/wiki/_pages
 
-This project also has a pretty web page on Github here:
+## Getting Started Documentation
 
 https://Paradigm4.github.io/SciDBR
 
 
-Changes in package version 2.0.0
-===
+## Changes in package version 2.0.0
 
 This is a major release that breaks API compatibility with previous package
 releases.  Array objects have been removed. All SciDB arrays are now presented
 as virtual data frames in R. This change was informed by the most common uses
 we've seen.
+
