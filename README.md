@@ -1,4 +1,4 @@
-[![CRAN version](http://www.r-pkg.org/badges/version/irlba)](http://cran.rstudio.com/web/packages/scidb/index.html)
+[![CRAN version](http://www.r-pkg.org/badges/version/scidb)](http://cran.rstudio.com/web/packages/scidb/index.html)
 ![](http://cranlogs.r-pkg.org/badges/scidb)
 [![codecov.io](https://codecov.io/github/Paradigm4/SciDBR/coverage.svg?branch=laboratory)](https://codecov.io/github/Paradigm4/SciDBR?branch=laboratory)
 
