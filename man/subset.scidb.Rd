@@ -48,7 +48,7 @@ x <- as.scidb(iris)
 # Filter the array explicitly using SciDB filter syntax
 y <- subset(x, "Species = 'setosa'")
 # Using an R expression form is equivalent in this example
-z <- subset(x, Species = "setosa")
+z <- subset(x, Species == "setosa")
 
 # The R expression form can sometimes generate better-optimized SciDB
 # expressions than the explicit form.
@@ -59,7 +59,8 @@ y <- subset(x, "Species = 'setosa' and row > 40")
 y@name
 # [1] "filter(R_array5494563bc4e1101849601199,Species = 'setosa' and row > 40)"
 
-z <- subset(x, Species == 'setosa' & row > 40)
+i <- 40
+z <- subset(x, Species == 'setosa' & row > i)
 z@name
 # [1] "filter(between(R_array5494563bc4e1101849601199,41,null),Species = 'setosa' )"
 
@@ -67,6 +68,7 @@ z@name
 # 1. The R expression form uses R syntax.
 # 2. The R expression form generates a SciDB query using between on
 #    the dimensions when possible.
+# 3. Simple R scalars may be used in the R expression form.
 }
 }
 

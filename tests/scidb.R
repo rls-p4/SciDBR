@@ -1,6 +1,6 @@
 # 'scidb' object tests
 
-check = function(a,b)
+check = function(a, b)
 {
   print(match.call())
   stopifnot(all.equal(a, b, check.attributes=FALSE, check.names=FALSE))
@@ -61,7 +61,24 @@ if(nchar(host) > 0)
   check(ncol(y), 11)
   y = merge(x, x, merge=TRUE)
   check(ncol(y), 6)
-  y = merge(x, z)
+  y = merge(x, z) # crossjoin
   check(ncol(y), 12)
+  antijoin(x, x)
+  # join on attributes
+  set.seed(1)
+  a = as.scidb(data.frame(a=sample(10, 5), b=rnorm(5)))
+  b = as.scidb(data.frame(u=sample(10, 5), v=rnorm(5)))
+  merge(x=a, y=b, by.x="a", by.y="u")[]
+  # outer join
+  merge(x, x, all=TRUE)
+
+# subset
+  y = subset(x, "Species = 'setosa'")
+  z = subset(x, Species == "setosa")
+  check(count(y), count(z))
+  i = 40
+  y = subset(x, "Species = 'setosa' and row > 40")
+  z = subset(x, Species == 'setosa' & row > i)
+  check(count(y), count(z))
 
 }
