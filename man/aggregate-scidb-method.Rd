@@ -48,7 +48,7 @@ requires SciDB 13.6 or higher).
 When \code{by} is a SciDB array it must contain one or more common dimensions
 with \code{x}.  The two arrays will be joined (using SciDB
 \code{cross_join(x,by)} and the resulting array will be grouped by the
-attributes in the \code{by} array. This is similar to the usual R data.frame
+attributes in the \code{by} array. This is similar to the usual R data frame
 aggregate method.
 
 Perform moving window aggregates by specifying the optional \code{window} or

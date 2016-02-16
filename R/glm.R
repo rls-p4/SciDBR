@@ -19,18 +19,18 @@ glm_scidb = function(formula, family=gaussian(), `data`, `weights`)
 # cf glm.fit
 glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
 {
-  nobs = length(y)
-  got_glm = length(grep("glm",.scidbenv$ops[,2]))>0
-  if(missing(intercept)) intercept=0
+  got_glm = length(grep("glm",.scidbenv$ops[, 2]))>0
+  if(missing(intercept)) intercept = 0
   intercept = as.numeric(intercept)
   xchunks = as.numeric(scidb_coordinate_chunksize(x))
-  if(missing(`weights`)) `weights`=NULL
+  nrx = as.numeric(scidb_coordinate_bounds(x)$length[1])
+  if(missing(`weights`)) `weights`= NULL
   if(is.numeric(`weights`))
   {
-    `weights` = as.scidb(as.double(weights),chunkSize=xchunks[1])
+    `weights` = as.scidb(as.double(weights), chunkSize=xchunks[1])
   } else
   {
-    weights = build(1.0, nrow(x), start=as.numeric(scidb_coordinate_start(x)[1]), chunksize=xchunks[1])
+    weights = build(1.0, nrx, start=as.numeric(scidb_coordinate_start(x)[1]), chunksize=xchunks[1])
   }
   if(!is.scidb(y))
   {
@@ -46,32 +46,33 @@ glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
   dist = family$family
   link = family$link
 # GLM has a some data partitioning requirements to look out for:
-  if(xchunks[2]<dim(x)[2])
+  ncx = as.numeric(scidb_coordinate_bounds(x)$length[2])
+  if(xchunks[2] < ncx)
   {
-    x = repart(x,chunk=c(xchunks[1],dim(x)[2]))
+    x = repart(x, chunk=c(xchunks[1], ncx))
   }
   xchunks = as.numeric(scidb_coordinate_chunksize(x))
   ychunks = as.numeric(scidb_coordinate_chunksize(y))
   if((ychunks[1] != xchunks[1]) )
   {
-    y = repart(y, chunk=xchunks[1])
+    y = repart(y, chunk = xchunks[1])
   }
   query = sprintf("glm(%s,%s,%s,'%s','%s')",
            x@name, y@name, weights@name, dist, link)
-  M = .scidbeval(query,eval=TRUE,gc=TRUE)
-  m1 = M[,0][] # Cache 1st column
+  M = .scidbeval(query, eval=TRUE, gc=TRUE)[]
+  m1 = M[M[, 2] == 0, 3]
   ans = list(
-    coefficients = M[0,],
-    stderr = M[1,],
-    tval = M[2,],
-    pval = M[3,],
+    coefficients = M[M[, 1] == 0, 3],
+    stderr =  M[M[, 1] == 1, 3],
+    tval = M[M[, 1] == 2, 3],
+    pval = M[M[, 1] == 3, 3],
     aic = m1[12],
     null.deviance = m1[13],
     res.deviance = m1[15],
     dispersion = m1[5],
     df.null = m1[6] - intercept,
     df.residual = m1[7],
-    converged = m1[10]==1,
+    converged = m1[10] == 1,
     totalObs = m1[8],
     nOK = m1[9],
     loglik = m1[14],
@@ -105,7 +106,14 @@ glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
   ans
 }
 
-# cf print.glm
+#' Summary print method for SciDB GLM
+#'
+#' Print a summary of a SciDB GLM object.
+#' @param object \code{glm_scidb} model object
+#' @param ... other arguments to \code{summary}
+#' @return Character summary of the model object is printed to standard output
+#' @seealso \code{\link{summary.glm}}
+#' @importFrom stats summary.glm
 print.glm_scidb = function(x, ...)
 {
   ans = "Call:"
@@ -124,7 +132,15 @@ print.glm_scidb = function(x, ...)
   cat(ans,"\n")
 }
 
-# cf summary.glm
+#' Summary method for SciDB GLM
+#'
+#' Print a summary of a SciDB GLM object.
+#' @param object \code{glm_scidb} model object
+#' @param ... other arguments to \code{summary}
+#' @return Character summary of the model object is printed to standard output and \code{NULL} is returned.
+#' @seealso \code{\link{summary.glm}}
+#' @importFrom stats summary.glm
+#' @export
 summary.glm_scidb = function(object, ...)
 {
   x = object
@@ -158,22 +174,13 @@ summary.glm_scidb = function(object, ...)
 # cf model.matrix and model.frame. Returns a model matrix for the scidb
 # object and the formula. String-valued variables in data are converted to
 # treatment contrasts, and if present a sparse model matrix is returned.
-# Returns a list of:
-# formula: The (possibly modified) formula associated with the model matrix
-# model:    A SciDB matrix with a single attribute named 'val' (model matrix)
-# response: A SciDB vector holding the response variable values
-# formual:  The formula
-# names:    The names of the model variables corresponding to the
-#           columns of 'model'
-# intercept: TRUE if an intercept term is present
-# factors: A named list of factor index_lookup SciDB arrays corresponding to
-#          the factors in the model. We need this for prediction to make sure
-#          that the factor encoding and baseline are reproducible.
+#' @export
+#' @rdname glm
 model_scidb = function(formula, data, factors=NULL)
 {
   if(!is.scidb(data)) stop("data must be a scidb object")
   if(is.character(formula)) formula=as.formula(formula)
-  dummy = data.frame(matrix(NA,ncol=length(scidb_attributes(data))))
+  dummy = data.frame(matrix(NA, ncol=length(scidb_attributes(data))))
   names(dummy) = scidb_attributes(data)
   t = terms(formula, data=dummy)
   f = attr(t,"factors")
@@ -228,7 +235,7 @@ model_scidb = function(formula, data, factors=NULL)
     {
       if(!build_factors) next
 # Create a factor
-      factors = c(factors,unique(project(data,j)))
+      factors = c(factors, unique(project(data, j)))
       names(factors)[length(factors)] = a[j]
       next
     }
@@ -245,12 +252,12 @@ model_scidb = function(formula, data, factors=NULL)
 
   varsstr = paste(vars, collapse=",")
   query = sprintf("unfold(project(%s,%s))",data@name,varsstr)
-  M = .scidbeval(query,gc=TRUE,eval=TRUE)
-  M = attribute_rename(dimension_rename(M,old=c(1,2),new=c("i","j")), old=1, new="val")
+  M = .scidbeval(query, gc=TRUE, eval=TRUE)
+  M = attribute_rename(dimension_rename(M, old=c(1,2), new=c("i","j")), old=1, new="val")
 
   if(length(factors)<1)
   {
-    return(list(formula=formula,model=M,response=response,names=vars,intercept=(i==1),factors=factors))
+    return(list(formula=formula, model=M, response=response, names=vars, intercept=(i == 1), factors=factors))
   }
 
 # Repartition to accomodate the factor contrasts, subtracting one
@@ -261,13 +268,15 @@ model_scidb = function(formula, data, factors=NULL)
     contrast_dim = contrast_dim + count(j) - i
   }
 
-  newdim = ncol(M) + contrast_dim
-  newend = c(nrow(M)-1, newdim - 1)
-  newchunk = c(ceiling(1e6/newdim),newdim)
+  newdim = as.numeric(scidb_coordinate_bounds(M)$length[2]) + contrast_dim
+  nrm = as.numeric(scidb_coordinate_bounds(M)$length[1])
+  newend = c(nrm - 1, newdim - 1)
+  newchunk = c(ceiling(1e6 / newdim), newdim)
 
-  schema = sprintf("%s%s",build_attr_schema(M),
-    build_dim_schema(M,newstart=c(0,0),newend=newend,newchunk=newchunk))
-  M = reshape_scidb(M, shape=c(nrow(M), ncol(M)))  # Reset origin without moving data
+  schema = sprintf("%s%s", build_attr_schema(M),
+    build_dim_schema(M, newstart=c(0,0), newend=newend, newchunk=newchunk))
+# Reset origin (this is a trick!)
+  M = reshape_scidb(M, shape=as.numeric(scidb_coordinate_bounds(M)$length))
   M = redimension(M, schema=schema)           # Redimension to get extra columns
 
 # Merge in the contrasts
@@ -277,39 +286,50 @@ model_scidb = function(formula, data, factors=NULL)
   {
     dn = make.unique_(dimensions(data), "i")
     n  = names(factors)[j]
-    idx = sprintf("%s_index",n)
+    idx = sprintf("%s_index", n)
     idx = make.unique_(data@attributes, idx)
     y = project(index_lookup(data, factors[[j]], n, idx), idx)
     one = make.unique_(y@attributes, "val")
     column = make.unique_(y@attributes, "j")
-    N = sprintf("%s%s",names(factors)[j],iquery(factors[[j]],return=TRUE)[,2])
-    if(i>0)
+    N = sprintf("%s%s", names(factors)[j], iquery(factors[[j]], return=TRUE)[, 2])
+    if(i > 0)
     {
 # Intercept term present
       y = subset(y, sprintf("%s > 0",idx))
-      y = bind(y, c(one,column), c("double(1)",sprintf("int64(%s + %d - 1)",idx,col)))
+      y = bind(y, c(one,column), c("double(1)", sprintf("int64(%s + %d - 1)", idx, col)))
       varnames = c(varnames, N[-1])
       col = col + length(N) - 1
     } else
     {
 # No intercept term
-      y = bind(y, c(one,column), c("double(1)",sprintf("int64(%s + %d)",idx,col)))
+      y = bind(y, c(one, column), c("double(1)", sprintf("int64(%s + %d)", idx, col)))
       varnames = c(varnames, N)
       col = col + length(N)
     }
     schema = sprintf("%s%s",
-             build_attr_schema(y,newnames=c("index","val","j")),
-             build_dim_schema(y,newnames="i"))
-    y = redimension(reshape_scidb(cast(y, schema), shape=nrow(y)),M)
+             build_attr_schema(y, newnames=c("index","val","j")),
+             build_dim_schema(y, newnames="i"))
+    y = redimension(reshape_scidb(cast(y, schema), shape=nrow(y)), M)
 # ... merge into M
-    M = merge(M,y,merge=TRUE) # eval this?
+    M = merge(M, y, merge=TRUE) # eval this?
   }
 
-  return(list(formula=formula,model=M,response=response,names=varnames,intercept=(i==1),factors=factors))
+  return(list(formula=formula, model=M, response=response, names=varnames, intercept=(i == 1), factors=factors))
 }
 
 
 # cf predict.glm
+#' Predict method for SciDB GLM
+#'
+#' Obtains predictions and optionally estimates standard errors of
+#' those predictions from a fitted generalized linear model object.
+#' @param object \code{glm_scidb} model object
+#' @param ... other prediction arguments including \code{newdata} (a \code{scidb} array of data to predict from),
+#' \code{link} (a character value of either "link" or "response").
+#' @return \code{scidb} array object
+#' @seealso \code{\link{predict.glm}}
+#' @importFrom stats predict.glm
+#' @export
 predict.glm_scidb = function(object, ...) #newdata=NULL, type=c("link","response"), se.fit=FALSE)
 {
   C = match.call()

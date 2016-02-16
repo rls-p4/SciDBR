@@ -159,7 +159,7 @@ setMethod("xgrid", signature(x="scidb"), xgrid_scidb)
 #' When \code{by} is a SciDB array it must contain one or more common dimensions
 #' with \code{x}.  The two arrays will be joined (using SciDB
 #' \code{cross_join(x,by)} and the resulting array will be grouped by the
-#' attributes in the \code{by} array. This is similar to the usual R data.frame
+#' attributes in the \code{by} array. This is similar to the usual R data frame
 #' aggregate method.
 #' 
 #' Perform moving window aggregates by specifying the optional \code{window} or
@@ -232,3 +232,116 @@ setMethod("xgrid", signature(x="scidb"), xgrid_scidb)
 #' aggregate(B, by="i", FUN=sum, variable_window=c(0,1))[]
 #' }
 setMethod("aggregate", signature(x="scidb"), aggregate_scidb)
+
+
+
+setOldClass("glm")
+setGeneric("glm")
+#' Fitting generalized linear models
+#'
+#' \code{glm.fit} is used to fit generalized linear models specified by a model
+#' matrix and response vector. \code{glm} is a simplified interface for
+#' \code{scidb} objects similar (but much simpler than) the standard \code{glm} function.
+#"
+#' The \code{glm} function works similarly to a limited version of
+#' the usual \code{glm} function, but with a \code{scidb} data frame-like
+#' SciDB array instead of a standard data frame.
+#'
+#' Formulas in the \code{glm} function may only refer to variables explicitly
+#' defined in the \code{data} \code{scidb} object.  That means that you should
+#' bind interaction and transformed terms to your data before invoking the
+#' function.  The indicated response must refer to a single-column response term
+#' in the data (the two-column response form is not accepted).
+#' Categorical (factor) variables in the data must be represented as strings. They
+#' will be encoded as treatment-style contrast variables with the first listed
+#' value set to the baseline value. No other automated contrast encodings are
+#' available yet (you are free to build your own model matrix and use
+#' \code{glm.fit} for that). All other variables will be coerced to
+#' double-precision values.
+#'
+#' Use the \code{model_scidb} function to build a model matrix from a formula and
+#' a \code{scidb} data frame-like SciDB array.  The matrix is returned within an
+#' output list as a sparse SciDB matrix of class \code{scidb} with character
+#' string variables encoded as treatment contrasts as described above.
+#' If you already have a list of factor-level codes for categorical variables
+#' (for example from the output of \code{glm}, you can supply that in the
+#' factor argument. See help for \code{predict} for an example.
+#' @rdname glm
+#' @aliases glm glm.fit model_scidb
+#'
+#' @param x a model matrix of dimension \code{n * p}
+#' @param y a response vector of length \code{n}
+#' @param formula an object of class \code{formula} (or one that can be coerced to
+#'          that class): a symbolic description of the model to be
+#'          fitted. See details for limitations
+#' @param data an object of class \code{scidb}
+#' @param weights an optional vector of 'prior weights' to be used in the
+#'           fitting process.  Should be \code{NULL} or a numeric or scidb vector.
+#' @param family a description of the error distribution and link function to
+#'          be used in the model, supplied as the result of a call to
+#'          a family function
+#' @param factors a list of factor encodings to use in the model matrix (see details)
+#' @return The \code{glm.fit} and \code{glm} functions return
+#' a list of model output values described below. The \code{glm}
+#' functions uses an S3 class to implement printing \code{summary}, and \code{predict} methods.
+#' \enumerate{
+#' \item{\emph{coefficients}}{  model coefficient vector (SciDB array)}
+#' \item{\emph{stderr}}{  vector of model coefficient standard errors (SciDB array)}
+#' \item{\emph{tval}}{  vector of model coefficient t ratio values using estimated dispersion value (SciDB array)}
+#' \item{\emph{pval}}{  vector of two-tailed p-values corresponding to the t ratio based on a Student t distribution. (It is possible that the dispersion is not known and there are no residual degrees of freedom from which to estimate it.  In that case the estimate is 'NaN'.)}
+#' \item{\emph{aic}}{  a version of Akaike's \emph{An Information Criterion} value.}
+#' \item{\emph{null.deviance}}{  the deviance for the null model, comparable with \code{deviance}.}
+#' \item{\emph{res.deviance}}{  up to a constant, minus twice the maximized log-likelihood.}
+#' \item{\emph{dispersion}}{  For binomial and Poison families the dispersion is
+#'     fixed at one and the number of parameters is the number of
+#'     coefficients. For gaussian, Gamma and inverse gaussian families the
+#'     dispersion is estimated from the residual deviance, and the number
+#'     of parameters is the number of coefficients plus one.  For a
+#'     gaussian family the MLE of the dispersion is used so this is a valid
+#'     value of AIC, but for Gamma and inverse gaussian families it is not. Other
+#'     families set this value to \code{NA}}.
+#' \item{\emph{df.null}}{  the residual degrees of freedom for the null model.}
+#' \item{\emph{df.residual}}{  the residual degrees of freedom.}
+#' \item{\emph{converged}}{  \code{FALSE} if the model did not converge.}
+#' \item{\emph{totalObs}}{  total number of observations in the model.}
+#' \item{\emph{nOK}}{  total number of observations corresponding to nonzero weights.}
+#' \item{\emph{loglik}}{  converged model log-likelihood value.}
+#' \item{\emph{rss}}{  residual sum of squares.}
+#' \item{\emph{iter}}{  number of model iterations.}
+#' \item{\emph{weights}}{  vector of weights used in the model (SciDB array).}
+#' \item{\emph{family}}{  model family function.}
+#' \item{\emph{y}}{  response vector (SciDB array).}
+#' \item{\emph{x}}{  model matrix (SciDB array).}
+#' \item{\emph{factors}}{  a list of factor variable levels (SciDB arrays)
+#'                         or NULL if no factors are present in the data.}
+#' }
+#' @importFrom stats glm glm.fit predict
+#' @export
+#' @examples
+#' \dontrun{
+#' set.seed(1)
+#' x <- as.scidb(matrix(rnorm(5000*20),nrow=5000))
+#' y <- as.scidb(rnorm(5000))
+#' M <- glm.fit(x, y)
+#' print(M)
+#'
+#' counts <- c(18, 17, 15, 20, 10, 20, 25, 13, 12)
+#' outcome <- gl(3, 1, 9)
+#' treatment <- gl(3, 3)
+#' d.AD <- data.frame(treatment, outcome, counts)
+#' glm.D93 <- glm(counts ~ outcome + treatment, family = poisson(), data=d.AD, y=TRUE)
+#' summary(glm.D93)
+#'
+#'# Compare with:
+#' d.AD_sci = as.scidb(d.AD)
+#' glm.D93_sci = glm(counts ~ outcome + treatment, family = poisson(), data=d.AD_sci)
+#' summary(glm.D93_sci)
+#' }
+setMethod("glm", signature(formula="ANY", family="ANY", data="scidb"), glm_scidb)
+
+setClassUnion("MNSN", c("missing", "NULL", "scidb", "numeric"))
+setOldClass("glm.fit")
+setGeneric("glm.fit")
+#' @export
+#' @rdname glm
+setMethod("glm.fit", signature(x="scidb", y="ANY", weights="MNSN"), glm.fit_scidb)
