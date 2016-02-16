@@ -1,6 +1,6 @@
 [![CRAN version](http://www.r-pkg.org/badges/version/irlba)](http://cran.rstudio.com/web/packages/scidb/index.html)
 ![](http://cranlogs.r-pkg.org/badges/scidb)
-[![codecov.io](https://codecov.io/github/paradigm4/scidbr/coverage.svg?branch=laboratory)](https://codecov.io/github/paradigm4/scidbr?branch=laboratory)
+[![codecov.io](https://codecov.io/github/Paradigm4/SciDBR?branch=laboratory)](https://codecov.io/github/Paradigm4/SciDBR?branch=laboratory)
 
 Install the package from CRAN with
 ```
