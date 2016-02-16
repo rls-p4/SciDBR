@@ -306,8 +306,8 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
 {
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
-  if(is.scidb(query))  query=query@name
-  qsplit = strsplit(query,";")[[1]]
+  if(is.scidb(query))  query = query@name
+  qsplit = strsplit(query, ";")[[1]]
   m = 1
   n = -1    # Indicate to shim that we want all the output
   for(query in qsplit)
@@ -321,7 +321,7 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
       }
       ans = tryCatch(
        {
-        sessionid = scidbquery(query,save="lcsv+",release=0)
+        sessionid = scidbquery(query, save="csv+", release=0)
         dt1 = proc.time()
         result = tryCatch(
           {
@@ -345,7 +345,9 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
         result = gsub("null","NA", result, perl=TRUE)
         result = gsub("@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo","DEFAULT null", result, perl=TRUE)
         val = textConnection(result)
-        ret = tryCatch({
+        ret = c()
+        if(length(val) > 0)
+          ret = tryCatch({
                 read.table(val, sep=",", stringsAsFactors=FALSE, header=TRUE, ...)},
                 error=function(e){ warning(e); c()})
         close(val)

@@ -53,13 +53,6 @@ function(x)
   }
 )
 
-
-#' Test if an object has class "scidb"
-#' @param x an R object
-#' @return \code{TRUE} if \code{x} has class "scidb"
-#' @export
-setMethod("is.scidb", signature(x="scidb"), function(x) return(FALSE))
-
 #' Print a summary of a \code{scidb} object
 #' @param x a \code{scidb} object
 #' @return printed object summary

@@ -13,7 +13,7 @@ reshape_scidb = function(x, schema, shape, dimnames, start, chunks)
   {
     if(is.scidb(schema)) schema=schema(schema) # <- that's nutty notation Malkovich!
     query = sprintf("reshape(%s,%s)",x@name,schema)
-    return(.scidbeval(query,eval,depend=list(x)))
+    return(.scidbeval(query, depend=list(x)))
   }
   if(missing(shape)) stop("Missing dimension shape")
   N = length(shape)
@@ -29,7 +29,7 @@ reshape_scidb = function(x, schema, shape, dimnames, start, chunks)
   shape = shape - 1 + start
   D = build_dim_schema(x, newstart=start, newnames=dimnames, newend=shape, newchunk=chunks)
   query = sprintf("reshape(%s,%s%s)", x@name,build_attr_schema(x), D)
-  .scidbeval(query, eval, depend=list(x))
+  .scidbeval(query, depend=list(x))
 }
 
 #' SciDB repart operator
@@ -45,7 +45,7 @@ repart = function(x, schema, upper, chunk, overlap)
   if(!missing(schema))
   {
     query = sprintf("repart(%s, %s)", x@name, schema)
-    return(.scidbeval(query,eval,depend=list(x)))
+    return(.scidbeval(query, depend=list(x)))
   }
   if(missing(upper)) upper = scidb_coordinate_end(x)
   if(missing(chunk)) chunk = scidb_coordinate_chunksize(x)
@@ -53,7 +53,7 @@ repart = function(x, schema, upper, chunk, overlap)
   a = build_attr_schema(x)
   schema = sprintf("%s%s", a, build_dim_schema(x,newend=upper,newchunk=chunk,newoverlap=overlap))
   query = sprintf("repart(%s, %s)", x@name, schema)
-  .scidbeval(query,eval,depend=list(x))
+  .scidbeval(query, depend=list(x))
 }
 
 #' SciDB redimension operator wrapper function
