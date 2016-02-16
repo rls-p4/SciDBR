@@ -50,8 +50,8 @@ if(nchar(host) > 0)
 
   repart(x, schema(x))
   repart(x, schema(x), '*', 2, 1) 
-  reshape(x, schema(x))
-  rehsape(x, shape=150)
+  reshape_scidb(x, schema(x))
+  reshape_scidb(x, shape=150)
 
   unbound(x)
   replaceNA(x)
@@ -80,5 +80,22 @@ if(nchar(host) > 0)
   y = subset(x, "Species = 'setosa' and row > 40")
   z = subset(x, Species == 'setosa' & row > i)
   check(count(y), count(z))
+
+# aggregation
+  a = aggregate(x, by="Species", FUN=mean)   # by attribute
+  y = as.scidb(data.frame(sample(1:4, 150, replace=TRUE)))
+  # by auxilliary vector
+  aggregate(x, by=y, FUN="avg(Petal_Width) as apw, min(Sepal_Length) as msl")
+  # moving window aggregation
+  set.seed(1)
+  a = matrix(rnorm(20), nrow=5)
+  A = as.scidb(a)
+  b = aggregate(A, FUN=sum, window=c(0,1,0,0))[]
+  X = matrix(0, 5, 4)
+  X[as.matrix(b[,1:2] + 1)] = b[,3]
+  check(X, apply(a, 2, function(x) x + c(x[-1], 0)))
+  B = subset(A, val > 0)
+  aggregate(B, FUN=sum, window=c(0,1,0,0))
+  aggregate(B, by="i", FUN=sum, variable_window=c(0,1))
 
 }
