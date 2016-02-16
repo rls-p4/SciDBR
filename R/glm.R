@@ -156,7 +156,7 @@ summary.glm_scidb = function(object, ...)
   tbl_zval = x$tval[]
   p = x$pval[]
   sig = c("***","**","*",".","")
-  star = sig[as.integer(cut(p,breaks=c(0,0.001,0.01,0.05,0.1,1)))]
+  star = sig[as.integer(cut(p,breaks=c(-1,0.001,0.01,0.05,0.1,1)))]
   tbl = data.frame(tbl_coef, tbl_stderr, tbl_zval, p, star)
   colnames(tbl) = c("Estimate", "Std. Error", "z value", "Pr(>|z|)","")
   rownames(tbl) = x$coefficient_names
@@ -352,7 +352,11 @@ predict.glm_scidb = function(object, ...) #newdata=NULL, type=c("link","response
   {
     M = model_scidb(formula=object$formula, data=newdata, factors=object$factors)$model
   }
-  linear_predictors = M %*% coef(object)
+# This is awful...
+  MM = redimension(M, sprintf("%s%s", build_attr_schema(M), build_dim_schema(M, newchunk=c(1000,1000))))
+  cf = as.scidb(coef(object))
+  cf = redimension(transform(cf, j=0), schema=sprintf("%s%s", build_attr_schema(cf), build_dim_schema(MM, newend=c(as.numeric(scidb_coordinate_end(MM)[2]), 0))))
+  linear_predictors = scidb(sprintf("gemm(%s, %s, build(%s%s, 0))", MM@name, cf@name, build_attr_schema(MM), build_dim_schema(MM, newend=c(as.numeric(scidb_coordinate_end(MM)[1]), 0))))
   se = NULL
   if(se.fit)
   {
@@ -361,14 +365,14 @@ predict.glm_scidb = function(object, ...) #newdata=NULL, type=c("link","response
   }
   if(type=="link") return(linear_predictors) # XXX modify to maybe return se
   pred = switch(object$family$link,
-           "logit" = project(bind(linear_predictors,"fit","exp(multiply)/(1+exp(multiply))"),"fit"),
+           "logit" = project(bind(linear_predictors, "fit", "exp(multiply)/(1+exp(multiply))"), "fit"),
            "identity" = linear_predictors,
            "cauchit" = stop("Not yet supported"),
            "cloglog" = stop("Not yet supported"),
-           "probit" = project(bind(linear_predictors,"fit","normcdf(multiply,0,1)"),"fit"),
-           "inverse" = project(bind(linear_predictors,"fit","1/multiply"),"fit"),
-           "sqrt" = project(bind(linear_predictors,"fit","multiply*multiply"),"fit"),
-           "log" = project(bind(linear_predictors,"fit","exp(multiply)"),"fit")
+           "probit" = project(bind(linear_predictors, "fit", "normcdf(multiply,0,1)"), "fit"),
+           "inverse" = project(bind(linear_predictors, "fit", "1/multiply"), "fit"),
+           "sqrt" = project(bind(linear_predictors, "fit", "multiply*multiply"), "fit"),
+           "log" = project(bind(linear_predictors, "fit", "exp(multiply)"), "fit")
         )
   pred # XXX modify to return se
 }
