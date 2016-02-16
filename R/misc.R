@@ -372,9 +372,30 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
 }
 
 
-# SciDB build wrapper, intended to act something like the R 'array' function. Internal.
+#' Wrapper to SciDB "build" operator
+#'
+#' The \code{build} function is a wrapper to the SciDB `build` operator.
+#' Operation is similar to the R \code{matrix} and \code{array} functions.
+#' It creates a new single-attribute SciDB array based on the specified parameters.
+#' @param data any valid SciDB expression (expressed as a character string) or constant to fill the array
+#' @param dim vector of dimension lengths
+#' @param names optional vector of attribute and dimension names; default attribute name is \code{val}
+#'        and the dimension names are labeled \code{i, j, ...}
+#' @param type SciDB type of the array attribute
+#' @param start optional vector of starting dimension coordinate indices. Must match the length of the dim vector
+#' @param name optional name of the SciDB array. An automatically generated name is used by default
+#' @param chunksize optional vector of dimension chunk sizes. Must match the length of the dim vector
+#' @param overlap optional vector of dimension overlap values. Must match the length of the dim vector
+#' @param gc \code{TRUE} (the default) removes the array when corresponding R objects are garbage collected
+#' @return a \code{scidb} array object
+#' @export
+#' @examples
+#' \dontrun{
+#' y <- build(pi, c(5, 3))
+#' print(head(y))
+#' }
 build = function(data, dim, names, type,
-                 start, name, chunksize, overlap, gc=TRUE, `eval`=FALSE)
+                 start, name, chunksize, overlap, gc=TRUE)
 {
   if(missing(type))
   {
@@ -394,7 +415,7 @@ build = function(data, dim, names, type,
   {
     schema = sprintf("%s%s",build_attr_schema(dim,I=1),build_dim_schema(dim))
     query = sprintf("build(%s,%s)",schema,data)
-    ans = .scidbeval(query,eval)
+    ans = .scidbeval(query)
 # We know that the output of build is not sparse
     attr(ans,"sparse") = FALSE
     return(ans)
@@ -422,8 +443,8 @@ build = function(data, dim, names, type,
         paste(names[-1],start,sep="="), dim, sep=":"),
         chunksize, overlap, sep=","), collapse=","),"]",sep=""), sep="")
   query = sprintf("build(%s,%s)",schema,data)
-  if(missing(name)) return(.scidbeval(query,eval))
-  ans = .scidbeval(query,eval,name)
+  if(missing(name)) return(.scidbeval(query))
+  ans = .scidbeval(query, eval=FALSE, name)
 # We know that the output of build is not sparse
   attr(ans,"sparse") = FALSE
   ans

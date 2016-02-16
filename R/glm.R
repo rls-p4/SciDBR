@@ -30,7 +30,7 @@ glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
     `weights` = as.scidb(as.double(weights),chunkSize=xchunks[1])
   } else
   {
-    weights = build(1.0,nrow(x),start=as.numeric(scidb_coordinate_start(x)[1]),chunksize=xchunks[1])
+    weights = build(1.0, nrow(x), start=as.numeric(scidb_coordinate_start(x)[1]), chunksize=xchunks[1])
   }
   if(!is.scidb(y))
   {
@@ -84,14 +84,14 @@ glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
   )
 # BUG HERE IN SCIDB GLM AFFECTING binomial and poisson families?
 # FIXED IN SciDB 14.3
-  if(compare_versions(options("scidb.version")[[1]],14.3))
+  if(compare_versions(options("scidb.version")[[1]], 14.3))
   {
     return (ans)
   }
   if(dist=="binomial" || dist=="poisson")
   {
     ans$scidb_pval = ans$pval
-    ans$pval = 2*pnorm(-abs(ans$tval[]))
+    ans$pval = 2 * pnorm(-abs(ans$tval[]))
   }
   ans
 }
@@ -100,7 +100,7 @@ glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
 .format = function(x)
 {
   o = options(digits=4)
-  ans = paste(capture.output(x),collapse="\n")
+  ans = paste(capture.output(x), collapse="\n")
   options(o)
   ans
 }
