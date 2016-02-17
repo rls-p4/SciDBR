@@ -135,7 +135,12 @@ df2scidb = function(X,
   scidb(name, gc=gc)
 }
 
-#' Fast write.table replacement
+#' Fast write.table/textConnection substitute
+#'
+#' Conversions are vectorized and the entire output is buffered in memory and written in
+#' one shot. Great option for replacing writing to a textConnection (much much faster).
+#' Not such a great option for writing to files, only 10% faster than write.table and
+#' obviously much greater memory use.
 #' @param x a data frame
 #' @param file a connection or \code{return} to return character output directly (fast)
 #' @param sep column separator
