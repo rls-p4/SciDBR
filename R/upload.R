@@ -148,7 +148,6 @@ df2scidb = function(X,
 #' @return Use for the side effect of writing to the connection returning \code{NULL}, or
 #' return a character value when \code{file=return}.
 #' @keywords internal
-#' @importFrom utils write
 fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), collapse=sep))
 {
   if(!is.data.frame(x)) stop("x must be a data.frame")
