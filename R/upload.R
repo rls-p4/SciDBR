@@ -122,7 +122,8 @@ df2scidb = function(X,
   on.exit(SGET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
 
   ncolX = ncol(X)
-  X = charToRaw(paste(capture.output(write.table(X, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)), collapse="\n"))
+#  X = charToRaw(paste(capture.output(write.table(X, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)), collapse="\n"))
+  X = charToRaw(fwrite(X, file=return))
   tmp = POST(X, list(id=session))
   tmp = gsub("\n", "", gsub("\r", "", tmp))
 
@@ -134,6 +135,22 @@ df2scidb = function(X,
   scidb(name, gc=gc)
 }
 
+#' Fast write.table replacement
+#' @param x a data frame
+#' @param file a connection or \code{return} to return character output directly (fast)
+#' @param sep column separator
+#' @param format optional fprint-style column format specifyer
+#' @return Use for the side effect of writing to the connection returning \code{NULL}, or
+#' return a character value when \code{file=return}.
+#' @keywords internal
+#' @importFrom utils write
+fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), collapse=sep))
+{
+  if(!is.data.frame(x)) stop("x must be a data.frame")
+  if(is.function(file)) return(paste(do.call("sprintf", args=c(format, as.list(x))), collapse="\n"))
+  write(paste(do.call("sprintf", args=c(format, as.list(x))), collapse="\n"), file=file)
+  invisible()
+}
 
 #' Cache data in a SciDB server-side file
 #'
