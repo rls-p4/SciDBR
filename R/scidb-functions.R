@@ -105,7 +105,7 @@ dimnames.scidb = function(x)
   M = match.call()
   M = M[3:length(M)]
   i = vapply(1:length(M), function(j) is.null(tryCatch(eval(M[j][[1]], parent.frame()), error=function(e) c())), TRUE)
-  if(! all(i)) return(project(x, unlist(list(...))))
+  if(! all(i)) stop("[,,...] indexing is no longer supported. Use subset and project instead.")
   scidb_unpack_to_dataframe(x)
 }
 

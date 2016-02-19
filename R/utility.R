@@ -347,9 +347,8 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
         val = textConnection(result)
         ret = c()
         if(length(val) > 0)
-          ret = tryCatch({
-                read.table(val, sep=",", stringsAsFactors=FALSE, header=TRUE, ...)},
-                error=function(e){ warning(e); c()})
+          ret = tryCatch(read.table(val, sep=",", stringsAsFactors=FALSE, header=TRUE, ...),
+                error = function(e) stop("SciDB query error"))
         close(val)
         if(DEBUG) cat("R parsing time",(proc.time()-dt1)[3],"\n")
         ret
