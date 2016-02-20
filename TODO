@@ -2,7 +2,6 @@
 - rebuild tests
 - add back in misc functions
 
-glm needs to be re-introduced (the code is there, but it's not yet exposed)
 hist is broken (the SciDB query no longer works in 15.7), needs fixed.
 dist is not exposed yet (code is there, untested)
 cor  it would be great to introduce a high-level correlation function
