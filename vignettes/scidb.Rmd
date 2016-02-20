@@ -157,7 +157,7 @@ iquery(x, return=TRUE)
 6 2 3 6
 ```
 
-Or, we can equivalently use a special empty-indexing operator `x[]` on any
+Or, we can equivalently use a special empty-indexing operator `[]` on any
 SciDB array object to return its values to R:
 ```{r, eval=FALSE}
 x[]
