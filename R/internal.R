@@ -251,7 +251,7 @@ rewrite_subset_expression = function(expr, sci)
 {
   dims = dimensions(sci)
   n = length(dims)
-  template = rep("",2*n)
+  template = rep("", 2 * n)
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
 
@@ -280,7 +280,7 @@ rewrite_subset_expression = function(expr, sci)
       })
       if(length(test) > 0)
       {
-        test = test[!grepl("condition",lapply(test,class))]
+        test = test[!grepl("condition", lapply(test, class))]
         if(length(test) > 0)
         {
           if(DEBUG) cat("Replacing symbol", s, "with")
