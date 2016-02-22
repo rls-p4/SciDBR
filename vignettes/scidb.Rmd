@@ -690,5 +690,5 @@ want to try that out, you can install it directly from GitHub using the
 `devtools` package with:
 
 ```{r, eval=FALSE}
-devtools::install_github("jeroenooms/curl", ref=devtools::github_pull(55))
+devtools::install_github("jeroenooms/curl", ref="interrupt")
 ```
