@@ -253,7 +253,7 @@ rewrite_subset_expression = function(expr, sci)
   n = length(dims)
   template = rep("",2*n)
   DEBUG = FALSE
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
+  if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
 
   .toList = makeCodeWalker(call=function(e, w) lapply(e, walkCode, w),
                            leaf=function(e, w) e)
@@ -267,35 +267,35 @@ rewrite_subset_expression = function(expr, sci)
   {
     if(is.list(x))
     {
-      if(length(x)>1) op = c(op,as.character(x[[1]]))
+      if(length(x) > 1) op = c(op,as.character(x[[1]]))
       return(lapply(x, .annotate, dims, attr, frames, op))
     }
     op = paste(op,collapse="")
     s = as.character(x)
-    if(!(s %in% c(dims,attr,">","<","!","|","=","&","||","&&","!=","==","<=",">=")))
+    if(!(s %in% c(dims,attr, ">", "<", "!", "|", "=", "&", "||", "&&", "!=", "==", "<=", ">=")))
     {
       test = lapply(c(globalenv(),frames), function(f)  # perhaps overkill
       {
         tryCatch(eval(x,f), error=function(e) e)
       })
-      if(length(test)>0)
+      if(length(test) > 0)
       {
         test = test[!grepl("condition",lapply(test,class))]
-        if(length(test)>0)
+        if(length(test) > 0)
         {
-          if(DEBUG) cat("Replacing symbol",s,"with")
+          if(DEBUG) cat("Replacing symbol", s, "with")
           s = tryCatch(as.character(test[[length(test)]]), error=function(e) s)
-          if(DEBUG) cat(s,"\n")
+          if(DEBUG) cat(s, "\n")
         }
       }
     }
     attr(s,"what") = "element"
     if("character" %in% class(x)) attr(s,"what") = "character"
-    if(nchar(gsub("null","",gsub("[0-9 \\-\\.]+","",s),ignore.case=TRUE))==0)
+    if(nchar(gsub("null", "", gsub("[0-9 \\-\\.]+", "", s), ignore.case=TRUE)) == 0)
       attr(s,"what") = "scalar"
-    if(any(dims %in% gsub(" ","",s)) && nchar(gsub("[&(<>=) ]*","",op))==0)
+    if(any(dims %in% gsub(" ", "", s)) && nchar(gsub("[&(<>=) ]*", "", op)) == 0)
     {
-      attr(s,"what") = "dimension"
+      attr(s, "what") = "dimension"
     }
     s
   }
