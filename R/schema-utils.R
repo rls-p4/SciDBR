@@ -225,7 +225,7 @@ build_attr_schema = function(A, prefix="", I, newnames, nullable, newtypes)
 
 # Build the dimension part of a SciDB array schema from a scidb,
 # scidb object.
-# A: A scidb or scidb object
+# A: A scidb object
 # bracket: if TRUE, enclose dimension expression in square brackets
 # I: optional vector of dimension indices to use, if missing use all
 # newnames, newstart, newend, newchunk, newoverlap, newlen:

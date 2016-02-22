@@ -56,7 +56,7 @@ unpack = function(x)
 #' @export
 attribute_rename = function(x, old, `new`)
 {
-  if(!(is.scidb(x))) stop("Requires a scidb or scidb object")
+  if(!(is.scidb(x))) stop("Requires a scidb object")
   atr = scidb_attributes(x)
   if(missing(old)) old=x@attributes
 # Positional attributes
@@ -79,7 +79,7 @@ attribute_rename = function(x, old, `new`)
 #' @export
 dimension_rename = function(x, old, `new`)
 {
-  if(!(is.scidb(x))) stop("Requires a scidb or scidb object")
+  if(!(is.scidb(x))) stop("Requires a scidb object")
   if(missing(old)) old = dimensions(x)
   dnames = dimensions(x)
   if(!is.numeric(old))
@@ -102,7 +102,7 @@ dimension_rename = function(x, old, `new`)
 #' @export
 slice = function(x, d, n)
 {
-  if(!(is.scidb(x))) stop("Requires a scidb or scidb object")
+  if(!(is.scidb(x))) stop("Requires a scidb object")
   N = length(dimensions(x))
   i = d
   if(is.character(d))
@@ -126,7 +126,7 @@ slice = function(x, d, n)
 #' @export
 replaceNA = function(x, value, `attribute`)
 {
-  if(!(is.scidb(x))) stop("Requires a scidb or scidb object")
+  if(!(is.scidb(x))) stop("Requires a scidb object")
   if(!any(scidb_nullable(x))) return(x)
   if(missing(attribute))
   {
@@ -240,7 +240,7 @@ project = function(x, attributes)
 #' @keywords internal
 filter_scidb = function(x, expr)
 {
-  if(!(class(x) %in% c("scidb"))) stop("x must be a scidb or scidb object")
+  if(!(class(x) %in% c("scidb"))) stop("x must be a scidb object")
   xname = x@name
   isdf = "scidb" %in% class(x)
   ischar = tryCatch( is.character(expr), error=function(e) FALSE)

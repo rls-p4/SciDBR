@@ -274,9 +274,9 @@ rewrite_subset_expression = function(expr, sci)
     s = as.character(x)
     if(!(s %in% c(dims,attr, ">", "<", "!", "|", "=", "&", "||", "&&", "!=", "==", "<=", ">=")))
     {
-      test = lapply(c(globalenv(),frames), function(f)  # perhaps overkill
+      test = lapply(c(globalenv(), frames), function(f)  # perhaps overkill
       {
-        tryCatch(eval(x,f), error=function(e) e)
+        tryCatch(eval(x, f), error=function(e) e)
       })
       if(length(test) > 0)
       {
@@ -307,15 +307,15 @@ rewrite_subset_expression = function(expr, sci)
       if(length(x)==3)
       {
         if(!is.list(x[[2]]) && !is.list(x[[3]]) &&
-           all( c("scalar","dimension") %in%
-                c(attr(x[[2]],"what"), attr(x[[3]],"what"))))
+           all( c("scalar", "dimension") %in%
+                c(attr(x[[2]],"what"), attr(x[[3]], "what"))))
         {
           b = template
-          d = which(c(attr(x[[2]],"what"), attr(x[[3]],"what")) == "dimension") + 1
-          s = which(c(attr(x[[2]],"what"), attr(x[[3]],"what")) == "scalar") + 1
+          d = which(c(attr(x[[2]], "what"), attr(x[[3]], "what")) == "dimension") + 1
+          s = which(c(attr(x[[2]], "what"), attr(x[[3]], "what")) == "scalar") + 1
           i = which(dims %in% x[[d]]) # template index
           intx = round(as.numeric(x[[s]]))
-          if(intx >= 2^53) stop("Values too large, use an explicit SciDB filter expression")
+          if(intx >= 2 ^ 53) stop("Values too large, use an explicit SciDB filter expression")
           numx = as.numeric(x[[s]])
           lb = ceiling(numx)
           ub = floor(intx)
@@ -324,40 +324,41 @@ rewrite_subset_expression = function(expr, sci)
             lb = intx + 1
             ub = intx - 1
           }
-          if(x[[1]] == "==" || x[[1]] == "=") b[i] = b[i+n] = x[[s]]
-          else if(x[[1]] == "<") b[i+n] = sprintf("%.0f",ub)
-          else if(x[[1]] == "<=") b[i+n] = sprintf("%.0f",intx)
-          else if(x[[1]] == ">") b[i] = sprintf("%.0f",lb)
-          else if(x[[1]] == ">=") b[i] = sprintf("%.0f",intx)
-          b = paste(b,collapse=",")
-          return(sprintf("::%s",b))
+          if(x[[1]] == "==" || x[[1]] == "=") b[i] = b[i + n] = x[[s]]
+          else if(x[[1]] == "<") b[i + n] = sprintf("%.0f", ub)
+          else if(x[[1]] == "<=") b[i + n] = sprintf("%.0f", intx)
+          else if(x[[1]] == ">") b[i] = sprintf("%.0f", lb)
+          else if(x[[1]] == ">=") b[i] = sprintf("%.0f", intx)
+          b = paste(b, collapse=",")
+          return(sprintf("::%s", b))
         }
         return(c(.compose_r(x[[2]]), as.character(x[[1]]), .compose_r(x[[3]])))
       }
       if(length(x)==2)
       {
-        if(as.character(x[[1]])=="(") return(c(.compose_r(x[[1]]),.compose_r(x[[2]]), ")"))
+        if(as.character(x[[1]]) == "(") return(c(.compose_r(x[[1]]), .compose_r(x[[2]]), ")"))
         return(c(.compose_r(x[[1]]),.compose_r(x[[2]])))
       }
     }
-    if(attr(x,"what")=="character") return(sprintf("'%s'",as.character(x)))
+    if(attr(x,"what") == "character") return(sprintf("'%s'", as.character(x)))
     as.character(x)
   }
 
   ans = .compose_r(.annotate(walkCode(expr, .toList), dims=dims, attr=scidb_attributes(sci), frames=sys.frames()))
   i   = grepl("::",ans)
-  ans = gsub("==","=",gsub("!","not",gsub("\\|","or",gsub("\\|\\|","or", gsub("&","and",gsub("&&","and",gsub("!=","<>",ans)))))))
+  ans = gsub("==", "=", gsub("!", "not", gsub("\\|", "or", gsub("\\|\\|", "or",
+          gsub("&", "and", gsub("&&", "and", gsub("!=", "<>", ans)))))))
   if(any(i))
   {
 # Compose the betweens in a highly non-elegant way
-    b = strsplit(paste(gsub("::","",ans[i]),""),",")
+    b = strsplit(paste(gsub("::", "", ans[i]), ""), ",")
     ans[i] = "true"
-    b = Reduce(function(x,y)
+    b = Reduce(function(x, y)
     {
       n = length(x)
       x = tryCatch(as.numeric(x), warning=function(e) rep(NA,n))
       y = tryCatch(as.numeric(y), warning=function(e) rep(NA,n))
-      m = n/2
+      m = n / 2
       x1 = x[1:m]
       y1 = y[1:m]
       x1[is.na(x1)] = -Inf
@@ -368,15 +369,15 @@ rewrite_subset_expression = function(expr, sci)
       x2[is.na(x2)] = Inf
       y2[is.na(y2)] = Inf
       x2 = pmin(x2,y2)
-      c(x1,x2)
+      c(x1, x2)
     }, b, init=template)
-    b = gsub("Inf","null",gsub("-Inf","null",as.character(b)))
-    ans = gsub("and true","",paste(ans,collapse=" "))
-    if(nchar(gsub(" ","",ans))==0 || gsub(" ","",ans)=="true")
-      return(sprintf("between(%s,%s)",sci@name,paste(b,collapse=",")))
-    return(sprintf("filter(between(%s,%s),%s)",sci@name,paste(b,collapse=","),ans))
+    b = gsub("Inf", "null", gsub("-Inf", "null", as.character(b)))
+    ans = gsub("and true", "", paste(ans, collapse=" "))
+    if(nchar(gsub(" ", "", ans)) == 0 || gsub(" ", "", ans) == "true")
+      return(sprintf("between(%s,%s)", sci@name,paste(b, collapse=",")))
+    return(sprintf("filter(between(%s,%s),%s)", sci@name, paste(b, collapse=","), ans))
   }
-  sprintf("filter(%s,%s)",sci@name,paste(ans,collapse=" "))
+  sprintf("filter(%s,%s)", sci@name, paste(ans, collapse=" "))
 }
 
 
@@ -401,7 +402,7 @@ create_temp_array = function(name, schema)
 #                 If FALSE, infer output schema but don't evaluate.
 # name: (optional character) If supplied, name for stored array when eval=TRUE
 # gc: (optional logical) If TRUE, tie SciDB object to  garbage collector.
-# depend: (optional list) An optional list of other scidb or scidb objects
+# depend: (optional list) An optional list of other scidb objects
 #         that this expression depends on (preventing their garbage collection
 #         if other references to them go away).
 # schema, temp: (optional) used to create SciDB temp arrays
