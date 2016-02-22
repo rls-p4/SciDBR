@@ -295,16 +295,6 @@ SciDB schema  <Species:string NULL DEFAULT null> [row=1:150,150,0]
 1      row      TRUE  int64    FALSE     1 150   150
 2  Species     FALSE string     TRUE                
 ```
-```{r, eval=FALSE}
-i[, "Species"]
-```
-```
-SciDB expression  project(R_array1687f572177bd1102980...
-SciDB schema  <Species:string NULL DEFAULT null> [row=1:150,150,0] 
-  variable dimension   type nullable start end chunk
-1      row      TRUE  int64    FALSE     1 150   150
-2  Species     FALSE string     TRUE                
-```
 
 Use the `slice` function to slice out one dimension of a SciDB array
 at a specific coordinate value.
