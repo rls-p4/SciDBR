@@ -11,7 +11,7 @@
 
 <meta name="author" content="B. W. Lewis, Copyright (C) 2016 by Paradigm4, Inc." />
 
-<meta name="date" content="2016-02-19" />
+<meta name="date" content="2016-02-22" />
 
 <title>An R interface to SciDB</title>
 
@@ -123,7 +123,7 @@ $(document).ready(function () {
 
 <h1 class="title">An R interface to SciDB</h1>
 <h4 class="author"><em>B. W. Lewis, Copyright (C) 2016 by Paradigm4, Inc.</em></h4>
-<h4 class="date"><em>2016-02-19</em></h4>
+<h4 class="date"><em>2016-02-22</em></h4>
 
 </div>
 
@@ -287,7 +287,7 @@ SciDB schema  &lt;Sepal_Length:double NULL DEFAULT null,Sepal_Width:double NULL 
 <p>This section covers a few of the most important operations on <code>scidb</code> array values in R. With few exceptions, operations on SciDB array objects produce new SciDB array objects. Since objects are effectively SciDB array views, compositions of R operations build up increasingly complex SciDB queries.</p>
 <div id="project-and-slice" class="section level2">
 <h2>Project and slice</h2>
-<p>Use <code>project</code>, or equivalently the data frame-like column subset notations <code>$</code> and <code>x[, c(&quot;column name 1&quot;, &quot;column name 2&quot;]</code> to project the array object onto a subset of its SciDB attributes.</p>
+<p>Use <code>project</code>, or equivalently the data frame single column subset notation <code>$</code> to project the array object onto a subset of its SciDB attributes. The general bracket <code>[</code> indexing function is not supported, use <code>project</code>.</p>
 <pre class="sourceCode r"><code class="sourceCode r">i &lt;-<span class="st"> </span><span class="kw">as.scidb</span>(iris)
 
 <span class="kw">project</span>(i, <span class="st">&quot;Species&quot;</span>)</code></pre>

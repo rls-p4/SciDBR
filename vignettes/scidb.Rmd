@@ -269,9 +269,9 @@ compositions of R operations build up increasingly complex SciDB queries.
 
 ## Project and slice
 
-Use `project`, or equivalently the data frame-like column subset notations
-`$` and `x[, c("column name 1", "column name 2"]` to  project the array object
-onto a subset of its SciDB attributes.
+Use `project`, or equivalently the data frame single column subset notation
+`$` to  project the array object onto a subset of its SciDB attributes.
+The general bracket `[` indexing function is not supported, use `project`.
 
 ```{r, eval=FALSE}
 i <- as.scidb(iris)
