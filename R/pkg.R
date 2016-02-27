@@ -31,7 +31,7 @@ NULL
 # Set to TRUE to enable experimental shim stream protocol, avoids copying query
 # output to data file on server # (see https://github.com/Paradigm4/shim).
 # THIS MUST BE SET TO FALSE FOR VERSIONS OF SCIDB < 15.7.
-  options(scidb.stream=TRUE)
+  options(scidb.stream=FALSE)
 }
 
 # Reset the various package options
