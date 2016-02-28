@@ -5,7 +5,7 @@
 merge_scidb_cross = function(x, y)
 {
 # New attribute schema for y that won't conflict with x:
-  newas = build_attr_schema(y,newnames=make.unique_(scidb_attributes(x), scidb_attributes(y)))
+  newas = build_attr_schema(y, newnames=make.unique_(scidb_attributes(x), scidb_attributes(y)))
 # Impose a reasonable chunk size for dense arrays
   chunky = scidb_coordinate_chunksize(y)
   chunkx   = scidb_coordinate_chunksize(x)
@@ -136,7 +136,7 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
 # either the normal SciDB join/merge or cross_join on a subset of dimensions.
 
 # New attribute schema for y that won't conflict with x:
-  newas = build_attr_schema(y,newnames=make.unique_(scidb_attributes(x), scidb_attributes(y)))
+  newas = build_attr_schema(y, newnames=make.unique_(scidb_attributes(x), scidb_attributes(y)))
 # Check for join case (easy case)
   if((length(by.x) == length(by.y)) && all(dimensions(x) %in% by.x) && all(dimensions(y) %in% by.y))
   {

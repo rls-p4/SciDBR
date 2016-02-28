@@ -30,22 +30,14 @@ scidb = function(name, gc=FALSE)
     query = name@name
     return(.scidbeval(name@name, eval=FALSE, gc=gc, depend=list(name)))
   }
-  escape = gsub("'","\\\\'", name, perl=TRUE)
-# SciDB explain_logical operator changed in version 15.7
-  if(compare_versions(options("scidb.version")[[1]], 15.7))
-  {
-    query = sprintf("join(show('filter(%s,true)','afl'), _explain_logical('filter(%s,true)','afl'))", escape, escape)
-  }
-  else
-  {
-    query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape, escape)
-  }
-  query = iquery(query, `return`=TRUE, binary=FALSE)
-# NOTE that we need binary=FALSE here to avoid a terrible recursion
-  logical_plan = query$logical_plan
-  schema = gsub("^.*<", "<", query$schema, perl=TRUE)
-  obj = scidb_from_schemastring(schema, name)
-  obj@logical_plan = logical_plan
+
+  obj = new("scidb", name=name)
+  obj@gc = new.env()
+  obj@meta = new.env()
+  delayedAssign("state", lazyeval(name), assign.env=obj@meta)
+  delayedAssign("schema", state$schema, eval.env=obj@meta, assign.env=obj@meta)
+  delayedAssign("logical_plan", state$logical_plan, eval.env=obj@meta, assign.env=obj@meta)
+
   if(gc)
   {
     if(length(grep("\\(", name)) == 0)
@@ -60,7 +52,7 @@ scidb = function(name, gc=FALSE)
               tryCatch(scidbremove(e$name, warn=FALSE), error = function(e) invisible())
             }
         }, onexit = TRUE)
-  } else obj@gc = new.env()
+  }
   obj
 }
 
@@ -398,22 +390,10 @@ scidbremove.glm_scidb = function(x, error=warning,  force=FALSE, warn=TRUE, recu
   .traverse.glm_scidb(x, scidbremove, error, force, warn, recursive)
 }
 
-
-lazyschema = function(obj)
+# Used in delayed assignment of scidb object schema and logical_plan values.
+lazyeval = function(name)
 {
-  attributes = scidb_attributes(s)
-  dimensions = dimensions(s)
-
-  return(new("scidb",
-              schema=gsub("^.*<","<",s,perl=TRUE),
-              name=expr,
-              attributes=attributes,
-              dimensions=dimensions,
-              gc=new.env()))
-
-
-  if(!is.scidb(obj)) stop("not a scidb object")
-  escape = gsub("'", "\\\\'", obj@name, perl=TRUE)
+  escape = gsub("'", "\\\\'", name, perl=TRUE)
 # SciDB explain_logical operator changed in version 15.7
   if(compare_versions(options("scidb.version")[[1]], 15.7))
   {
@@ -424,8 +404,6 @@ lazyschema = function(obj)
     query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape, escape)
   }
   query = iquery(query, `return`=TRUE, binary=FALSE) # NOTE that we need binary=FALSE here to avoid a terrible recursion
-  obj@schema = gsub("^.*<", "<", query$schema, perl=TRUE)
-  obj@logical_plan = query$logical_plan
-  obj XXX
-  obj
+  list(schema = gsub("^.*<", "<", query$schema, perl=TRUE),
+       logical_plan = query$logical_plan)
 }

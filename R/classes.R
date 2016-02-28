@@ -3,21 +3,13 @@
 #
 # A scidb object is fully defined by:
 # name = any SciDB expression that can produce an array 
-# schema = the corresponding SciDB array schema for 'name' above
-# logical_plan = the corresponding array query plan
+# meta = environment containing SciDB schema and logical_plan character values (lazily evaluated)
 # gc = environment
 #      If gc$remove = TRUE, remove SciDB array when R gc is run on object.
 #      The gc environment also stores dependencies required by array promises.
-#
-# Objects includes a few additional convenience slots:
-# dimensions = a character vector of SciDB dimension names
-# attributes = character vector of array attribute names  (derived from the schema)
 
 setClass("scidb",
          representation(name="character",
-                        schema="character",
-                        attributes="character",
-                        dimensions="character",
-                        logical_plan="character",
+                        meta="environment",
                         gc="environment"),
          S3methods=TRUE)

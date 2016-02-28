@@ -47,6 +47,15 @@
   c(scidb_attributes(x), dimensions(x))
 }
 
+#' SciDB logical plan
+#' @param x a \code{\link{scidb}} array object
+#' @return a character value containing the SciDB logical plan for the object
+#' @export
+logical_plan = function(x)
+{
+  x@meta$logical_plan
+}
+
 #' SciDB array attribute names
 #' @param x a \code{\link{scidb}} array object
 #' @return character vector of SciDB attribute names.
@@ -159,7 +168,7 @@ scidb_coordinate_chunksize = function(x)
 scidb_coordinate_overlap = function(x)
 {
   d = .dimsplitter(x)
-  unlist(lapply(d[-1],function(x)x[3]))
+  unlist(lapply(d[-1], function(x) x[3]))
 }
 
 #' SciDB array schema
@@ -168,8 +177,8 @@ scidb_coordinate_overlap = function(x)
 #' @export
 schema = function(x)
 {
-  if(!(inherits(x,"scidb"))) return(NULL)
-  gsub(".*<","<", schema(x))
+  if(!(inherits(x, "scidb"))) return(NULL)
+  gsub(".*<", "<", x@meta$schema)
 }
 
 #' SciDB array from a schema string
@@ -185,12 +194,12 @@ scidb_from_schemastring = function(s, expr=character())
   attributes = scidb_attributes(s)
   dimensions = dimensions(s)
 
-  return(new("scidb",
-              schema=gsub("^.*<","<",s,perl=TRUE),
+  obj = new("scidb",
               name=expr,
-              attributes=attributes,
-              dimensions=dimensions,
-              gc=new.env()))
+              meta=new.env(),
+              gc=new.env())
+  obj@meta$schema = gsub("^.*<","<",s,perl=TRUE)
+  obj@meta$logical_plan = ""
 }
 
 # Build the attribute part of a SciDB array schema from a scidb, scidb object.
@@ -376,19 +385,19 @@ aliases = function(x)
 {
   ans = c()
   if(!(inherits(x,"scidb"))) return(ans)
-  logical_schema = grep("^>>schema",strsplit(x@logical_plan,"\n")[[1]], value=TRUE)
+  logical_schema = grep("^>>schema", strsplit(logical_plan(x), "\n")[[1]], value=TRUE)
   if(length(logical_schema) < 1) return(NULL)
-  logical_schema = gsub("].*","]",logical_schema)
-  logical_schema = gsub(".*<","<",logical_schema)
+  logical_schema = gsub("].*", "]", logical_schema)
+  logical_schema = gsub(".*<", "<", logical_schema)
   dl = dimensions(logical_schema)
   ds = dimensions(schema(x))
   if(length(dl) != length(ds)) return(NULL)
   for(j in 1:length(ds))
   {
-    d = strsplit(dl[j],"\\|")[[1]]
-    p = strdiff(d[j],ds[j])
-    d = c(d[1],unlist(lapply(d[-1],function(z)sprintf("%s%s",p,z))))
-    ans = c(ans, gsub(" ","",strdiff(ds[j], d)))
+    d = strsplit(dl[j], "\\|")[[1]]
+    p = strdiff(d[j], ds[j])
+    d = c(d[1],unlist(lapply(d[-1], function(z) sprintf("%s%s", p, z))))
+    ans = c(ans, gsub(" ", "",strdiff(ds[j], d)))
   } 
   unique(ans)
 }
