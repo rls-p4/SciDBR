@@ -18,6 +18,9 @@ NULL
 # Default shim port and host.
   options(scidb.default_shim_port=8080L)
   options(scidb.default_shim_host="localhost")
+# How to download arrays and their coordinates. Set scidb.unpack=FALSE
+# to use apply, which can be faster in some cases when used with aio.
+  options(scidb.unpack=TRUE)
 # Make it harder to remove arrays. When this option is TRUE, users
 # have to specify scidbrm(array, force=TRUE) to remove arrays that do not
 # begin with "R_array".

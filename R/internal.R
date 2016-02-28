@@ -50,21 +50,21 @@ scidb_unpack_to_dataframe = function(query, ...)
     if(!is.na(argsbuf) && argsbuf <= 1e9) buffer = as.integer(argsbuf)
   }
   ndim = length(dimensions(query))
-  if(aio)
-  {
-    dims = paste(paste(dimensions(query), dimensions(query), sep=","), collapse=",") # Note! can faster than unpack
-    x = scidb(sprintf("apply(%s, %s)", query@name, dims))
-  } else
+  if(getOption("scidb.unpack"))
   {
     dim = make.unique_(c(scidb_attributes(query), dimensions(query)), "i")
     x = scidb(sprintf("unpack(%s, %s)", query@name, dim))
+  } else
+  {
+    dims = paste(paste(dimensions(query), dimensions(query), sep=","), collapse=",") # Note! can faster than unpack with aio
+    x = scidb(sprintf("apply(%s, %s)", query@name, dims))
   }
   N = scidb_nullable(x)
   TYPES = scidb_types(x)
-  ns = rep("",length(N))
+  ns = rep("", length(N))
   ns[N] = "null"
-  format_string = paste(paste(TYPES,ns),collapse=",")
-  format_string = sprintf("(%s)",format_string)
+  format_string = paste(paste(TYPES, ns), collapse=",")
+  format_string = sprintf("(%s)", format_string)
   sessionid = scidbquery(x@name, save=format_string, release=0)
   on.exit( SGET("/release_session",list(id=sessionid), err=FALSE) ,add=TRUE)
 
@@ -751,7 +751,7 @@ is.nullable = function(x)
 # Internal utility function, make every attribute of an array nullable
 make_nullable = function(x)
 {
-  cast(x,sprintf("%s%s",build_attr_schema(x,nullable=TRUE),build_dim_schema(x)))
+  cast(x, sprintf("%s%s", build_attr_schema(x, nullable=TRUE), build_dim_schema(x)))
 }
 
 # Internal utility function used to format numbers
@@ -762,13 +762,31 @@ noE = function(w) sapply(w,
     if(is.character(x)) return(x)
     sprintf("%.0f",x)
   })
+
 # Returns TRUE if version string x is greater than or equal to than version y
 compare_versions = function(x,y)
 {
-  b = as.numeric(strsplit(as.character(x),"\\.")[[1]])
-  a = as.numeric(strsplit(as.character(y),"\\.")[[1]])
+  b = as.numeric(strsplit(as.character(x), "\\.")[[1]])
+  a = as.numeric(strsplit(as.character(y), "\\.")[[1]])
   ans = b[1] > a[1]
   if(b[1] == a[1]) ans = b[2] >= a[2]
   ans
 }
 
+# Used in delayed assignment of scidb object schema and logical_plan values.
+lazyeval = function(name)
+{
+  escape = gsub("'", "\\\\'", name, perl=TRUE)
+# SciDB explain_logical operator changed in version 15.7
+  if(compare_versions(options("scidb.version")[[1]], 15.7))
+  {
+    query = sprintf("join(show('filter(%s,true)','afl'), _explain_logical('filter(%s,true)','afl'))", escape, escape)
+  }
+  else
+  {
+    query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape, escape)
+  }
+  query = iquery(query, `return`=TRUE, binary=FALSE) # NOTE that we need binary=FALSE here to avoid a terrible recursion
+  list(schema = gsub("^.*<", "<", query$schema, perl=TRUE),
+       logical_plan = query$logical_plan)
+}

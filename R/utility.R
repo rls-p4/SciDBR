@@ -309,7 +309,7 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
     {
       if(binary)
       {
-        return(scidb_unpack_to_dataframe(query,...))
+        return(scidb_unpack_to_dataframe(query, ...))
       }
       ans = tryCatch(
        {
@@ -388,22 +388,4 @@ persist.glm_scidb = function(x, gc=FALSE)
 scidbremove.glm_scidb = function(x, error=warning,  force=FALSE, warn=TRUE, recursive=TRUE)
 {
   .traverse.glm_scidb(x, scidbremove, error, force, warn, recursive)
-}
-
-# Used in delayed assignment of scidb object schema and logical_plan values.
-lazyeval = function(name)
-{
-  escape = gsub("'", "\\\\'", name, perl=TRUE)
-# SciDB explain_logical operator changed in version 15.7
-  if(compare_versions(options("scidb.version")[[1]], 15.7))
-  {
-    query = sprintf("join(show('filter(%s,true)','afl'), _explain_logical('filter(%s,true)','afl'))", escape, escape)
-  }
-  else
-  {
-    query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape, escape)
-  }
-  query = iquery(query, `return`=TRUE, binary=FALSE) # NOTE that we need binary=FALSE here to avoid a terrible recursion
-  list(schema = gsub("^.*<", "<", query$schema, perl=TRUE),
-       logical_plan = query$logical_plan)
 }
