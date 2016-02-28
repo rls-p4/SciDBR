@@ -112,8 +112,6 @@ redimension = function(x, schema, dim)
 
 # Add the new dimension(s)
       a = scidb_attributes(x)[ia]
-      x@attributes = scidb_attributes(x)[-ia]
-      f = paste(paste("min(", a, "), max(", a, ")", sep=""), collapse=",")
       m = cbind(rep("0", length(a)), rep("*", length(a)))
       p = prod(as.numeric(scidb_coordinate_chunksize(x)[id]))
       chunk = ceiling((1e6 / p) ^ (1 / length(ia)))

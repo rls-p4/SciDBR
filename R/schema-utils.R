@@ -9,24 +9,24 @@
   if(is.character(x)) s = x
   else
   {
-    if(!(inherits(x,"scidb"))) return(NULL)
+    if(!(inherits(x, "scidb"))) return(NULL)
     s = schema(x)
   }
-  d = gsub("\\]","",strsplit(s,"\\[")[[1]][[2]])
-  strsplit(strsplit(d,"=")[[1]],",")
+  d = gsub("\\]", "", strsplit(s, "\\[")[[1]][[2]])
+  strsplit(strsplit(d, "=")[[1]], ",")
 }
 
 .dimsplit = function(x)
 {
   d = .dimsplitter(x)
-  n = lapply(d[-length(d)], function(x)x[[length(x)]])
+  n = lapply(d[-length(d)], function(x) x[[length(x)]])
   p = d[-1]
   l = length(p)
-  if(l>1)
+  if(l > 1)
   {
-    p[1:(l-1)] = lapply(p[1:(l-1)], function(x) x[1:(length(x)-1)])
+    p[1:(l - 1)] = lapply(p[1:(l - 1)], function(x) x[1:(length(x) - 1)])
   }
-  ans = paste(n,lapply(p,paste,collapse=","),sep="=")
+  ans = paste(n, lapply(p, paste, collapse=","), sep="=")
   names(ans) = n
   ans
 }
@@ -36,10 +36,10 @@
   if(is.character(x)) s = x
   else
   {
-    if(!(inherits(x,"scidb"))) return(NULL)
+    if(!(inherits(x, "scidb"))) return(NULL)
     s = schema(x)
   }
-  strsplit(strsplit(strsplit(strsplit(s,">")[[1]][1],"<")[[1]][2],",")[[1]],":")
+  strsplit(strsplit(strsplit(strsplit(s, ">")[[1]][1], "<")[[1]][2], ",")[[1]], ":")
 }
 
 .scidb_names = function(x)
@@ -54,7 +54,7 @@
 scidb_attributes = function(x)
 {
   a = .attsplitter(x)
-  unlist(lapply(a,function(x) x[[1]]))
+  unlist(lapply(a, function(x) x[[1]]))
 }
 
 #' SciDB array attribute types

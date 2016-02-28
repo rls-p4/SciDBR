@@ -397,3 +397,35 @@ scidbremove.glm_scidb = function(x, error=warning,  force=FALSE, warn=TRUE, recu
 {
   .traverse.glm_scidb(x, scidbremove, error, force, warn, recursive)
 }
+
+
+lazyschema = function(obj)
+{
+  attributes = scidb_attributes(s)
+  dimensions = dimensions(s)
+
+  return(new("scidb",
+              schema=gsub("^.*<","<",s,perl=TRUE),
+              name=expr,
+              attributes=attributes,
+              dimensions=dimensions,
+              gc=new.env()))
+
+
+  if(!is.scidb(obj)) stop("not a scidb object")
+  escape = gsub("'", "\\\\'", obj@name, perl=TRUE)
+# SciDB explain_logical operator changed in version 15.7
+  if(compare_versions(options("scidb.version")[[1]], 15.7))
+  {
+    query = sprintf("join(show('filter(%s,true)','afl'), _explain_logical('filter(%s,true)','afl'))", escape, escape)
+  }
+  else
+  {
+    query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape, escape)
+  }
+  query = iquery(query, `return`=TRUE, binary=FALSE) # NOTE that we need binary=FALSE here to avoid a terrible recursion
+  obj@schema = gsub("^.*<", "<", query$schema, perl=TRUE)
+  obj@logical_plan = query$logical_plan
+  obj XXX
+  obj
+}
