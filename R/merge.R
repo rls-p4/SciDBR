@@ -5,7 +5,7 @@
 merge_scidb_cross = function(x, y)
 {
 # New attribute schema for y that won't conflict with x:
-  newas = build_attr_schema(y,newnames=make.unique_(x@attributes,y@attributes))
+  newas = build_attr_schema(y,newnames=make.unique_(scidb_attributes(x), scidb_attributes(y)))
 # Impose a reasonable chunk size for dense arrays
   chunky = scidb_coordinate_chunksize(y)
   chunkx   = scidb_coordinate_chunksize(x)
@@ -21,10 +21,10 @@ merge_scidb_cross = function(x, y)
       NS = 1e6^(1/NC)
       chunky = rep(noE(NS), length(chunky))
       chunkx = rep(noE(NS), length(chunkx))
-      x = repart(x,sprintf("%s%s",build_attr_schema(x), build_dim_schema(x,newchunk=chunkx)))
-      y = repart(y,sprintf("%s%s",build_attr_schema(y), build_dim_schema(y,newchunk=chunkx)))
+      x = repart(x,sprintf("%s%s",build_attr_schema(x), build_dim_schema(x, newchunk=chunkx)))
+      y = repart(y,sprintf("%s%s",build_attr_schema(y), build_dim_schema(y, newchunk=chunkx)))
     }
-  newds = build_dim_schema(y,newnames=make.unique_(x@dimensions,y@dimensions))
+  newds = build_dim_schema(y,newnames=make.unique_(dimensions(x), dimensions(y)))
   y = cast(y,sprintf("%s%s",newas,newds))
   query = sprintf("cross_join(%s, %s)",x@name,y@name)
   return(.scidbeval(query,FALSE,depend=list(x,y)))
@@ -41,15 +41,15 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
   YI = index_lookup(y, lkup, by.y)
 
   new_dim_name = make.unique_(c(dimensions(x),dimensions(y)),"row")
-  a = XI@attributes %in% paste(by.x,"index",sep="_")
-  n = XI@attributes[a]
-  redim = paste(paste(n,"=-1:",.scidb_DIM_MAX,",100000,0",sep=""), collapse=",")
-  S = build_attr_schema(x, I=!(x@attributes %in% by.x))
+  a = scidb_attributes(XI) %in% paste(by.x,"index",sep="_")
+  n = scidb_attributes(XI)[a]
+  redim = paste(paste(n,"=-1:", .scidb_DIM_MAX, ",100000,0", sep=""), collapse=",")
+  S = build_attr_schema(x, I =! (scidb_attributes(x) %in% by.x))
   D = sprintf("[%s,%s]",redim,build_dim_schema(x,bracket=FALSE))
   q1 = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s)",XI@name,n,S,D)
 
-  a = YI@attributes %in% paste(by.y,"index",sep="_")
-  n = YI@attributes[a]
+  a = scidb_attributes(YI) %in% paste(by.y,"index",sep="_")
+  n = scidb_attributes(YI)[a]
   redim = paste(paste(n,"=-1:",.scidb_DIM_MAX,",100000,0",sep=""), collapse=",")
   S = build_attr_schema(y)
   D = sprintf("[%s,%s]",redim,build_dim_schema(y,bracket=FALSE))
@@ -126,7 +126,7 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
 # In particular:
 # - join on only one attribute per array
 # - only inner join
-  if(all(by.x %in% x@attributes) && all(by.y %in% y@attributes))
+  if(all(by.x %in% scidb_attributes(x)) && all(by.y %in% scidb_attributes(y)))
   {
     if(scidbmerge) stop("SciDB merge not supported in this context")
     return(merge_scidb_on_attributes(x,y,by.x,by.y))
@@ -136,7 +136,7 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
 # either the normal SciDB join/merge or cross_join on a subset of dimensions.
 
 # New attribute schema for y that won't conflict with x:
-  newas = build_attr_schema(y,newnames=make.unique_(x@attributes,y@attributes))
+  newas = build_attr_schema(y,newnames=make.unique_(scidb_attributes(x), scidb_attributes(y)))
 # Check for join case (easy case)
   if((length(by.x) == length(by.y)) && all(dimensions(x) %in% by.x) && all(dimensions(y) %in% by.y))
   {

@@ -19,7 +19,7 @@ function(x, y)
     x = redimension(x,s)
   }
   i = count(x) + as.numeric(scidb_coordinate_start(x)) - as.numeric(scidb_coordinate_start(y))
-  j = make.unique_(y@attributes, "j")
+  j = make.unique_(scidb_attributes(y), "j")
   fun = sprintf("%s + %.0f", dimensions(y), i)
   s = sprintf("apply(%s, %s, %s)",y@name, j, fun)
   scma = sprintf("%s%s",build_attr_schema(y), build_dim_schema(x, newnames=j))
@@ -88,10 +88,10 @@ setMethod("show", "scidb",
 
 regrid_scidb = function(x, grid, expr)
   {
-    if(missing(expr)) expr = paste(sprintf("max(%s)", x@attributes), collapse=",")
+    if(missing(expr)) expr = paste(sprintf("max(%s)", scidb_attributes(x)), collapse=",")
     if(is.function(expr))
     {
-      expr = paste(as.character(as.list(match.call()$expr)), sprintf("(%s)", x@attributes), collapse=",")
+      expr = paste(as.character(as.list(match.call()$expr)), sprintf("(%s)", scidb_attributes(x)), collapse=",")
     }
     query = sprintf("regrid(%s, %s, %s)",
                x@name, paste(noE(grid), collapse=","), expr)

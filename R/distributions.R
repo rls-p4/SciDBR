@@ -104,8 +104,8 @@ setMethod("qhyper", signature(x="scidb"),
 scidb_fisher.test = function(a, x="x", m="m", n="n", k="k", alternative=c("two.sided", "greater", "less"))
 {
   alternative = match.arg(alternative)
-  pvalname = make.unique_(a@attributes, "pval")
-  oddsname = make.unique_(a@attributes, "estimate")
+  pvalname = make.unique_(scidb_attributes(a), "pval")
+  oddsname = make.unique_(scidb_attributes(a), "estimate")
   query = sprintf("apply(%s, %s, fishertest_p_value(%s,%s,%s,%s,'%s'), %s, fishertest_odds_ratio(%s,%s,%s,%s))",
            a@name, pvalname, x, m, n, k, alternative, oddsname, x, m, n, k)
   .scidbeval(query, depend=list(a), gc=TRUE)

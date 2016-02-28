@@ -10,7 +10,7 @@ cbind.scidb = function(x, y)
 {
   if(missing(y))
   {
-    newdim=make.unique_(x@attributes, "j")
+    newdim=make.unique_(scidb_attributes(x), "j")
     nd = sprintf("%s[%s,%s=0:0,1,0]", build_attr_schema(x) ,build_dim_schema(x,bracket=FALSE), newdim)
     return(redimension(bind(x,newdim,0), nd))
   }
@@ -39,7 +39,7 @@ rbind.scidb = function(x, y)
 #' @export
 names.scidb = function(x)
 {
-  c(x@dimensions, x@attributes)
+  c(dimensions(x), scidb_attributes(x))
 }
 
 #' Renamed SciDB attributes and/or dimensions
@@ -63,7 +63,7 @@ names.scidb = function(x)
 #' @export
 dimnames.scidb = function(x)
 {
-  x@dimensions
+  dimensions(x)
 }
 
 #' Projection onto an array attribute (variable)

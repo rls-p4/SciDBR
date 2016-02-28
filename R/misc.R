@@ -61,7 +61,7 @@ levels_scidb = function(x)
 #' @export
 unbound = function(x)
 {
-  new_lengths = rep("*", length(x@dimensions))
+  new_lengths = rep("*", length(dimensions(x)))
   new_dims = build_dim_schema(x, newlen=new_lengths)
   schema = sprintf("%s%s", build_attr_schema(x), new_dims)
   redimension(x, schema=schema)
@@ -104,7 +104,7 @@ kmeans_scidb = function(x, centers, iter.max=30, nstart=1,
 # If we have a recent enough SciDB version, use temp arrays.
   temp = compare_versions(options("scidb.version")[[1]],14.8)
   if(!is.scidb(x)) stop("x must be a scidb object")
-  x = project(x, x@attributes[1])
+  x = project(x, scidb_attributes(x)[1])
   x = attribute_rename(x,new="val")
   x = dimension_rename(x,new=c("i","j"))
   expr = sprintf("random() %% %d", centers)
@@ -190,9 +190,9 @@ dist_scidb = function(x, method=c("euclidean", "manhattan", "maximum"))
 # XXX broken
 hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `plot`=TRUE, ...)
 {
-  if(length(x@attributes)>1) stop("Histogram requires a single-attribute array.")
+  if(length(scidb_attributes(x)) > 1) stop("Histogram requires a single-attribute array.")
   if(length(breaks)>1) stop("The SciDB histogram function requires a single numeric value indicating the number of breaks.")
-  a = x@attributes[1]
+  a = scidb_attributes(x)[1]
   t = scidb_types(x)[1]
   breaks = as.integer(breaks)
   if(breaks < 1) stop("Too few breaks")
@@ -242,7 +242,7 @@ all.equal.scidb = function ( target, current , ...)
 {
   array1 = target
   array2 = current
-  if ( length(array1@attributes) != length(array2@attributes) )
+  if ( length(scidb_attributes(array1)) != length(scidb_attributes(array2)) )
   {
     return (FALSE)
   }
@@ -307,7 +307,7 @@ antijoin = function(array1, array2)
   {
     return(NULL)
   }
-  flag_name = make.unique_(join@attributes, "source_array_id")
+  flag_name = make.unique_(scidb_attributes(join), "source_array_id")
   jf = scidbeval(project(bind(join, name = flag_name, "0"), flag_name))
   lf = project(bind(array1, flag_name, "1"), flag_name)
   rf = project(bind(array2, flag_name, "2"), flag_name)
@@ -330,10 +330,10 @@ quantile.scidb = function(x, probs=seq(0,1,0.25), type=7, ...)
   np      = length(probs)
   qs      = NULL
 
-  if(length(x@attributes)>1)
+  if(length(scidb_attributes(x))>1)
   {
-    warning("The SciDB array contains more than one attribute. Using the first one: ",x@attributes[1])
-    x = project(x,x@attributes[1])
+    warning("The SciDB array contains more than one attribute. Using the first one: ",scidb_attributes(x)[1])
+    x = project(x, scidb_attributes(x)[1])
   }
 # Check numeric type and quantile type
   ty    = scidb_types(x)[1]

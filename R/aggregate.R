@@ -13,7 +13,7 @@ aggregate_scidb = function(x, by, FUN, window, variable_window)
     cb = unlist(by[unlist(lapply(by,is.character))]) # may be empty
     if(is.null(fn))
       stop("Aggregate requires a valid SciDB aggregate function")
-    FUN = paste(paste(fn,"(",setdiff(x@attributes,cb),")",sep=""),collapse=",")
+    FUN = paste(paste(fn,"(",setdiff(scidb_attributes(x),cb),")",sep=""),collapse=",")
   }
 
 # XXX Why limit this to the first `by` element?
@@ -22,14 +22,14 @@ aggregate_scidb = function(x, by, FUN, window, variable_window)
 # We are grouping by attributes in another SciDB array `by`. We assume that
 # x and by have conformable dimensions to join along!
     x = merge(x,`by`[[1]])
-    n = x@attributes[length(x@attributes)]
+    n = scidb_attributes(x)[length(scidb_attributes(x))]
     `by`[[1]] = n
   }
 
   b = `by`
   new_dim_name = make.names_(c(unlist(b),"row"))
   new_dim_name = new_dim_name[length(new_dim_name)]
-  if(!all(b %in% c(x@attributes, dimensions(x), "")))
+  if(!all(b %in% c(scidb_attributes(x), dimensions(x), "")))
   {
 # Check for numerically-specified coordinate axes and replace with dimension
 # labels.
@@ -41,8 +41,8 @@ aggregate_scidb = function(x, by, FUN, window, variable_window)
       }
     }
   }
-  if(!all(b %in% c(x@attributes, dimensions(x), ""))) stop("Invalid attribute or dimension name in by")
-  a = x@attributes %in% b
+  if(!all(b %in% c(scidb_attributes(x), dimensions(x), ""))) stop("Invalid attribute or dimension name in by")
+  a = scidb_attributes(x) %in% b
   query = x@name
 # Handle group by attributes with redimension. We don't use a redimension
 # aggregate, however, because some of the other group by variables may already
@@ -53,14 +53,14 @@ aggregate_scidb = function(x, by, FUN, window, variable_window)
 # we use index_lookup to create a factorized version of the attribute to group
 # by in place of the original specified attribute. This creates a new virtual
 # array x with additional attributes.
-    types = x@attributes[a]
+    types = scidb_attributes(x)[a]
     nonint = scidb_types(x) != "int64" & a
     if(any(nonint))
     {
 # Use index_lookup to factorize non-integer indices, creating new enumerated
 # attributes to sort by. It's probably not a great idea to have too many.
       idx = which(nonint)
-      oldatr = x@attributes
+      oldatr = scidb_attributes(x)
       for(j in idx)
       {
         atr     = oldatr[j]
@@ -77,8 +77,8 @@ aggregate_scidb = function(x, by, FUN, window, variable_window)
     }
 
 # Reset in case things changed above
-    a = x@attributes %in% b
-    n = x@attributes[a]
+    a = scidb_attributes(x) %in% b
+    n = scidb_attributes(x)[a]
 # XXX EXPERIMENTAL
 # We estimate rational chunk sizes here.
     app = paste(paste("ApproxDC(",n,")",sep=""),collapse=",")

@@ -104,15 +104,15 @@ redimension = function(x, schema, dim)
 # We'll be converting attributes to dimensions here.
 # First, we make sure that they are all int64.
       xold = x
-      for(nid in x@attributes[ia])
+      for(nid in scidb_attributes(x)[ia])
       {
-        idx = which(x@attributes %in% nid)
+        idx = which(scidb_attributes(x) %in% nid)
         if(scidb_types(x)[idx] != "int64") stop("redimension attributes must be of type int64")
       }
 
 # Add the new dimension(s)
-      a = x@attributes[ia]
-      x@attributes = x@attributes[-ia]
+      a = scidb_attributes(x)[ia]
+      x@attributes = scidb_attributes(x)[-ia]
       f = paste(paste("min(", a, "), max(", a, ")", sep=""), collapse=",")
       m = cbind(rep("0", length(a)), rep("*", length(a)))
       p = prod(as.numeric(scidb_coordinate_chunksize(x)[id]))

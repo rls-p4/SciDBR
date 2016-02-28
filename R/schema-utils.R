@@ -169,7 +169,7 @@ scidb_coordinate_overlap = function(x)
 schema = function(x)
 {
   if(!(inherits(x,"scidb"))) return(NULL)
-  gsub(".*<","<",x@schema)
+  gsub(".*<","<", schema(x))
 }
 
 #' SciDB array from a schema string
@@ -381,7 +381,7 @@ aliases = function(x)
   logical_schema = gsub("].*","]",logical_schema)
   logical_schema = gsub(".*<","<",logical_schema)
   dl = dimensions(logical_schema)
-  ds = dimensions(x@schema)
+  ds = dimensions(schema(x))
   if(length(dl) != length(ds)) return(NULL)
   for(j in 1:length(ds))
   {

@@ -22,7 +22,9 @@ scidbcc = function(x)
   cat("\nSciDB schema ", schema(object), "\n")
   bounds = scidb_coordinate_bounds(object)
   d = data.frame(variable=dimensions(object), dimension=TRUE, type="int64", nullable=FALSE, start=bounds$start, end=bounds$end, chunk=scidb_coordinate_chunksize(object), row.names=NULL, stringsAsFactors=FALSE)
-  d = rbind(d, data.frame(variable=object@attributes, dimension=FALSE, type=scidb_types(object), nullable=scidb_nullable(object), start="", end="", chunk=""))
+  d = rbind(d, data.frame(variable=scidb_attributes(object),
+                          dimension=FALSE,
+                          type=scidb_types(object), nullable=scidb_nullable(object), start="", end="", chunk=""))
   cat(paste(capture.output(print(d)), collapse="\n"))
   cat("\n")
 }
@@ -211,12 +213,12 @@ aparser = function(x, expr)
   new_attrs = lapply(p, function(v) v[[2]])        # output attribute names
   y = lapply(p,function(v)strsplit(v,"\\(")[[1]])  #
   fun = lapply(y, function(v) gsub(" ","",v[[1]])) # functions
-  old_attrs = unlist(lapply(y,function(v)gsub("[\\) ]","",v[[2]])))
-  i = 1:length(x@attributes)
-  names(i)=x@attributes
+  old_attrs = unlist(lapply(y, function(v)gsub("[\\) ]", "", v[[2]])))
+  i = 1:length(scidb_attributes(x))
+  names(i) = scidb_attributes(x)
   old_types = scidb_types(x)[i[old_attrs]]
   old_types[is.na(old_types)] = "int64"    # catch all
-  z = rep("",length(new_attrs))
+  z = rep("", length(new_attrs))
   for(j in 1:length(z))
   {
     z[j] = sprintf("%s:%s", new_attrs[j],map[unlist(fun)][[j]](old_types[j]))

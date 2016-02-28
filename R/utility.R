@@ -14,7 +14,7 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE, temp=FALSE)
   if(!(inherits(ans,"scidb"))) return(ans)
 # If expr is a stored temp array, then re-use its name
   if(!is.null(ans@gc$temp) && ans@gc$temp && missing(name)) name=ans@name
-  .scidbeval(ans@name, `eval`=eval, name=name, gc=gc, schema=ans@schema, temp=temp)
+  .scidbeval(ans@name, `eval`=eval, name=name, gc=gc, schema=schema(ans), temp=temp)
 }
 
 #' Create an R reference to a SciDB array or expression.

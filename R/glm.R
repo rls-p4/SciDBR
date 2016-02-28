@@ -192,13 +192,13 @@ model_scidb = function(formula, data, factors=NULL)
   if(i==1)
   {
 # Add an intercept term
-    iname = make.unique_(data@attributes,"intercept")
+    iname = make.unique_(scidb_attributes(data), "intercept")
     data = bind(data, iname, "double(1)")
   }
 # If the response is not present in the data, set to NA
   response_name = rownames(f)[r]
   response = NA
-  if(response_name %in% data@attributes)
+  if(response_name %in% scidb_attributes(data))
   {
     response = project(data,rownames(f)[r])
   }
@@ -207,14 +207,14 @@ model_scidb = function(formula, data, factors=NULL)
   # factors (see input arguments) will contain a list of factor variables
   vars = NULL # vars will contain a list of continuous variables
 # Check for unsupported formulae and warn.
-  ok = v %in% data@attributes
+  ok = v %in% scidb_attributes(data)
   if(!all(ok))
   {
     not_supported = paste(v[!ok], collapse=",")
     warning("Your formula is too complicated for this method. The following variables are not explicitly available and were not used in the model: ",not_supported)
     formula = formula(drop.terms(t, which(v %in% not_supported), keep.response=TRUE))
   }
-  w = which(data@attributes %in% c(v,iname))
+  w = which(scidb_attributes(data) %in% c(v, iname))
   if(length(w)<1) stop("No variables to model on")
 # Check to see if a list of factors was provided. If not we need to build one.
 # If so, we check to make sure that the string variables in data match our
@@ -224,7 +224,7 @@ model_scidb = function(formula, data, factors=NULL)
   {
     build_factors = FALSE
     data_factor_idx = which(types %in% "string")
-    if(any(data_factor_idx) && ! all(names(factors) %in% data@attributes[data_factor_idx]))
+    if(any(data_factor_idx) && ! all(names(factors) %in% scidb_attributes(data)[data_factor_idx]))
     {
       stop("Missing variables in input data! Please make sure your data contain all the variables in the model.")
     }
@@ -287,10 +287,10 @@ model_scidb = function(formula, data, factors=NULL)
     dn = make.unique_(dimensions(data), "i")
     n  = names(factors)[j]
     idx = sprintf("%s_index", n)
-    idx = make.unique_(data@attributes, idx)
+    idx = make.unique_(scidb_attributes(data), idx)
     y = project(index_lookup(data, factors[[j]], n, idx), idx)
-    one = make.unique_(y@attributes, "val")
-    column = make.unique_(y@attributes, "j")
+    one = make.unique_(scidb_attributes(y), "val")
+    column = make.unique_(scidb_attributes(y), "j")
     N = sprintf("%s%s", names(factors)[j], iquery(factors[[j]], return=TRUE)[, 2])
     if(i > 0)
     {

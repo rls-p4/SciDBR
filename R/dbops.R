@@ -58,7 +58,7 @@ attribute_rename = function(x, old, `new`)
 {
   if(!(is.scidb(x))) stop("Requires a scidb object")
   atr = scidb_attributes(x)
-  if(missing(old)) old=x@attributes
+  if(missing(old)) old=scidb_attributes(x)
 # Positional attributes
   if(!is.numeric(old))
   {
@@ -114,7 +114,7 @@ slice = function(x, d, n)
     stop("Invalid dimension specified")
   }
   if(missing(n)) n = scidb_coordinate_bounds(x)$start[i]
-  query = sprintf("slice(%s, %s)",x@name,paste(paste(x@dimensions[i], noE(n), sep=","), collapse=","))
+  query = sprintf("slice(%s, %s)",x@name,paste(paste(dimensions(x)[i], noE(n), sep=","), collapse=","))
   .scidbeval(query, FALSE, depend=list(x))
 }
 
@@ -223,9 +223,9 @@ project = function(x, attributes)
 {
   xname = x
   if(is.logical(attributes))
-    attributes = x@attributes[which(attributes)]
+    attributes = scidb_attributes(x)[which(attributes)]
   if(is.numeric(attributes))
-    attributes = x@attributes[attributes]
+    attributes = scidb_attributes(x)[attributes]
   if(class(x) %in% c("scidb")) xname = x@name
   query = sprintf("project(%s,%s)", xname,paste(attributes,collapse=","))
   .scidbeval(query, depend=list(x))
@@ -291,7 +291,7 @@ filter_scidb = function(x, expr)
 #' @export
 `index_lookup` = function(x, I, attr, new_attr)
 {
-  if(missing(attr)) attr = x@attributes[[1]]
+  if(missing(attr)) attr = scidb_attributes(x)[[1]]
   if(missing(new_attr)) new_attr=paste(attr,"index",sep="_")
   al = scidb_alias(x,I)
   xname = x
@@ -340,22 +340,22 @@ unique_scidb = function(x, incomparables=FALSE, sort=TRUE, ...)
 {
   mc = list(...)
   if(incomparables!=FALSE) warning("The incomparables option is not available yet.")
-  if(any(x@attributes %in% "i"))
+  if(any(scidb_attributes(x) %in% "i"))
   {
-    new_attrs = x@attributes
-    new_attrs = new_attrs[x@attributes %in% "i"] = make.unique_(x@attributes,"i")
-    x = attribute_rename(x,x@attributes,new_attrs)
+    new_attrs = scidb_attributes(x)
+    new_attrs = new_attrs[scidb_attributes(x) %in% "i"] = make.unique_(scidb_attributes(x),"i")
+    x = attribute_rename(x,scidb_attributes(x),new_attrs)
   }
   got_cu = any(grepl("^cu$", .scidbenv$ops$name))
   if(sort)
   {
     dimname = make.unique_(scidb_attributes(x),"n")
-    if(length(x@attributes)>1)
+    if(length(scidb_attributes(x))>1)
     {
       if(got_cu && scidb_types(x)[[1]] == "string")
-        query = sprintf("uniq(sort(cu(project(%s,%s))))",x@name,x@attributes[[1]])
+        query = sprintf("uniq(sort(cu(project(%s,%s))))",x@name,scidb_attributes(x)[[1]])
       else
-        query = sprintf("uniq(sort(project(%s,%s)))",x@name,x@attributes[[1]])
+        query = sprintf("uniq(sort(project(%s,%s)))",x@name,scidb_attributes(x)[[1]])
     }
     else
     {
@@ -378,16 +378,17 @@ sort_scidb = function(x, decreasing=FALSE, ...)
     warning("na.last option not supported by SciDB sort. Missing values are treated as less than other values by SciDB sort.")
   dflag = ifelse(decreasing, 'desc', 'asc')
 # Check for ridiculous SciDB name conflict problem
-  if(any(x@attributes %in% "n"))
+  if(any(scidb_attributes(x) %in% "n"))
   {
-    new_attrs = x@attributes
-    new_attrs = new_attrs[x@attributes %in% "n"] = make.unique_(x@attributes,"n")
-    x = attribute_rename(x,x@attributes,new_attrs)
+    new_attrs = scidb_attributes(x)
+    new_attrs = new_attrs[scidb_attributes(x) %in% "n"] = make.unique_(scidb_attributes(x), "n")
+    x = attribute_rename(x, scidb_attributes(x), new_attrs)
   }
   if(is.null(mc$attributes))
   {
-    if(length(x@attributes)>1) warning("Array contains more than one attribute, sorting on all of them.\nUse the attributes= option to restrict the sort.")
-    mc$attributes=x@attributes
+    if(length(scidb_attributes(x)) > 1)
+      warning("Array contains more than one attribute, sorting on all of them.\nUse the attributes= option to restrict the sort.")
+    mc$attributes = scidb_attributes(x)
   }
   `eval` = ifelse(is.null(mc$eval), FALSE, mc$eval)
   a = paste(paste(mc$attributes, dflag, sep=" "),collapse=",")
