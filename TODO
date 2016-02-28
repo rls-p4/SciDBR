@@ -1,4 +1,3 @@
-- lazy array metadata evaluation: set logical plan and schema + derived values as promises
 - rebuild tests
 - add back in misc functions
 
@@ -8,4 +7,4 @@ cor  it would be great to introduce a high-level correlation function
 tsvd needs re-integrated with package, doc, test
 kmeans  needs re-integrated, code is there and should work
 
-Also, the FIsher test stuff is in there and documented, but no tests.
+Also, the Fisher test stuff is in there and documented, but no tests.
