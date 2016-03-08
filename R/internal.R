@@ -760,11 +760,11 @@ noE = function(w) sapply(w,
   {
     if(is.infinite(x)) return("*")
     if(is.character(x)) return(x)
-    sprintf("%.0f",x)
+    sprintf("%.0f", x)
   })
 
 # Returns TRUE if version string x is greater than or equal to than version y
-compare_versions = function(x,y)
+compare_versions = function(x, y)
 {
   b = as.numeric(strsplit(as.character(x), "\\.")[[1]])
   a = as.numeric(strsplit(as.character(y), "\\.")[[1]])

@@ -137,7 +137,11 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 # Use the query ID from a query as a unique ID for automated
 # array name generation.
   x = tryCatch(
-        scidbquery(query="setopt('precision','16')", release=1, resp=TRUE, stream=0L),
+        # SciDB setopt operator changed in version 15.12
+        if(compare_versions(options("scidb.version")[[1]],15.12))
+        { 
+          scidbquery(query="_setopt('precision','16')", release=1, resp=TRUE, stream=0L),
+        } else scidbquery(query="setopt('precision','16')", release=1, resp=TRUE, stream=0L),
         error=function(e) stop("Connection error"))
   if(is.null(.scidbenv$uid))
   {
