@@ -312,7 +312,11 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
       }
       ans = tryCatch(
        {
-        sessionid = scidbquery(query, save="csv+:l", release=0)
+        # SciDB save syntax changed in 15.12
+        if(compare_versions(options("scidb.version")[[1]],15.12))
+        { 
+          sessionid = scidbquery(query, save="csv+:l", release=0)
+        } else sessionid = scidbquery(query, save="csv+", release=0)
         dt1 = proc.time()
         result = tryCatch(
           {
