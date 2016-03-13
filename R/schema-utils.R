@@ -82,8 +82,12 @@ scidb_types = function(x)
 #' @export
 scidb_nullable = function(x)
 {
-  a = .attsplitter(x)
-  unlist(lapply(a, function(x) length(strsplit(x[2]," ")[[1]])>1))
+  # SciDB schema syntax changed in 15.12
+  if(compare_versions(options("scidb.version")[[1]],15.12))
+  { 
+    return (! grepl("NOT NULL", scidb:::.attsplitter(x)))
+  }
+  grepl(" NULL", scidb:::.attsplitter(x))
 }
 
 #' SciDB array dimension names
