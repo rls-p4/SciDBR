@@ -7,11 +7,15 @@ Install the package from CRAN with
 install.packages("scidb")
 ```
 
-The current development version of the package can be installed directly from
-sources on  GitHub using the devtools package as follows (requires an R
+The current development version of the package can be installed directly
+from sources on  GitHub using the devtools package as follows (requires an R
 development environment  and the R devtools package):
 ```
-devtools::install_github("Paradigm4/SciDBR")
+devtools::install_github("Paradigm4/SciDBR")  # stable
+
+# or
+
+devtools::install_github("Paradigm4/SciDBR", ref="laboratory")  # experimental
 ```
 
 The SciDB R package requires installation of a simple open-source HTTP network
