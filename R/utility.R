@@ -137,6 +137,13 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
   if(length(v) < 2) v = v(v, "1")
   options(scidb.version=sprintf("%s.%s", v[1], v[2]))
 
+# Update the scidb.version option for older systems (shim version unreliable)
+  if(!compare_versions(options("scidb.version")[[1]], 15.12))
+  {
+    v = iquery("list('libraries')", return=TRUE, binary=FALSE)
+    options(scidb.version=sprintf("%s.%s", v$major[1], v$minor[1]))
+  }
+
 # Use the query ID from a query as a unique ID for automated
 # array name generation.
   x = tryCatch(
