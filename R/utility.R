@@ -93,10 +93,6 @@ is.temp = function(name)
 #' \code{scidbconnect} between operations. Note that \code{scidb} objects are not
 #' valid across different SciDB databases.
 #' 
-#' Use the optional \code{username} and \code{password} arguments to authenticate
-#' the connection with the shim service. PAM-authenticated connections require
-#' an encrypted connection with shim, available by default on port 8083.
-#' 
 #' Use the optional \code{username} and \code{password} arguments with
 #' \code{auth_type} set to "digest" to use HTTP digest authentication (see the
 #' shim documentation to configur this).  Digest authentication may use either
@@ -110,7 +106,7 @@ is.temp = function(name)
 scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
                         port=options("scidb.default_shim_port")[[1]],
                         username, password,
-                        auth_type=c("scidb", "digest"), protocol=c("http", "https"))
+                        auth_type="digest", protocol=c("http", "https"))
 {
   auth_type = match.arg(auth_type)
   protocol = match.arg(protocol)
@@ -133,6 +129,13 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
       assign("digest", paste(username, password, sep=":"), envir=.scidbenv)
     }
   }
+# Update the shim.version option
+  options(shim.version=SGET("/version"))
+
+# Update the scidb.version option
+  v = strsplit(gsub("[A-z\\-]", "", getOption("shim.version")), "\\.")[[1]]
+  if(length(v) < 2) v = v(v, "1")
+  options(scidb.version=sprintf("%s.%s", v[1], v[2]))
 
 # Use the query ID from a query as a unique ID for automated
 # array name generation.
@@ -194,14 +197,6 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
     error=invisible)
 # Save available operators
   assign("ops", iquery("list('operators')", `return`=TRUE, binary=FALSE), envir=.scidbenv)
-# Update the scidb.version option
-  v = scidbls(type="libraries")[1,]
-  if("major" %in% names(v))
-  {
-    options(scidb.version=paste(v$major, v$minor, sep="."))
-  }
-# Update the shim.version option
-  options(shim.version=SGET("/version"))
 
   invisible()
 }
@@ -317,7 +312,7 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
       }
       ans = tryCatch(
        {
-        sessionid = scidbquery(query, save="csv+", release=0)
+        sessionid = scidbquery(query, save="csv+:l", release=0)
         dt1 = proc.time()
         result = tryCatch(
           {
@@ -336,7 +331,7 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
         result = gsub("\\\\'","''", result, perl=TRUE)
         result = gsub("\\\\\"","''", result, perl=TRUE)
 # Map SciDB missing (aka null) to NA, but preserve DEFAULT null.
-# This sucks, need to avoid this parsing and move on to binary xfer.
+# This sucky parsing is not a problem for binary transfers.
         result = gsub("DEFAULT null","@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", result, perl=TRUE)
         result = gsub("null","NA", result, perl=TRUE)
         result = gsub("@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo","DEFAULT null", result, perl=TRUE)

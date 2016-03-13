@@ -11,8 +11,8 @@ output:
     mathjax: null
     css: style.css
 vignette: >
-  %\VignetteIndexEntry{scidb}
-  %\VignetteEngine{knitr::rmarkdown}
+  \VignetteIndexEntry{scidb}
+  \VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
 
