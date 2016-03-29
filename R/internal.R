@@ -66,10 +66,10 @@ scidb_unpack_to_dataframe = function(query, ...)
   format_string = paste(paste(TYPES, ns), collapse=",")
   format_string = sprintf("(%s)", format_string)
   sessionid = scidbquery(x@name, save=format_string, release=0)
-  on.exit( SGET("/release_session",list(id=sessionid), err=FALSE) ,add=TRUE)
+  on.exit( SGET("/release_session", list(id=sessionid), err=FALSE), add=TRUE)
 
   dt2 = proc.time()
-  uri = URI("/read_bytes",list(id=sessionid,n=0))
+  uri = URI("/read_bytes", list(id=sessionid, n=0))
   h = new_handle()
   handle_setheaders(h, .list=list(`Authorization`=digest_auth("GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
@@ -79,12 +79,12 @@ scidb_unpack_to_dataframe = function(query, ...)
 # Explicitly reap the handle to avoid short-term build up of socket descriptors
   rm(h)
   gc()
-  if(DEBUG) cat("Data transfer time",(proc.time()-dt2)[3],"\n")
+  if(DEBUG) cat("Data transfer time", (proc.time() - dt2)[3],"\n")
   dt1 = proc.time()
   len = length(resp$content)
   p = 0
   ans = c()
-  cnames = c(scidb_attributes(x),"lines","p")  # we are unpacking to a SciDB array, ignore dims
+  cnames = c(scidb_attributes(x), "lines", "p")  # we are unpacking to a SciDB array, ignore dims
   n = length(scidb_attributes(x))
   rnames = c()
   if(projected) n = length(args$project)
@@ -106,10 +106,10 @@ scidb_unpack_to_dataframe = function(query, ...)
         return(lapply(1:n, function(j) tmp[[j]][1:lines]))
       }
       len_out = length(tmp[[1]])
-      if(lines < len_out) tmp = lapply(tmp[1:n],function(x) x[1:lines])
+      if(lines < len_out) tmp = lapply(tmp[1:n], function(x) x[1:lines])
 # Let's adaptively re-estimate a buffer size
-      avg_bytes_per_line = ceiling((p - p_old)/lines)
-      buffer = min(1e7, ceiling(1.3*(len - p)/avg_bytes_per_line)) # Engineering factors
+      avg_bytes_per_line = ceiling((p - p_old) / lines)
+      buffer = min(1e7, ceiling(1.3*(len - p) / avg_bytes_per_line)) # Engineering factors
 # Assemble the data frame
       if(is.null(ans)) ans = data.frame(tmp[1:n], stringsAsFactors=FALSE)
       else ans = rbind(ans, data.frame(tmp[1:n], stringsAsFactors=FALSE))
@@ -123,14 +123,6 @@ scidb_unpack_to_dataframe = function(query, ...)
     names(ans) = c(dimensions(x), scidb_attributes(x))
     class(ans) = "data.frame"
     return(ans)
-  }
-  n = ncol(ans)
-# reorder so that dimensions appear to the left
-  if(n > 0 && aio)
-  {
-    na = 1:(n - ndim)
-    nd = (n - ndim + 1):n
-    ans = ans[, c(nd, na)]
   }
   if(DEBUG) cat("Total R parsing time",(proc.time()-dt1)[3],"\n")
   ans
