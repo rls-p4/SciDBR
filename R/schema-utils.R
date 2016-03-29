@@ -3,7 +3,6 @@
 # <attribute_1:type_1 NULL DEFAULT VALUE, attribute_2:type_2, ...>
 # [dimension_1=start:end,chunksize,overlap, dimension_2=start:end,chunksize,overlap, ...]
 
-# utility
 .dimsplitter = function(x)
 {
   if(is.character(x)) s = x
