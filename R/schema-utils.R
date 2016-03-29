@@ -204,6 +204,7 @@ scidb_from_schemastring = function(s, expr=character())
               gc=new.env())
   obj@meta$schema = gsub("^.*<","<",s,perl=TRUE)
   obj@meta$logical_plan = ""
+  obj
 }
 
 # Build the attribute part of a SciDB array schema from a scidb, scidb object.
