@@ -25,7 +25,7 @@ if(nchar(host)>0)
   check( nrow(xgrid(regrid(x, 10, "avg(Petal_Length) as Petal_Length"), 10, "max(Petal_Length)")),
          150)
 
-# issue 21
+# issue 81
   x = scidb_from_schemastring("<v:double>[i=1:2,1,0],1")
   check(is.scidb(x), TRUE)
 }
