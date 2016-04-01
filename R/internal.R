@@ -285,7 +285,7 @@ rewrite_subset_expression = function(expr, sci)
     }
     attr(s,"what") = "element"
     if("character" %in% class(x)) attr(s,"what") = "character"
-    if(nchar(gsub("null", "", gsub("[0-9 \\-\\.]+", "", s), ignore.case=TRUE)) == 0)
+    if(nchar(gsub("null", "", gsub("[0-9 -\\.]+", "", s), ignore.case=TRUE)) == 0)
       attr(s,"what") = "scalar"
     if(any(dims %in% gsub(" ", "", s)) && nchar(gsub("[&(<>=) ]*", "", op)) == 0)
     {
