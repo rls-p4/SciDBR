@@ -249,7 +249,11 @@ rewrite_subset_expression = function(expr, sci)
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
 
-  .toList = makeCodeWalker(call=function(e, w) lapply(e, walkCode, w),
+  .toList = makeCodeWalker(call=function(e, w)
+                                {
+                                  tryCatch(eval(e),
+                                    error=function(err) lapply(e, walkCode, w))
+                                },
                            leaf=function(e, w) e)
 
 # Walk the ast for R expression x, annotating elements with identifying
@@ -277,8 +281,8 @@ rewrite_subset_expression = function(expr, sci)
         test = test[!grepl("condition", lapply(test, class))]
         if(length(test) > 0)
         {
-          if(DEBUG) cat("Replacing symbol", s, "with")
-          s = tryCatch(as.character(test[[length(test)]]), error=function(e) s)
+          if(DEBUG) cat("Replacing symbol", s, "with ")
+          s = tryCatch(noE(test[[length(test)]]), error=function(e) s)
           if(DEBUG) cat(s, "\n")
         }
       }
@@ -365,7 +369,7 @@ rewrite_subset_expression = function(expr, sci)
       x2 = pmin(x2,y2)
       c(x1, x2)
     }, b, init=template)
-    b = gsub("Inf", "null", gsub("-Inf", "null", as.character(b)))
+    b = gsub("Inf", "null", gsub("-Inf", "null", sprintf("%.0f",b)))
     ans = gsub("and true", "", paste(ans, collapse=" "))
     if(nchar(gsub(" ", "", ans)) == 0 || gsub(" ", "", ans) == "true")
       return(sprintf("between(%s,%s)", sci@name,paste(b, collapse=",")))
