@@ -436,10 +436,10 @@ create_temp_array = function(name, schema)
 # This is a fix for a SciDB issue that can unexpectedly change schema
 # bounds. And another fix to allow unexpected dimname and attribute name
 # changes. Arrgh.
-    if(schema != "" && !compare_schema(ans, schema, ignore_attributes=TRUE, ignore_dimnames=TRUE))
-    {
-      ans = repart(ans, schema)
-    }
+#    if(schema != "" && !compare_schema(ans, schema, ignore_attributes=TRUE, ignore_dimnames=TRUE))
+#    {
+#      ans = repart(ans, schema)
+#    }
   } else
   {
     ans = scidb(expr, gc=gc)
