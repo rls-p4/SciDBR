@@ -9,7 +9,7 @@
 \arguments{
 \item{_data}{SciDB array}
 
-\item{...}{named transformations, NOTE that SciDB expressions must be quoted (see example)}
+\item{...}{named transformations}
 }
 \value{
 a SciDB array
@@ -20,14 +20,18 @@ replace an existing attribute. New attribute names must not conflict with array
 dimension names.
 }
 \note{
-The \code{transform} function at this time only supports quoted SciDB expressions.
-A future version may also support more general mixed R/SciDB expressions similarly to
-\code{\link{subset}}.
+Expressions that can't be evaluated in R are passed to SciDB as is. Explicitly
+quote expressions to guarantee that they will be evaluated only by SciDB.
 }
 \examples{
 \dontrun{
 x <- scidb("build(<v:double>[i=1:5,5,0], i)")
-y <- transform(x, a="2*v", v="3*v")
+transform(x, a="2 * v")@name
+# Note replacement in this example:
+transform(x, v="3 * v")@name
+# Illustration of quoting expressions to force them to evaluate in SciDB:
+v <- pi  # local R assignment of variable 'v'
+transform(x, b=sin(v), c="sin(v)")@name
 }
 }
 
