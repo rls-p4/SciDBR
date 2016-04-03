@@ -429,10 +429,17 @@ create_temp_array = function(name, schema)
       if(temp) create_temp_array(newarray, schema)
     }
     else newarray = name
-    query = sprintf("store(%s, %s)", expr, newarray)
+    query = sprintf("store(%s,%s)", expr, newarray)
     scidbquery(query, stream=0L)
     ans = scidb(newarray, gc=gc)
     if(temp) ans@gc$temp = TRUE
+# This is a fix for a SciDB issue that can unexpectedly change schema
+# bounds. And another fix to allow unexpected dimname and attribute name
+# changes. Arrgh.
+    if(schema != "" && !compare_schema(ans, schema, ignore_attributes=TRUE, ignore_dimnames=TRUE))
+    {
+      ans = repart(ans, schema)
+    }
   } else
   {
     ans = scidb(expr, gc=gc)
