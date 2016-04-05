@@ -282,13 +282,17 @@ rewrite_subset_expression = function(expr, sci)
         if(length(test) > 0)
         {
           if(DEBUG) cat("Replacing symbol", s, "with ")
-          s = tryCatch(noE(test[[length(test)]]), error=function(e) s)
+          s = tryCatch(noE(test[[1]]), error=function(e) s)
           if(DEBUG) cat(s, "\n")
         }
       }
     }
     attr(s,"what") = "element"
-    if("character" %in% class(x)) attr(s,"what") = "character"
+    if("character" %in% class(x))
+    {
+      s = sprintf("'%s'", s)
+      attr(s,"what") = "character"
+    }
     if(nchar(gsub("null", "", gsub("[0-9 -\\.]+", "", s), ignore.case=TRUE)) == 0)
       attr(s,"what") = "scalar"
     if(any(dims %in% gsub(" ", "", s)) && nchar(gsub("[&(<>=) ]*", "", op)) == 0)
