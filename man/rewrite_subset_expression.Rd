@@ -4,12 +4,14 @@
 \alias{rewrite_subset_expression}
 \title{Nightmarish internal function that converts R expressions to SciDB expressions}
 \usage{
-rewrite_subset_expression(expr, sci)
+rewrite_subset_expression(expr, sci, frame)
 }
 \arguments{
 \item{expr}{an R 'language' type object to parse}
 
 \item{sci}{a SciDB array}
+
+\item{frame}{to evaluate expression for replacement values}
 }
 \value{
 character-valued SciDB expression

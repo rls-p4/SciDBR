@@ -34,7 +34,9 @@ Simple R scalars and constants may be used in R expressions and they will
 be translated appropriately in the generated SciDB query. More complex
 R objects like functions can't be used, however, because the logical
 expressions are ultimately evaluated by SciDB. Dimension values are
-treated as integer values.
+treated as integer values. Values are evaulated using R dynamic scoping/
+nonstandard evaluation (NSE). Quote the entire expression to avoid NSE
+and force the expression to be evaluated verbatim in SciDB.
 
 Explicit grouping by parenthesis may be required to generate most
 optimal queries when attribute and dimension conditions are mixed together
