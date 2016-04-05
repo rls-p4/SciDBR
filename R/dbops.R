@@ -235,7 +235,9 @@ project = function(x, attributes)
 #' @param x \code{scidb} array object
 #' @param expr Either a quoted SciDB filter expression, or an R expression involving array attributes and dimensions
 #' @note The \code{expr} value can include scalar R values, but not more complicated expressions since the expression
-#' is evaluated on the server inside SciDB (not R). Scalar R values are translated to constants in the SciDB expression.
+#' is evaluated on the server inside SciDB (not R). Scalar R values are translated to constants in the SciDB expression
+#' using R dynamic scoping/nonstandard evaluation (NSE). Quote full expressions to avoid NSE and force evaluation of
+#' the quoted expression in SciDB.
 #' @return a new \code{scidb} array object
 #' @keywords internal
 filter_scidb = function(x, expr)
@@ -254,7 +256,7 @@ filter_scidb = function(x, expr)
     query = sprintf("filter(%s,%s)", xname,expr)
   } else
   {
-    query = rewrite_subset_expression(substitute(expr), x)
+    query = rewrite_subset_expression(substitute(expr), x, parent.frame(2))
   }
   .scidbeval(query, depend=list(x))
 }
@@ -536,7 +538,9 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 #' be translated appropriately in the generated SciDB query. More complex
 #' R objects like functions can't be used, however, because the logical
 #' expressions are ultimately evaluated by SciDB. Dimension values are
-#' treated as integer values.
+#' treated as integer values. Values are evaulated using R dynamic scoping/
+#' nonstandard evaluation (NSE). Quote the entire expression to avoid NSE
+#' and force the expression to be evaluated verbatim in SciDB.
 #'
 #' Explicit grouping by parenthesis may be required to generate most
 #' optimal queries when attribute and dimension conditions are mixed together

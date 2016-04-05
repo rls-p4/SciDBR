@@ -238,10 +238,11 @@ oldURLencode = function (URL, reserved = FALSE)
 #' Nightmarish internal function that converts R expressions to SciDB expressions
 #' @param expr an R 'language' type object to parse
 #' @param sci a SciDB array 
+#' @param frame to evaluate expression for replacement values
 #' @keywords internal
 #' @return character-valued SciDB expression
 #' @importFrom codetools makeCodeWalker walkCode
-rewrite_subset_expression = function(expr, sci)
+rewrite_subset_expression = function(expr, sci, frame)
 {
   dims = dimensions(sci)
   n = length(dims)
@@ -261,21 +262,18 @@ rewrite_subset_expression = function(expr, sci)
 # Substitute evaluated R scalars for variables where possible (but not more
 # complext R expressions).  The output is a list that can be parsed by the
 # `.compose_r` function below.
-  .annotate = function(x, dims=NULL, attr=NULL, frames, op="")
+  .annotate = function(x, dims=NULL, attr=NULL, op="")
   {
     if(is.list(x))
     {
       if(length(x) > 1) op = c(op,as.character(x[[1]]))
-      return(lapply(x, .annotate, dims, attr, frames, op))
+      return(lapply(x, .annotate, dims, attr, op))
     }
     op = paste(op,collapse="")
     s = as.character(x)
     if(!(s %in% c(dims,attr, ">", "<", "!", "|", "=", "&", "||", "&&", "!=", "==", "<=", ">=")))
     {
-      test = lapply(c(globalenv(), frames), function(f)  # perhaps overkill
-      {
-        tryCatch(eval(x, f), error=function(e) e)
-      })
+      test = tryCatch(eval(x, frame), error=function(e) e)
       if(length(test) > 0)
       {
         test = test[!grepl("condition", lapply(test, class))]
@@ -290,7 +288,7 @@ rewrite_subset_expression = function(expr, sci)
     attr(s,"what") = "element"
     if("character" %in% class(x))
     {
-      s = sprintf("'%s'", s)
+#      s = sprintf("'%s'", s)
       attr(s,"what") = "character"
     }
     if(nchar(gsub("null", "", gsub("[0-9 -\\.]+", "", s), ignore.case=TRUE)) == 0)
@@ -346,7 +344,7 @@ rewrite_subset_expression = function(expr, sci)
     as.character(x)
   }
 
-  ans = .compose_r(.annotate(walkCode(expr, .toList), dims=dims, attr=scidb_attributes(sci), frames=sys.frames()))
+  ans = .compose_r(.annotate(walkCode(expr, .toList), dims=dims, attr=scidb_attributes(sci)))
   i   = grepl("::",ans)
   ans = gsub("==", "=", gsub("!", "not", gsub("\\|", "or", gsub("\\|\\|", "or",
           gsub("&", "and", gsub("&&", "and", gsub("!=", "<>", ans)))))))
