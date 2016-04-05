@@ -285,14 +285,13 @@ rewrite_subset_expression = function(expr, sci, frame)
         }
       }
     }
-    attr(s,"what") = "element"
-    if("character" %in% class(x))
+    attr(s, "what") = "element"
+    if(is.character(x))
     {
-#      s = sprintf("'%s'", s)
-      attr(s,"what") = "character"
+      attr(s, "what") = "character"
     }
-    if(nchar(gsub("null", "", gsub("[0-9 -\\.]+", "", s), ignore.case=TRUE)) == 0)
-      attr(s,"what") = "scalar"
+    if(nchar(gsub("null", "", gsub("[0-9 -\\.]+", "", s, perl=TRUE), ignore.case=TRUE)) == 0)
+      attr(s, "what") = "scalar"
     if(any(dims %in% gsub(" ", "", s)) && nchar(gsub("[&(<>=) ]*", "", op)) == 0)
     {
       attr(s, "what") = "dimension"
