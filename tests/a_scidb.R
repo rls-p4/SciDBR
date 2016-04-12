@@ -122,8 +122,10 @@ if(nchar(host) > 0)
   y = scidb("_1")
   subset(y, population=="SAS")@name
   scidbrm(c("_", "_1"), force=TRUE)
-}
 
 # issue 88
-x = scidb("build(<val:double> [i=1:1,1,0, n=1:1,1,0], random())")
-check(nchar((subset(x, i < 5))@name), nchar((subset(x, n < 5))@name))
+  rm(list=c("i", "n"))
+  x = scidb("build(<val:double> [i=1:1,1,0, n=1:1,1,0], random())")
+  check(nchar((subset(x, i < 5))@name), nchar((subset(x, n < 5))@name))
+}
+

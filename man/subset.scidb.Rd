@@ -35,8 +35,10 @@ be translated appropriately in the generated SciDB query. More complex
 R objects like functions can't be used, however, because the logical
 expressions are ultimately evaluated by SciDB. Dimension values are
 treated as integer values. Values are evaulated using R dynamic scoping/
-nonstandard evaluation (NSE). Quote the entire expression to avoid NSE
-and force the expression to be evaluated verbatim in SciDB.
+nonstandard evaluation (NSE). Values are evaluated in the enclosing R environments
+first, then among the names of SciDB attributes and dimensions. Quote the entire
+expression to avoid NSE
+and force the expression to be evaluated verbatim in SciDB (see examples).
 
 Explicit grouping by parenthesis may be required to generate most
 optimal queries when attribute and dimension conditions are mixed together

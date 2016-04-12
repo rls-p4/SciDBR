@@ -84,9 +84,9 @@ scidb_nullable = function(x)
   # SciDB schema syntax changed in 15.12
   if(compare_versions(options("scidb.version")[[1]],15.12))
   { 
-    return (! grepl("NOT NULL", scidb:::.attsplitter(x)))
+    return (! grepl("NOT NULL", .attsplitter(x)))
   }
-  grepl(" NULL", scidb:::.attsplitter(x))
+  grepl(" NULL", .attsplitter(x))
 }
 
 #' SciDB array dimension names

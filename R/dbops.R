@@ -237,7 +237,7 @@ project = function(x, attributes)
 #' @note The \code{expr} value can include scalar R values, but not more complicated expressions since the expression
 #' is evaluated on the server inside SciDB (not R). Scalar R values are translated to constants in the SciDB expression
 #' using R dynamic scoping/nonstandard evaluation (NSE). Quote full expressions to avoid NSE and force evaluation of
-#' the quoted expression in SciDB.
+#' the quoted expression in SciDB (see examples).
 #' @return a new \code{scidb} array object
 #' @keywords internal
 filter_scidb = function(x, expr)
@@ -539,8 +539,10 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 #' R objects like functions can't be used, however, because the logical
 #' expressions are ultimately evaluated by SciDB. Dimension values are
 #' treated as integer values. Values are evaulated using R dynamic scoping/
-#' nonstandard evaluation (NSE). Quote the entire expression to avoid NSE
-#' and force the expression to be evaluated verbatim in SciDB.
+#' nonstandard evaluation (NSE). Values are evaluated in the enclosing R environments
+#' first, then among the names of SciDB attributes and dimensions. Quote the entire
+#' expression to avoid NSE
+#' and force the expression to be evaluated verbatim in SciDB (see examples).
 #'
 #' Explicit grouping by parenthesis may be required to generate most
 #' optimal queries when attribute and dimension conditions are mixed together

@@ -16,7 +16,7 @@ if(nchar(host)>0)
 # Upload/download binary blobs
   data("iris")
   x = as.scidb(serialize(iris, NULL))
-  y = unserialize(x[][[1]][[1]])
+  y = unserialize(x[][[2]][[1]])
   stopifnot(isTRUE(all.equal(iris, y)))
 
 # Misc.
