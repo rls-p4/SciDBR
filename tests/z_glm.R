@@ -1,5 +1,6 @@
 # glm tests
 
+library(scidb)
 check = function(a,b)
 {
   print(match.call())
@@ -9,6 +10,7 @@ check = function(a,b)
 host = Sys.getenv("SCIDB_TEST_HOST")
 if(nchar(host)>0)
 {
+  scidbconnect(host)
   set.seed(1)
   x = as.scidb(matrix(rnorm(5000*20),nrow=5000))
   y = as.scidb(rnorm(5000))
