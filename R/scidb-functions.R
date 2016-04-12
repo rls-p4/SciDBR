@@ -110,7 +110,6 @@ dimnames.scidb = function(x)
 }
 
 #' @export
-#' @S3method dim scidb
 `dim.scidb` = function(x)
 {
   ans = c(prod(as.numeric(scidb_coordinate_bounds(x)$length)), length(dimensions(x)) + length(scidb_attributes(x)))

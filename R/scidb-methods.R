@@ -281,6 +281,8 @@ setGeneric("glm")
 #'          be used in the model, supplied as the result of a call to
 #'          a family function
 #' @param factors a list of factor encodings to use in the model matrix (see details)
+#' @param intercept set to \code{TRUE} to include an intercept term in the model matrix
+#' computed by \code{model_scidb}
 #' @return The \code{glm.fit} and \code{glm} functions return
 #' a list of model output values described below. The \code{glm}
 #' functions uses an S3 class to implement printing \code{summary}, and \code{predict} methods.

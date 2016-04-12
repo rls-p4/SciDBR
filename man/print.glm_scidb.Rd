@@ -7,9 +7,9 @@
 print.glm_scidb(x, ...)
 }
 \arguments{
-\item{...}{other arguments to \code{summary}}
+\item{x}{\code{glm_scidb} model object}
 
-\item{object}{\code{glm_scidb} model object}
+\item{...}{other arguments to \code{summary}}
 }
 \value{
 Character summary of the model object is printed to standard output

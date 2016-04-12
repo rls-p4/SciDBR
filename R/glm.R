@@ -109,7 +109,7 @@ glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
 #' Summary print method for SciDB GLM
 #'
 #' Print a summary of a SciDB GLM object.
-#' @param object \code{glm_scidb} model object
+#' @param x \code{glm_scidb} model object
 #' @param ... other arguments to \code{summary}
 #' @return Character summary of the model object is printed to standard output
 #' @seealso \code{\link{summary.glm}}
@@ -140,7 +140,6 @@ print.glm_scidb = function(x, ...)
 #' @return Character summary of the model object is printed to standard output and \code{NULL} is returned.
 #' @seealso \code{\link{summary.glm}}
 #' @importFrom stats summary.glm
-#' @export
 summary.glm_scidb = function(object, ...)
 {
   x = object

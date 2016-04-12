@@ -35,8 +35,8 @@ scidb = function(name, gc=FALSE)
   obj@gc = new.env()
   obj@meta = new.env()
   delayedAssign("state", lazyeval(name), assign.env=obj@meta)
-  delayedAssign("schema", state$schema, eval.env=obj@meta, assign.env=obj@meta)
-  delayedAssign("logical_plan", state$logical_plan, eval.env=obj@meta, assign.env=obj@meta)
+  delayedAssign("schema", get("state")$schema, eval.env=obj@meta, assign.env=obj@meta)
+  delayedAssign("logical_plan", get("state")$logical_plan, eval.env=obj@meta, assign.env=obj@meta)
 
   if(gc)
   {

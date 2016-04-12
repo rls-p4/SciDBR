@@ -35,6 +35,9 @@ fitting process.  Should be \code{NULL} or a numeric or scidb vector.}
 \item{x}{a model matrix of dimension \code{n * p}}
 
 \item{y}{a response vector of length \code{n}}
+
+\item{intercept}{set to \code{TRUE} to include an intercept term in the model matrix
+computed by \code{model_scidb}}
 }
 \value{
 The \code{glm.fit} and \code{glm} functions return
