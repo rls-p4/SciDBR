@@ -252,7 +252,7 @@ rewrite_subset_expression = function(expr, sci, frame)
 
   .toList = makeCodeWalker(call=function(e, w)
                                 {
-                                  tryCatch(eval(e),
+                                  tryCatch(eval(e, frame),
                                     error=function(err) lapply(e, walkCode, w))
                                 },
                            leaf=function(e, w) e)
