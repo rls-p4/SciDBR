@@ -35,6 +35,7 @@ scidbcc = function(x)
 #' @param ... optional extra arguments
 #' @keywords internal
 #' @importFrom curl new_handle handle_setheaders handle_setopt curl_fetch_memory handle_setform form_file
+#' @importFrom data.table  data.table
 scidb_unpack_to_dataframe = function(query, ...)
 {
   DEBUG = FALSE
@@ -98,7 +99,7 @@ scidb_unpack_to_dataframe = function(query, ...)
     p     = tmp[[n+2]]
     if(DEBUG) cat("  R buffer ",p,"/",len," bytes parsing time",(proc.time() - dt2)[3],"\n")
     dt2 = proc.time()
-    if(lines>0)
+    if(lines > 0)
     {
       if("binary" %in% TYPES)
       {
@@ -107,14 +108,14 @@ scidb_unpack_to_dataframe = function(query, ...)
       }
       len_out = length(tmp[[1]])
       if(lines < len_out) tmp = lapply(tmp[1:n], function(x) x[1:lines])
-# Let's adaptively re-estimate a buffer size
+# adaptively re-estimate a buffer size
       avg_bytes_per_line = ceiling((p - p_old) / lines)
-      buffer = min(1e7, ceiling(1.3*(len - p) / avg_bytes_per_line)) # Engineering factors
+      buffer = min(1e8, ceiling(1.3 * (len - p) / avg_bytes_per_line)) # Engineering factors
 # Assemble the data frame
-      if(is.null(ans)) ans = data.frame(tmp[1:n], stringsAsFactors=FALSE)
-      else ans = rbind(ans, data.frame(tmp[1:n], stringsAsFactors=FALSE))
+      if(is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE))
+      else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE)))
     }
-    if(DEBUG) cat("  R rbind/df assembly time",(proc.time() - dt2)[3],"\n")
+    if(DEBUG) cat("  R rbind/df assembly time",(proc.time() - dt2)[3], "\n")
   }
   if(is.null(ans))
   {
@@ -124,8 +125,8 @@ scidb_unpack_to_dataframe = function(query, ...)
     class(ans) = "data.frame"
     return(ans)
   }
-  if(DEBUG) cat("Total R parsing time",(proc.time()-dt1)[3],"\n")
-  ans
+  if(DEBUG) cat("Total R parsing time",(proc.time() - dt1)[3], "\n")
+  as.data.frame(ans)
 }
 
 #' Convenience function for digest authentication.

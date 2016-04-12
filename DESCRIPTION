@@ -17,6 +17,7 @@ Depends:
 Imports:
     methods,
     Matrix,
+    data.table,
     stats,
     graphics,
     digest,
