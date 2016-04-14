@@ -18,6 +18,8 @@ NULL
 # Default shim port and host.
   options(scidb.default_shim_port=8080L)
   options(scidb.default_shim_host="localhost")
+# Binary data parser buffer size
+  options(scidb.buffer_size = 5e7)
 # How to download arrays and their coordinates. Set scidb.unpack=FALSE
 # to use apply, which can be faster in some cases when used with aio.
   options(scidb.unpack=TRUE)
@@ -41,6 +43,7 @@ NULL
 .onUnload = function(libpath)
 {
   options(scidb.version=c())
+  options(scidb.buffer_size=c())
   options(scidb.safe_remove=c())
   options(scidb.default_shim_port=c())
   options(scidb.default_shim_host=c())

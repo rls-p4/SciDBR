@@ -110,7 +110,7 @@ scidb_unpack_to_dataframe = function(query, ...)
       if(lines < len_out) tmp = lapply(tmp[1:n], function(x) x[1:lines])
 # adaptively re-estimate a buffer size
       avg_bytes_per_line = ceiling((p - p_old) / lines)
-      buffer = min(1e8, ceiling(1.3 * (len - p) / avg_bytes_per_line)) # Engineering factors
+      buffer = min(getOption("scidb.buffer_size"), ceiling(1.3 * (len - p) / avg_bytes_per_line)) # Engineering factors
 # Assemble the data frame
       if(is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE))
       else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE)))
@@ -126,7 +126,9 @@ scidb_unpack_to_dataframe = function(query, ...)
     return(ans)
   }
   if(DEBUG) cat("Total R parsing time",(proc.time() - dt1)[3], "\n")
-  as.data.frame(ans)
+  ans = as.data.frame(ans)
+  gc()
+  ans
 }
 
 #' Convenience function for digest authentication.
