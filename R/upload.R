@@ -156,36 +156,6 @@ fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), c
   invisible()
 }
 
-#' Cache data in a SciDB server-side file
-#'
-#' @param x a raw R binary value
-#' @param name optional key name
-#' @param host optional SciDB shim host IP address or name
-#' @param port optional SciDB shim port number
-#' @param protocol optional SciDB shim protocol (http or https)
-#' @return A character URL that may be used to retrieve the data.
-#' @seealso GET_RAW
-#' @examples
-#' \dontrun{
-#' scidbconnect()
-#' a <- cache(serialize(head(iris), NULL))
-#' print(a)
-#' unserialize(GET_RAW(a))
-#'
-#' # Use a specified key, including a directory name
-#' b <- cache(serialize(head(cars), NULL), "test/cars")
-#' print(b)
-#' unserialize(GET_RAW(b))
-#' }
-#' @export
-cache = function(x, name, host=.scidbenv$host, port=.scidbenv$port, protocol=.scidbenv$protocol)
-{
-  if(!is.raw(x)) stop("x must be a raw value")
-  if(missing(name)) ans = CACHE(x, list(sync=0))
-  else ans = CACHE(x, list(sync=0, name=name))
-  sprintf("%s://%s:%s/uncache?name=%s", protocol, host, port, ans)
-}
-
 
 
 .Matrix2scidb = function(X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0,0), gc=TRUE, ...)
