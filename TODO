@@ -1,5 +1,6 @@
 - rebuild tests
 - add back in misc functions
+- add Alex's functions
 
 hist is broken (the SciDB query no longer works in 15.7), needs fixed.
 dist is not exposed yet (code is there, untested)
