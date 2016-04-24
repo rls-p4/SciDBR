@@ -1,3 +1,96 @@
+#' SciDB grouped aggregate operator
+#'
+#' Apply a function to a SciDB array grouped by an array attribute or dimension.
+#' @param scidb_array either a character name of a stored array or a \code{scidb} array object
+#' @param by a list or character vector of array dimension and/or attribute names to group by
+#' @param FUN a valid SciDB aggregation function (expressed as a character string)
+#' @return A \code{scidb} array reference object
+#' @export
+grouped_aggregate = function(scidb_array, by, FUN)
+{
+  if (class(scidb_array) == "character") 
+  {
+    scidb_array = scidb(scidb_array)
+  }
+  if (!(class(scidb_array) %in% c("scidb", "scidbdf")))
+  {
+    stop("Invalid SciDB object")
+  }
+  if(missing(`by`))
+  {
+    stop("Must specify attributes or dimensions to aggregate by")
+  }
+  if(!is.list(`by`))
+  {
+    `by`=list(`by`)
+  }
+  if(missing(FUN))
+  {
+    stop("Must specify aggregation function")
+  }
+  scidb_array = scidb(sprintf("grouped_aggregate(%s, %s, %s)",
+                              scidb_array@name,
+                              FUN,
+                              paste(by, collapse=", ")
+  ))
+  scidb_array
+}
+
+#' Fast SciDB way to find unique elements
+#'
+#' A fast SciDB function for finding the unique elements among a set of attributes
+#' in a SciDB array. This function uses the SciDB \code{\link{grouped_aggregate}} function.
+#' @param scidb_array a \code{scidb} array reference object, or a character string naming a stored SciDB array
+#' @param attributes a list or character vector of SciDB array attributes
+#' @export
+unordered_uniq = function(scidb_array, attributes)
+{
+  result = grouped_aggregate(scidb_array, by=attributes, FUN="count(*)")
+  result = unpack(result)
+  project(result, attributes)
+}
+
+#' SciDB dense matrix multiply
+#' @param X a \code{scidb} array object
+#' @param Y a \code{scidb} array object
+#' @param Z (optional) \code{scidb} array object
+#' @return a \code{scidb} array object corresponding to \code{X \%*\% Y + Z}
+#' @export
+gemm = function(X, Y, Z)
+{
+  if(missing(Z))
+  {
+    Z = scidb(sprintf("build(<val:double> [x=%s:%s,%s,0, y=%s:%s,%s,0], 0)", 
+                      scidb_coordinate_start(X)[1],
+                      scidb_coordinate_end(X)[1],
+                      scidb_coordinate_chunksize(X)[1],
+                      scidb_coordinate_start(Y)[2],
+                      scidb_coordinate_end(Y)[2],
+                      scidb_coordinate_chunksize(Y)[2]
+    ))
+  }
+  result = scidb(sprintf("gemm(%s, %s, %s)", X@name, Y@name, Z@name))
+  return(result)
+}
+
+#' SciDB dense matrix SVD
+#' @param X a \code{scidb} array object
+#' @param type a character vector either "left", "values" or "right" to return the
+#' left singular vectors, singular values, or right singular vectors, respectively.
+#' @return a \code{scidb} reference object containing the computed result
+#' @export
+gesvd = function(X, type=c("left", "values", "right"))
+{
+  type = match.arg(type)
+  scidb(sprintf("gesvd(%s, '%s')", X@name, type))
+}
+
+transpose = function(X)
+{
+  result = scidb(sprintf("transpose(%s)", X@name))
+  return(result)
+}
+
 
 #' Head-like SciDB array inspection
 #'

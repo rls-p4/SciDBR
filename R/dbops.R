@@ -566,12 +566,10 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 #' # an attribute. Note the difference in the generated queries:
 #'
 #' y <- subset(x, "Species = 'setosa' and row > 40")
-#' y@@name
 #' # [1] "filter(R_array5494563bc4e1101849601199,Species = 'setosa' and row > 40)"
 #'
 #' i <- 40
 #' z <- subset(x, Species == 'setosa' & row > i)
-#' z@@name
 #' # [1] "filter(between(R_array5494563bc4e1101849601199,41,null),Species = 'setosa' )"
 #'
 #' # Important things to note:
@@ -597,12 +595,12 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 #' @examples
 #' \dontrun{
 #' x <- scidb("build(<v:double>[i=1:5,5,0], i)")
-#' transform(x, a="2 * v")@name
+#' transform(x, a="2 * v")
 #' # Note replacement in this example:
-#' transform(x, v="3 * v")@name
+#' transform(x, v="3 * v")
 #' # Illustration of quoting expressions to force them to evaluate in SciDB:
 #' v <- pi  # local R assignment of variable 'v'
-#' transform(x, b=sin(v), c="sin(v)")@name
+#' transform(x, b=sin(v), c="sin(v)")
 #' }
 #' @export
 `transform.scidb` = function(`_data`, ...)
