@@ -102,7 +102,7 @@ is.temp = function(name)
 #' Disconnection is automatically handled by the package.
 #' @return \code{NULL} is returned invisibly; this function is used for its
 #' side effect.
-#' importFrom digest digest
+#' @importFrom digest digest
 #' @export
 scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
                         port=options("scidb.default_shim_port")[[1]],

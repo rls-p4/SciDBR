@@ -26,7 +26,6 @@ scidbconnect(host = options("scidb.default_shim_host")[[1]],
 \value{
 \code{NULL} is returned invisibly; this function is used for its
 side effect.
-importFrom digest digest
 }
 \description{
 Connect to a SciDB database
