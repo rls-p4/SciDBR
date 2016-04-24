@@ -592,20 +592,6 @@ POST = function(data, args=list(), err=TRUE)
   return(rawToChar(ans$content))
 }
 
-CACHE = function(data, args=list(), err=TRUE)
-{
-  uri = URI("/cache", args)
-  uri = oldURLencode(uri)
-  uri = gsub("\\+","%2B", uri, perl=TRUE)
-  h = new_handle()
-  handle_setheaders(h, .list=list(Authorization=digest_auth("POST", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
-                              ssl_verifypeer=0, post=TRUE, postfieldsize=length(data), postfields=data))
-  ans = curl_fetch_memory(uri, h)
-  if(ans$status_code > 299 && err) stop("HTTP error ", ans$status_code)
-  rawToChar(ans$content)
-}
-
 # Check if array exists
 .scidbexists = function(name)
 {

@@ -110,18 +110,18 @@ if(nchar(host) > 0)
 
 
 # Tests for issue #85 and issue #86
-  tryCatch(iquery("create_array(_,<acc_x:uint8,acc_y:uint8,acc_z:uint8,sleep:uint8> [subject=0:*,1,0,day=0:*,1,0,mil=0:86399999,86400000,600000],0)"), error=invisible)
-  x = scidb("_")
+  tryCatch(iquery("create_array(zzz_,<acc_x:uint8,acc_y:uint8,acc_z:uint8,sleep:uint8> [subject=0:*,1,0,day=0:*,1,0,mil=0:86399999,86400000,600000],0)"), error=invisible)
+  x = scidb("zzz_")
   s = 2
   sub = 2
   d = 4
   t0 = 9240001
   t1 = 45240000
   check((subset(x, subject == sub && day == d && mil>=t0 && mil<=t1)@name), (subset(x, subject == s && day == d && mil>=t0 && mil<=t1)@name))
-  tryCatch(iquery("create_array(_1, <population:string NOT NULL> [sample_id=0:*,200000,0,population_id=0:4,5,0],0)"), error=invisible)
-  y = scidb("_1")
+  tryCatch(iquery("create_array(zzz_1, <population:string NOT NULL> [sample_id=0:*,200000,0,population_id=0:4,5,0],0)"), error=invisible)
+  y = scidb("zzz_1")
   subset(y, population=="SAS")@name
-  scidbrm(c("_", "_1"), force=TRUE)
+  scidbrm(c("zzz_", "zzz_1"), force=TRUE)
 
 # issue 88
   rm(list=c("i", "n"))
