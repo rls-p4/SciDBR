@@ -104,6 +104,13 @@ is.temp = function(name)
 #' Disconnection is automatically handled by the package.
 #' @return \code{NULL} is returned invisibly; this function is used for its
 #' side effect.
+#' @examples
+#' \dontrun{
+#' scidbconnect()
+#'
+#' # SciDB 15.12 authentication example (using shim's default HTTPS port 8083)
+#' scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
+#' }
 #' @importFrom digest digest
 #' @importFrom openssl base64_encode
 #' @export

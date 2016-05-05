@@ -52,4 +52,12 @@ works over "https".
 
 Disconnection is automatically handled by the package.
 }
+\examples{
+\dontrun{
+scidbconnect()
+
+# SciDB 15.12 authentication example (using shim's default HTTPS port 8083)
+scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
+}
+}
 
