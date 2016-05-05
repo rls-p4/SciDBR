@@ -21,10 +21,11 @@ Imports:
     stats,
     graphics,
     digest,
+    openssl,
     codetools,
     curl
 Suggests:
     knitr (>= 1.8)
 License: AGPL-3
 LazyLoad: yes
-RoxygenNote: 5.0.0
+RoxygenNote: 5.0.1

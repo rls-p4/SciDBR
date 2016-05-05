@@ -96,18 +96,21 @@ is.temp = function(name)
 #' 
 #' Use the optional \code{username} and \code{password} arguments with
 #' \code{auth_type} set to "digest" to use HTTP digest authentication (see the
-#' shim documentation to configur this).  Digest authentication may use either
-#' "http" or "https" transports selected by the \code{protocol} setting.
+#' shim documentation to configure this).  Digest authentication may use either
+#' "http" or "https" selected by the \code{protocol} setting.
+#' Set \code{auth_type = "scidb"} to use SciDB authentication, which only
+#' works over "https".
 #'
 #' Disconnection is automatically handled by the package.
 #' @return \code{NULL} is returned invisibly; this function is used for its
 #' side effect.
 #' @importFrom digest digest
+#' @importFrom openssl base64_encode
 #' @export
 scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
                         port=options("scidb.default_shim_port")[[1]],
                         username, password,
-                        auth_type="digest", protocol=c("http", "https"), init=FALSE)
+                        auth_type=c("digest", "scidb"), protocol=c("http", "https"), init=FALSE)
 {
   auth_type = match.arg(auth_type)
   protocol = match.arg(protocol)
@@ -123,8 +126,9 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
     assign("authenv", new.env(), envir=.scidbenv)
     if(auth_type=="scidb")
     {
-      auth = paste(username, password, sep=":")
-      assign("auth", auth, envir=.scidbenv)
+      assign("username", username, envir=.scidbenv)
+      assign("password", base64_encode(digest(charToRaw(password),
+        serialize=FALSE, raw=TRUE, algo="sha512")), envir=.scidbenv)
     } else # HTTP basic digest auth
     {
       assign("digest", paste(username, password, sep=":"), envir=.scidbenv)
