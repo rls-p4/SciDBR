@@ -58,7 +58,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   } else
   {
     dims = paste(paste(dimensions(query), dimensions(query), sep=","), collapse=",") # Note! can faster than unpack with aio
-    x = scidb(sprintf("apply(%s, %s)", query@name, dims))
+    x = scidb(sprintf("project(apply(%s, %s), %s, %s)", query@name, dims, paste(dimensions(query), collapse=","), paste(scidb_attributes(query), collapse=",")))
   }
   N = scidb_nullable(x)
   TYPES = scidb_types(x)
