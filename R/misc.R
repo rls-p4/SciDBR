@@ -1,3 +1,28 @@
+#' SciDB array statistics
+#'
+#' Display array storage statistics
+#' @param scidb_array either a character name of a stored array or a \code{scidb} array object
+#' @param per_instance set to \code{TRUE} to break down storage stats by SciDB instance
+#' @param per_attribute set to \code{TRUE} to break down stats by attribute
+#' @return A data frame containinf the statistics
+#' export
+array_stats = function (scidb_array, per_instance=FALSE, per_attribute=FALSE) 
+{
+  if (class(scidb_array) == "character") 
+  {
+    scidb_array = scidb(scidb_array)
+  }
+  if (!(class(scidb_array) %in% c("scidb", "scidbdf")))
+  {
+    stop("Invalid SciDB object")
+  }
+  result = iquery(sprintf("summarize(%s, 'per_instance=%i', 'per_attribute=%i')", 
+                          scidb_array@name,
+                          as.numeric(per_instance),
+                          as.numeric(per_attribute)), return=TRUE)
+  return(result)
+}
+
 #' SciDB grouped aggregate operator
 #'
 #' Apply a function to a SciDB array grouped by an array attribute or dimension.
