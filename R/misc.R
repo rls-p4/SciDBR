@@ -1,3 +1,61 @@
+# Image method from Alex P.
+#' Display a SciDB array as an image
+#'
+#' Display a 2-d SciDB matrix as an image, downsampling the image in the database to
+#' the specified resolution.
+#' @param x \code{scidb} array object
+#' @param grid  desired image resolution
+#' @param op downsampling aggregation operator
+#' @param na replace missing values with this value
+#' @param ... additional arguments for the generic \code{image} method
+#' @return An R matrix with the image values and the side-effect of displaying the image
+#' plot of the matrix, unless \code{plot=FALSE} is specified in the optional arguments.
+#' @importFrom methods setMethod
+#' @importFrom graphics image
+#' @export
+setMethod("image", signature(x="scidb"),
+          function(x, grid=c(500,500), op="sum", na=0, ...)
+          {
+            df2xyvm = function(x, na=0)
+            {
+              x[is.na(x[,3]),3] = na
+              min_m = min(x[,1])
+              min_n = min(x[,2])
+              m = max(x[,1]) - min_m + 1
+              n = max(x[,2]) - min_n + 1
+              B = matrix(0,m,n)
+              B[x[,1]-min_m + (x[,2]-min_n)*m  + 1] = x[,3]
+              B
+            }
+            if(length(scidb_coordinate_start(x))!=2) stop("Sorry, array must be two-dimensional")
+            if(length(grid)!=2) stop("The grid parameter must contain two values")
+            if(any(is.infinite(as.numeric(scidb_coordinate_bounds(x)$length)))) stop("The array must be bounded")
+            if(length(length(scidb_attributes(x)))!=1) stop("The array must have one attribute")
+            el = list(...)
+            if("plot" %in% names(el))
+            {
+              plot = as.logical(el$plot)
+            }
+            else plot=TRUE
+            blocks = as.numeric(scidb_coordinate_bounds(x)$length)
+            blocks = blocks/grid
+            if(any(blocks<1)) blocks[which(blocks<1)] = 1
+            attribute = scidb_attributes(x)[1]
+            query = sprintf("regrid(%s,%.0f,%.0f,%s(%s))",x@name,blocks[1],blocks[2],op, attribute)
+            A = iquery(query,return=TRUE,n=Inf)
+            B = df2xyvm(A, na)
+            if(!plot) return (B)
+            xlbl=(1:ncol(B))*blocks[2]
+            xat=seq(from=0,to=1,length.out=ncol(B))
+            ylbl=(1:nrow(B))*blocks[1]
+            yat=seq(from=0,to=1,length.out=nrow(B))
+            image(B,xaxt='n',yaxt='n', ...)
+            axis(side=1,at=xat,labels=xlbl)
+            axis(side=2,at=yat,labels=ylbl)
+            B
+          })
+
+
 #' SciDB array statistics
 #'
 #' Display array storage statistics
