@@ -7,7 +7,7 @@
 scidbconnect(host = options("scidb.default_shim_host")[[1]],
   port = options("scidb.default_shim_port")[[1]], username, password,
   auth_type = c("digest", "scidb"), protocol = c("http", "https"),
-  init = FALSE)
+  init = TRUE)
 }
 \arguments{
 \item{host}{optional host name or I.P. address of a SciDB shim service to connect to}
@@ -22,7 +22,8 @@ scidbconnect(host = options("scidb.default_shim_host")[[1]],
 
 \item{protocol}{optional shim protocol type}
 
-\item{init}{set to \code{TRUE} to instruct SciDB to load a lot of optional and required plug-ins once a connection is established}
+\item{init}{set to \code{TRUE} to instruct SciDB to load a lot of optional and required plug-ins once a connection is established
+otherwise skip SciDB initialization steps}
 }
 \value{
 \code{NULL} is returned invisibly; this function is used for its

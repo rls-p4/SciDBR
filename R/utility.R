@@ -82,6 +82,7 @@ is.temp = function(name)
 #' @param auth_type optional SciDB authentication type
 #' @param protocol optional shim protocol type
 #' @param init set to \code{TRUE} to instruct SciDB to load a lot of optional and required plug-ins once a connection is established
+#'        otherwise skip SciDB initialization steps
 #' @note
 #' The SciDB connection state is maintained internally to the \code{scidb}
 #' package. We internalize state to facilitate operations involving \code{scidb}
@@ -117,7 +118,7 @@ is.temp = function(name)
 scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
                         port=options("scidb.default_shim_port")[[1]],
                         username, password,
-                        auth_type=c("digest", "scidb"), protocol=c("http", "https"), init=FALSE)
+                        auth_type=c("digest", "scidb"), protocol=c("http", "https"), init=TRUE)
 {
   auth_type = match.arg(auth_type)
   protocol = match.arg(protocol)
