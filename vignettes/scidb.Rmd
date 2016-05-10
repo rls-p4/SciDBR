@@ -1,3 +1,4 @@
+<!--
 ---
 title: "An R interface to SciDB"
 date: "`r Sys.Date()`"
@@ -15,6 +16,13 @@ vignette: >
   \VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
+-->
+
+<!--
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{scidb overview}
+-->
+
 
 # SciDB
 
