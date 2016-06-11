@@ -386,6 +386,150 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
   ans
 }
 
+#' Method to connect to a host, run SciDB query and return R dataframe
+#' 
+#' Alternate way of running a SciDB query. This does not require scidbconnect(); this function directly connects to the specified `host` at the specified `port` to issue the specified `query`. The caller must also have (and provide) the following information about the return data type -- the name, data type and nullability characteristic of each returned attribute.
+#' Note that this method is for use when you want the result returned to an R dataframe; if you want to return some delimited output (e.g. CSV, TSV) or if you want to use SciDBR to issue queries without returning a result, use the `iquery()` method instead
+#' @param aflstr the AFL query as a string 
+#' @param attribs a vector of strings listing the names of the attributes returned by the query
+#' @param TYPES a vector of strings listing the data-types of the attributes returned by the query
+#' @param NULLABILITY a vector of bools listing the nullability characteristic of the attributes returned by the query
+#' @param host optional host name or I.P. address of a SciDB shim service to connect to
+#' @param port optional port number of a SciDB shim service to connect to
+#' @examples
+#' \dontrun{
+#' # Connect to one R session and execute the following commands
+#' # The store(apply(..)) query creates a temporary array `temp_demo` for demo purposes
+#' library(scidb)
+#' scidbconnect()
+#' iquery("store(apply(build(<val1:double>[i=0:4,5,0, j=0:3,2,0], random()), val2, i*10+j), temp_demo)")
+#'
+#' # Now disconnect from this R session and restart another R session
+#' # In the subsequent code, we will not use scidbconnect() explicitly
+#' library(scidb)
+#' aflstr="between(temp_demo,0,0,2,2)"
+#' TYPES=c("double", "int64")
+#' NULLABILITY=c(FALSE, FALSE)
+#' attribs=c("val1", "val2")
+#' dims=c("i","j")
+#' query_to_df(aflstr=aflstr, dims=dims, attribs=attribs, TYPES=TYPES, NULLABILITY=NULLABILITY)
+#' # Note that you can supply a modified query while keeping the other parameters the same (so long as the return type remains the sam)
+#' query_to_df(aflstr="between(temp_demo,1,1,3,3)", dims=dims, attribs=attribs, TYPES=TYPES, NULLABILITY=NULLABILITY)
+#' 
+#' # The real advantage of using this way of issuing SciDB queries and returning the result to R dataframes is evident when comparing timings with the alternate method of using scidbconnect() and iquery()
+#' # Method 1:
+#' t1 = proc.time(); x1 = query_to_df(aflstr="between(temp_demo,1,1,3,3)", dims=dims, attribs=attribs, TYPES=TYPES, NULLABILITY=NULLABILITY); (proc.time()-t1)[[3]]
+#' # [1] 0.069
+#' # Method 2:
+#' t1 = proc.time(); scidbconnect(); x2 = iquery("between(temp_demo,1,1,3,3)", return=TRUE); (proc.time()-t1)[[3]]
+#' # [1] 0.419 
+#' # Finally verify that outputs are identical
+#' identical(x1, x2)
+#' # [1] TRUE
+#' 
+#' }
+#' @export
+query_to_df = function( aflstr, dims, attribs, TYPES, NULLABILITY, 
+                      host = options("scidb.default_shim_host")[[1]], 
+                      port = options("scidb.default_shim_port")[[1]]
+)
+{
+  DEBUG = FALSE
+  if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
+
+  aflstr = sprintf("project(apply(%s,%s),%s,%s)", 
+                  aflstr, 
+                  paste(dims, dims, sep=",", collapse=","), 
+                  paste(dims, collapse=",") , 
+                  paste(attribs, collapse=",")
+                  )
+
+  # Some basic string cleaning on the AFL string so that it can be passed to httr::GET e.g. SPACE is replaced with %20
+  aflstr = oldURLencode(aflstr)
+
+  # Formulate the shim url
+  shimurl=paste("http://", host, ":", port, sep = "")
+  
+  # Connect to SciDB
+  # /new_session
+  id = httr::GET(paste(shimurl, "/new_session", sep=""))
+  session = gsub("([\r\n])", "", rawToChar(id$content)) # the gsub is added to remove some trailing characters if present 
+
+  # AFL query and save format
+	TYPES=c(rep("int64", length(dims)), TYPES)
+	NULLABILITY=c(rep(FALSE, length(NULLABILITY)), NULLABILITY)
+  savestr=sprintf("(%s)", 
+                    paste( TYPES, 
+                        ifelse(NULLABILITY,
+                        "+null", ""), 
+                      sep="", collapse = ",")
+                    )
+  
+  # Now formulate and execute the query
+  # /execute_query
+  query = sprintf("%s/execute_query?id=%s&query=%s&save=%s",
+                  shimurl, session, aflstr, savestr)
+  resp = httr::GET(query)
+  
+  # View the status of the result
+  if(DEBUG) { cat("save status: "); cat(sprintf("%d\n", resp$status_code)) }
+  
+  # Get the data returned by the previous save
+  # /read_bytes
+  resp = httr::GET(sprintf("%s/read_bytes?id=%s&n=0", shimurl, session))
+  if (DEBUG) {
+		cat("read status: "); cat(sprintf("%d\n", resp$status_code))
+		print(resp)
+	}
+  
+  # Release the session
+  httr::GET(sprintf("%s/release_session?id=%s", shimurl, session))
+  
+  #BEGIN: Copied from scidbr/R/internal.R >> scidb_unpack_to_dataframe()
+  len = length(resp$content)
+  p = 0 
+  ans = c()
+  
+  # BEGIN: Hard coded for tests
+  buffer = 100000L
+  # END: HARD CODED
+  
+  cnames = c(dims, attribs, "lines", "p")  # we are unpacking to a SciDB array, ignore dims
+  n = length(dims) + length(attribs)
+  
+  while(p < len)
+  {
+    dt2 = proc.time()
+    tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, NULLABILITY, resp$content, as.double(p), PACKAGE="scidb")
+    names(tmp) = cnames
+    lines = tmp[[n+1]]
+    p_old = p
+    p     = tmp[[n+2]]
+    if(DEBUG) cat("  R buffer ", p, "/", len, " bytes parsing time", (proc.time() - dt2)[3], "\n")
+    dt2 = proc.time()
+    if(lines > 0)
+    {
+          if("binary" %in% TYPES)
+          {
+            if(DEBUG) cat("  R rbind/df assembly time", (proc.time() - dt2)[3], "\n")
+            return(lapply(1:n, function(j) tmp[[j]][1:lines]))
+          }
+      len_out = length(tmp[[1]])
+      if(lines < len_out) tmp = lapply(tmp[1:n], function(x) x[1:lines])
+      # adaptively re-estimate a buffer size
+      avg_bytes_per_line = ceiling((p - p_old) / lines)
+      buffer = min(getOption("scidb.buffer_size"), ceiling(1.3 * (len - p) / avg_bytes_per_line)) # Engineering factors
+      # Assemble the data frame
+      if(is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE))
+      else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE)))
+    }
+    if(DEBUG) cat("  R rbind/df assembly time", (proc.time() - dt2)[3], "\n")
+  }
+  ans = as.data.frame(ans)
+  ans
+  #END: Copied from scidbr/R/internal.R >> scidb_unpack_to_dataframe()
+}
+
 #' Recursively set all arrays in a \code{scidb} dependency graph to persist.
 #' @param x a \code{\link{scidb}} object
 #' @param gc \code{TRUE} connects arrays to R's garbage collector
