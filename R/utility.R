@@ -457,7 +457,7 @@ query_to_df = function( aflstr, dims, attribs, TYPES, NULLABILITY,
 
   # AFL query and save format
 	TYPES=c(rep("int64", length(dims)), TYPES)
-	NULLABILITY=c(rep(FALSE, length(NULLABILITY)), NULLABILITY)
+	NULLABILITY=c(rep(FALSE, length(dims)), NULLABILITY)
   savestr=sprintf("(%s)", 
                     paste( TYPES, 
                         ifelse(NULLABILITY,
