@@ -52,7 +52,7 @@ if(nchar(host)>0)
   NULLABILITY=c(FALSE, FALSE)
   attribs=c("val1", "val2")
   dims=c("i","j")
-  identical(
+  check(
     query_to_df(aflstr, dims=dims, attribs=attribs, TYPES=TYPES, NULLABILITY=NULLABILITY),
     iquery(aflstr, return=TRUE)
   )
