@@ -56,6 +56,8 @@ t1 = proc.time(); scidbconnect(); x2 = iquery("between(temp_demo,1,1,3,3)", retu
 identical(x1, x2)
 # [1] TRUE
 
+# Clean up
+scidbrm("temp_demo", force=TRUE)
 }
 }
 

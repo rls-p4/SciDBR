@@ -427,6 +427,8 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
 #' identical(x1, x2)
 #' # [1] TRUE
 #' 
+#' # Clean up
+#' scidbrm("temp_demo", force=TRUE)
 #' }
 #' @export
 query_to_df = function( aflstr, dims, attribs, TYPES, NULLABILITY, 
@@ -456,8 +458,8 @@ query_to_df = function( aflstr, dims, attribs, TYPES, NULLABILITY,
   session = gsub("([\r\n])", "", rawToChar(id$content)) # the gsub is added to remove some trailing characters if present 
 
   # AFL query and save format
-	TYPES=c(rep("int64", length(dims)), TYPES)
-	NULLABILITY=c(rep(FALSE, length(dims)), NULLABILITY)
+  TYPES=c(rep("int64", length(dims)), TYPES)
+  NULLABILITY=c(rep(FALSE, length(dims)), NULLABILITY)
   savestr=sprintf("(%s)", 
                     paste( TYPES, 
                         ifelse(NULLABILITY,
