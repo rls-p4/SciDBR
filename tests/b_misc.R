@@ -43,4 +43,18 @@ if(nchar(host)>0)
 
   s = gesvd(x, "values")[]
   check(s$sigma, svd(X)$d)
+
+# issue 94
+  if ( length(scidbls("query_to_df_test")) > 0) scidbrm("query_to_df_test", force=TRUE)
+  iquery("store(apply(build(<val1:double>[i=0:4,5,0, j=0:3,2,0], random()), val2, i*10+j), query_to_df_test)")
+  aflstr="between(query_to_df_test,0,0,2,2)"
+  TYPES=c("double", "int64")
+  NULLABILITY=c(FALSE, FALSE)
+  attribs=c("val1", "val2")
+  dims=c("i","j")
+  check(
+    query_to_df(aflstr, dims=dims, attribs=attribs, TYPES=TYPES, NULLABILITY=NULLABILITY),
+    iquery(aflstr, return=TRUE)
+  )
+  scidbrm("query_to_df_test", force=TRUE)
 }
