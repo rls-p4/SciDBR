@@ -27,6 +27,7 @@ reshape_scidb = function(x, schema, shape, dimnames, start, chunks)
   }
   if(missing(start)) start = rep(0, N)
   shape = shape - 1 + start
+  shape[is.infinite(shape)] = "*"
   D = build_dim_schema(x, newstart=start, newnames=dimnames, newend=shape, newchunk=chunks, I=seq(1, N))
   query = sprintf("reshape(%s,%s%s)", x@name,build_attr_schema(x), D)
   .scidbeval(query, depend=list(x))

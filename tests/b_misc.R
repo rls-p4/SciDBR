@@ -20,10 +20,9 @@ if(nchar(host)>0)
   stopifnot(isTRUE(all.equal(iris, y)))
 
 # Misc.
-  x = as.scidb(iris)
+  x = reshape_scidb(subarray(as.scidb(iris), c(0, 0, 0, 0, 0, 149)), shape=150)
   check(nrow(unique(project(x, "Species"))[]), 3)
-  check( nrow(xgrid(regrid(x, 10, "avg(Petal_Length) as Petal_Length"), 10, "max(Petal_Length)")),
-         150)
+  check( nrow(xgrid(regrid(x, 10, "avg(Petal_Length) as Petal_Length"), 10, "max(Petal_Length)")), 150)
 
 # issue 81
   x = scidb_from_schemastring("<v:double>[i=1:2,1,0],1")

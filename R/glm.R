@@ -3,11 +3,12 @@
 glm_scidb = function(formula, family=gaussian(), `data`, `weights`)
 {
   if(!is.scidb(data)) stop("data must be a scidb object")
+  if(length(dimensions(data)) > 1) data = reshape_scidb(data, shape=prod(as.numeric(scidb_coordinate_bounds(data)$length)))
   if(is.character(formula)) formula=as.formula(formula)
   wts = NULL
   if(!missing(weights)) wts = weights
   M = model_scidb(formula, data)
-  ans = glm.fit(M$model, M$response, weights=wts, family=family,intercept=M$intercept)
+  ans = glm.fit(M$model, M$response, weights=wts, family=family, intercept=M$intercept)
   ans$formula = M$formula
   ans$coefficient_names = M$names
   ans$factors = M$factors
@@ -19,11 +20,13 @@ glm_scidb = function(formula, family=gaussian(), `data`, `weights`)
 # cf glm.fit
 glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
 {
-  got_glm = length(grep("glm",.scidbenv$ops[, 2]))>0
+  if(any(scidb_coordinate_bounds(x)$length %in% "Inf")) stop("x must be of explicitly bounded dimension")
+  got_glm = length(grep("glm", .scidbenv$ops[, 2])) > 0
   if(missing(intercept)) intercept = 0
   intercept = as.numeric(intercept)
   xchunks = as.numeric(scidb_coordinate_chunksize(x))
   nrx = as.numeric(scidb_coordinate_bounds(x)$length[1])
+  if(is.infinite(nrx)) nrx = "*"
   if(missing(`weights`)) `weights`= NULL
   if(is.numeric(`weights`))
   {
@@ -47,6 +50,7 @@ glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
   link = family$link
 # GLM has a some data partitioning requirements to look out for:
   ncx = as.numeric(scidb_coordinate_bounds(x)$length[2])
+  if(is.infinite(ncx)) ncx = "*"
   if(xchunks[2] < ncx)
   {
     x = repart(x, chunk=c(xchunks[1], ncx))
@@ -178,6 +182,8 @@ summary.glm_scidb = function(object, ...)
 model_scidb = function(formula, data, factors=NULL)
 {
   if(!is.scidb(data)) stop("data must be a scidb object")
+  if(any(scidb_coordinate_bounds(data)$length %in% "Inf")) stop("data must be of explicitly bounded dimension")
+  if(length(dimensions(data)) > 1) data = reshape_scidb(data, shape=prod(as.numeric(scidb_coordinate_bounds(data)$length)))
   if(is.character(formula)) formula=as.formula(formula)
   dummy = data.frame(matrix(NA, ncol=length(scidb_attributes(data))))
   names(dummy) = scidb_attributes(data)
@@ -271,6 +277,7 @@ model_scidb = function(formula, data, factors=NULL)
   nrm = as.numeric(scidb_coordinate_bounds(M)$length[1])
   newend = c(nrm - 1, newdim - 1)
   newchunk = c(ceiling(1e6 / newdim), newdim)
+  newend[is.infinite(newend)] = "*"
 
   schema = sprintf("%s%s", build_attr_schema(M),
     build_dim_schema(M, newstart=c(0,0), newend=newend, newchunk=newchunk))
@@ -337,12 +344,12 @@ predict.glm_scidb = function(object, ...) #newdata=NULL, type=c("link","response
     newdata = NULL
   } else
   {
-    newdata = eval(C$newdata,envir=parent.frame())
+    newdata = eval(C$newdata, envir=parent.frame())
   }
   if(is.null(C$type)) type="link"
-  else type = eval(C$type,envir=parent.frame())
+  else type = eval(C$type, envir=parent.frame())
   if(is.null(C$se.fit)) se.fit=FALSE
-  else se.fit=eval(C$se.fit,envir=parent.frame())
+  else se.fit=eval(C$se.fit, envir=parent.frame())
   if(!type %in% c("link","response")) stop("type must be one of 'link' or 'response'")
   if(is.null(newdata))
   {

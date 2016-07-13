@@ -22,7 +22,7 @@ if(nchar(host)>0)
   d.AD = data.frame(treatment, outcome, counts)
   glm.D93 = glm(counts ~ outcome + treatment, family = poisson(),data=d.AD, y=TRUE)
 
-  d.AD_sci = as.scidb(d.AD)
+  d.AD_sci = subarray(as.scidb(d.AD), c(0, 0, 0, 0, 0, 8))
   glm.D93_sci = glm(counts ~ outcome + treatment, family = poisson(), data=d.AD_sci)
   summary(glm.D93_sci)
   print(glm.D93_sci)

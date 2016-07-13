@@ -67,17 +67,17 @@ if(nchar(host) > 0)
   set.seed(1)
   a = as.scidb(data.frame(a=sample(10, 5), b=rnorm(5)))
   b = as.scidb(data.frame(u=sample(10, 5), v=rnorm(5)))
-  merge(x=a, y=b, by.x="a", by.y="u")[]  # XXX XXX broken
+  merge(x=a, y=b, by.x="a", by.y="u")[]
   # outer join
   merge(x, x, all=TRUE)
 
-# subset
+# subset and NSE
   y = subset(x, "Species = 'setosa'")
   z = subset(x, Species == "setosa")
   check(count(y), count(z))
   i = 40
-  y = subset(x, "Species = 'setosa' and row > 40")
-  z = subset(x, Species == 'setosa' & row > i)
+  y = subset(x, "Species = 'setosa' and line_no > 40")
+  z = subset(x, Species == 'setosa' & line_no > i)
   check(count(y), count(z))
 
   # from issue #86
@@ -99,13 +99,13 @@ if(nchar(host) > 0)
   set.seed(1)
   a = matrix(rnorm(20), nrow=5)
   A = as.scidb(a)
-  b = aggregate(A, FUN=sum, window=c(0,1,0,0))[]
+  b = aggregate(A, FUN=sum, window=c(0, 1, 0, 0))[]
   X = matrix(0, 5, 4)
-  X[as.matrix(b[,1:2] + 1)] = b[,3]
+  X[as.matrix(b[, 1:2] + 1)] = b[,3]
   check(X, apply(a, 2, function(x) x + c(x[-1], 0)))
   B = subset(A, val > 0)
-  aggregate(B, FUN=sum, window=c(0,1,0,0))
-  aggregate(B, by="i", FUN=sum, variable_window=c(0,1))
+  aggregate(B, FUN=sum, window=c(0, 1, 0, 0))
+  aggregate(B, by="i", FUN=sum, variable_window=c(0, 1))
 
 
 # Tests for issue #85 and issue #86
@@ -123,7 +123,7 @@ if(nchar(host) > 0)
   scidbrm(c("zzz_", "zzz_1"), force=TRUE)
 
 # issue 88
-  rm(list=c("i", "n"))
+  rm(list=c("i"))
   x = scidb("build(<val:double> [i=1:1,1,0, n=1:1,1,0], random())")
   check(nchar((subset(x, i < 5))@name), nchar((subset(x, n < 5))@name))
 }
