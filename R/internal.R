@@ -868,7 +868,8 @@ df2scidb = function(X,
   }
   args = sprintf("<%s>", paste(anames, ":", typ, " null", collapse=","))
 
-  SCHEMA = paste(args,"[",dimlabel,"=",noE(start),":",noE(nrow(X)+start-1),",",noE(chunkSize),",", noE(rowOverlap),"]",sep="")
+  SCHEMA = paste(args, "[", dimlabel,"=", noE(start), ":", noE(nrow(X) + start - 1), ",",
+                 noE(chunkSize), ",", noE(rowOverlap), "]", sep="")
   if(schema_only) return(SCHEMA)
 
 # Obtain a session from the SciDB http service for the upload process
@@ -882,9 +883,10 @@ df2scidb = function(X,
   tmp = gsub("\n", "", gsub("\r", "", tmp))
 
 # Generate a load_tools query
-  LOAD = sprintf("apply(parse(split('%s'),'num_attributes=%d'),%s)", tmp,
-                 ncolX, paste(dcast, collapse=","))
-  query = sprintf("store(redimension(%s,%s),%s)", LOAD, SCHEMA, name)
+  atts = paste(dcast, collapse=",")
+  LOAD = sprintf("project(apply(parse(split('%s'),'num_attributes=%d'),%s), %s)", tmp,
+                 ncolX, atts, paste(anames, collapse=","))
+  query = sprintf("store(%s,%s)", LOAD, name)
   scidbquery(query, release=1, session=session, stream=0L)
   scidb(name, gc=gc)
 }

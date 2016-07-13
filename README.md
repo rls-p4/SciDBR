@@ -31,7 +31,7 @@ I.P. address of SciDB. See the tests directory for test code.
 GitHub branch policy: the "laboratory" branch is for new ideas that have a good
 chance of making it into the CRAN package, but all tests might not yet pass.
 The "master" branch should pass all `R CMD check` tests against the current
-R-devel version of R on all platforms.
+R-devel version of R on all platforms, tested against the current SciDB release.
 
 ## Wiki
 Check out (and feel free to contribute to) examples in the wiki pages for
