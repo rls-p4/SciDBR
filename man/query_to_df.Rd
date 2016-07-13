@@ -9,21 +9,30 @@ query_to_df(aflstr, dims, attribs, TYPES, NULLABILITY,
   port = options("scidb.default_shim_port")[[1]])
 }
 \arguments{
-\item{aflstr}{the AFL query as a string}
+\item{aflstr}{the AFL query as a character string}
 
-\item{attribs}{a vector of strings listing the names of the attributes returned by the query}
+\item{dims}{vector of returned result dimensions}
 
-\item{TYPES}{a vector of strings listing the data-types of the attributes returned by the query}
+\item{attribs}{a vector of character strings listing the names of the attributes returned by the query}
 
-\item{NULLABILITY}{a vector of bools listing the nullability characteristic of the attributes returned by the query}
+\item{TYPES}{a vector of character strings listing the data-types of the attributes returned by the query}
 
-\item{host}{optional host name or I.P. address of a SciDB shim service to connect to}
+\item{NULLABILITY}{a vector of logical values listing the nullability characteristic of the attributes returned by the query}
 
-\item{port}{optional port number of a SciDB shim service to connect to}
+\item{host}{optional host name or I.P. address of a SciDB shim service to connect to (character)}
+
+\item{port}{optional port number of a SciDB shim service to connect to (integer)}
 }
 \description{
-Alternate way of running a SciDB query. This does not require scidbconnect(); this function directly connects to the specified `host` at the specified `port` to issue the specified `query`. The caller must also have (and provide) the following information about the return data type -- the name, data type and nullability characteristic of each returned attribute.
-Note that this method is for use when you want the result returned to an R dataframe; if you want to return some delimited output (e.g. CSV, TSV) or if you want to use SciDBR to issue queries without returning a result, use the `iquery()` method instead
+Alternate way of running a SciDB query. This does not require scidbconnect();
+this function directly connects to the specified \code{host} at the specified
+\code{port} to issue the specified \code{query}. The caller must also have (and
+provide) the following information about the return data type -- the name,
+data type and nullability characteristic of each returned attribute.  Note
+that this method is for use when you want the result returned to an R
+dataframe; if you want to return some delimited output (e.g. CSV, TSV) or if
+you want to use SciDBR to issue queries without returning a result, use the
+\code{iquery()} function instead
 }
 \examples{
 \dontrun{
@@ -42,16 +51,28 @@ NULLABILITY=c(FALSE, FALSE)
 attribs=c("val1", "val2")
 dims=c("i","j")
 query_to_df(aflstr=aflstr, dims=dims, attribs=attribs, TYPES=TYPES, NULLABILITY=NULLABILITY)
-# Note that you can supply a modified query while keeping the other parameters the same (so long as the return type remains the sam)
+# Note that you can supply a modified query while keeping the otherparameters
+#the same (so long as the return type remains the same)
 query_to_df(aflstr="between(temp_demo,1,1,3,3)", dims=dims, attribs=attribs, TYPES=TYPES, NULLABILITY=NULLABILITY)
 
-# The real advantage of using this way of issuing SciDB queries and returning the result to R dataframes is evident when comparing timings with the alternate method of using scidbconnect() and iquery()
+# The real advantage of using this way of issuing SciDB queries and
+# returning the result to R dataframes is evident when comparing timings
+# with the alternate method of using scidbconnect() and iquery()
 # Method 1:
-t1 = proc.time(); x1 = query_to_df(aflstr="between(temp_demo,1,1,3,3)", dims=dims, attribs=attribs, TYPES=TYPES, NULLABILITY=NULLABILITY); (proc.time()-t1)[[3]]
+t1 = proc.time()
+x1 = query_to_df(aflstr="between(temp_demo,1,1,3,3)",
+                 dims=dims, attribs=attribs, TYPES=TYPES,
+                 NULLABILITY=NULLABILITY)
+(proc.time()-t1)[[3]]
 # [1] 0.069
+
 # Method 2:
-t1 = proc.time(); scidbconnect(); x2 = iquery("between(temp_demo,1,1,3,3)", return=TRUE); (proc.time()-t1)[[3]]
+t1 = proc.time()
+scidbconnect()
+x2 = iquery("between(temp_demo,1,1,3,3)", return=TRUE)
+(proc.time()-t1)[[3]]
 # [1] 0.419 
+
 # Finally verify that outputs are identical
 identical(x1, x2)
 # [1] TRUE

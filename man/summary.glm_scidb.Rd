@@ -4,7 +4,7 @@
 \alias{summary.glm_scidb}
 \title{Summary method for SciDB GLM}
 \usage{
-summary.glm_scidb(object, ...)
+\method{summary}{glm_scidb}(object, ...)
 }
 \arguments{
 \item{object}{\code{glm_scidb} model object}
