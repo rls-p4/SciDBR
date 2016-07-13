@@ -878,7 +878,6 @@ df2scidb = function(X,
   on.exit(SGET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
 
   ncolX = ncol(X)
-#  X = charToRaw(paste(capture.output(write.table(X, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)), collapse="\n"))
   X = charToRaw(fwrite(X, file=return))
   tmp = POST(X, list(id=session))
   tmp = gsub("\n", "", gsub("\r", "", tmp))

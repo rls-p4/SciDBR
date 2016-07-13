@@ -112,15 +112,17 @@ dimnames.scidb = function(x)
     drop = drop && M[["drop"]]
     M = M[-which(names(M) %in% "drop")]
   }
+  if(length(M) > 2)
+      stop("[,,...] numeric range indexing is no longer supported. Use subset instead.")
   projector = unlist(Map(function(j)
   {
     a = tryCatch(eval(M[j][[1]], parent.frame()), error=function(e) NULL)
-    if(is.numeric(a) && length(a) == 1) a = names(x, a)
+    if(is.numeric(a)) a = names(x)[a]
     if(!(is.null(a) || is.character(a)))
       stop("[,,...] numeric range indexing is no longer supported. Use subset instead.")
     a
   }, j=1:length(M)))
-  if(length(projector) > 0) x = project(x, projector)
+  if(length(projector) > 0) return(project(x, projector))
 
   if(drop) return(scidb_unpack_to_dataframe(x)[, -seq(1, length(dimensions(x)))])
   scidb_unpack_to_dataframe(x)
