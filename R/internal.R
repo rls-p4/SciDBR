@@ -42,7 +42,7 @@ scidb_unpack_to_dataframe = function(query, ...)
   projected = FALSE
   aio = length(grep("aio", .scidbenv$ops)) > 0
   if(!inherits(query, "scidb")) query = scidb(query)
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
+  if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG = TRUE
   buffer = 100000L
   args = list(...)
   if(!is.null(args$buffer))
@@ -58,8 +58,9 @@ scidb_unpack_to_dataframe = function(query, ...)
   } else
   {
     dims_query = dimensions(query)
-    dims = paste(dims_query, dims_query, sep=",", collapse=",") # Note! can faster than unpack with aio
-    x = scidb(sprintf("project(apply(%s, %s), %s, %s)", query@name, dims, paste(dims_query, collapse=","), paste(scidb_attributes(query), collapse=",")))
+    dims = paste(dims_query, dims_query, sep=",", collapse=",")
+    x = scidb(sprintf("project(apply(%s, %s), %s, %s)", query@name,
+                      dims, paste(dims_query, collapse=","), paste(scidb_attributes(query), collapse=",")))
   }
   N = scidb_nullable(x)
   TYPES = scidb_types(x)

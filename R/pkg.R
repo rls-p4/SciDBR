@@ -22,7 +22,7 @@ NULL
   options(scidb.buffer_size = 5e7)
 # How to download arrays and their coordinates. Set scidb.unpack=FALSE
 # to use apply, which can be faster in some cases when used with aio.
-  options(scidb.unpack=TRUE)
+  options(scidb.unpack=FALSE)
 # Make it harder to remove arrays. When this option is TRUE, users
 # have to specify scidbrm(array, force=TRUE) to remove arrays that do not
 # begin with "R_array".
