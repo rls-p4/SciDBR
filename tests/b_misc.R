@@ -56,4 +56,12 @@ if(nchar(host)>0)
     iquery(aflstr, return=TRUE)
   )
   scidbrm("query_to_df_test", force=TRUE)
+
+# transpose, cov, and cor
+  X = matrix(rnorm(100 * 100), 100)
+  x = as.scidb(X)
+  check(matrix(t(x)[]$val, 100, byrow=TRUE), t(X))
+  check(matrix(cov(x)[]$val, 100, byrow=TRUE), cov(X))
+  check(matrix(cor(x)[]$cor, 100, byrow=TRUE), cor(X))
+
 }

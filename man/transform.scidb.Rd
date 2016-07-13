@@ -27,9 +27,15 @@ quote expressions to guarantee that they will be evaluated only by SciDB.
 \dontrun{
 x <- scidb("build(<v:double>[i=1:5,5,0], i)")
 transform(x, a="2 * v")
+# same as this so long as 'v' is undefined in your R environment.
+transform(x, a=2 * v)
+
 # Note replacement in this example:
 transform(x, v="3 * v")
-# Illustration of quoting expressions to force them to evaluate in SciDB:
+
+# Illustration of quoting expressions to force them to evaluate in SciDB,
+# and of NSE precedence (try to evaluate expression in R first, then in SciDB
+# unless quoted):
 v <- pi  # local R assignment of variable 'v'
 transform(x, b=sin(v), c="sin(v)")
 }

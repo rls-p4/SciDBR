@@ -241,6 +241,7 @@ oldURLencode = function (URL, reserved = FALSE)
 
 
 #' Nightmarish internal function that converts R expressions to SciDB expressions
+#' Used to support NSE in \code{transform}. NSE is bad.
 #' @param expr an R 'language' type object to parse
 #' @param sci a SciDB array 
 #' @param frame to evaluate expression for replacement values

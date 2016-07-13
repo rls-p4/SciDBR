@@ -20,8 +20,9 @@ Flexible SciDB array subsetting
 \note{
 The \code{expr} value can include scalar R values, but not more complicated expressions since the expression
 is evaluated on the server inside SciDB (not R). Scalar R values are translated to constants in the SciDB expression
-using R dynamic scoping/nonstandard evaluation (NSE). Quote full expressions to avoid NSE and force evaluation of
-the quoted expression in SciDB (see examples).
+using R dynamic scoping/nonstandard evaluation (NSE). Named SciDB values (attributes, dimensions, array names) always
+take precedence over named R values with the same names. If NSE is too confusing, quote full expressions to avoid NSE
+and force evaluation of the quoted expression in SciDB (see examples).
 }
 \keyword{internal}
 

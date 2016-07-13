@@ -594,3 +594,28 @@ build = function(data, dim, names, type,
   ans
 }
 
+
+t_scidb = function(x)
+{
+  scidb(sprintf("transpose(%s)", x@name))
+}
+
+cov_scidb = function(x)
+{
+  if(length(dimensions(x)) != 2) stop("x must be a matrix (a 2-d SciDB array)")
+  if(length(scidb_attributes(x)) > 1) stop("x must have one numeric attribute")
+  S0 = scidbeval(project(transform(merge(x, aggregate(x, by=dimensions(x)[2], FUN=mean)), x ="val - val_avg"), "x"))
+  project(transform(gemm(t(S0), S0), val=sprintf("gemm / %s", as.numeric(scidb_coordinate_bounds(S0)$length[1]) - 1)), "val")
+}
+
+cor_scidb = function(x)
+{
+  if(length(dimensions(x)) != 2) stop("x must be a matrix (a 2-d SciDB array)")
+  if(length(scidb_attributes(x)) > 1) stop("x must have one numeric attribute")
+  x = attribute_rename(x, new="val")
+  S0 = scidbeval(project(transform(merge(x, aggregate(x, by=dimensions(x)[2], FUN=mean)), x ="val - val_avg"), "x"))
+  CV = scidbeval(project(transform(gemm(t(S0), S0), val=sprintf("gemm / %s", as.numeric(scidb_coordinate_bounds(S0)$length[1]) - 1)), "val"), temp=TRUE)
+  v = redimension(subset(CV, x == y), dim="x")
+  v = transform(v, val="1 / sqrt(val)")
+  project(transform(merge(merge(CV, v, by.x="x", by.y="x"), v, by.x="y", by.y="x"), cor=val * val_1 * val_2), "cor")
+}

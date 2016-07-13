@@ -347,3 +347,33 @@ setGeneric("glm.fit")
 #' @export
 #' @rdname glm
 setMethod("glm.fit", signature(x="scidb", y="ANY", weights="MNSN"), glm.fit_scidb)
+
+
+# Some more experimental methods follow
+
+setGeneric("t")
+#' Matrix transpose
+#' @param x a 2-d scidb array with one numeric attribute (aka a matrix)
+#' @return a 2-d scidb array representing the transpose of \code{x}
+#' @export
+setMethod("t", signature(x="scidb"),  t_scidb)
+#' Covariance matrix
+#' This function is more limited than R's default \code{cov} function. It can
+#' only compute a covariance matrix from a data matrix without any missing value
+#' handling by the procedure (in R notation)
+#' \code{S0 <- sweep(x, 2, colMeans(x))}, 
+#' \code{crossprod(S0)/(nrow(S0) - 1)   # (covariance matrix result)}
+#' @param x a 2-d scidb array with a single numeric attribute
+#' @return covariance matrix of \code{x} (as a SciDB array)
+#' @export
+setGeneric("cov")
+setMethod("cov", signature(x="scidb"), cov_scidb)
+#' Correlation matrix
+#' This function is more limited than R's default \code{cor} function. It can
+#' only compute a correlation matrix from a data matrix without any missing value
+#' handling.
+#' @param x a 2-d scidb array with a single numeric attribute
+#' @return correlation matrix of \code{x} (as a SciDB array)
+#' @export
+setGeneric("cor")
+setMethod("cor", signature(x="scidb"), cor_scidb)

@@ -236,8 +236,9 @@ project = function(x, attributes)
 #' @param expr Either a quoted SciDB filter expression, or an R expression involving array attributes and dimensions
 #' @note The \code{expr} value can include scalar R values, but not more complicated expressions since the expression
 #' is evaluated on the server inside SciDB (not R). Scalar R values are translated to constants in the SciDB expression
-#' using R dynamic scoping/nonstandard evaluation (NSE). Quote full expressions to avoid NSE and force evaluation of
-#' the quoted expression in SciDB (see examples).
+#' using R dynamic scoping/nonstandard evaluation (NSE). Named SciDB values (attributes, dimensions, array names) always
+#' take precedence over named R values with the same names. If NSE is too confusing, quote full expressions to avoid NSE
+#' and force evaluation of the quoted expression in SciDB (see examples).
 #' @return a new \code{scidb} array object
 #' @keywords internal
 filter_scidb = function(x, expr)
@@ -596,9 +597,15 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 #' \dontrun{
 #' x <- scidb("build(<v:double>[i=1:5,5,0], i)")
 #' transform(x, a="2 * v")
+#' # same as this so long as 'v' is undefined in your R environment.
+#' transform(x, a=2 * v)
+#'
 #' # Note replacement in this example:
 #' transform(x, v="3 * v")
-#' # Illustration of quoting expressions to force them to evaluate in SciDB:
+#'
+#' # Illustration of quoting expressions to force them to evaluate in SciDB,
+#' # and of NSE precedence (try to evaluate expression in R first, then in SciDB
+#' # unless quoted):
 #' v <- pi  # local R assignment of variable 'v'
 #' transform(x, b=sin(v), c="sin(v)")
 #' }
@@ -608,7 +615,8 @@ sort_scidb = function(x, decreasing=FALSE, ...)
   `_val` = as.list(match.call())[-(1:2)]
   if(length(`_val`) == 0) return()
   n = names(`_val`)
-  v = unlist(Map(function(x) tryCatch(eval(x), error=function(e) x), `_val`))
+  env = parent.frame()
+  v = unlist(Map(function(x) tryCatch(eval(x, envir=env), error=function(e) x), `_val`))
   names(v) = c()
   bind(`_data`, n, v)
 }

@@ -2,7 +2,8 @@
 % Please edit documentation in R/internal.R
 \name{rewrite_subset_expression}
 \alias{rewrite_subset_expression}
-\title{Nightmarish internal function that converts R expressions to SciDB expressions}
+\title{Nightmarish internal function that converts R expressions to SciDB expressions
+Used to support NSE in \code{transform}. NSE is bad.}
 \usage{
 rewrite_subset_expression(expr, sci, frame)
 }
@@ -18,6 +19,7 @@ character-valued SciDB expression
 }
 \description{
 Nightmarish internal function that converts R expressions to SciDB expressions
+Used to support NSE in \code{transform}. NSE is bad.
 }
 \keyword{internal}
 
