@@ -17,6 +17,10 @@
 \description{
 Use empty indexing brackets to download the values of the SciDB array to R in a data frame.
 }
+\note{
+Append the function argument \code{drop=TRUE} to strip SciDB
+dimensions from the result (still returning a data frame).
+}
 \examples{
 \dontrun{
 x <- as.scidb(head(iris))

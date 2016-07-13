@@ -13,6 +13,6 @@ unordered_uniq(scidb_array, attributes)
 }
 \description{
 A fast SciDB function for finding the unique elements among a set of attributes
-in a SciDB array. This function uses the SciDB \code{\link{grouped_aggregate}} function.
+in a SciDB array. This function uses the SciDB \code{\link{aggregate}} function.
 }
 

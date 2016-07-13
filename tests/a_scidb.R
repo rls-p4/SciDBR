@@ -16,17 +16,17 @@ if(nchar(host) > 0)
 # upload
   x = as.scidb(iris)
 # binary download
-  a = x[][,-1]  # less SciDB row dimension
-  lapply(1:4,  function(j) check(all.equal(iris[,j], a[,j]), TRUE))  # less factor column
-  check(all.equal(as.character(iris[,5]), a[,5]), TRUE)  # character column
+  a = x[][, drop=TRUE]  # less SciDB dimension
+  lapply(1:4,  function(j) check(all.equal(iris[, j], a[, j]), TRUE))  # less factor column
+  check(all.equal(as.character(iris[, 5]), a[, 5]), TRUE)  # character column
 # iquery binary download
-  a = iquery(x, return=TRUE, binary=TRUE)[, -1]
-  lapply(1:4,  function(j) check(all.equal(iris[,j], a[,j]), TRUE))  # less factor column
-  check(all.equal(as.character(iris[,5]), a[,5]), TRUE)  # character column
+  a = iquery(x, return=TRUE, binary=TRUE)[, drop=TRUE]
+  lapply(1:4,  function(j) check(all.equal(iris[, j], a[, j]), TRUE))  # less factor column
+  check(all.equal(as.character(iris[, 5]), a[, 5]), TRUE)  # character column
 # iquery CSV download
-  a = iquery(x, return=TRUE, binary=FALSE)[, -1]
-  lapply(1:4,  function(j) check(all.equal(iris[,j], a[,j]), TRUE))  # less factor column
-  check(all.equal(as.character(iris[,5]), a[,5]), TRUE)  # character column
+  a = iquery(x, return=TRUE, binary=FALSE)[, drop=TRUE]
+  lapply(1:4,  function(j) check(all.equal(iris[, j], a[, j]), TRUE))  # less factor column
+  check(all.equal(as.character(iris[, 5]), a[, 5]), TRUE)  # character column
 
 # head
   a = head(x, 3)

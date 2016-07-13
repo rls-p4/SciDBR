@@ -37,7 +37,7 @@ function(x, y)
 setMethod("head", signature(x="scidb"),
 function(x, n=6L)
 {
-  iqdf(x, n)[, -1]
+  iqdf(x, n)[]
 })
 
 #' Test if an object has class "scidb"

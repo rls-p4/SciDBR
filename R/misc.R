@@ -85,13 +85,13 @@ array_stats = function (scidb_array, per_instance=FALSE, per_attribute=FALSE)
 #' Fast SciDB way to find unique elements
 #'
 #' A fast SciDB function for finding the unique elements among a set of attributes
-#' in a SciDB array. This function uses the SciDB \code{\link{grouped_aggregate}} function.
+#' in a SciDB array. This function uses the SciDB \code{\link{aggregate}} function.
 #' @param scidb_array a \code{scidb} array reference object, or a character string naming a stored SciDB array
 #' @param attributes a list or character vector of SciDB array attributes
 #' @export
 unordered_uniq = function(scidb_array, attributes)
 {
-  result = grouped_aggregate(scidb_array, by=attributes, FUN="count(*)")
+  result = aggregate(scidb_array, by=attributes, FUN="count(*)")
   result = unpack(result)
   project(result, attributes)
 }

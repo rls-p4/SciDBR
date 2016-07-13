@@ -90,6 +90,8 @@ dimnames.scidb = function(x)
 #' @param x \code{scidb} array object
 #' @param ... character vector of array attributes
 #' @return \code{scidb} array object
+#' @note Append the function argument \code{drop=TRUE} to strip SciDB
+#' dimensions from the result (still returning a data frame).
 #' @examples
 #' \dontrun{
 #' x <- as.scidb(head(iris))
@@ -104,8 +106,23 @@ dimnames.scidb = function(x)
 {
   M = match.call()
   M = M[3:length(M)]
-  i = vapply(1:length(M), function(j) is.null(tryCatch(eval(M[j][[1]], parent.frame()), error=function(e) c())), TRUE)
-  if(! all(i)) stop("[,,...] indexing is no longer supported. Use subset and project instead.")
+  drop = "drop" %in% names(M)
+  if(drop)
+  {
+    drop = drop && M[["drop"]]
+    M = M[-which(names(M) %in% "drop")]
+  }
+  projector = unlist(Map(function(j)
+  {
+    a = tryCatch(eval(M[j][[1]], parent.frame()), error=function(e) NULL)
+    if(is.numeric(a) && length(a) == 1) a = names(x, a)
+    if(!(is.null(a) || is.character(a)))
+      stop("[,,...] numeric range indexing is no longer supported. Use subset instead.")
+    a
+  }, j=1:length(M)))
+  if(length(projector) > 0) x = project(x, projector)
+
+  if(drop) return(scidb_unpack_to_dataframe(x)[, -seq(1, length(dimensions(x)))])
   scidb_unpack_to_dataframe(x)
 }
 
