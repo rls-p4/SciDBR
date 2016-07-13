@@ -81,43 +81,6 @@ array_stats = function (scidb_array, per_instance=FALSE, per_attribute=FALSE)
   return(result)
 }
 
-#' SciDB grouped aggregate operator
-#'
-#' Apply a function to a SciDB array grouped by an array attribute or dimension.
-#' @param scidb_array either a character name of a stored array or a \code{scidb} array object
-#' @param by a list or character vector of array dimension and/or attribute names to group by
-#' @param FUN a valid SciDB aggregation function (expressed as a character string)
-#' @return A \code{scidb} array reference object
-#' @export
-grouped_aggregate = function(scidb_array, by, FUN)
-{
-  if (class(scidb_array) == "character") 
-  {
-    scidb_array = scidb(scidb_array)
-  }
-  if (!(class(scidb_array) %in% c("scidb", "scidbdf")))
-  {
-    stop("Invalid SciDB object")
-  }
-  if(missing(`by`))
-  {
-    stop("Must specify attributes or dimensions to aggregate by")
-  }
-  if(!is.list(`by`))
-  {
-    `by`=list(`by`)
-  }
-  if(missing(FUN))
-  {
-    stop("Must specify aggregation function")
-  }
-  scidb_array = scidb(sprintf("grouped_aggregate(%s, %s, %s)",
-                              scidb_array@name,
-                              FUN,
-                              paste(by, collapse=", ")
-  ))
-  scidb_array
-}
 
 #' Fast SciDB way to find unique elements
 #'
