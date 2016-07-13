@@ -16,15 +16,15 @@ if(nchar(host) > 0)
 # upload
   x = as.scidb(iris)
 # binary download
-  a = x[][, drop=TRUE]  # less SciDB dimension
+  a = x[, drop=TRUE]  # less SciDB dimension
   lapply(1:4,  function(j) check(all.equal(iris[, j], a[, j]), TRUE))  # less factor column
   check(all.equal(as.character(iris[, 5]), a[, 5]), TRUE)  # character column
 # iquery binary download
-  a = iquery(x, return=TRUE, binary=TRUE)[, drop=TRUE]
+  a = iquery(x, return=TRUE, binary=TRUE)[, -seq(1, length(dimensions(x)))]
   lapply(1:4,  function(j) check(all.equal(iris[, j], a[, j]), TRUE))  # less factor column
   check(all.equal(as.character(iris[, 5]), a[, 5]), TRUE)  # character column
 # iquery CSV download
-  a = iquery(x, return=TRUE, binary=FALSE)[, drop=TRUE]
+  a = iquery(x, return=TRUE, binary=FALSE)[, -seq(1, length(dimensions(x)))]
   lapply(1:4,  function(j) check(all.equal(iris[, j], a[, j]), TRUE))  # less factor column
   check(all.equal(as.character(iris[, 5]), a[, 5]), TRUE)  # character column
 
@@ -41,34 +41,33 @@ if(nchar(host) > 0)
   x = as.scidb(iris)
   check(is.scidb(x), TRUE)
   check(length(dim(x)), 2)
-  check(nrow(x), 150)
   y = cast(x, schema(x))
   redimension(x, schema(x))
   y = transform(x, i="iif(Species='setosa', 1, iif(Species='versicolor', 2, 3))")
-  z = redimension(y, dim=c("row", "i"))
-  check(length(dimensions(z)), 2)
+  z = redimension(y, dim=c(dimensions(y), "i"))
+  check(length(dimensions(z)), length(dimensions(y)) + 1)
 
   repart(x, schema(x))
   repart(x, schema(x), '*', 2, 1) 
   reshape_scidb(x, schema(x))
-  reshape_scidb(x, shape=150)
+  reshape_scidb(subarray(x, c(0, 0, 0, 0, 0, 149)), shape=150)
 
   unbound(x)
   replaceNA(x)
 
 # join
   y = merge(x, x)
-  check(ncol(y), 11)
+  check(length(scidb_attributes(y)), 10)
   y = merge(x, x, merge=TRUE)
-  check(ncol(y), 6)
+  check(length(scidb_attributes(y)), 5)
   y = merge(x, z) # crossjoin
-  check(ncol(y), 12)
+  check(length(scidb_attributes(y)), 10)
   antijoin(x, x)
   # join on attributes
   set.seed(1)
   a = as.scidb(data.frame(a=sample(10, 5), b=rnorm(5)))
   b = as.scidb(data.frame(u=sample(10, 5), v=rnorm(5)))
-  merge(x=a, y=b, by.x="a", by.y="u")[]
+  merge(x=a, y=b, by.x="a", by.y="u")[]  # XXX XXX broken
   # outer join
   merge(x, x, all=TRUE)
 

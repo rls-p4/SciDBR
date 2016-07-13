@@ -236,8 +236,7 @@ build_attr_schema = function(A, prefix="", I, newnames, nullable, newtypes)
   sprintf("<%s>",S)
 }
 
-# Build the dimension part of a SciDB array schema from a scidb,
-# scidb object.
+# Build the dimension part of a SciDB array schema from a scidb object
 # A: A scidb object
 # bracket: if TRUE, enclose dimension expression in square brackets
 # I: optional vector of dimension indices to use, if missing use all

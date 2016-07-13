@@ -32,6 +32,8 @@ merge_scidb_cross = function(x, y)
 
 merge_scidb_on_attributes = function(x, y, by.x, by.y)
 {
+  x = dimension_rename(x, dimensions(x), paste(dimensions(x), "x", sep="_"))
+  y = dimension_rename(y, dimensions(y), paste(dimensions(y), "y", sep="_"))
   `eval`=FALSE
   by.x = by.x[[1]]  # Limitation: only one attribute for now
   by.y = by.y[[1]]  # Ditto

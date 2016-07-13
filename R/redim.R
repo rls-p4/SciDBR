@@ -11,7 +11,7 @@ reshape_scidb = function(x, schema, shape, dimnames, start, chunks)
 {
   if(!missing(schema))
   {
-    if(is.scidb(schema)) schema=schema(schema) # <- that's nutty notation Malkovich!
+    if(is.scidb(schema)) schema = schema(schema) # <- that's nutty notation Malkovich!
     query = sprintf("reshape(%s,%s)",x@name,schema)
     return(.scidbeval(query, depend=list(x)))
   }
@@ -19,15 +19,15 @@ reshape_scidb = function(x, schema, shape, dimnames, start, chunks)
   N = length(shape)
   if(missing(dimnames))
   {
-    dimnames=letters[9:(9+N-1)]
+    dimnames=letters[9:(9 + N - 1)]
   }
   if(missing(chunks))
   {
-    chunks = ceiling(1e6^(1/N))
+    chunks = ceiling(1e6 ^ (1 / N))
   }
-  if(missing(start)) start = rep(0,N)
+  if(missing(start)) start = rep(0, N)
   shape = shape - 1 + start
-  D = build_dim_schema(x, newstart=start, newnames=dimnames, newend=shape, newchunk=chunks)
+  D = build_dim_schema(x, newstart=start, newnames=dimnames, newend=shape, newchunk=chunks, I=seq(1, N))
   query = sprintf("reshape(%s,%s%s)", x@name,build_attr_schema(x), D)
   .scidbeval(query, depend=list(x))
 }
