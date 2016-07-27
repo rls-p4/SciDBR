@@ -2,7 +2,7 @@
 #' Data are uploaded as TSV.
 #' @param X an R data frame, raw value, Matrix, matrix, or vector object
 #' @param name a SciDB array name to use
-#' @param start starting SciDB integer coordinate index
+#' @param start starting SciDB integer coordinate index (does not apply to data frames)
 #' @param gc set to FALSE to disconnect the SciDB array from R's garbage collector
 #' @param ... other options, see \code{\link{df2scidb}}
 #' @return A \code{scidb} object
@@ -18,7 +18,7 @@ as.scidb = function(X,
   }
   if(inherits(X, "data.frame"))
   {
-    return(df2scidb(X, name=name, gc=gc, start=start, ...))
+    return(df2scidb(X, name=name, gc=gc, ...))
   }
   if(inherits(X, "dgCMatrix"))
   {

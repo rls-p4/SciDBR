@@ -785,46 +785,22 @@ lazyeval = function(name)
 #' Internal function to upload an R data frame to SciDB
 #' @param X a data frame
 #' @param name SciDB array name
-#' @param dimlabel name of SciDB dimension
-#' @param chunkSize SciDB chunk size
-#' @param rowOverlap SciDB chunk overlap
 #' @param types SciDB attribute types
-#' @param nullable SciDB attribute nullability
-#' @param schema_only set to \code{TRUE} to just return the SciDB schema (don't upload)
 #' @param gc set to \code{TRUE} to connect SciDB array to R's garbage collector
-#' @param start SciDB coordinate index starting value
-#' @return A \code{\link{scidb}} object, or a character schema string if \code{schema_only=TRUE}.
+#' @return a \code{\link{scidb}} object, or a character schema string if \code{schema_only=TRUE}.
 #' @keywords internal
 df2scidb = function(X,
                     name=tmpnam(),
-                    dimlabel="row",
-                    chunkSize,
-                    rowOverlap=0L,
                     types=NULL,
-                    nullable,
-                    schema_only=FALSE,
-                    gc, start)
+                    gc)
 {
   if(!is.data.frame(X)) stop("X must be a data frame")
-  if(missing(start)) start = 1
-  start = as.numeric(start)
   if(missing(gc)) gc = FALSE
-  if(!missing(nullable)) warning("The nullable option has been deprecated. All uploaded attributes will be nullable by default. Use the `replaceNA` function to change this.")
   nullable = TRUE
   anames = make.names(names(X), unique=TRUE)
   anames = gsub("\\.","_", anames, perl=TRUE)
   if(length(anames)!=ncol(X)) anames = make.names(1:ncol(X))
   if(!all(anames==names(X))) warning("Attribute names have been changed")
-# Check for attribute/dimension name conflict
-  old_dimlabel = dimlabel
-  dimlabel = tail(make.names(c(anames, dimlabel),unique=TRUE), n=1)
-  dimlabel = gsub("\\.","_", dimlabel, perl=TRUE)
-  if(dimlabel!=old_dimlabel) warning("Dimension name has been changed")
-  if(missing(chunkSize)) {
-    chunkSize = min(nrow(X), 10000)
-  }
-  chunkSize = as.numeric(chunkSize)
-  m = ceiling(nrow(X) / chunkSize)
 
 # Default type is string
   typ = rep("string", ncol(X))
@@ -868,10 +844,6 @@ df2scidb = function(X,
     else dcast[j] = sprintf("%s, dcast(a%d, %s(null))", anames[j], j-1, typ[j])
   }
   args = sprintf("<%s>", paste(anames, ":", typ, " null", collapse=","))
-
-  SCHEMA = paste(args, "[", dimlabel,"=", noE(start), ":", noE(nrow(X) + start - 1), ",",
-                 noE(chunkSize), ",", noE(rowOverlap), "]", sep="")
-  if(schema_only) return(SCHEMA)
 
 # Obtain a session from the SciDB http service for the upload process
   session = getSession()

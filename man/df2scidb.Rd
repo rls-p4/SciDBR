@@ -4,32 +4,19 @@
 \alias{df2scidb}
 \title{Internal function to upload an R data frame to SciDB}
 \usage{
-df2scidb(X, name = tmpnam(), dimlabel = "row", chunkSize, rowOverlap = 0L,
-  types = NULL, nullable, schema_only = FALSE, gc, start)
+df2scidb(X, name = tmpnam(), types = NULL, gc)
 }
 \arguments{
 \item{X}{a data frame}
 
 \item{name}{SciDB array name}
 
-\item{dimlabel}{name of SciDB dimension}
-
-\item{chunkSize}{SciDB chunk size}
-
-\item{rowOverlap}{SciDB chunk overlap}
-
 \item{types}{SciDB attribute types}
 
-\item{nullable}{SciDB attribute nullability}
-
-\item{schema_only}{set to \code{TRUE} to just return the SciDB schema (don't upload)}
-
 \item{gc}{set to \code{TRUE} to connect SciDB array to R's garbage collector}
-
-\item{start}{SciDB coordinate index starting value}
 }
 \value{
-A \code{\link{scidb}} object, or a character schema string if \code{schema_only=TRUE}.
+a \code{\link{scidb}} object, or a character schema string if \code{schema_only=TRUE}.
 }
 \description{
 Internal function to upload an R data frame to SciDB

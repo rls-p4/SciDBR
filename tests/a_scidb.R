@@ -62,12 +62,21 @@ if(nchar(host) > 0)
   check(length(scidb_attributes(y)), 5)
   y = merge(x, z) # crossjoin
   check(length(scidb_attributes(y)), 10)
+
   antijoin(x, x)
+
   # join on attributes
   set.seed(1)
   a = as.scidb(data.frame(a=sample(10, 5), b=rnorm(5)))
   b = as.scidb(data.frame(u=sample(10, 5), v=rnorm(5)))
+  # problem introduced by aio loader :(
+  if("src_instance_id" %in% dimensions(a))
+  {
+    a = slice(a, c("dst_instance_id", "src_instance_id"), c(0,0))
+    b = slice(b, c("dst_instance_id", "src_instance_id"), c(0,0))
+  }
   merge(x=a, y=b, by.x="a", by.y="u")[]
+
   # outer join
   merge(x, x, all=TRUE)
 
@@ -76,9 +85,19 @@ if(nchar(host) > 0)
   z = subset(x, Species == "setosa")
   check(count(y), count(z))
   i = 40
-  y = subset(x, "Species = 'setosa' and line_no > 40")
-  z = subset(x, Species == 'setosa' & line_no > i)
-  check(count(y), count(z))
+  if("tuple_no" %in% dimensions(x))
+  {
+    y = subset(x, "Species = 'setosa' and tuple_no > 40")
+    z = subset(x, Species == 'setosa' & tuple_no > i)
+    check(count(y), count(z))
+  }
+  else if("line_no" %in% dimensions(x)) # inconsistent naming in upload dimensions depending on SciDB load plugin :(
+  {
+    y = subset(x, "Species = 'setosa' and line_no > 40")
+    z = subset(x, Species == 'setosa' & line_no > i)
+    check(count(y), count(z))
+  }
+
 
   # from issue #86
   iquery("create_array(genotype_test, <allele_1:bool,allele_2:bool,phase:bool> [chromosome_id=0:*,1,0,start=0:*,10000000,0,end=0:*,10000000,0,alternate_id=0:19,20,0,sample_id=0:*,100,0], 0)")

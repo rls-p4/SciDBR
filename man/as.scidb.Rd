@@ -12,7 +12,7 @@ as.scidb(X, name = tmpnam(), start, gc = TRUE, ...)
 
 \item{name}{a SciDB array name to use}
 
-\item{start}{starting SciDB integer coordinate index}
+\item{start}{starting SciDB integer coordinate index (does not apply to data frames)}
 
 \item{gc}{set to FALSE to disconnect the SciDB array from R's garbage collector}
 
