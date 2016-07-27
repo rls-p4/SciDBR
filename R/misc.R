@@ -155,6 +155,7 @@ iqdf = function( x, n = 6L, prob = 1)
     result = scidb(result)
   }
   got_limit = any(grepl("^limit$", .scidbenv$ops$name))
+  if(is.infinite(n)) return(result[])
   if(got_limit)
   {
     return(iquery(sprintf("limit(%s, %.0f)", result@name, n), return=TRUE))

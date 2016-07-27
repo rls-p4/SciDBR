@@ -461,10 +461,10 @@ query_to_df = function(aflstr, dims, attribs, TYPES, NULLABILITY,
   if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
 
   aflstr = sprintf("project(apply(%s,%s),%s,%s)", 
-                  aflstr, 
-                  paste(dims, dims, sep=",", collapse=","), 
-                  paste(dims, collapse=",") , 
-                  paste(attribs, collapse=",")
+                   aflstr, 
+                   paste(dims, dims, sep=",", collapse=","), 
+                   paste(dims, collapse=",") , 
+                   paste(attribs, collapse=",")
                   )
 
   # Some basic string cleaning on the AFL string so that it can be passed to httr::GET e.g. SPACE is replaced with %20
@@ -482,11 +482,11 @@ query_to_df = function(aflstr, dims, attribs, TYPES, NULLABILITY,
   TYPES=c(rep("int64", length(dims)), TYPES)
   NULLABILITY=c(rep(FALSE, length(dims)), NULLABILITY)
   savestr=sprintf("(%s)", 
-                    paste( TYPES, 
-                        ifelse(NULLABILITY,
-                        "+null", ""), 
-                      sep="", collapse = ",")
-                    )
+                    paste(TYPES, 
+                          ifelse(NULLABILITY,
+                          "+null", ""), 
+                          sep="", collapse = ",")
+                 )
   
   # Now formulate and execute the query
   # /execute_query
