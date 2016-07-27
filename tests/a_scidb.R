@@ -76,10 +76,10 @@ if(nchar(host) > 0)
     b = slice(b, c("dst_instance_id", "src_instance_id"), c(0,0))
   }
   merge(x=a, y=b, by.x="a", by.y="u")[]
-  x = scidb("apply(build(<a:string>[i=0:5,2,0], '[(abc),(def),(ghi),(jkl),(mno)]', true), b, double(i)*1.1)")
-  y = scidb("apply(build(<c:string>[j=1:5,3,0], '[(def),(mno),(pqr),(def)]', true), d, j)")
-  check(count(merge(x, y, by.x='a', by.y='c')), 3)
-  check(count(merge(x, y, by.x=c("a","i"), by.y=c("c", "d"))), 1)
+  a = scidb("apply(build(<a:string>[i=0:5,2,0], '[(abc),(def),(ghi),(jkl),(mno)]', true), b, double(i)*1.1)")
+  b = scidb("apply(build(<c:string>[j=1:5,3,0], '[(def),(mno),(pqr),(def)]', true), d, j)")
+  check(count(merge(a, b, by.x='a', by.y='c')), 3)
+  check(count(merge(a, b, by.x=c("a","i"), by.y=c("c", "d"))), 1)
 
   # outer join
   merge(x, x, all=TRUE)

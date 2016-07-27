@@ -26,7 +26,7 @@ The default aggregation function used in case \code{expr} is left missing is \co
 }
 \examples{
 \dontrun{
-x <- as.scidb(iris)
+x <- unpack(as.scidb(iris))
 regrid(x, 10, min)
 }
 }

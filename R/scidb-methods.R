@@ -106,7 +106,7 @@ setGeneric("regrid", function(x, grid, expr) standardGeneric("regrid"))
 #' @note The default aggregation function used in case \code{expr} is left missing is \code{max}.
 #' @examples
 #' \dontrun{
-#' x <- as.scidb(iris)
+#' x <- unpack(as.scidb(iris))
 #' regrid(x, 10, min)
 #' }
 #' @importFrom stats aggregate
@@ -126,7 +126,7 @@ setGeneric("xgrid", function(x, grid, expr) standardGeneric("xgrid"))
 #' @param grid a vector of grid sizes as long as \code{length(dimensions(x))}
 #' @examples
 #' \dontrun{
-#' x <- as.scidb(iris)
+#' x <- subarray(unpack(as.scidb(iris)), c(0, 149))
 #' y <- regrid(x, 10, min)
 #' z <- xgrid(y, 10)
 #' }

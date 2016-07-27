@@ -18,7 +18,7 @@ SciDB xgrid prolongation operator
 }
 \examples{
 \dontrun{
-x <- as.scidb(iris)
+x <- subarray(unpack(as.scidb(iris)), c(0, 149))
 y <- regrid(x, 10, min)
 z <- xgrid(y, 10)
 }
