@@ -4,7 +4,7 @@
 \alias{df2scidb}
 \title{Internal function to upload an R data frame to SciDB}
 \usage{
-df2scidb(X, name = tmpnam(), types = NULL, gc)
+df2scidb(X, name = tmpnam(), types = NULL, chunk_size = 1e+05, gc)
 }
 \arguments{
 \item{X}{a data frame}
@@ -12,6 +12,8 @@ df2scidb(X, name = tmpnam(), types = NULL, gc)
 \item{name}{SciDB array name}
 
 \item{types}{SciDB attribute types}
+
+\item{chunk_size}{passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools}
 
 \item{gc}{set to \code{TRUE} to connect SciDB array to R's garbage collector}
 }

@@ -67,8 +67,8 @@ if(nchar(host) > 0)
 
   # join on attributes
   set.seed(1)
-  a = as.scidb(data.frame(a=sample(10, 5), b=rnorm(5)))
-  b = as.scidb(data.frame(u=sample(10, 5), v=rnorm(5)))
+  a = as.scidb(data.frame(a=sample(10, 5), b=rnorm(5)), chunk_size=1000)
+  b = as.scidb(data.frame(u=sample(10, 5), v=rnorm(5)), chunk_size=1000)
   # problem introduced by aio loader :(
   if("src_instance_id" %in% dimensions(a))
   {

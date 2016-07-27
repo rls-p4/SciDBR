@@ -785,6 +785,7 @@ lazyeval = function(name)
 #' Internal function to upload an R data frame to SciDB
 #' @param X a data frame
 #' @param name SciDB array name
+#' @param chunk_size passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools
 #' @param types SciDB attribute types
 #' @param gc set to \code{TRUE} to connect SciDB array to R's garbage collector
 #' @return a \code{\link{scidb}} object, or a character schema string if \code{schema_only=TRUE}.
@@ -792,6 +793,7 @@ lazyeval = function(name)
 df2scidb = function(X,
                     name=tmpnam(),
                     types=NULL,
+                    chunk_size=100000,
                     gc)
 {
   if(!is.data.frame(X)) stop("X must be a data frame")
@@ -859,8 +861,8 @@ df2scidb = function(X,
   atts = paste(dcast, collapse=",")
   if(aio)
   {
-    LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d'),%s),%s)", tmp,
-                 ncolX, atts, paste(anames, collapse=","))
+    LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d','chunk_size=%.0f'),%s),%s)", tmp,
+                 ncolX, chunk_size, atts, paste(anames, collapse=","))
   } else
   {
     LOAD = sprintf("project(apply(parse(split('%s'),'num_attributes=%d'),%s), %s)", tmp,
