@@ -105,8 +105,8 @@ if(nchar(host) > 0)
   chromosome = 7
   start_coord = 10000000
   end_coord = 40000000
-  check(grepl("filter", subset(genotype, chromosome_id == (chromosome-1) && end >= start_coord && start <= end_coord)@name), FALSE)
-  check(grepl("filter", subset(genotype, chromosome_id == (chromosome-1) && end >= start_coord && start <= end_coord && phase > 0)@name), TRUE)
+  check(grepl("filter", subset(genotype, chromosome_id == (chromosome - 1) && end >= start_coord && start <= end_coord)@name), FALSE)
+  check(grepl("filter", subset(genotype, chromosome_id == (chromosome - 1) && end >= start_coord && start <= end_coord && phase > 0)@name), TRUE)
   iquery("remove(genotype_test)")
 
 # aggregation
