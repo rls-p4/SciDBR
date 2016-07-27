@@ -40,7 +40,6 @@ scidb_unpack_to_dataframe = function(query, ...)
 {
   DEBUG = FALSE
   projected = FALSE
-  aio = length(grep("aio", .scidbenv$ops)) > 0
   if(!inherits(query, "scidb")) query = scidb(query)
   if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG = TRUE
   buffer = 100000L
@@ -884,9 +883,17 @@ df2scidb = function(X,
   tmp = gsub("\n", "", gsub("\r", "", tmp))
 
 # Generate a load_tools query
+  aio = length(grep("aio_input", .scidbenv$ops)) > 0
   atts = paste(dcast, collapse=",")
-  LOAD = sprintf("project(apply(parse(split('%s'),'num_attributes=%d'),%s), %s)", tmp,
+  if(aio)
+  {
+    LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d'),%s),%s)", tmp,
                  ncolX, atts, paste(anames, collapse=","))
+  } else
+  {
+    LOAD = sprintf("project(apply(parse(split('%s'),'num_attributes=%d'),%s), %s)", tmp,
+                 ncolX, atts, paste(anames, collapse=","))
+  }
   query = sprintf("store(%s,%s)", LOAD, name)
   scidbquery(query, release=1, session=session, stream=0L)
   scidb(name, gc=gc)
