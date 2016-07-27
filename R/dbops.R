@@ -417,17 +417,13 @@ sort_scidb = function(x, decreasing=FALSE, ...)
 #' \code{by.x} and \code{by.y}, respectively.
 #'
 #' If dimension names are specified and \code{by} contains all the dimensions
-#' in each array, then the SciDB \code{join} operator is used, otherwise SciDB's
-#' \code{cross_join} operator is used. In each either case, the output is a cross
+#' in each array, then the SciDB \code{join} or \code{merge} operator is used, otherwise SciDB's
+#' \code{cross_join} or \code{equi_join} operator is used. In each either case, the output is a cross
 #' product set of the two arrays along the specified dimensions.
 #'
-#' If \code{by} or each of \code{by.x} and \code{by.y} list a single attribute
-#' name, the indicated attributes will be lexicographically ordered as categorical
-#' variables and SciDB will redimension each array along new coordinate systems
-#' defined by the attributes, and then those redimensioned arrays will be joined.
-#' This method limits joins along attributes to a single attribute from
-#' each array. The output array will contain additional columns showing the
-#' attribute factor levels used to join the arrays.
+#' If \code{by} or any of \code{by.x} and \code{by.y} contain an attribute name
+#' name, the optional SciDB plugin operator \code{equi_join} will be used, see
+#' https://github.com/Paradigm4/equi_join.
 #'
 #' Specify \code{merge=TRUE} to perform a SciDB merge operation instead
 #' of a SciDB join.

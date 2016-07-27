@@ -9,7 +9,7 @@ merge_scidb_cross = function(x, y)
 # Impose a reasonable chunk size for dense arrays
   chunky = scidb_coordinate_chunksize(y)
   chunkx   = scidb_coordinate_chunksize(x)
-  chunk_elements = prod(c(as.numeric(chunky),as.numeric(chunkx)))
+  chunk_elements = prod(c(as.numeric(chunky), as.numeric(chunkx)))
 # Only compute these counts if we need to
   pdx = prod(dim(x))
   if(is.scidb(x)) pdx = dim(x)[1]
@@ -21,44 +21,23 @@ merge_scidb_cross = function(x, y)
       NS = 1e6^(1/NC)
       chunky = rep(noE(NS), length(chunky))
       chunkx = rep(noE(NS), length(chunkx))
-      x = repart(x,sprintf("%s%s",build_attr_schema(x), build_dim_schema(x, newchunk=chunkx)))
-      y = repart(y,sprintf("%s%s",build_attr_schema(y), build_dim_schema(y, newchunk=chunkx)))
+      x = repart(x, sprintf("%s%s", build_attr_schema(x), build_dim_schema(x, newchunk=chunkx)))
+      y = repart(y, sprintf("%s%s", build_attr_schema(y), build_dim_schema(y, newchunk=chunkx)))
     }
-  newds = build_dim_schema(y,newnames=make.unique_(dimensions(x), dimensions(y)))
-  y = cast(y,sprintf("%s%s",newas,newds))
-  query = sprintf("cross_join(%s, %s)",x@name,y@name)
-  return(.scidbeval(query,FALSE,depend=list(x,y)))
+  newds = build_dim_schema(y, newnames=make.unique_(dimensions(x), dimensions(y)))
+  y = cast(y, sprintf("%s%s", newas, newds))
+  query = sprintf("cross_join(%s, %s)", x@name, y@name)
+  return(.scidbeval(query, FALSE, depend=list(x, y)))
 }
 
+# Special case 2: merge on attributes or combinations of attributes and dimensions
+# x, y scidb objects
+# by.x, by.y character vectors of dimension and/or attributes
 merge_scidb_on_attributes = function(x, y, by.x, by.y)
 {
-  x = dimension_rename(x, dimensions(x), paste(dimensions(x), "x", sep="_"))
-  y = dimension_rename(y, dimensions(y), paste(dimensions(y), "y", sep="_"))
-  `eval`=FALSE
-  by.x = by.x[[1]]  # Limitation: only one attribute for now
-  by.y = by.y[[1]]  # Ditto
-  al = scidb_alias(x, y)  # new alias names
-  lkup = unique(project(x, by.x), attributes=by.x)
-  XI = index_lookup(x, lkup, by.x)
-  YI = index_lookup(y, lkup, by.y)
-
-  new_dim_name = make.unique_(c(dimensions(x),dimensions(y)),"row")
-  a = scidb_attributes(XI) %in% paste(by.x,"index",sep="_")
-  n = scidb_attributes(XI)[a]
-  redim = paste(paste(n,"=-1:", .scidb_DIM_MAX, ",100000,0", sep=""), collapse=",")
-  S = build_attr_schema(x, I =! (scidb_attributes(x) %in% by.x))
-  D = sprintf("[%s,%s]",redim,build_dim_schema(x,bracket=FALSE))
-  q1 = sprintf("redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s)",XI@name,n,S,D)
-
-  a = scidb_attributes(YI) %in% paste(by.y,"index",sep="_")
-  n = scidb_attributes(YI)[a]
-  redim = paste(paste(n,"=-1:",.scidb_DIM_MAX,",100000,0",sep=""), collapse=",")
-  S = build_attr_schema(y)
-  D = sprintf("[%s,%s]",redim,build_dim_schema(y,bracket=FALSE))
-  D2 = sprintf("[%s,_%s]",redim,build_dim_schema(y,bracket=FALSE))
-  q2 = sprintf("cast(redimension(substitute(%s,build(<_i_:int64>[_j_=0:0,1,0],-1),%s),%s%s),%s%s)",YI@name,n,S,D,S,D2)
-  query = sprintf("unpack(cross_join(%s as %s, %s as %s, %s.%s_index, %s.%s_index),%s)",q1,al[1],q2,al[2],al[1],by.x,al[2],by.y,new_dim_name)
-  return(.scidbeval(query,eval,depend=list(x,y)))
+  query = sprintf("equi_join(%s, %s, 'left_names=%s', 'right_names=%s')",
+                  x@name, y@name, paste(by.x, collapse=","), paste(by.y, collapse=","))
+  return(.scidbeval(query, FALSE, depend=list(x,y)))
 }
 
 # SciDB join, cross_join, and merge wrapper internal function
@@ -90,7 +69,7 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
   if(!is.null(mc$by.x)) by.x = mc$by.x
   if(!is.null(mc$by.y)) by.y = mc$by.y
   if(!is.null(mc$merge)) scidbmerge = mc$merge
-  if(!is.null(mc$fillin)) fillin = sprintf("(%s)",mc$fillin)
+  if(!is.null(mc$fillin)) fillin = sprintf("(%s)", mc$fillin)
   `eval` = FALSE
   xname = x@name
   yname = y@name
@@ -110,7 +89,7 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
       length(`by`)==0 && is.null(by.x) && is.null(by.y))
   {
     if(scidbmerge) stop("SciDB merge not supported in this context")
-    return(merge_scidb_cross(x,y))
+    return(merge_scidb_cross(x, y))
   }
 
 # Convert identically specified by into separate by.x by.y
@@ -124,14 +103,11 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
   if(is.numeric(by.x)) by.x = dimensions(x)[by.x]
   if(is.numeric(by.y)) by.y = dimensions(y)[by.y]
 
-# Check for special join on attributes case (limited applicability)
-# In particular:
-# - join on only one attribute per array
-# - only inner join
-  if(all(by.x %in% scidb_attributes(x)) && all(by.y %in% scidb_attributes(y)))
+# Check for special join on attributes case
+  if(any(by.x %in% scidb_attributes(x)) && any(by.y %in% scidb_attributes(y)))
   {
-    if(scidbmerge) stop("SciDB merge not supported in this context")
-    return(merge_scidb_on_attributes(x,y,by.x,by.y))
+    if(scidbmerge) stop("SciDB merge not supported in this context (only join)")
+    return(merge_scidb_on_attributes(x, y, by.x, by.y))
   }
 
 # OK, we've ruled out cross and attribute join special cases. We have left
@@ -143,7 +119,7 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
   if((length(by.x) == length(by.y)) && all(dimensions(x) %in% by.x) && all(dimensions(y) %in% by.y))
   {
 # Check for valid starting coordinates (they must be identical)
-    if(!isTRUE(all.equal(scidb_coordinate_start(x),scidb_coordinate_start(y))))
+    if(!isTRUE(all.equal(scidb_coordinate_start(x), scidb_coordinate_start(y))))
     {
 #      stop("Mis-matched starting coordinates") # used to error out, now try to redim
 # try inserting a redimension
@@ -153,23 +129,23 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
        {
          newstart = scidb_coordinate_start(y)
          newstart[xless] = scidb_coordinate_start(x)
-         y = redimension(y, schema=sprintf("%s%s", build_attr_schema(y), build_dim_schema(y,newstart=newstart)))
+         y = redimension(y, schema=sprintf("%s%s", build_attr_schema(y), build_dim_schema(y, newstart=newstart)))
        }
        if(any(yless))
        {
          newstart = scidb_coordinate_start(x)
          newstart[yless] = scidb_coordinate_start(y)
-         x = redimension(x, schema=sprintf("%s%s", build_attr_schema(x), build_dim_schema(x,newstart=newstart)))
+         x = redimension(x, schema=sprintf("%s%s", build_attr_schema(x), build_dim_schema(x, newstart=newstart)))
        }
     }
 # If the chunk sizes are identical, we're OK (join does not care about the
 # upper array bounds). Otherwise we need redimension.
     if(!isTRUE(all.equal(scidb_coordinate_chunksize(x), scidb_coordinate_chunksize(y))))
     {
-      newds = build_dim_schema(y,newnames=dimensions(x))
+      newds = build_dim_schema(y, newnames=dimensions(x))
       castschema = sprintf("%s%s", newas, newds)
-      reschema = sprintf("%s%s", newas,build_dim_schema(x))
-      z = redimension(cast(y,castschema),reschema)
+      reschema = sprintf("%s%s", newas, build_dim_schema(x))
+      z = redimension(cast(y, castschema), reschema)
     } else
     {
       castschema = sprintf("%s%s", newas, build_dim_schema(y))
@@ -182,24 +158,24 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
       x = make_nullable(x)
       z = make_nullable(z)
 # Form a null-valued version of each array in the alternate array coordinate system
-      xnames = make.unique_(c(dimensions(z),scidb_attributes(z)),scidb_attributes(x))
-      vals = paste(scidb_types(x), rep(fillin,length(scidb_types(x))))
-      xnull = make_nullable(attribute_rename(project(bind(z,xnames,vals),xnames),xnames,scidb_attributes(x)))
-      znames = make.unique_(c(dimensions(x),scidb_attributes(x)),scidb_attributes(z))
-      vals = paste(scidb_types(z), rep(fillin,length(scidb_types(z))))
-      znull = make_nullable(attribute_rename(project(bind(x,znames,vals),znames),znames,scidb_attributes(z)))
+      xnames = make.unique_(c(dimensions(z), scidb_attributes(z)), scidb_attributes(x))
+      vals = paste(scidb_types(x), rep(fillin, length(scidb_types(x))))
+      xnull = make_nullable(attribute_rename(project(bind(z, xnames, vals), xnames), xnames, scidb_attributes(x)))
+      znames = make.unique_(c(dimensions(x), scidb_attributes(x)), scidb_attributes(z))
+      vals = paste(scidb_types(z), rep(fillin, length(scidb_types(z))))
+      znull = make_nullable(attribute_rename(project(bind(x, znames, vals), znames), znames, scidb_attributes(z)))
 # Merge each array with its nullified counterpart, then join:
-      query = sprintf("join(merge(%s,%s),merge(%s,%s))",x@name,xnull@name,z@name,znull@name)
+      query = sprintf("join(merge(%s, %s), merge(%s, %s))", x@name, xnull@name, z@name, znull@name)
     }
     else
       if(scidbmerge)
       {
-        query = sprintf("merge(%s,%s)",x@name,z@name)
+        query = sprintf("merge(%s, %s)", x@name, z@name)
       } else
       {
-        query = sprintf("join(%s,%s)",x@name,z@name)
+        query = sprintf("join(%s, %s)", x@name, z@name)
       }
-    return(.scidbeval(query,eval,depend=list(x,y)))
+    return(.scidbeval(query, eval, depend=list(x, y)))
   }
 
 
@@ -212,49 +188,49 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
     function(j) {
 # It's possible to get a SciDB name conflict here (issue #41).
       y_dim = dimensions(y)[j]
-      y_new = make.unique_(dimensions(x),y_dim)
+      y_new = make.unique_(dimensions(x), y_dim)
       if(!msk.y[j])
       {
-        build_dim_schema(y,I=j,bracket=FALSE,newnames=y_new)
+        build_dim_schema(y, I=j, bracket=FALSE, newnames=y_new)
       } else
       {
         ind = which(by.y %in% y_dim) # by index
-        build_dim_schema(x,I=idx.x[ind],newnames=y_dim,bracket=FALSE,newend=scidb_coordinate_end(y)[j])
+        build_dim_schema(x, I=idx.x[ind], newnames=y_dim, bracket=FALSE, newend=scidb_coordinate_end(y)[j])
       }
     })
-  newds = newds[!unlist(lapply(newds,is.null))]
-  newds = sprintf("[%s]",paste(newds,collapse=","))
+  newds = newds[!unlist(lapply(newds, is.null))]
+  newds = sprintf("[%s]", paste(newds, collapse=","))
 
 # If the chunk sizes are identical, we're OK (join does not care about the
 # upper array bounds). Otherwise we need redimension. This is no longer needed
 # after 14.12, but we keep the old optimization around for
 # backward-compatibility.
-  if(compare_versions(options("scidb.version")[[1]],14.12))
+  if(compare_versions(options("scidb.version")[[1]], 14.12))
   {
-    castschema = sprintf("%s%s",newas,newds)
+    castschema = sprintf("%s%s", newas, newds)
     z = cast(y, castschema)
   } else
   {
-    if(isTRUE(compare_schema(x,y,ignore_attributes=TRUE,ignore_types=TRUE,ignore_nullable=TRUE,s1_dimension_index=idx.x, s2_dimension_index=which(msk.y), ignore_end=TRUE)))
+    if(isTRUE(compare_schema(x, y, ignore_attributes=TRUE, ignore_types=TRUE, ignore_nullable=TRUE, s1_dimension_index=idx.x, s2_dimension_index=which(msk.y), ignore_end=TRUE)))
     {
-      castschema = sprintf("%s%s",newas,newds)
+      castschema = sprintf("%s%s", newas, newds)
       z = cast(y, castschema)
     } else
     {
-      reschema = sprintf("%s%s", newas,newds)
-      castschema = sprintf("%s%s",newas,newds)
-      z = redimension(cast(subarray(y,limits=reschema,between=TRUE),castschema),reschema)
+      reschema = sprintf("%s%s", newas, newds)
+      castschema = sprintf("%s%s", newas, newds)
+      z = redimension(cast(subarray(y, limits=reschema, between=TRUE), castschema), reschema)
     }
   }
 
 # Join on dimensions.
   query = sprintf("cross_join(%s as %s, %s as %s", xname, al[1], z@name, al[2])
-  k = min(length(by.x),length(by.y))
+  k = min(length(by.x), length(by.y))
   by.x = by.x[1:k]
   by.y = by.y[1:k]
-  cterms = unique(paste(c(al[1],al[2]), as.vector(rbind(by.x,by.y)), sep="."))
-  cterms = paste(cterms,collapse=",")
-  query  = paste(query,",",cterms,")",sep="")
-  ans = .scidbeval(query,eval,depend=list(x,y))
+  cterms = unique(paste(c(al[1], al[2]), as.vector(rbind(by.x, by.y)), sep="."))
+  cterms = paste(cterms, collapse=",")
+  query  = paste(query, ",", cterms, ")", sep="")
+  ans = .scidbeval(query, eval, depend=list(x, y))
   ans
 }
