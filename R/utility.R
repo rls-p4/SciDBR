@@ -21,6 +21,7 @@ scidbeval = function(expr, eval=TRUE, name, gc=TRUE, temp=FALSE)
 #' @param name a character string name of a stored SciDB array or a valid SciDB AFL expression
 #' @param gc a logical value, \code{TRUE} means connect the SciDB array to R's garbage collector
 #' @return a \code{scidb} object
+#' @importFrom methods new show
 #' @export
 scidb = function(name, gc=FALSE)
 {
