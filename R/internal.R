@@ -285,7 +285,7 @@ rewrite_subset_expression = function(expr, sci, frame)
         if(length(test) > 0)
         {
           if(DEBUG) cat("Replacing symbol", s, "with ")
-          s = tryCatch(noE(test[[1]]), error=function(e) s)
+          s = test[[1]]
           if(DEBUG) cat(s, "\n")
         }
       }
@@ -323,7 +323,7 @@ rewrite_subset_expression = function(expr, sci, frame)
           numx = as.numeric(x[[s]])
           lb = ceiling(numx)
           ub = floor(intx)
-          if(intx==numx)
+          if(intx == numx)
           {
             lb = intx + 1
             ub = intx - 1
