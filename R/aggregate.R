@@ -1,10 +1,8 @@
-aggregate_scidb = function(x, by, FUN, window, variable_window)
+aggregate_scidb = function(x, by, FUN, window, variable_window, grouped)
 {
-  if(missing(`by`))
-  {
-    `by`=""
-  }
-  if(!is.list(`by`)) `by`=list(`by`)
+  if(missing(`by`))    `by` = ""
+  if(missing(grouped)) grouped = FALSE
+  if(!is.list(`by`))   `by` = list(`by`)
 # Check for common function names and map to SciDB expressions
   if(is.function(FUN))
   {
@@ -45,7 +43,7 @@ aggregate_scidb = function(x, by, FUN, window, variable_window)
 # Handle group by attributes with grouped_aggregate, not including window and
 # variable_window aggregations.
   aggop = "aggregate"
-  if(any(a)) aggop = "grouped_aggregate"
+  if(any(a) || grouped) aggop = "grouped_aggregate"
   along = paste(b, collapse=",")
 
   if(!missing(window))

@@ -5,7 +5,7 @@
 \alias{aggregate,scidb-method}
 \title{Aggregate a SciDB Array Grouped by a Subset of its Dimensions and/or Attributes}
 \usage{
-\S4method{aggregate}{scidb}(x, by, FUN, window, variable_window)
+\S4method{aggregate}{scidb}(x, by, FUN, window, variable_window, grouped)
 }
 \arguments{
 \item{x}{A \code{scidb} object.}
@@ -19,6 +19,8 @@ or a \code{scidb} object to group by. Not required for \code{windowed} and grand
 
 \item{variable_window}{optional, if specified, perform a moving window aggregate over successive data values along the
 coordinate dimension axis specified by \code{by}--see details below.}
+
+\item{grouped}{optional, if \code{grouped=TRUE} always use the SciDB \code{grouped_aggregate} operator plugin.}
 }
 \value{
 a \code{scidb} object
@@ -35,15 +37,11 @@ describing the query that can be composed with other SciDB package functions.
 If an R reduction function is speciied for \code{FUN}, it will be
 transliterated to a SciDB aggregate.
 
-The \code{by} argument must be a list of dimension names and/or attribute names
-in the array \code{x} to group by, or a SciDB array reference object.  If
-\code{by} is not specified and one of the \code{window} options is not
-specified, then a grand aggregate is performed over all values in the array.
-
 The argument \code{by} may be a list of dimension names and/or attributes of the
-array \code{x}. Attributes that are not of type int64 will be `factorized` first
-and replaced by enumerated int64 values that indicate each unique level (this
-requires SciDB 13.6 or higher).
+array \code{x}. Grouping by attributes requires the optional SciDB
+\code{grouped_aggregate} plugin available from https://github.com/paradigm4/grouped_aggregate.
+Use the optional \code{grouped=TRUE} argument to force use of the \code{grouped_aggregate}
+operator for any aggregation.
 
 When \code{by} is a SciDB array it must contain one or more common dimensions
 with \code{x}.  The two arrays will be joined (using SciDB
