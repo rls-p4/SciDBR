@@ -78,18 +78,17 @@ illustration.
 }
 \examples{
 \dontrun{
-x <- as.scidb(iris,name="iris")
+x <- as.scidb(iris)
 
 a <- x$Species
 b <- x$Petal_Length
 
-c <- merge(a, b, by="row")
-merge(b, b, by="row", merge=TRUE)
+c <- merge(a, b)
+merge(b, b, merge=TRUE)
 
 
 # Here is an example that joins on SciDB array attributes instead of
-# dimensions. It works by enumerating the attribute values and
-# redimensioning along those.
+# dimensions using the 'equi_join' SciDB plugin operator.
 set.seed(1)
 a <- as.scidb(data.frame(a=sample(10, 5), b=rnorm(5)))
 b <- as.scidb(data.frame(u=sample(10, 5), v=rnorm(5)))
