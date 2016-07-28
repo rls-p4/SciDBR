@@ -161,7 +161,8 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y, all.x, all.y)
     if(all.x || all.y) # outer join
     {
       if(scidbmerge) stop("at most one of `all` and `merge` may be set TRUE")
-      query = sprintf("equi_join(%s, %s, 'left_outer=%d', 'right_outer=%d')", x@name, z@name, as.integer(all.x), as.integer(all.y))
+      query = sprintf("equi_join(%s, %s, 'left_names=%s', 'right_names=%s', 'left_outer=%d', 'right_outer=%d')",
+                  x@name, z@name, paste(by.x, collapse=","), paste(by.y, collapse=","), as.integer(all.x), as.integer(all.y))
     }
     else
       if(scidbmerge)
