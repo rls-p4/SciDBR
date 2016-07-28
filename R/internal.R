@@ -285,7 +285,16 @@ rewrite_subset_expression = function(expr, sci, frame)
         if(length(test) > 0)
         {
           if(DEBUG) cat("Replacing symbol", s, "with ")
-          s = tryCatch(sprintf("%.16f", test[[1]]), error=function(e) s)
+          if(is.logical(test[[1]]))
+          {
+            s = ifelse(test, "true", "false")
+          } else if(is.numeric(test[[1]]))
+          {
+            s = tryCatch(sprintf("%.16f", test[[1]]), error=function(e) s)
+          } else
+          {
+            s = test[[1]]
+          }
           if(DEBUG) cat(s, "\n")
         }
       }
