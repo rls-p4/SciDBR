@@ -16,17 +16,16 @@ to join on. See details below.}
 
 \item{...}{optional additional agruments:
 \code{fillin} is an optional argument specifying a value used to fill
-           attributes as required by merge, it defaults to null
-\code{all.x} optional argument that, if TRUE, indicates left-outer join
-\code{all.y} optional argument that, if TRUE, indicates right-outer join
+           attributes as required by merge, it defaults to null;
+\code{merge} if \code{TRUE}, perform a SciDB merge operation instead of join;
+\code{all.x} optional argument that, if TRUE, indicates left-outer join;
+\code{all.y} optional argument that, if TRUE, indicates right-outer join;
 \code{all} is an optional argument that, if TRUE, indicates outer join. It only
-           applies in limited settings (the default is inner join); equivalent
-           to \code{all.x = TRUE, all.y = TRUE}
-\code{merge} if \code{TRUE}, perform a SciDB merge operation instead of join
+           applies in limited settings (equivalent to \code{all.x = TRUE, all.y = TRUE});
 \code{by.x} optional vector of dimension or attribute names or dimension indices
-               of array \code{x} to join on
+               of array \code{x} to join on;
 \code{by.y} optional vector of dimension or attribute names or dimension indices
-                  of array \code{y} to join on}
+                  of array \code{y} to join on.}
 }
 \value{
 a \code{scidb} object
@@ -60,7 +59,7 @@ of a SciDB join.
 If \code{all=FALSE} (the default), then a SQL-like `natural join`
 (an inner join) is performed. If \code{all=TRUE} then SQL-like `outer join`
 is performed, but this case has some limitiations; in particular the
-outer join is not available yet for the \code{merge=TRUE} case. Specifiy
+outer join is not available yet for the \code{merge=TRUE} case yet. Specifiy
 \code{all.x=TRUE} or \code{all.y=TRUE} to perform left- or right-outer
 joins, respectively.
 
