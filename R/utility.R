@@ -148,7 +148,7 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 
 # Update the scidb.version option
   v = strsplit(gsub("[A-z\\-]", "", getOption("shim.version")), "\\.")[[1]]
-  if(length(v) < 2) v = v(v, "1")
+  if(length(v) < 2) v = c(v, "1")
   options(scidb.version=sprintf("%s.%s", v[1], v[2]))
 
 # Update the scidb.version option for older systems (shim version unreliable)
