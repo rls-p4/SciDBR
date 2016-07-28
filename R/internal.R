@@ -278,7 +278,7 @@ rewrite_subset_expression = function(expr, sci, frame)
     s = as.character(x)
     if(!(s %in% c(dims, attr, ">", "<", "!", "|", "=", "&", "||", "&&", "!=", "==", "<=", ">=")))
     {
-      test = tryCatch(eval(x, frame), error=function(e) e)
+      test = tryCatch(eval(x, frame), error=function(e) s)
       if(length(test) > 0)
       {
         test = test[!grepl("condition", lapply(test, class))]
