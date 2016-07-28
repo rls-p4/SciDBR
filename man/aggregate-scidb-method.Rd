@@ -66,7 +66,7 @@ to a single array dimension.
 # Create a copy of the iris data frame in a 1-d SciDB array named "iris."
 # Note that SciDB attribute names will be changed to conform to SciDB
 # naming convention.
-x <- as.scidb(iris,name="iris")
+x <- as.scidb(iris)
 
 # Compute averages of each variable grouped by Species
 a <- aggregate(x, by="Species", FUN=mean)

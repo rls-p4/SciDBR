@@ -180,6 +180,15 @@ x[]
 6 2 3 6
 ```
 
+You can retrieve SciDB attribute values without corresponding SciDB array
+dimension coordinates using the `drop=TRUE` argument in the `[` function:
+```{r, eval=FALSE}
+x[, drop=TRUE]
+```
+```
+[1] 1 2 2 4 3 6
+```
+
 Use the `scidbeval` function to evaluate `scidb` values without returning
 results to R. The `scidbeval` function stores the evaluation result into new
 named SciDB arrays in the database, including optionally temporary arrays.
@@ -244,15 +253,20 @@ Warning message:
 In df2scidb(X, name = name, gc = gc, start = start, ...) :
   Attribute names have been changed
 
-SciDB expression  R_array1687f572177bd1102980131950
-SciDB schema  <Sepal_Length:double NULL DEFAULT null,Sepal_Width:double NULL DEFAULT null,Petal_Length:double NULL DEFAULT null,Petal_Width:double NULL DEFAULT null,Species:string NULL DEFAULT null> [row=1:150,150,0] 
-      variable dimension   type nullable start end chunk
-1          row      TRUE  int64    FALSE     1 150   150
-2 Sepal_Length     FALSE double     TRUE                
-3  Sepal_Width     FALSE double     TRUE                
-4 Petal_Length     FALSE double     TRUE                
-5  Petal_Width     FALSE double     TRUE                
-6      Species     FALSE string     TRUE                
+SciDB expression  R_array312a5128d79d1469591283278965...
+SciDB schema  <Sepal_Length:double,Sepal_Width:double,Petal_Length:double,
+               Petal_Width:double,Species:string>
+              [tuple_no=0:*,100000,0,dst_instance_id=0:7,1,0,src_instance_id=0:7,1,0]
+
+         variable dimension   type nullable start end  chunk
+1        tuple_no      TRUE  int64    FALSE     0   * 100000
+2 dst_instance_id      TRUE  int64    FALSE     0   7      1
+3 src_instance_id      TRUE  int64    FALSE     0   7      1
+4    Sepal_Length     FALSE double     TRUE                 
+5     Sepal_Width     FALSE double     TRUE                 
+6    Petal_Length     FALSE double     TRUE                 
+7     Petal_Width     FALSE double     TRUE                 
+8         Species     FALSE string     TRUE                 
 ```
 ```{r, eval=FALSE}
 dim(i)
@@ -261,11 +275,38 @@ dim(i)
 [1] 150   6
 ```
 
+Data frames may be uploaded by one of several available SciDB upload plugins
+including the SciDB load_tools, prototype_load_tools, or aio_tools plugins
+depending on what the R package finds available. The dimensions of the
+resulting SciDB array may vary depending on the upload tool used (aio tools in
+the above example).
+
 Type conversion is applied as required. Some SciDB types (various non-32 bit
 integer sizes) are not available in R.  Some R types (complex, factors, etc.)
 are not available in SciDB. Missing values in R are translated to SciDB `NULL`
 values and vice-versa. (SciDB has a notion of multiple `NULL` codes, but all
 codes are translated to R missing values.)
+
+The above example shows that some data upload operators in SciDB return 2- or
+3-d arrays with variable dimension names. In order to simplify later examples
+and set a consistent, we force the uploaded `iris` array into a 1-d SciDB array
+with a single dimension named "row". The operations used here are described
+below.
+```{r, eval=FALSE}
+i <- scidbeval(project(dimension_rename(unpack(as.scidb(iris)), new="row"), gsub("\\.", "_", names(iris))), temp=TRUE)
+print(i)
+```
+```
+SciDB expression  project(cast(unpack(R_array312a169b...
+SciDB schema  <Sepal_Length:double,Sepal_Width:double,Petal_Length:double,Petal_Width:double,Species:string> [row=0:*,1000000,0]
+      variable dimension   type nullable start end   chunk
+1          row      TRUE  int64    FALSE     0   * 1000000
+2 Sepal_Length     FALSE double     TRUE
+3  Sepal_Width     FALSE double     TRUE
+4 Petal_Length     FALSE double     TRUE
+5  Petal_Width     FALSE double     TRUE
+6      Species     FALSE string     TRUE
+```
 
 
 # Important operations on `scidb` values
@@ -288,24 +329,24 @@ project(i, "Species")
 ```
 ```
 SciDB expression  project(R_array1687f572177bd1102980...
-SciDB schema  <Species:string NULL DEFAULT null> [row=1:150,150,0] 
+SciDB schema  <Species:string NULL DEFAULT null> [row=0:*,100000,0] 
   variable dimension   type nullable start end chunk
-1      row      TRUE  int64    FALSE     1 150   150
+1      row      TRUE  int64    FALSE     1  *  100000
 2  Species     FALSE string     TRUE                
 ```
 ```{r, eval=FALSE}
 i$Species
 ```
 ```
-SciDB expression  project(R_array1687f572177bd1102980...
-SciDB schema  <Species:string NULL DEFAULT null> [row=1:150,150,0] 
-  variable dimension   type nullable start end chunk
-1      row      TRUE  int64    FALSE     1 150   150
-2  Species     FALSE string     TRUE                
+SciDB expression  project(project(cast(unpack(R_array...
+SciDB schema  <Species:string> [row=0:*,1000000,0]
+  variable dimension   type nullable start end   chunk
+1      row      TRUE  int64    FALSE     0   * 1000000
+2  Species     FALSE string     TRUE
 ```
 
-Use the `slice` function to slice out one dimension of a SciDB array
-at a specific coordinate value.
+Use the `slice` function to slice out one or more dimensions of a SciDB array
+at specific coordinate values.
 ```{r, eval=FALSE}
 (x <- scidb("build(<v:double>[i=1:2,2,0, j=1:3,1,0], i*j)"))
 ```
@@ -337,8 +378,12 @@ forms:
 * Implicit queries generated from R expressions
 
 The implicit form can sometimes generate more efficient queries and
-allows you to mix simple R scalar values in the SciDB expression. The
-following examples illustrate each form.
+allows you to mix simple R scalar values in the SciDB expression. However,
+the implicit form uses non-standard R evaluation which can be confusing
+to use in some cases and might not be well-suited for non-interactive
+use; see for example
+the warnings in the documentation for the base R `transform` function.
+The following examples illustrate each form.
 
 1. Explicit AFL filter expression (note the quoted AFL expression)
 ```{r, eval=FALSE}
@@ -374,7 +419,7 @@ transform(array, new_value1="quoted AFL expression 1", new_value2="quoted AFL ex
 Let's try it:
 
 ```{r, eval=FALSE}
-i <- as.scidb(iris)
+i <- scidbeval(project(dimension_rename(unpack(as.scidb(iris)), new="row"), gsub("\\.", "_", names(iris))), temp=TRUE)
 x <- transform(i, Species_index="iif(Species='virginica', 1, iif(Species='versicolor', 2, 3))")
 head(x)
 ```
@@ -398,21 +443,21 @@ dimension and attribute values in a SciDB array or array expression.
 Let's illustrate by making the "Species\_index" attribute in the last example a
 dimension, repeating the steps in the last example for completeness.
 ```{r, eval=FALSE}
-i <- as.scidb(iris)
+i <- scidbeval(project(dimension_rename(unpack(as.scidb(iris)), new="row"), gsub("\\.", "_", names(iris))), temp=TRUE)
 x <- transform(i, Species_index="iif(Species='virginica', 1, iif(Species='versicolor', 2, 3))")
 y <- redimension(x, dim=c("row", "Species_index"))
 print(y)
 ```
 ```
-SciDB expression  redimension(apply(R_array1ebfe51174...
-SciDB schema  <Sepal_Length:double NULL DEFAULT null,Sepal_Width:double NULL DEFAULT null,Petal_Length:double NULL DEFAULT null,Petal_Width:double NULL DEFAULT null,Species:string NULL DEFAULT null> [row=1:150,150,0,Species_index=0:*,6667,0] 
-       variable dimension   type nullable start end chunk
-1           row      TRUE  int64    FALSE     1 150   150
-2 Species_index      TRUE  int64    FALSE     0   *  6667
-3  Sepal_Length     FALSE double     TRUE                
-4   Sepal_Width     FALSE double     TRUE                
-5  Petal_Length     FALSE double     TRUE                
-6   Petal_Width     FALSE double     TRUE                
+SciDB expression  redimension(apply(R_array312a65ae74...
+SciDB schema  <Sepal_Length:double,Sepal_Width:double,Petal_Length:double,Petal_Width:double,Species:string> [row=0:*,1000000,0,Species_index=0:*,1,0]
+       variable dimension   type nullable start end   chunk
+1           row      TRUE  int64    FALSE     0   * 1000000
+2 Species_index      TRUE  int64    FALSE     0   *       1
+3  Sepal_Length     FALSE double     TRUE
+4   Sepal_Width     FALSE double     TRUE
+5  Petal_Length     FALSE double     TRUE
+6   Petal_Width     FALSE double     TRUE
 7       Species     FALSE string     TRUE
 ```
 
@@ -427,7 +472,7 @@ by Species\_index. We include the original "Species" variable to help identify
 the index. We use the special empty indexing operator to return the result to
 R.
 ```{r, eval=FALSE}
-i <- as.scidb(iris)
+i <- scidbeval(project(dimension_rename(unpack(as.scidb(iris)), new="row"), gsub("\\.", "_", names(iris))), temp=TRUE)
 x <- transform(i, Species_index="iif(Species='virginica', 1, iif(Species='versicolor', 2, 3))")
 y <- redimension(x, dim=c("row", "Species_index"))
 aggregate(y, by="Species_index", FUN="avg(Petal_Length), max(Species) as Species")[]
@@ -438,15 +483,27 @@ aggregate(y, by="Species_index", FUN="avg(Petal_Length), max(Species) as Species
 2             2            4.260 versicolor
 3             3            1.462     setosa
 ```
-The above is equivalent to the naive R aggregation:
+
+SciDB users equipped with the grouped aggregate plugin available
+from https://github.com/Paradigm4/grouped_aggregate can also directly
+aggregate by attributes and/or SciDB dimensions.
+
+```{r, eval=FALSE}
+aggregate(i, by="Species", FUN="avg(Petal_Length)")[]
+```
+```
+  instance_id value_no    Species Petal_Length_avg
+1           2        0 versicolor            4.260
+2           2        1     setosa            1.462
+3           7        0  virginica            5.552
+```
+
+Both of the above queries are equivalent to the R aggregation:
 ```{r, eval=TRUE}
 aggregate(iris$Petal.Length, by=list(iris$Species), FUN=mean)
 ```
 
-SciDB's version of `aggregate` includes many extras like windowed aggregates
-and grouping by SciDB attributes (and future versions will include
-even better high-performance ad-hoc grouped aggregates).
-
+SciDB's version of `aggregate` includes many extras like windowed aggregates.
 SciDB cumulative aggregation is supported by the R `cumulate` function.  See
 `?regrid` and `?xgrid` for help with high-performance SciDB coordinate-based
 aggregation and interpolation (to perform fast spatial or temporal decimation,
@@ -462,34 +519,33 @@ array attributes.
 
 The following example illustrates the difference between join and merge.
 ```{r, eval=FALSE}
-i <- as.scidb(iris)
+i <- scidbeval(project(dimension_rename(unpack(as.scidb(iris)), new="row"), gsub("\\.", "_", names(iris))), temp=TRUE)
 a <- i$Petal_Length
 b <- i$Petal_Width
 merge(a, b)                # SciDB (inner) join
 ```
 ```
-SciDB expression  join(project(R_array1ebfe5145bfb511...
-SciDB schema  <Petal_Length:double NULL DEFAULT null,Petal_Width:double NULL DEFAULT null> [row=1:150,150,0] 
-      variable dimension   type nullable start end chunk
-1          row      TRUE  int64    FALSE     1 150   150
-2 Petal_Length     FALSE double     TRUE                
-3  Petal_Width     FALSE double     TRUE                
+SciDB expression  join(project(R_array312a4ca70b21146...
+SciDB schema  <Petal_Length:double,Petal_Width:double> [row=0:*,1000000,0]
+      variable dimension   type nullable start end   chunk
+1          row      TRUE  int64    FALSE     0   * 1000000
+2 Petal_Length     FALSE double     TRUE
+3  Petal_Width     FALSE double     TRUE
 ```
 ```{r, eval=FALSE}
 merge(a, b, merge=TRUE)   # SciDB "merge"
 ```
 ```
-SciDB expression  merge(project(R_array1ebfe5145bfb51...
-SciDB schema  <Petal_Length:double NULL DEFAULT null> [row=1:150,150,0] 
-      variable dimension   type nullable start end chunk
-1          row      TRUE  int64    FALSE     1 150   150
-2 Petal_Length     FALSE double     TRUE                
+SciDB expression  merge(project(R_array312a4ca70b2114...
+SciDB schema  <Petal_Length:double> [row=0:*,1000000,0] 
+      variable dimension   type nullable start end   chunk
+1          row      TRUE  int64    FALSE     0   * 1000000
+2 Petal_Length     FALSE double     TRUE
 ```
 
 Here is an example of a SciDB "cross join" along one common axis between two
 arrays with different dimensions.
 ```{r, eval=FALSE}
-i <- as.scidb(iris)
 a <- i$Petal_Length
 
 x <- transform(i, Species_index="iif(Species='virginica', 1, iif(Species='versicolor', 2, 3))")
@@ -498,84 +554,37 @@ y <- redimension(x, dim=c("row", "Species_index"))$Petal_Width
 print(a)
 ```
 ```
-SciDB expression  project(R_array1ebfe561ae9cd1102983...
-SciDB schema  <Petal_Length:double NULL DEFAULT null> [row=1:150,150,0] 
-      variable dimension   type nullable start end chunk
-1          row      TRUE  int64    FALSE     1 150   150
-2 Petal_Length     FALSE double     TRUE                
+SciDB expression  project(R_array312a4ca70b2114695912...
+SciDB schema  <Petal_Length:double> [row=0:*,1000000,0] 
+      variable dimension   type nullable start end   chunk
+1          row      TRUE  int64    FALSE     0   * 1000000
+2 Petal_Length     FALSE double     TRUE
 ```
 ```{r, eval=FALSE}
 print(y)
 ```
 ```
-SciDB expression  project(redimension(apply(R_array1e...
-SciDB schema  <Petal_Width:double NULL DEFAULT null> [row=1:150,150,0,Species_index=0:*,6667,0] 
-       variable dimension   type nullable start end chunk
-1           row      TRUE  int64    FALSE     1 150   150
-2 Species_index      TRUE  int64    FALSE     0   *  6667
-3   Petal_Width     FALSE double     TRUE                
+SciDB expression  project(redimension(apply(R_array31...
+SciDB schema  <Petal_Width:double> [row=0:*,1000000,0,Species_index=0:*,1,0] 
+       variable dimension   type nullable start end   chunk
+1           row      TRUE  int64    FALSE     0   * 1000000
+2 Species_index      TRUE  int64    FALSE     0   *       1
+3   Petal_Width     FALSE double     TRUE
 ```
 ```{r, eval=FALSE}
 merge(a, y)
 ```
 ```
 SciDB expression  cross_join(project(redimension(appl...
-SciDB schema  <Petal_Width:double NULL DEFAULT null,Petal_Length:double NULL DEFAULT null> [row=1:150,150,0,Species_index=0:*,6667,0] 
-       variable dimension   type nullable start end chunk
-1           row      TRUE  int64    FALSE     1 150   150
-2 Species_index      TRUE  int64    FALSE     0   *  6667
-3   Petal_Width     FALSE double     TRUE                
-4  Petal_Length     FALSE double     TRUE                
+SciDB schema  <Petal_Width:double,Petal_Length:double> [row=0:*,1000000,0,Species_index=0:*,1,0] 
+       variable dimension   type nullable start end   chunk
+1           row      TRUE  int64    FALSE     0   * 1000000
+2 Species_index      TRUE  int64    FALSE     0   *       1
+3   Petal_Width     FALSE double     TRUE                  
+4  Petal_Length     FALSE double     TRUE                  
 ```
 Many additional options are available, see `?merge.scidb` for examples.
 
-### Array concatenation
-Use the `rbind` function to concatenate two SciDB arrays with identical
-dimensions and identical numbers of attributes of the same types
-along their last dimension. Here  is an example:
-```{r, eval=FALSE}
-i <- as.scidb(iris)
-x <- project(i, c("Petal_Length", "Petal_Width"))
-count(x)
-```
-```
-[1] 150
-```
-```{r, eval=FALSE}
-count(rbind(x, x))
-```
-```
-[1] 300
-```
-Note that the result has an unbounded last SciDB coordinate dimension.
-
-Use the `cbind` function to concatenate attributes across two SciDB arrays with
-identical dimensions (coordinate schema).
-```{r, eval=FALSE}
-x
-```
-```
-SciDB expression  project(R_arraya5d8655c582110299266...
-SciDB schema  <Petal_Length:double NULL DEFAULT null,Petal_Width:double NULL DEFAULT null> [row=1:150,150,0] 
-      variable dimension   type nullable start end chunk
-1          row      TRUE  int64    FALSE     1 150   150
-2 Petal_Length     FALSE double     TRUE                
-3  Petal_Width     FALSE double     TRUE                
-```
-```{r, eval=FALSE}
-cbind(x,x)
-```
-```
-SciDB expression  join(project(R_arraya5d8655c5821102...
-SciDB schema  <Petal_Length:double NULL DEFAULT null,Petal_Width:double NULL DEFAULT null,Petal_Length_1:double NULL DEFAULT null,Petal_Width_1:double NULL DEFAULT null> [row=1:150,150,0] 
-        variable dimension   type nullable start end chunk
-1            row      TRUE  int64    FALSE     1 150   150
-2   Petal_Length     FALSE double     TRUE                
-3    Petal_Width     FALSE double     TRUE                
-4 Petal_Length_1     FALSE double     TRUE                
-5  Petal_Width_1     FALSE double     TRUE                
-```
-Note that attribute names are adjusted as required to remain unique.
 
 ### Antijon
 Use the `antijoin` function to return a logical-valued mask of array coordinates

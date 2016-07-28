@@ -1,33 +1,6 @@
-setGeneric("c")
 setGeneric("head")
 setGeneric("is.scidb", function(x) standardGeneric("is.scidb"))
 
-#' Concatenate two SciDB arrays
-#'
-#' Concatenate two SciDB arrays with common schema along their last dimension.
-#' @param x \code{scidb} array object
-#' @param y \code{scidb} array object
-#' @return \code{scidb} array object
-#' @importFrom methods setMethod setGeneric
-#' @export
-setMethod(c, signature(x="scidb"),
-function(x, y)
-{
-  if(as.numeric(scidb_coordinate_bounds(x)$length) < as.numeric(.scidb_DIM_MAX))
-  {
-    s = sprintf("%s%s",build_attr_schema(x), build_dim_schema(x, newend=.scidb_DIM_MAX))
-    x = redimension(x,s)
-  }
-  i = count(x) + as.numeric(scidb_coordinate_start(x)) - as.numeric(scidb_coordinate_start(y))
-  j = make.unique_(scidb_attributes(y), "j")
-  fun = sprintf("%s + %.0f", dimensions(y), i)
-  s = sprintf("apply(%s, %s, %s)",y@name, j, fun)
-  scma = sprintf("%s%s",build_attr_schema(y), build_dim_schema(x, newnames=j))
-  s = sprintf("redimension(%s, %s)",s, scma)
-  s = sprintf("cast(%s, %s%s)", s,build_attr_schema(y), build_dim_schema(x))
-  s = sprintf("merge(%s, %s)", x@name, s)
-  .scidbeval(s, gc=TRUE, depend=list(x, y))
-})
 
 #' Return the first part of a SciDB array
 #' @param x a \code{scidb} object
@@ -184,7 +157,7 @@ setMethod("xgrid", signature(x="scidb"), xgrid_scidb)
 #' # Create a copy of the iris data frame in a 1-d SciDB array named "iris."
 #' # Note that SciDB attribute names will be changed to conform to SciDB
 #' # naming convention.
-#' x <- as.scidb(iris,name="iris")
+#' x <- as.scidb(iris)
 #' 
 #' # Compute averages of each variable grouped by Species
 #' a <- aggregate(x, by="Species", FUN=mean)

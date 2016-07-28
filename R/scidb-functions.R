@@ -20,17 +20,6 @@ cbind.scidb = function(x, y)
   merge(x, y, by=i)
 }
 
-#' Concatenate two SciDB arrays
-#'
-#' Concatenate two SciDB arrays with common schema along their last dimension.
-#' @param x \code{scidb} array object
-#' @param y \code{scidb} array object
-#' @return \code{scidb} array object
-#' @export
-rbind.scidb = function(x, y)
-{
-  c(x, y)
-}
 
 
 #' SciDB dimension and attribute names

@@ -33,10 +33,10 @@ merge_scidb_cross = function(x, y)
 # Special case 2: merge on attributes or combinations of attributes and dimensions
 # x, y scidb objects
 # by.x, by.y character vectors of dimension and/or attributes
-merge_scidb_on_attributes = function(x, y, by.x, by.y)
+merge_scidb_on_attributes = function(x, y, by.x, by.y, all.x, all.y)
 {
-  query = sprintf("equi_join(%s, %s, 'left_names=%s', 'right_names=%s')",
-                  x@name, y@name, paste(by.x, collapse=","), paste(by.y, collapse=","))
+  query = sprintf("equi_join(%s, %s, 'left_names=%s', 'right_names=%s', 'left_outer=%d', 'right_outer=%d')",
+                  x@name, y@name, paste(by.x, collapse=","), paste(by.y, collapse=","), as.integer(all.x), as.integer(all.y))
   return(.scidbeval(query, FALSE, depend=list(x,y)))
 }
 
@@ -48,8 +48,9 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
 #      dimensions to join on.
 # `fillin` is an optional argument specifying a value used to fill attributes
 #          as required by merge, it defaults to null.
-# `all` is an optional argument that, if TRUE, indicates outer join. It only
-#       applies in limited settings. The default is inner join.
+# `all` is an optional argument that, if TRUE, indicates full outer join;
+# `all.x` and `all.y` also apply for partial left/right outer joins
+# `equi_join` (optional) if TRUE always use the equi_join operator
 #
 `merge_scidb` = function(x, y, `by`, ...)
 {
@@ -66,9 +67,15 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
   scidbmerge = FALSE
   fillin = "(null)"
   if(!is.null(mc$all)) `all` = mc$all
+  all.x = `all`
+  all.y = `all`
+  equi_join = FALSE
+  if(!is.null(mc$all.x)) all.x = mc$all.x
+  if(!is.null(mc$all.y)) all.y = mc$all.y
   if(!is.null(mc$by.x)) by.x = mc$by.x
   if(!is.null(mc$by.y)) by.y = mc$by.y
   if(!is.null(mc$merge)) scidbmerge = mc$merge
+  if(!is.null(mc$equi_join)) equi_join = mc$equi_join
   if(!is.null(mc$fillin)) fillin = sprintf("(%s)", mc$fillin)
   `eval` = FALSE
   xname = x@name
@@ -104,10 +111,10 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
   if(is.numeric(by.y)) by.y = dimensions(y)[by.y]
 
 # Check for special join on attributes case
-  if(any(by.x %in% scidb_attributes(x)) && any(by.y %in% scidb_attributes(y)))
+  if(equi_join || any(by.x %in% scidb_attributes(x)) || any(by.y %in% scidb_attributes(y)))
   {
     if(scidbmerge) stop("SciDB merge not supported in this context (only join)")
-    return(merge_scidb_on_attributes(x, y, by.x, by.y))
+    return(merge_scidb_on_attributes(x, y, by.x, by.y, all.x, all.y))
   }
 
 # OK, we've ruled out cross and attribute join special cases. We have left
@@ -151,21 +158,10 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y)
       castschema = sprintf("%s%s", newas, build_dim_schema(y))
       z = cast(y, castschema)
     }
-    if(all)
+    if(all.x || all.y) # outer join
     {
-# Experimental outer join XXX XXX
       if(scidbmerge) stop("at most one of `all` and `merge` may be set TRUE")
-      x = make_nullable(x)
-      z = make_nullable(z)
-# Form a null-valued version of each array in the alternate array coordinate system
-      xnames = make.unique_(c(dimensions(z), scidb_attributes(z)), scidb_attributes(x))
-      vals = paste(scidb_types(x), rep(fillin, length(scidb_types(x))))
-      xnull = make_nullable(attribute_rename(project(bind(z, xnames, vals), xnames), xnames, scidb_attributes(x)))
-      znames = make.unique_(c(dimensions(x), scidb_attributes(x)), scidb_attributes(z))
-      vals = paste(scidb_types(z), rep(fillin, length(scidb_types(z))))
-      znull = make_nullable(attribute_rename(project(bind(x, znames, vals), znames), znames, scidb_attributes(z)))
-# Merge each array with its nullified counterpart, then join:
-      query = sprintf("join(merge(%s, %s), merge(%s, %s))", x@name, xnull@name, z@name, znull@name)
+      query = sprintf("equi_join(%s, %s, 'left_outer=%d', 'right_outer=%d')", x@name, z@name, as.integer(all.x), as.integer(all.y))
     }
     else
       if(scidbmerge)
