@@ -658,7 +658,7 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
             save=save, query=query, afl=0L, stream=STREAM))
     }, error=function(e)
     {
-# User cancel?
+      # User cancel?
       SGET("/cancel", list(id=sessionid), err=FALSE)
       SGET("/release_session", list(id=sessionid), err=FALSE)
       stop(as.character(e))
