@@ -331,6 +331,8 @@ setMethod("t", signature(x="scidb"),  t_scidb)
 
 # roxygen2 seems to have trouble generating correct documentation for the
 # cor and cov functions, done manually in ../man
+#' @exportMethod cov
+#' @exportMethod cor
 setGeneric("cov")
 setMethod("cov", signature(x="scidb", y="ANY", use="ANY", method="ANY"), cov_scidb)
 setGeneric("cor")
