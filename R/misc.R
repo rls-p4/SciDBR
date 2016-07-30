@@ -625,5 +625,5 @@ cor_scidb = function(x, y=NULL, use="everything", method=c("pearson", "kendall",
                  as.numeric(scidb_coordinate_bounds(S0)$length[1]) - 1)), "val"), temp=TRUE)
   v = redimension(subset(CV, "x = y"), dim="x")
   v = transform(v, val="1 / sqrt(val)")
-  project(transform(merge(merge(CV, v, by.x="x", by.y="x"), v, by.x="y", by.y="x"), "cor=val * val_1 * val_2"), "cor")
+  project(transform(merge(merge(CV, v, by.x="x", by.y="x"), v, by.x="y", by.y="x"), cor="val * val_1 * val_2"), "cor")
 }
