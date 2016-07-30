@@ -6,9 +6,7 @@ This function is more limited than R's default \code{cor} function. It can
 only compute a correlation matrix from a data matrix without any missing value
 handling.}
 \usage{
-\S4method{cor}{scidb}
-(x, y = NULL, use = "everything", method = c("pearson", "kendall",
-  "spearman"))
+\S4method{cor}{scidb}(x, y = NULL, use = "everything", method = c("pearson", "kendall", "spearman"))
 }
 \arguments{
 \item{x}{a 2-d scidb array with a single numeric attribute}

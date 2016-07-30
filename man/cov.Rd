@@ -8,8 +8,7 @@ handling by the procedure (in R notation)
 \code{S0 <- sweep(x, 2, colMeans(x))}, 
 \code{crossprod(S0)/(nrow(S0) - 1)   # (covariance matrix result)}}
 \usage{
-\S4method{cov}{scidb}(x, y = NULL, use = "everything", method = c("pearson", "kendall",
-  "spearman"))
+\S4method{cov}{scidb}(x, y = NULL, use = "everything", method = c("pearson", "kendall", "spearman"))
 }
 \arguments{
 \item{x}{a 2-d scidb array with a single numeric attribute}
