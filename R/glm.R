@@ -105,7 +105,7 @@ glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
 .format = function(x)
 {
   o = options(digits=4)
-  ans = paste(capture.output(x), collapse="\n")
+  ans = paste(utils::capture.output(x), collapse="\n")
   options(o)
   ans
 }
@@ -117,7 +117,7 @@ glm.fit_scidb = function(x, y, weights=NULL, family=gaussian(), intercept)
 #' @param ... other arguments to \code{summary}
 #' @return Character summary of the model object is printed to standard output
 #' @seealso \code{\link{summary.glm}}
-#' @importFrom stats summary.glm
+#' @importFrom stats summary.glm gaussian pnorm as.formula terms drop.terms coef
 print.glm_scidb = function(x, ...)
 {
   ans = "Call:"

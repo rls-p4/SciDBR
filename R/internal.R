@@ -25,7 +25,7 @@ scidbcc = function(x)
   d = rbind(d, data.frame(variable=scidb_attributes(object),
                           dimension=FALSE,
                           type=scidb_types(object), nullable=scidb_nullable(object), start="", end="", chunk=""))
-  cat(paste(capture.output(print(d)), collapse="\n"))
+  cat(paste(utils::capture.output(print(d)), collapse="\n"))
   cat("\n")
 }
 
@@ -478,7 +478,7 @@ make.names_ = function(x)
 make.unique_ = function(x, y)
 {
   z = make.names(gsub("_", ".", c(x, y)), unique=TRUE)
-  gsub("\\.", "_", tail(z, length(y)))
+  gsub("\\.", "_", utils::tail(z, length(y)))
 }
 
 # Make a name from a prefix and a unique SciDB identifier.

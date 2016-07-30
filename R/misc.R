@@ -11,7 +11,7 @@
 #' @return An R matrix with the image values and the side-effect of displaying the image
 #' plot of the matrix, unless \code{plot=FALSE} is specified in the optional arguments.
 #' @importFrom methods setMethod
-#' @importFrom graphics image
+#' @importFrom graphics image axis
 #' @export
 setMethod("image", signature(x="scidb"),
           function(x, grid=c(500,500), op="sum", na=0, ...)
@@ -601,22 +601,29 @@ t_scidb = function(x)
   scidb(sprintf("transpose(%s)", x@name))
 }
 
-cov_scidb = function(x)
+cov_scidb = function(x, y=NULL, use="everything", method=c("pearson", "kendall", "spearman"))
 {
   if(length(dimensions(x)) != 2) stop("x must be a matrix (a 2-d SciDB array)")
   if(length(scidb_attributes(x)) > 1) stop("x must have one numeric attribute")
+  if(!is.null(y)) stop("y must be NULL")
+  if(use != "everything") stop("only use=everything is supported")
+  if(method != "pearson") stop("only Pearson correlation is supported")
   S0 = scidbeval(project(transform(merge(x, aggregate(x, by=dimensions(x)[2], FUN=mean)), x ="val - val_avg"), "x"))
   project(transform(gemm(t(S0), S0), val=sprintf("gemm / %s", as.numeric(scidb_coordinate_bounds(S0)$length[1]) - 1)), "val")
 }
 
-cor_scidb = function(x)
+cor_scidb = function(x, y=NULL, use="everything", method=c("pearson", "kendall", "spearman"))
 {
   if(length(dimensions(x)) != 2) stop("x must be a matrix (a 2-d SciDB array)")
   if(length(scidb_attributes(x)) > 1) stop("x must have one numeric attribute")
+  if(!is.null(y)) stop("y must be NULL")
+  if(use != "everything") stop("only use=everything is supported")
+  if(method != "pearson") stop("only Pearson correlation is supported")
   x = attribute_rename(x, new="val")
   S0 = scidbeval(project(transform(merge(x, aggregate(x, by=dimensions(x)[2], FUN=mean)), x ="val - val_avg"), "x"))
-  CV = scidbeval(project(transform(gemm(t(S0), S0), val=sprintf("gemm / %s", as.numeric(scidb_coordinate_bounds(S0)$length[1]) - 1)), "val"), temp=TRUE)
-  v = redimension(subset(CV, x == y), dim="x")
+  CV = scidbeval(project(transform(gemm(t(S0), S0), val=sprintf("gemm / %s",
+                 as.numeric(scidb_coordinate_bounds(S0)$length[1]) - 1)), "val"), temp=TRUE)
+  v = redimension(subset(CV, "x = y"), dim="x")
   v = transform(v, val="1 / sqrt(val)")
-  project(transform(merge(merge(CV, v, by.x="x", by.y="x"), v, by.x="y", by.y="x"), cor=val * val_1 * val_2), "cor")
+  project(transform(merge(merge(CV, v, by.x="x", by.y="x"), v, by.x="y", by.y="x"), "cor=val * val_1 * val_2"), "cor")
 }

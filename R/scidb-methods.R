@@ -327,23 +327,11 @@ setGeneric("t")
 #' @return a 2-d scidb array representing the transpose of \code{x}
 #' @export
 setMethod("t", signature(x="scidb"),  t_scidb)
-#' Covariance matrix
-#' This function is more limited than R's default \code{cov} function. It can
-#' only compute a covariance matrix from a data matrix without any missing value
-#' handling by the procedure (in R notation)
-#' \code{S0 <- sweep(x, 2, colMeans(x))}, 
-#' \code{crossprod(S0)/(nrow(S0) - 1)   # (covariance matrix result)}
-#' @param x a 2-d scidb array with a single numeric attribute
-#' @return covariance matrix of \code{x} (as a SciDB array)
-#' @export
+
+
+# roxygen2 seems to have trouble generating correct documentation for the
+# cor and cov functions, done manually in ../man
 setGeneric("cov")
-setMethod("cov", signature(x="scidb"), cov_scidb)
-#' Correlation matrix
-#' This function is more limited than R's default \code{cor} function. It can
-#' only compute a correlation matrix from a data matrix without any missing value
-#' handling.
-#' @param x a 2-d scidb array with a single numeric attribute
-#' @return correlation matrix of \code{x} (as a SciDB array)
-#' @export
+setMethod("cov", signature(x="scidb", y="ANY", use="ANY", method="ANY"), cov_scidb)
 setGeneric("cor")
-setMethod("cor", signature(x="scidb"), cor_scidb)
+setMethod("cor", signature(x="scidb", y="ANY", use="ANY", method="ANY"), cor_scidb)

@@ -318,6 +318,7 @@ scidbrm = function(x, error=warning, ...) scidbremove(x, error, ...)
 #' @param return if \code{TRUE}, return the result
 #' @param binary set to \code{FALSE} to read result from SciDB in text form
 #' @param ... additional options passed to \code{read.table} when \code{binary=FALSE}
+#' @importFrom utils read.table
 #' @export
 iquery = function(query, `return`=FALSE, binary=TRUE, ...)
 {

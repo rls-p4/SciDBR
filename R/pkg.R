@@ -106,8 +106,10 @@ NULL
   character=1
 )
 
-# A convenience mapper for a few common apply-style aggregate
-# functions.
+#' A convenience mapper for a few common apply-style aggregate
+#' functions.
+#' @keywords internal
+#' @importFrom stats sd var median
 .scidbfun = function(FUN)
 {
   fns = list(
@@ -121,8 +123,8 @@ NULL
   median="median",
   length="count",
   count="count")
-  i = unlist(lapply(list(mean,sd,var,sum,prod,max,min,median,length,count),
-               function(x) identical(x,FUN)))
+  i = unlist(lapply(list(mean, sd, var, sum, prod, max, min, median, length, count),
+               function(x) identical(x, FUN)))
   if(!any(i)) return(NULL)
   fns[i][[1]]
 }
