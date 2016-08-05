@@ -34,14 +34,18 @@ a \code{scidb} object
 Only one of either \code{by} or both \code{by.x} and \code{by.y} may be
 specified.  If none of the \code{by.x},\code{by.y} arguments are specified, and
 \code{by=NULL} the result is the Cartesian cross product of \code{x} and
-\code{y}.  The default value of \code{by} performs a \code{cross_join} or
-\code{join} along common array dimensions. The \code{by} arguments may
-be specified by name or 1-based integer dimension index.
+\code{y}.
 }
 \details{
-If only \code{by} is specified, the dimension names or attribute name in
+The default value of \code{by=intersect(dimensions(x), dimensions(y)}
+performs a \code{cross_join}, \code{equi_join},
+or \code{join} along common array dimensions only. If you want to perform
+a join across all columns (dimensions and SciDB array attributes), then
+use \code{by=intersect(names(x), names(y))}.
+
+If only \code{by} is specified, the dimension names or attribute names in
 \code{by} are assumed to be common across \code{x} and \code{y}.  Otherwise
-dimension names or attribute names are matched across the names listed in
+dimension names and attribute names are matched across the names listed in
 \code{by.x} and \code{by.y}, respectively.
 
 If dimension names are specified and \code{by} contains all the dimensions
@@ -64,7 +68,8 @@ outer join is not available yet for the \code{merge=TRUE} case yet. Specifiy
 joins, respectively.
 
 Use the optional \code{equi_join=TRUE} argument to force use of the
-equi_join SciDB plugin operator.
+equi_join SciDB plugin operator, or set \code{equi_join=FALSE} to force
+the use of cross_join. The default value is TRUE.
 
 The various SciDB \code{join} operators generally require that the arrays have
 identical partitioning (coordinate system bounds, chunk size, etc.) in the

@@ -43,9 +43,8 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y, all.x, all.y)
 # SciDB join, cross_join, and merge wrapper internal function
 #
 # x and y are SciDB array references
-# `by` is either a single character indicating a dimension name common to both
-#      arrays to join on, or a two-element list of character vectors of array
-#      dimensions to join on.
+# `by` is a vector of character values indicating columns to join on (either
+#  SciDB array dimensions or attributes in the equi_join case).
 # `fillin` is an optional argument specifying a value used to fill attributes
 #          as required by merge, it defaults to null.
 # `all` is an optional argument that, if TRUE, indicates full outer join;
@@ -54,12 +53,6 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y, all.x, all.y)
 #
 `merge_scidb` = function(x, y, `by`, ...)
 {
-  if(length(dimensions(y)) > length(dimensions(x)))
-  {
-    z = y
-    y = x
-    x = z
-  }
   mc = list(...)
   al = scidb_alias(x, y)
   by.x = by.y = NULL
@@ -83,7 +76,7 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y, all.x, all.y)
   yname = y@name
 
 # Check input
-  if(sum(!is.null(by.x), !is.null(by.y))==1)
+  if(sum(!is.null(by.x), !is.null(by.y)) == 1)
   {
     stop("Either both or none of by.x and by.y must be specified.")
   }
@@ -101,7 +94,7 @@ merge_scidb_on_attributes = function(x, y, by.x, by.y, all.x, all.y)
   }
 
 # Convert identically specified by into separate by.x by.y
-  if(length(by)>0)
+  if(length(by) > 0)
   {
     by.x = `by`
     by.y = `by`
