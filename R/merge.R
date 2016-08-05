@@ -15,10 +15,10 @@ merge_scidb_cross = function(x, y)
   if(is.scidb(x)) pdx = dim(x)[1]
   pdy = prod(dim(y))
   if(is.scidb(y)) pdy = dim(y)[1]
-  if(chunk_elements>1e6 && pdx==count(x) && pdy==count(y))
+  if(chunk_elements > 1e6 && pdx == count(x) && pdy == count(y))
     {
       NC = length(chunkx) + length(chunky)
-      NS = 1e6^(1/NC)
+      NS = 1e6 ^ (1 / NC)
       chunky = rep(noE(NS), length(chunky))
       chunkx = rep(noE(NS), length(chunkx))
       x = repart(x, sprintf("%s%s", build_attr_schema(x), build_dim_schema(x, newchunk=chunkx)))
