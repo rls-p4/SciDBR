@@ -15,7 +15,6 @@ array_stats(scidb_array, per_instance = FALSE, per_attribute = FALSE)
 }
 \value{
 A data frame containinf the statistics
-export
 }
 \description{
 Display array storage statistics

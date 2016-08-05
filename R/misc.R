@@ -63,7 +63,7 @@ setMethod("image", signature(x="scidb"),
 #' @param per_instance set to \code{TRUE} to break down storage stats by SciDB instance
 #' @param per_attribute set to \code{TRUE} to break down stats by attribute
 #' @return A data frame containinf the statistics
-#' export
+#' @export
 array_stats = function (scidb_array, per_instance=FALSE, per_attribute=FALSE) 
 {
   if (class(scidb_array) == "character") 
