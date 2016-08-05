@@ -56,11 +56,12 @@ if(nchar(host) > 0)
   replaceNA(x)
 
 # join
-  y = merge(x, x)
+# Commented out tests were broken by default use of equi_join
+  y = merge(x, x, equi_join=FALSE)
   check(length(scidb_attributes(y)), 10)
   y = merge(x, x, merge=TRUE)
   check(length(scidb_attributes(y)), 5)
-  y = merge(x, z) # crossjoin
+  y = merge(x, z, equi_join=FALSE) # crossjoin
   check(length(scidb_attributes(y)), 10)
 
   antijoin(x, x)
