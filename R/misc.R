@@ -567,7 +567,7 @@ cov_scidb = function(x, y=NULL, use="everything", method=c("pearson", "kendall",
   if(!is.null(y)) stop("y must be NULL")
   if(use != "everything") stop("only use=everything is supported")
   if(method[1] != "pearson") stop("only Pearson correlation is supported")
-  S0 = scidbeval(project(transform(merge(x, aggregate(x, by=dimensions(x)[2], FUN=mean)), x ="val - val_avg"), "x"))
+  S0 = scidbeval(project(transform(merge(x, aggregate(x, by=dimensions(x)[2], FUN=mean), equi_join=FALSE), x ="val - val_avg"), "x"))
   project(transform(gemm(t(S0), S0), val=sprintf("gemm / %s", as.numeric(scidb_coordinate_bounds(S0)$length[1]) - 1)), "val")
 }
 
@@ -579,7 +579,7 @@ cor_scidb = function(x, y=NULL, use="everything", method=c("pearson", "kendall",
   if(use != "everything") stop("only use=everything is supported")
   if(method[1] != "pearson") stop("only Pearson correlation is supported")
   x = attribute_rename(x, new="val")
-  S0 = scidbeval(project(transform(merge(x, aggregate(x, by=dimensions(x)[2], FUN=mean)), x ="val - val_avg"), "x"))
+  S0 = scidbeval(project(transform(merge(x, aggregate(x, by=dimensions(x)[2], FUN=mean), equi_join=FALSE), x ="val - val_avg"), "x"))
   CV = scidbeval(project(transform(gemm(t(S0), S0), val=sprintf("gemm / %s",
                  as.numeric(scidb_coordinate_bounds(S0)$length[1]) - 1)), "val"), temp=TRUE)
   v = redimension(subset(CV, "x = y"), dim="x")
