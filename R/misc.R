@@ -332,49 +332,6 @@ dist_scidb = function(x, method=c("euclidean", "manhattan", "maximum"))
   M
 }
 
-# XXX broken
-hist_scidb = function(x, breaks=10, right=FALSE, materialize=TRUE, `plot`=TRUE, ...)
-{
-  if(length(scidb_attributes(x)) > 1) stop("Histogram requires a single-attribute array.")
-  if(length(breaks) > 1) stop("The SciDB histogram function requires a single numeric value indicating the number of breaks.")
-  a = scidb_attributes(x)[1]
-  t = scidb_types(x)[1]
-  breaks = as.integer(breaks)
-  if(breaks < 1) stop("Too few breaks")
-# name of binning coordinates in output array:
-  d = make.unique_(c(a, dimensions(x)), "bin")
-  M = .scidbeval(sprintf("aggregate(%s, min(%s) as min, max(%s) as max)", x@name, a, a),`eval`=FALSE)
-  md = make.unique_(dimensions(x), dimensions(M))
-  M = dimension_rename(M, new=md)
-  FILL = sprintf("slice(cross_join(build(<counts: uint64 null>[%s=0:%.0f,1000000,0],0),%s),%s,0)", d, breaks, M@name, md)
-  if(`right`)
-  {
-    query = sprintf("project( apply( merge(redimension( substitute( apply(cross_join(%s,%s), %s,iif(%s=min,1,int64(ceil(%.0f.0*(%s-min)/(0.0000001+max-min))))  ),build(<v:int64>[i=0:0,1,0],0),%s), <counts:uint64 null, min:int64 null, max:int64 null>[%s=0:%.0f,1000000,0], count(%s) as counts, max(%s) as max, min(%s) as min),%s), breaks, %s*(0.0000001+max-min)/%.0f.0 + min), breaks,counts)", x@name, M@name, d, a, breaks, a, d, d, breaks, d,d,d, FILL, d, breaks)
-  } else
-  {
-    query = sprintf("project(apply(merge(redimension(substitute(apply(cross_join(%s,%s),%s,int64(floor(%.0f.0 * (%s-min)/(0.0000001+max-min)))),build(<v:int64>[i=0:0,1,0],0),%s), <counts:uint64 null, min:int64 null, max:int64 null>[%s=0:%.0f,1000000,0], count(%s) as counts, max(%s) as max, min(%s) as min), %s) , breaks, %s*(0.0000001+max-min)/%.0f.0 + min), breaks,counts)", x@name, M@name, d, breaks, a, d, d, breaks, d,d,d, FILL, d, breaks)
-  }
-  if(!materialize)
-  {
-# Return a SciDB array that represents the histogram breaks and counts
-    return(.scidbeval(query, depend=list(x,M), `eval`=FALSE, gc=TRUE))
-  }
-# Return a standard histogram object
-  ans = as.list(.scidbeval(query, depend=list(x,M), `eval`=FALSE, gc=TRUE)[])
-# Cull the trailing zero bin to correspond to R's output
-  if(`right`) ans$counts = ans$counts[-1]
-  else ans$counts = ans$counts[-length(ans$counts)]
-  ans$density = 0.01*ans$counts/diff(ans$breaks)
-  ans$mids = ans$breaks[-length(ans$breaks)] + diff(ans$breaks)/2
-  ans$equidist = TRUE
-  ans$xname = a
-  class(ans) = "histogram"
-  MC = match.call()
-  if(!`plot`) return (ans)
-  plot(ans, ...)
-  ans
-}
-
 
 # Several nice functions contributed by Alex Poliakov follow...
 

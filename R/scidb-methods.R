@@ -35,20 +35,6 @@ setMethod("print", signature(x="scidb"),
     show(x)
   })
 
-#' Histogram
-#'
-#' Return and optionall plot a histogram from SciDB array values
-#' @param x a \code{scidb} object with a single numeric SciDB attribute
-#' @param breaks a single number giving the number of cells for the histogram
-#' @param right logical; if \code{TRUE}, the histogram cells are right-closed (left open) intervals
-#' @param materialize logical; if \code{TRUE}, return the histogram object to R
-#' @param plot logical; if \code{TRUE} plot the output
-#' @param ... further arguments and graphical parameters passed to plotting routinesif \code{plot=TRUE}
-#' @return an R histogram object
-#' @seealso \code{\link{hist}}
-#' @export
-#' @importFrom graphics hist
-setMethod("hist",signature(x="scidb"), hist_scidb)
 
 #' Print a summary of a \code{scidb} object
 #' @param object a \code{scidb} object
