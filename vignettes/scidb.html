@@ -121,7 +121,7 @@ $(document).ready(function () {
 <!--
 ---
 title: "An R interface to SciDB"
-date: "2016-08-06"
+date: "2016-08-09"
 author: B. W. Lewis, Copyright (C) 2016 by Paradigm4, Inc.
 output:
   html_document:
@@ -525,14 +525,14 @@ SciDB schema  &lt;Petal_Width:double,Petal_Length:double&gt;
 <ul>
 <li><code>gemm</code> Compute a dense matrix product of two dense SciDB matrices</li>
 <li><code>gesvd</code> Compute the full singular value decomposition of a dense SciDB matrix</li>
-<li><code>tsvd</code> Compute a truncated singular value decomposition or optionally principal components of a sparse or dense SciDB matrix</li>
+<li><code>cov,cor</code> Covariance and correlation matrices</li>
 <li><code>glm</code>,<code>glm.fit</code>,<code>predict</code> Compute various generalized linear models similarly to R’s <code>glm</code> function see <code>?&quot;glm,ANY,ANY,scidb-method&quot;</code> for help and examples of generalized linear models</li>
 <li><code>t</code> Form a SciDB matrix transpose</li>
 <li><code>image</code> Optionally decimate, dowload and display a 2-d matrix image representation of a dense or sparse SciDB matrix</li>
 <li><code>phyper</code>,<code>qhyper</code> Distribution and quantile functions for the hypergeometric distribution</li>
 <li><code>scidb_fisher.test</code> Fisher’s exact test for count data including conditional odds estimate computed by maximum likelihood</li>
 </ul>
-<p>Other mathematical operations are available through direct use of SciDB’s native AFL query language.</p>
+<p>See online R help for the above functions for details and examples. Other mathematical operations are available through direct use of SciDB’s native AFL query language.</p>
 </div>
 </div>
 <div id="package-options" class="section level1">

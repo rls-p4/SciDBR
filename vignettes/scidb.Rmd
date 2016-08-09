@@ -695,7 +695,7 @@ SciDB arrays.
 
 * `gemm`  Compute a dense matrix product of two dense SciDB matrices
 * `gesvd` Compute the full singular value decomposition of a dense SciDB matrix
-* `tsvd`  Compute a truncated singular value decomposition or optionally principal components of a sparse or dense SciDB matrix
+* `cov,cor` Covariance and correlation matrices
 * `glm`,`glm.fit`,`predict`   Compute various generalized linear models similarly to R's `glm` function
  see `?"glm,ANY,ANY,scidb-method"` for help and examples of generalized linear models
 * `t`     Form a SciDB matrix transpose
@@ -703,8 +703,9 @@ SciDB arrays.
 * `phyper`,`qhyper`  Distribution and quantile functions for the hypergeometric distribution
 * `scidb_fisher.test` Fisher's exact test for count data including conditional odds estimate computed by maximum likelihood
 
-Other mathematical operations are available through direct use of SciDB's
-native AFL query language.
+See online R help for the above functions for details and examples.  Other
+mathematical operations are available through direct use of SciDB's native AFL
+query language.
 
 # Package options
 
