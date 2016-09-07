@@ -161,11 +161,7 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 # Use the query ID from a query as a unique ID for automated
 # array name generation.
   x = tryCatch(
-        # SciDB setopt operator changed in version 15.12
-        if(compare_versions(options("scidb.version")[[1]],15.12))
-        { 
-          scidbquery(query="_setopt('precision','16')", release=1, resp=TRUE, stream=0L)
-        } else scidbquery(query="setopt('precision','16')", release=1, resp=TRUE, stream=0L),
+        scidbquery(query="list('libraries')", release=1, resp=TRUE, stream=0L),
         error=function(e) stop("Connection error"))
   if(is.null(.scidbenv$uid))
   {
@@ -175,55 +171,8 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
     assign("uid", id, envir=.scidbenv)
   }
 
-if(init)
-{
-# Try to load the accelerated_io_tools, then load_tools, then
-# prototype_load_tools libraries:
-  got_load = tryCatch(
-    {
-      scidbquery(query="load_library('accelerated_io_tools')",
-               release=1, resp=FALSE, stream=0L)
-      TRUE
-    }, error=function(e) FALSE)
-  if(!got_load) got_load = tryCatch(
-    {
-      scidbquery(query="load_library('load_tools')",
-               release=1, resp=FALSE, stream=0L)
-      TRUE
-    }, error=function(e) FALSE)
-  if(!got_load) got_load = tryCatch(
-    {
-      scidbquery(query="load_library('prototype_load_tools')",
-               release=1, resp=FALSE, stream=0L)
-      TRUE
-    }, error=function(e) FALSE)
-  if(!got_load) warning("The load_tools SciDB plugin can't be found. load_tools is required to upload data.frames from R to SciDB. You can install the plugin from https://github.com/Paradigm4/load_tools")
-# Try to load the dense_linear_algebra library
-  tryCatch(
-    scidbquery(query="load_library('dense_linear_algebra')",
-               release=1, resp=FALSE, stream=0L),
-    error=invisible)
-# Try to load the example_udos library (>= SciDB 13.6)
-  tryCatch(
-    scidbquery(query="load_library('example_udos')", release=1, resp=FALSE, stream=0L),
-    error=invisible)
-# Try to load the superfunpack
-  tryCatch(
-    scidbquery(query="load_library('superfunpack')", release=1, resp=FALSE, stream=0L),
-    error=invisible)
-# Try to load the P4 library
-  tryCatch(
-    scidbquery(query="load_library('linear_algebra')", release=1, resp=FALSE, stream=0L),
-    error=invisible)
-# Try to load the chunk_unique library
-  tryCatch(
-    scidbquery(query="load_library('cu')", release=1, resp=FALSE, stream=0L),
-    error=invisible)
-} # end if init
-
 # Save available operators
   assign("ops", iquery("list('operators')", `return`=TRUE, binary=FALSE), envir=.scidbenv)
-
   invisible()
 }
 
