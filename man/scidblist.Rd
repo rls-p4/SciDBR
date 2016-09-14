@@ -5,8 +5,9 @@
 \title{List objects in a SciDB database}
 \usage{
 scidblist(pattern, type = c("arrays", "operators", "functions", "types",
-  "aggregates", "instances", "queries", "libraries"), verbose = FALSE,
-  n = Inf, namespace = "public")
+  "aggregates", "instances", "queries", "libraries", "roles", "namespaces",
+  "datastores", "macros", "users"), verbose = FALSE, n = Inf,
+  namespace = "public")
 }
 \arguments{
 \item{pattern}{a regular-expression style search pattern}
