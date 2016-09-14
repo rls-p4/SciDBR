@@ -6,7 +6,7 @@
 \usage{
 scidblist(pattern, type = c("arrays", "operators", "functions", "types",
   "aggregates", "instances", "queries", "libraries"), verbose = FALSE,
-  n = Inf)
+  n = Inf, namespace = "public")
 }
 \arguments{
 \item{pattern}{a regular-expression style search pattern}
@@ -16,6 +16,8 @@ scidblist(pattern, type = c("arrays", "operators", "functions", "types",
 \item{verbose}{(boolean), include attribute and dimension data when type="arrays"}
 
 \item{n}{maximum lines of output to return}
+
+\item{namespace}{SciDB namespace to list}
 }
 \value{
 a list of matching SciDB database objects

@@ -11,6 +11,7 @@ NULL
 {
   packageStartupMessage("   ____    _ ___  ___\n  / __/___(_) _ \\/ _ )\n _\\ \\/ __/ / // / _  |\n/___/\\__/_/____/____/     Copyright 2016, Paradigm4, Inc.\n\n"    , domain = NULL, appendLF = TRUE)
 
+  options(scidb.prefix=NULL)
 # The scidb.version option is set during scidbconnect(). However, users
 # may carefully override it to enable certain bug fixes specific to older
 # versions of SciDB.

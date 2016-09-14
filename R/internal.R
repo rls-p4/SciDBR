@@ -653,7 +653,8 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
     {
       args = list(id=sessionid, afl=0L, query=query, stream=0L)
       args$release = release
-      args$prefix = prefix
+      args$prefix = c(getOption("scidb.prefix"), prefix)
+      if(!is.null(args$prefix)) args$prefix = paste(args$prefix, collapse=";")
       args$save = save
       args = list(resource="/execute_query", args=args)
       do.call("SGET", args=args)

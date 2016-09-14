@@ -117,7 +117,7 @@ is.temp = function(name)
 scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
                         port=options("scidb.default_shim_port")[[1]],
                         username, password,
-                        auth_type=c("digest", "scidb"), protocol=c("http", "https"))
+                        auth_type=c("scidb", "digest"), protocol=c("http", "https"))
 {
   auth_type = match.arg(auth_type)
   protocol = match.arg(protocol)
@@ -159,7 +159,7 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 # Use the query ID from a query as a unique ID for automated
 # array name generation.
   x = tryCatch(
-        scidbquery(query="list('libraries')", release=1, resp=TRUE, stream=0L),
+        scidbquery(query="list('libraries')", release=1, resp=TRUE),
         error=function(e) stop("Connection error"))
   if(is.null(.scidbenv$uid))
   {
@@ -180,14 +180,18 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 #' @param type (character), one of the indicated list types
 #' @param verbose (boolean), include attribute and dimension data when type="arrays"
 #' @param n maximum lines of output to return
+#' @param namespace SciDB namespace to list
 #' @return a list of matching SciDB database objects
 #' @export
 scidblist = function(pattern,
                      type= c("arrays", "operators", "functions", "types",
                              "aggregates", "instances", "queries", "libraries"),
-                     verbose=FALSE, n=Inf)
+                     verbose=FALSE, n=Inf, namespace="public")
 {
   type = match.arg(type)
+  prefix = getOption("scidb.prefix")
+  on.exit = options(scidb.prefix=prefix)
+  options(scidb.prefix = paste(c(prefix, sprintf("set_namespace('%s')", namespace)), collapse=";"))
   if(n==Inf) n = -1   # non-intuitive read.table syntax
   Q = iquery(paste("list('",type,"')",sep=""), return=TRUE, nrows=n, binary=FALSE)
   if(dim(Q)[1] == 0) return(NULL)
@@ -272,19 +276,12 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
   DEBUG = FALSE
   if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
   if(is.scidb(query))  query = query@name
-  qsplit = strsplit(query, ";")[[1]]
-  m = 1
   n = -1    # Indicate to shim that we want all the output
-  for(query in qsplit)
+  if(`return`)
   {
-# Only return the last query, mimicking command-line iquery.
-    if(`return` && m == length(qsplit))
-    {
-      if(binary)
-      {
-        return(scidb_unpack_to_dataframe(query, ...))
-      }
-      ans = tryCatch(
+    if(binary) return(scidb_unpack_to_dataframe(query, ...))
+
+    ans = tryCatch(
        {
         # SciDB save syntax changed in 15.12
         if(compare_versions(options("scidb.version")[[1]],15.12))
@@ -294,7 +291,7 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
         dt1 = proc.time()
         result = tryCatch(
           {
-            SGET("/read_lines", list(id=sessionid, n=as.integer(n+1)))
+            SGET("/read_lines", list(id=sessionid, n=as.integer(n + 1)))
           },
           error=function(e)
           {
@@ -303,7 +300,7 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
              stop(e)
           })
         SGET("/release_session", list(id=sessionid), err=FALSE)
-        if(DEBUG) cat("Data transfer time",(proc.time()-dt1)[3],"\n")
+        if(DEBUG) cat("Data transfer time",(proc.time() - dt1)[3],"\n")
         dt1 = proc.time()
 # Handle escaped quotes
         result = gsub("\\\\'","''", result, perl=TRUE)
@@ -325,14 +322,12 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
            {
              stop(e)
            })
-    } else
-    {
-      ans = scidbquery(query, release=1, stream=0L)
-    }
-    m = m + 1
+      return(ans)
+  } else
+  {
+    scidbquery(query, release=1, stream=0L)
   }
-  if(!(`return`)) return(invisible())
-  ans
+  invisible()
 }
 
 #' Method to connect to a host, run SciDB query and return R dataframe
