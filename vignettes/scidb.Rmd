@@ -87,7 +87,7 @@ session ends.
 The network interface optionally supports SSL encryption and SciDB
 authentication or HTTP digest user authentication.
 
-*Connect to SciDB on the default shim port*
+*Connect to SciDB on the default shim port and localhost*
 ```{r, eval=FALSE}
 library("scidb")
 scidbconnect()
@@ -95,17 +95,63 @@ scidbconnect()
 
 *Connect to SciDB on an encrypted port 8083 with example SciDB authentication*
 ```{r, eval=FALSE}
-scidbconnect(host="localhost", port=8083, username="scidbuser", password="test")
+scidbconnect(port=8083, username="root", password="Paradigm4")
 ```
 Use encrypted sessions when communicating with SciDB over public networks.
 SciDB user authentication is only supported by SciDB versions 15.7 and greater.
 
 
+### More on SciDB authentication, namespaces and user roles
+
+See the official SciDB documentation for details about users, roles and namespaces
+https://paradigm4.atlassian.net/wiki/display/ESD/Security.
+
+The package option `scidb.prefix` is designed to simplify working with SciDB
+user roles from R. SciDB user roles are provided by the namespaces plugin and
+may require issuing the query `load_library('namespaces')` before use (usually
+performed by the SciDB system administrator). For instance, use the `scidb.prefix`
+package option to assume a special database user role "functionary" shown in
+the following example:
+```{r, eval=FALSE}
+options(scidb.prefix="set_role('functionary')")
+```
+After setting that, all queries will be prefixed with the role-setting statement.
+You may use the `scidb.prefix` option to prefix queries with arbitrary AFL
+statements. Separate multiple statements with the semi-colon character.
+
+Use the `namespace` option with the `scidblist()` or `scidbls()` functions to
+list arrays in the specified namespace. Use the period character '.' as a path
+separator to prefix SciDB array names with their namespace location. The
+following example creates a namespace called 'cazart', uploads the `iris`
+data frame to an array named 'iris' in the 'cazart' namespace,
+and lists the arrays in that namespace.
+```{r, eval=FALSE}
+iquery("create_namespace('cazart')")
+scidbls(type="namespaces")
+x = as.scidb(iris, name="cazart.iris")
+scidbls(namespace="cazart")
+```
+
+You can remove arrays in namespaces (with sufficient privelege) by referring
+to the R object or fully qualified SciDB array name with path:
+```{r, eval=FALSE}
+scidbrm(x, force=TRUE)
+
+# or
+
+scidbrm("cazart.iris", force=TRUE)
+```
+(we use the `force=TRUE` option because the name is protected from easy
+removal by the R package as it's not a temporary array name).
+
+
 ## Listing and removing SciDB arrays
 
-The `scidblist` function lists SciDB objects (arrays, instances, etc.),
-optionally showing detailed schema information for arrays. Returned results may
-be filtered using regular expression-style syntax.
+The `scidblist` function lists SciDB objects and features including aggregates,
+arrays, datastores, functions, instances, libraries, macros, namespaces,
+operators, queries, roles, types, and users, optionally showing detailed schema
+information for arrays. Returned results can be filtered using regular
+expression-style syntax.
 
 The `scidbremove` function removes a SciDB array, or optionally a set of SciDB
 arrays. The function accepts a vector of array names, resulting in the removal
@@ -717,6 +763,12 @@ to avoid creating server-side data files which is most useful when you're
 downloading lots of data from SciDB into R.
 
 ```
+# Set the scidb.prefix option to prefix queries with arbitrary AFL
+# statements (issued in the same connection context as the query).
+# This is mostly useful for authentication-related options like set_role
+# and in some cases set_namespace.
+  options(scidb.prefix=NULL)
+
 # The scidb.version option is set during scidbconnect(). However, users
 # may carefully override it to enable certain bug fixes specific to older
 # versions of SciDB.

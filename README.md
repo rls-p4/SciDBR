@@ -1,6 +1,6 @@
-[![CRAN version](http://www.r-pkg.org/badges/version/scidb)](http://cran.rstudio.com/web/packages/scidb/index.html)
+[![CRAN version](http://www.r-pkg.org/badges/version/scidb)](https://cran.r-project.org/package=scidb)
 ![](http://cranlogs.r-pkg.org/badges/scidb)
-[![codecov.io](https://codecov.io/github/Paradigm4/SciDBR/coverage.svg?branch=laboratory)](https://codecov.io/github/Paradigm4/SciDBR?branch=laboratory)
+[![codecov.io](https://codecov.io/github/Paradigm4/SciDBR/coverage.svg?branch=master)](https://codecov.io/github/Paradigm4/SciDBR?branch=master)
 
 Install the package from CRAN with
 ```
@@ -11,7 +11,7 @@ The current development version of the package can be installed directly
 from sources on  GitHub using the devtools package as follows (requires an R
 development environment  and the R devtools package):
 ```
-devtools::install_github("Paradigm4/SciDBR")  # master branch
+devtools::install_github("Paradigm4/SciDBR")  # development branch
 
 # or
 

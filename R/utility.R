@@ -185,7 +185,8 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 #' @export
 scidblist = function(pattern,
                      type= c("arrays", "operators", "functions", "types",
-                             "aggregates", "instances", "queries", "libraries"),
+                             "aggregates", "instances", "queries", "libraries", "roles",
+                             "namespaces", "datastores", "macros", "users"),
                      verbose=FALSE, n=Inf, namespace="public")
 {
   type = match.arg(type)

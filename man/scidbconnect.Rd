@@ -6,7 +6,7 @@
 \usage{
 scidbconnect(host = options("scidb.default_shim_host")[[1]],
   port = options("scidb.default_shim_port")[[1]], username, password,
-  auth_type = c("digest", "scidb"), protocol = c("http", "https"))
+  auth_type = c("scidb", "digest"), protocol = c("http", "https"))
 }
 \arguments{
 \item{host}{optional host name or I.P. address of a SciDB shim service to connect to}
