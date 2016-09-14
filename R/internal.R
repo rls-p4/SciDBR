@@ -628,7 +628,7 @@ POST = function(data, args=list(), err=TRUE)
 # save="(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix)
+scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=NULL)
 {
   DEBUG = FALSE
   STREAM = 0L
@@ -637,7 +637,6 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
   {
     if(!is.null(options("scidb.stream")[[1]]) && TRUE==options("scidb.stream")[[1]]) STREAM=1L
   } else STREAM = as.integer(stream)
-  if(missing(prefix)) prefix = ""
   sessionid = session
   if(is.null(session))
   {
@@ -652,21 +651,21 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
   }
   ans = tryCatch(
     {
-      if(is.null(save))
-        SGET("/execute_query", list(id=sessionid, release=release,
-             query=query, afl=0L, stream=0L, prefix=prefix))
-      else
-        SGET("/execute_query", list(id=sessionid, release=release,
-            save=save, query=query, afl=0L, stream=STREAM, prefix=prefix))
+      args = list(id=sessionid, afl=0L, query=query, stream=0L)
+      args$release = release
+      args$prefix = prefix
+      args$save = save
+      args = list(resource="/execute_query", args=args)
+      do.call("SGET", args=args)
     }, error=function(e)
     {
       # User cancel?
-      SGET("/cancel", list(id=sessionid, prefix=prefix), err=FALSE)
+      SGET("/cancel", list(id=sessionid), err=FALSE)
       SGET("/release_session", list(id=sessionid), err=FALSE)
       stop(as.character(e))
     }, interrupt=function(e)
     {
-      SGET("/cancel", list(id=sessionid, prefix=prefix), err=FALSE)
+      SGET("/cancel", list(id=sessionid), err=FALSE)
       SGET("/release_session", list(id=sessionid), err=FALSE)
       stop("cancelled")
     })

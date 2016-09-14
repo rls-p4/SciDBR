@@ -6,8 +6,7 @@
 \usage{
 scidbconnect(host = options("scidb.default_shim_host")[[1]],
   port = options("scidb.default_shim_port")[[1]], username, password,
-  auth_type = c("digest", "scidb"), protocol = c("http", "https"),
-  init = TRUE)
+  auth_type = c("digest", "scidb"), protocol = c("http", "https"))
 }
 \arguments{
 \item{host}{optional host name or I.P. address of a SciDB shim service to connect to}
@@ -21,9 +20,6 @@ scidbconnect(host = options("scidb.default_shim_host")[[1]],
 \item{auth_type}{optional SciDB authentication type}
 
 \item{protocol}{optional shim protocol type}
-
-\item{init}{set to \code{TRUE} to instruct SciDB to load a lot of optional and required plug-ins once a connection is established
-otherwise skip SciDB initialization steps}
 }
 \value{
 \code{NULL} is returned invisibly; this function is used for its
@@ -36,10 +32,8 @@ Connect to a SciDB database
 The SciDB connection state is maintained internally to the \code{scidb}
 package. We internalize state to facilitate operations involving \code{scidb}
 objects.
-
 Thus, only one open SciDB connection is supported at
 a time.
-
 One may connect to and use multiple SciDB databases by sequentially calling
 \code{scidbconnect} between operations. Note that \code{scidb} objects are not
 valid across different SciDB databases.
@@ -52,6 +46,8 @@ Set \code{auth_type = "scidb"} to use SciDB authentication, which only
 works over "https".
 
 Disconnection is automatically handled by the package.
+
+All arguments support partial matching.
 }
 \examples{
 \dontrun{

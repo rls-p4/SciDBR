@@ -82,16 +82,12 @@ is.temp = function(name)
 #' @param password optional authentication password
 #' @param auth_type optional SciDB authentication type
 #' @param protocol optional shim protocol type
-#' @param init set to \code{TRUE} to instruct SciDB to load a lot of optional and required plug-ins once a connection is established
-#'        otherwise skip SciDB initialization steps
 #' @note
 #' The SciDB connection state is maintained internally to the \code{scidb}
 #' package. We internalize state to facilitate operations involving \code{scidb}
 #' objects.
-#' 
 #' Thus, only one open SciDB connection is supported at
 #' a time.
-#' 
 #' One may connect to and use multiple SciDB databases by sequentially calling
 #' \code{scidbconnect} between operations. Note that \code{scidb} objects are not
 #' valid across different SciDB databases.
@@ -104,6 +100,8 @@ is.temp = function(name)
 #' works over "https".
 #'
 #' Disconnection is automatically handled by the package.
+#'
+#' All arguments support partial matching.
 #' @return \code{NULL} is returned invisibly; this function is used for its
 #' side effect.
 #' @examples
@@ -119,7 +117,7 @@ is.temp = function(name)
 scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
                         port=options("scidb.default_shim_port")[[1]],
                         username, password,
-                        auth_type=c("digest", "scidb"), protocol=c("http", "https"), init=TRUE)
+                        auth_type=c("digest", "scidb"), protocol=c("http", "https"))
 {
   auth_type = match.arg(auth_type)
   protocol = match.arg(protocol)
@@ -147,7 +145,7 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
   options(shim.version=SGET("/version"))
 
 # Update the scidb.version option
-  v = strsplit(gsub("[A-z\\-]", "", getOption("shim.version")), "\\.")[[1]]
+  v = strsplit(gsub("[A-z\\-]", "", gsub("-.*", "", getOption("shim.version"))), "\\.")[[1]]
   if(length(v) < 2) v = c(v, "1")
   options(scidb.version=sprintf("%s.%s", v[1], v[2]))
 
