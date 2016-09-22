@@ -190,9 +190,9 @@ scidblist = function(pattern,
                      verbose=FALSE, n=Inf, namespace="public")
 {
   type = match.arg(type)
-  prefix = getOption("scidb.prefix")
-  on.exit = options(scidb.prefix=prefix)
-  options(scidb.prefix = paste(c(prefix, sprintf("set_namespace('%s')", namespace)), collapse=";"))
+  lastprefix = getOption("scidb.prefix")
+  on.exit = options(scidb.prefix=lastprefix)
+  options(scidb.prefix = paste(c(lastprefix, sprintf("set_namespace('%s')", namespace)), collapse=";"))
   if(n==Inf) n = -1   # non-intuitive read.table syntax
   Q = iquery(paste("list('",type,"')",sep=""), return=TRUE, nrows=n, binary=FALSE)
   if(dim(Q)[1] == 0) return(NULL)
