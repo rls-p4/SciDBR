@@ -191,7 +191,7 @@ scidblist = function(pattern,
 {
   type = match.arg(type)
   lastprefix = getOption("scidb.prefix")
-  on.exit = options(scidb.prefix=lastprefix)
+  on.exit ({options(scidb.prefix=lastprefix)})
   options(scidb.prefix = paste(c(lastprefix, sprintf("set_namespace('%s')", namespace)), collapse=";"))
   if(n==Inf) n = -1   # non-intuitive read.table syntax
   Q = iquery(paste("list('",type,"')",sep=""), return=TRUE, nrows=n, binary=FALSE)
