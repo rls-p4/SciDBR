@@ -2,7 +2,7 @@
 % Please edit documentation in R/utility.R
 \name{scidbeval}
 \alias{scidbeval}
-\title{Evaluate an Expression to \code{scidb} or \code{scidb} objects}
+\title{Evaluate an expression to \code{scidb} or \code{scidb} objects}
 \usage{
 scidbeval(expr, eval = TRUE, name, gc = TRUE, temp = FALSE)
 }

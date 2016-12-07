@@ -15,7 +15,7 @@ NULL
 # The scidb.version option is set during scidbconnect(). However, users
 # may carefully override it to enable certain bug fixes specific to older
 # versions of SciDB.
-  options(scidb.version=15.7)
+  options(scidb.version=16.9)
 # Default shim port and host.
   options(scidb.default_shim_port=8080L)
   options(scidb.default_shim_host="localhost")

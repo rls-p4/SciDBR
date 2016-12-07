@@ -1,4 +1,4 @@
-#' Evaluate an Expression to \code{scidb} or \code{scidb} objects
+#' Evaluate an expression to \code{scidb} or \code{scidb} objects
 #'
 #' Force evaluation of an expression that yields a \code{scidb} or \code{scidb} object,
 #' storing the result to a SciDB array when \code{eval=TRUE}.
@@ -175,41 +175,6 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 }
 
 
-#' List objects in a SciDB database
-#' @param pattern a regular-expression style search pattern
-#' @param type (character), one of the indicated list types
-#' @param verbose (boolean), include attribute and dimension data when type="arrays"
-#' @param n maximum lines of output to return
-#' @param namespace SciDB namespace to list
-#' @return a list of matching SciDB database objects
-#' @export
-scidblist = function(pattern,
-                     type= c("arrays", "operators", "functions", "types",
-                             "aggregates", "instances", "queries", "libraries", "roles",
-                             "namespaces", "datastores", "macros", "users"),
-                     verbose=FALSE, n=Inf, namespace="public")
-{
-  type = match.arg(type)
-  lastprefix = getOption("scidb.prefix")
-  on.exit ({options(scidb.prefix=lastprefix)})
-  options(scidb.prefix = paste(c(lastprefix, sprintf("set_namespace('%s')", namespace)), collapse=";"))
-  if(n==Inf) n = -1   # non-intuitive read.table syntax
-  Q = iquery(paste("list('",type,"')",sep=""), return=TRUE, nrows=n, binary=FALSE)
-  if(dim(Q)[1] == 0) return(NULL)
-  z = Q[, -1, drop=FALSE]
-  if(type=="arrays" && !verbose) {
-    z = z[,1]
-    if(!missing(pattern))
-      z = grep(z, pattern=pattern, value=TRUE)
-  }
-  z
-}
-#' List objects in a SciDB database
-#' @param ... options passed to \code{\link{scidblist}}
-#' @return a list
-#' @export
-scidbls = function(...) scidblist(...)
-
 
 #' Remove one or more scidb arrays
 #' @param x (character), a vector or single character string listing array names
@@ -218,7 +183,6 @@ scidbls = function(...) scidblist(...)
 #' @param warn (optional boolean), if FALSE supress warnings
 #' @param recursive (optional boolean), if TRUE, recursively remove this array and its dependency graph
 #' @return \code{NULL}
-#' @export
 scidbremove = function(x, error=warning, force, warn=TRUE, recursive=FALSE)
 {
   if(is.null(x)) return(invisible())
@@ -255,13 +219,6 @@ scidbremove = function(x, error=warning, force, warn=TRUE, recursive=FALSE)
   }
   invisible()
 }
-#' Remove one or more scidb arrays
-#' @param x a vector or single character string listing array names
-#' @param error  error handler. Use stop or warn, for example.
-#' @param ... additional options for \code{\link{scidbremove}}
-#' @return \code{NULL}
-#' @export
-scidbrm = function(x, error=warning, ...) scidbremove(x, error, ...)
 
 
 # binary=FALSE is needed by some queries, don't get rid of it.
@@ -329,202 +286,4 @@ iquery = function(query, `return`=FALSE, binary=TRUE, ...)
     scidbquery(query, release=1, stream=0L)
   }
   invisible()
-}
-
-#' Method to connect to a host, run SciDB query and return R dataframe
-#' 
-#' Alternate way of running a SciDB query. This does not require scidbconnect();
-#' this function directly connects to the specified \code{host} at the specified
-#' \code{port} to issue the specified \code{query}. The caller must also have (and
-#' provide) the following information about the return data type -- the name,
-#' data type and nullability characteristic of each returned attribute.  Note
-#' that this method is for use when you want the result returned to an R
-#' dataframe; if you want to return some delimited output (e.g. CSV, TSV) or if
-#' you want to use SciDBR to issue queries without returning a result, use the
-#' \code{iquery()} function instead
-#' @param aflstr the AFL query as a character string
-#' @param dims vector of returned result dimensions
-#' @param attribs a vector of character strings listing the names of the attributes returned by the query
-#' @param TYPES a vector of character strings listing the data-types of the attributes returned by the query
-#' @param NULLABILITY a vector of logical values listing the nullability characteristic of the attributes returned by the query
-#' @param host optional host name or I.P. address of a SciDB shim service to connect to (character)
-#' @param port optional port number of a SciDB shim service to connect to (integer)
-#' @examples
-#' \dontrun{
-#' # Connect to one R session and execute the following commands
-#' # The store(apply(..)) query creates a temporary array `temp_demo` for demo purposes
-#' library(scidb)
-#' scidbconnect()
-#' iquery("store(apply(build(<val1:double>[i=0:4,5,0, j=0:3,2,0], random()), val2, i*10+j), temp_demo)")
-#'
-#' # Now disconnect from this R session and restart another R session
-#' # In the subsequent code, we will not use scidbconnect() explicitly
-#' library(scidb)
-#' aflstr="between(temp_demo,0,0,2,2)"
-#' TYPES=c("double", "int64")
-#' NULLABILITY=c(FALSE, FALSE)
-#' attribs=c("val1", "val2")
-#' dims=c("i","j")
-#' query_to_df(aflstr=aflstr, dims=dims, attribs=attribs, TYPES=TYPES, NULLABILITY=NULLABILITY)
-#' # Note that you can supply a modified query while keeping the otherparameters
-#' #the same (so long as the return type remains the same)
-#' query_to_df(aflstr="between(temp_demo,1,1,3,3)", dims=dims, attribs=attribs, TYPES=TYPES, NULLABILITY=NULLABILITY)
-#' 
-#' # The real advantage of using this way of issuing SciDB queries and
-#' # returning the result to R dataframes is evident when comparing timings
-#' # with the alternate method of using scidbconnect() and iquery()
-#' # Method 1:
-#' t1 = proc.time()
-#' x1 = query_to_df(aflstr="between(temp_demo,1,1,3,3)",
-#'                  dims=dims, attribs=attribs, TYPES=TYPES,
-#'                  NULLABILITY=NULLABILITY)
-#' (proc.time()-t1)[[3]]
-#' # [1] 0.069
-#'
-#' # Method 2:
-#' t1 = proc.time()
-#' scidbconnect()
-#' x2 = iquery("between(temp_demo,1,1,3,3)", return=TRUE)
-#' (proc.time()-t1)[[3]]
-#' # [1] 0.419 
-#'
-#' # Finally verify that outputs are identical
-#' identical(x1, x2)
-#' # [1] TRUE
-#' 
-#' # Clean up
-#' scidbrm("temp_demo", force=TRUE)
-#' }
-#' @export
-query_to_df = function(aflstr, dims, attribs, TYPES, NULLABILITY, 
-                      host = options("scidb.default_shim_host")[[1]], 
-                      port = options("scidb.default_shim_port")[[1]]
-)
-{
-  DEBUG = FALSE
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
-
-  aflstr = sprintf("project(apply(%s,%s),%s,%s)", 
-                   aflstr, 
-                   paste(dims, dims, sep=",", collapse=","), 
-                   paste(dims, collapse=",") , 
-                   paste(attribs, collapse=",")
-                  )
-
-  # Some basic string cleaning on the AFL string so that it can be passed to httr::GET e.g. SPACE is replaced with %20
-  aflstr = oldURLencode(aflstr)
-
-  # Formulate the shim url
-  shimurl=paste("http://", host, ":", port, sep = "")
-  
-  # Connect to SciDB
-  # /new_session
-  id = httr::GET(paste(shimurl, "/new_session", sep=""))
-  session = gsub("([\r\n])", "", rawToChar(id$content)) # the gsub is added to remove some trailing characters if present 
-
-  # AFL query and save format
-  TYPES=c(rep("int64", length(dims)), TYPES)
-  NULLABILITY=c(rep(FALSE, length(dims)), NULLABILITY)
-  savestr=sprintf("(%s)", 
-                    paste(TYPES, 
-                          ifelse(NULLABILITY,
-                          "+null", ""), 
-                          sep="", collapse = ",")
-                 )
-  
-  # Now formulate and execute the query
-  # /execute_query
-  query = sprintf("%s/execute_query?id=%s&query=%s&save=%s",
-                  shimurl, session, aflstr, savestr)
-  resp = httr::GET(query)
-  
-  # View the status of the result
-  if(DEBUG) { cat("save status: "); cat(sprintf("%d\n", resp$status_code)) }
-  
-  # Get the data returned by the previous save
-  # /read_bytes
-  resp = httr::GET(sprintf("%s/read_bytes?id=%s&n=0", shimurl, session))
-  if (DEBUG) {
-		cat("read status: "); cat(sprintf("%d\n", resp$status_code))
-		print(resp)
-	}
-  
-  # Release the session
-  httr::GET(sprintf("%s/release_session?id=%s", shimurl, session))
-  
-  #BEGIN: Copied from scidbr/R/internal.R >> scidb_unpack_to_dataframe()
-  len = length(resp$content)
-  p = 0 
-  ans = c()
-  
-  # BEGIN: Hard coded for tests
-  buffer = 100000L
-  # END: HARD CODED
-  
-  cnames = c(dims, attribs, "lines", "p")  # we are unpacking to a SciDB array, ignore dims
-  n = length(dims) + length(attribs)
-  
-  while(p < len)
-  {
-    dt2 = proc.time()
-    tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, NULLABILITY, resp$content, as.double(p), PACKAGE="scidb")
-    names(tmp) = cnames
-    lines = tmp[[n+1]]
-    p_old = p
-    p     = tmp[[n+2]]
-    if(DEBUG) cat("  R buffer ", p, "/", len, " bytes parsing time", (proc.time() - dt2)[3], "\n")
-    dt2 = proc.time()
-    if(lines > 0)
-    {
-          if("binary" %in% TYPES)
-          {
-            if(DEBUG) cat("  R rbind/df assembly time", (proc.time() - dt2)[3], "\n")
-            return(lapply(1:n, function(j) tmp[[j]][1:lines]))
-          }
-      len_out = length(tmp[[1]])
-      if(lines < len_out) tmp = lapply(tmp[1:n], function(x) x[1:lines])
-      # adaptively re-estimate a buffer size
-      avg_bytes_per_line = ceiling((p - p_old) / lines)
-      buffer = min(getOption("scidb.buffer_size"), ceiling(1.3 * (len - p) / avg_bytes_per_line)) # Engineering factors
-      # Assemble the data frame
-      if(is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE))
-      else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE)))
-    }
-    if(DEBUG) cat("  R rbind/df assembly time", (proc.time() - dt2)[3], "\n")
-  }
-  ans = as.data.frame(ans)
-  ans
-  #END: Copied from scidbr/R/internal.R >> scidb_unpack_to_dataframe()
-}
-
-#' Recursively set all arrays in a \code{scidb} dependency graph to persist.
-#' @param x a \code{\link{scidb}} object
-#' @param gc \code{TRUE} connects arrays to R's garbage collector
-#' @export
-persist = function(x, gc=FALSE) UseMethod("persist")
-persist.default = function(x, gc=FALSE)
-{
-  DEBUG = FALSE
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
-  if(!is.scidb(x)) return(invisible())
-  if(DEBUG) cat("Persisting ",x@name,"\n")
-  x@gc$remove = gc
-  if(is.null(unlist(x@gc$depend))) return()
-  for(y in x@gc$depend)
-  {
-    if(DEBUG) cat("Persisting ",y@name,"\n")
-    y@gc$remove = gc
-    if(!is.null(y@gc$depend)) persist(y, gc=gc)
-  }
-}
-
-persist.glm_scidb = function(x, gc=FALSE)
-{
-  .traverse.glm_scidb(x, persist, gc)
-}
-
-# A special remove function for complicated model objects
-scidbremove.glm_scidb = function(x, error=warning,  force=FALSE, warn=TRUE, recursive=TRUE)
-{
-  .traverse.glm_scidb(x, scidbremove, error, force, warn, recursive)
 }

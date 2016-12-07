@@ -17,7 +17,6 @@ Depends:
 Imports:
     methods,
     data.table,
-    httr,
     stats,
     graphics,
     digest,

@@ -3,17 +3,6 @@
 # An environment to hold connection state
 .scidbenv = new.env()
 
-# Map scidb object column classes into R, adding an extra integer at the start for the index!
-scidbcc = function(x)
-{
-  if(!is.null(options("scidb.test")[[1]]))
-  {
-    cat("Using old method for data.frame import")
-    return(NA)
-  }
-  c("integer", as.vector(unlist(lapply(.scidbtypes[scidb_types(x)], function(x) ifelse(is.null(x), NA, x)))))
-}
-
 .scidbstr = function(object)
 {
   name = substr(object@name, 1, 35)
@@ -164,7 +153,7 @@ digest_auth = function(method, uri, realm="", nonce="123456")
 # Internal warning function
 warnonce = (function() {
   state = list(
-    count="Use `count` for an exact count of data rows.",
+    count="Use the AFL op_count macro operator for an exact count of data rows.",
     nonum="Note: The R sparse Matrix package does not support certain value types like\ncharacter strings"
   )
   function(warn) {
@@ -177,50 +166,6 @@ warnonce = (function() {
   }
 }) ()
 
-
-# Utility function that parses an aggregation expression
-# makes sense of statements like
-# max(a) as amax, avg(b) as bmean, ...
-# Input
-# x: scidb object
-# expr: aggregation expression (as is required)
-# Output
-# New attribute schema
-aparser = function(x, expr)
-{
-  map = list(
-    ApproxDC    = function(x) "double null",
-    avg         = function(x) "double null",
-    count       = function(x) "uint64 null",
-    first_value = function(x) sprintf("%s null", x),
-    last_value  = function(x) sprintf("%s null", x),
-    mad         = function(x) sprintf("%s null", x),
-    max         = function(x) sprintf("%s null", x),
-    min         = function(x) sprintf("%s null", x),
-    median      = function(x) sprintf("%s null", x),
-    prod        = function(x) sprintf("%s null", x),
-    stdev       = function(x) "double null",
-    sum         = function(x) sprintf("%s null", x),
-    top_five    = function(x) sprintf("%s null", x),
-    var         = function(x) "double null")
-
-  p = strsplit(expr, ", ")[[1]]                      # comma separated
-  p = lapply(p, function(v) strsplit(v, "as")[[1]])  # as is required
-  new_attrs = lapply(p, function(v) v[[2]])        # output attribute names
-  y = lapply(p, function(v)strsplit(v, "\\(")[[1]])  #
-  fun = lapply(y, function(v) gsub(" ", "", v[[1]])) # functions
-  old_attrs = unlist(lapply(y, function(v)gsub("[\\) ]", "", v[[2]])))
-  i = 1:length(scidb_attributes(x))
-  names(i) = scidb_attributes(x)
-  old_types = scidb_types(x)[i[old_attrs]]
-  old_types[is.na(old_types)] = "int64"    # catch all
-  z = rep("", length(new_attrs))
-  for(j in 1:length(z))
-  {
-    z[j] = sprintf("%s:%s", new_attrs[j], map[unlist(fun)][[j]](old_types[j]))
-  }
-  sprintf("<%s>", paste(z, collapse=","))
-}
 
 # Some versions of RCurl seem to contain a broken URLencode function.
 oldURLencode = function (URL, reserved = FALSE) 
@@ -236,161 +181,6 @@ oldURLencode = function (URL, reserved = FALSE)
         x[z] = y
     }
     paste(x, collapse = "")
-}
-
-
-#' Nightmarish internal function that converts R expressions to SciDB expressions
-#' Used to support NSE in \code{transform}. NSE is bad.
-#' @param expr an R 'language' type object to parse
-#' @param sci a SciDB array 
-#' @param frame to evaluate expression for replacement values
-#' @keywords internal
-#' @return character-valued SciDB expression
-#' @importFrom codetools makeCodeWalker walkCode
-rewrite_subset_expression = function(expr, sci, frame)
-{
-  dims = dimensions(sci)
-  n = length(dims)
-  template = rep("", 2 * n)
-  DEBUG = FALSE
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
-
-  .toList = makeCodeWalker(call=function(e, w)
-                                {
-                                  tryCatch(eval(e, frame),
-                                    error=function(err) lapply(e, walkCode, w))
-                                },
-                           leaf=function(e, w) e)
-
-# Walk the ast for R expression x, annotating elements with identifying
-# attributes. Specify a character vector of array dimension in dims.
-# Substitute evaluated R scalars for variables where possible (but not more
-# complext R expressions).  The output is a list that can be parsed by the
-# `.compose_r` function below.
-  .annotate = function(x, dims=NULL, attr=NULL, op="")
-  {
-    if(is.list(x))
-    {
-      if(length(x) > 1) op = c(op, as.character(x[[1]]))
-      return(lapply(x, .annotate, dims, attr, op))
-    }
-    op = paste(op, collapse="")
-    s = as.character(x)
-    if(!(s %in% c(dims, attr, ">", "<", "!", "|", "=", "&", "||", "&&", "!=", "==", "<=", ">=")))
-    {
-      test = tryCatch(eval(x, frame), error=function(e) s)
-      if(length(test) > 0)
-      {
-        test = test[!grepl("condition", lapply(test, class))]
-        if(length(test) > 0)
-        {
-          if(DEBUG) cat("Replacing symbol", s, "with ")
-          if(is.logical(test[[1]]))
-          {
-            s = ifelse(test, "true", "false")
-          } else if(is.numeric(test[[1]]))
-          {
-            s = tryCatch(sprintf("%.16f", test[[1]]), error=function(e) s)
-          } else
-          {
-            s = test[[1]]
-          }
-          if(DEBUG) cat(s, "\n")
-        }
-      }
-    }
-    attr(s, "what") = "element"
-    if(is.character(x))
-    {
-      attr(s, "what") = "character"
-    }
-    if(nchar(gsub("null", "", gsub("[0-9 -\\.]+", "", s, perl=TRUE), ignore.case=TRUE)) == 0)
-      attr(s, "what") = "scalar"
-    if(any(dims %in% gsub(" ", "", s)) && nchar(gsub("[&(<>=) ]*", "", op)) == 0)
-    {
-      attr(s, "what") = "dimension"
-    }
-    s
-  }
-
-  .compose_r = function(x)
-  {
-    if(is.list(x))
-    {
-      if(length(x)==3)
-      {
-        if(!is.list(x[[2]]) && !is.list(x[[3]]) &&
-           all( c("scalar", "dimension") %in%
-                c(attr(x[[2]], "what"), attr(x[[3]], "what"))))
-        {
-          b = template
-          d = which(c(attr(x[[2]], "what"), attr(x[[3]], "what")) == "dimension") + 1
-          s = which(c(attr(x[[2]], "what"), attr(x[[3]], "what")) == "scalar") + 1
-          i = which(dims %in% x[[d]]) # template index
-          intx = round(as.numeric(x[[s]]))
-          if(intx >= 2 ^ 53) stop("Values too large, use an explicit SciDB filter expression")
-          numx = as.numeric(x[[s]])
-          lb = ceiling(numx)
-          ub = floor(intx)
-          if(intx == numx)
-          {
-            lb = intx + 1
-            ub = intx - 1
-          }
-          if(x[[1]] == "==" || x[[1]] == "=") b[i] = b[i + n] = x[[s]]
-          else if(x[[1]] == "<") b[i + n] = sprintf("%.0f", ub)
-          else if(x[[1]] == "<=") b[i + n] = sprintf("%.0f", intx)
-          else if(x[[1]] == ">") b[i] = sprintf("%.0f", lb)
-          else if(x[[1]] == ">=") b[i] = sprintf("%.0f", intx)
-          b = paste(b, collapse=",")
-          return(sprintf("::%s", b))
-        }
-        return(c(.compose_r(x[[2]]), as.character(x[[1]]), .compose_r(x[[3]])))
-      }
-      if(length(x)==2)
-      {
-        if(as.character(x[[1]]) == "(") return(c(.compose_r(x[[1]]), .compose_r(x[[2]]), ")"))
-        return(c(.compose_r(x[[1]]), .compose_r(x[[2]])))
-      }
-    }
-    if(attr(x, "what") == "character") return(sprintf("'%s'", as.character(x)))
-    as.character(x)
-  }
-
-  ans = .compose_r(.annotate(walkCode(expr, .toList), dims=dims, attr=scidb_attributes(sci)))
-  i   = grepl("::", ans)
-  ans = gsub("==", "=", gsub("!", "not", gsub("\\|", "or", gsub("\\|\\|", "or",
-          gsub("&", "and", gsub("&&", "and", gsub("!=", "<>", ans)))))))
-  if(any(i))
-  {
-# Compose the betweens in a highly non-elegant way
-    b = strsplit(paste(gsub("::", "", ans[i]), ""), ",")
-    ans[i] = "true"
-    b = Reduce(function(x, y)
-    {
-      n = length(x)
-      x = tryCatch(as.numeric(x), warning=function(e) rep(NA, n))
-      y = tryCatch(as.numeric(y), warning=function(e) rep(NA, n))
-      m = n / 2
-      x1 = x[1:m]
-      y1 = y[1:m]
-      x1[is.na(x1)] = -Inf
-      y1[is.na(y1)] = -Inf
-      x1 = pmax(x1, y1)
-      x2 = x[(m+1):n]
-      y2 = y[(m+1):n]
-      x2[is.na(x2)] = Inf
-      y2[is.na(y2)] = Inf
-      x2 = pmin(x2, y2)
-      c(x1, x2)
-    }, b, init=template)
-    b = gsub("Inf", "null", gsub("-Inf", "null", sprintf("%.0f", b)))
-    ans = gsub("and true", "", paste(ans, collapse=" "))
-    if(nchar(gsub(" ", "", ans)) == 0 || gsub(" ", "", ans) == "true")
-      return(sprintf("between(%s,%s)", sci@name, paste(b, collapse=",")))
-    return(sprintf("filter(between(%s,%s),%s)", sci@name, paste(b, collapse=","), ans))
-  }
-  sprintf("filter(%s,%s)", sci@name, paste(ans, collapse=" "))
 }
 
 
@@ -448,13 +238,6 @@ create_temp_array = function(name, schema)
     scidbquery(query, stream=0L)
     ans = scidb(newarray, gc=gc)
     if(temp) ans@gc$temp = TRUE
-# This is a fix for a SciDB issue that can unexpectedly change schema
-# bounds. And another fix to allow unexpected dimname and attribute name
-# changes. Arrgh.
-#    if(schema != "" && !compare_schema(ans, schema, ignore_attributes=TRUE, ignore_dimnames=TRUE))
-#    {
-#      ans = repart(ans, schema)
-#    }
   } else
   {
     ans = scidb(expr, gc=gc)
