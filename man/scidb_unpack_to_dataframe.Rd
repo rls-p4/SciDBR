@@ -4,9 +4,11 @@
 \alias{scidb_unpack_to_dataframe}
 \title{Unpack and return a SciDB query expression as a data frame}
 \usage{
-scidb_unpack_to_dataframe(query, ...)
+scidb_unpack_to_dataframe(db, query, ...)
 }
 \arguments{
+\item{db}{scidb database connection object}
+
 \item{query}{A SciDB query expression or scidb object}
 
 \item{...}{optional extra arguments}

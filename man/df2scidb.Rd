@@ -4,9 +4,11 @@
 \alias{df2scidb}
 \title{Internal function to upload an R data frame to SciDB}
 \usage{
-df2scidb(X, name = tmpnam(), types = NULL, chunk_size = 1e+05, gc)
+df2scidb(db, X, name = tmpnam(db), types = NULL, chunk_size = 1e+05, gc)
 }
 \arguments{
+\item{db}{scidb database connection}
+
 \item{X}{a data frame}
 
 \item{name}{SciDB array name}

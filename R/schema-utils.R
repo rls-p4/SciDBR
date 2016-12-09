@@ -82,7 +82,7 @@ scidb_types = function(x)
 scidb_nullable = function(x)
 {
   # SciDB schema syntax changed in 15.12
-  if(compare_versions(options("scidb.version")[[1]],15.12))
+  if(newer_than(options("scidb.version")[[1]],15.12))
   { 
     return (! grepl("NOT NULL", .attsplitter(x)))
   }
@@ -380,35 +380,4 @@ strdiff = function(x,y)
          {
            gsub(sprintf("^%s",x[[i]]), "", y[[i]])
          }))
-}
-
-# Internal function used to infer aliases in use by comparing the output of
-# show and explain_logical. Returns NULL if no aliasing can be determined.
-aliases = function(x)
-{
-  ans = c()
-  if(!(inherits(x,"scidb"))) return(ans)
-  logical_schema = grep("^>>schema", strsplit(logical_plan(x), "\n")[[1]], value=TRUE)
-  if(length(logical_schema) < 1) return(NULL)
-  logical_schema = gsub("].*", "]", logical_schema)
-  logical_schema = gsub(".*<", "<", logical_schema)
-  dl = dimensions(logical_schema)
-  ds = dimensions(schema(x))
-  if(length(dl) != length(ds)) return(NULL)
-  for(j in 1:length(ds))
-  {
-    d = strsplit(dl[j], "\\|")[[1]]
-    p = strdiff(d[j], ds[j])
-    d = c(d[1],unlist(lapply(d[-1], function(z) sprintf("%s%s", p, z))))
-    ans = c(ans, gsub(" ", "",strdiff(ds[j], d)))
-  } 
-  unique(ans)
-}
-
-# An internal function used to create new alias names that don't conflict
-# with existing aliases for scidb objects x and y. Returns a two element
-# character vector with the new aliases.
-scidb_alias = function(x,y)
-{
-  make.unique_(c(aliases(x),aliases(y)), c("x","y"))
 }

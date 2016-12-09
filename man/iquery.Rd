@@ -4,9 +4,11 @@
 \alias{iquery}
 \title{Run a SciDB query, optionally returning the result.}
 \usage{
-iquery(query, return = FALSE, binary = TRUE, ...)
+iquery(db, query, return = FALSE, binary = TRUE, ...)
 }
 \arguments{
+\item{db}{a scidb database connection from \code{\link{scidbconnect}}}
+
 \item{query}{a single SciDB query string}
 
 \item{return}{if \code{TRUE}, return the result}

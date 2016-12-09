@@ -1,8 +1,5 @@
 # Non-exported utility functions
 
-# An environment to hold connection state
-.scidbenv = new.env()
-
 .scidbstr = function(object)
 {
   name = substr(object@name, 1, 35)
@@ -20,16 +17,17 @@
 
 
 #' Unpack and return a SciDB query expression as a data frame
+#' @param db scidb database connection object
 #' @param query A SciDB query expression or scidb object
 #' @param ... optional extra arguments
 #' @keywords internal
 #' @importFrom curl new_handle handle_setheaders handle_setopt curl_fetch_memory handle_setform form_file
 #' @importFrom data.table  data.table
-scidb_unpack_to_dataframe = function(query, ...)
+scidb_unpack_to_dataframe = function(db, query, ...)
 {
   DEBUG = FALSE
   projected = FALSE
-  if(!inherits(query, "scidb")) query = scidb(query)
+  if(!inherits(query, "scidb")) query = scidb(db, query)
   if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG = TRUE
   buffer = 100000L
   args = list(...)
@@ -42,12 +40,12 @@ scidb_unpack_to_dataframe = function(query, ...)
   if(getOption("scidb.unpack"))
   {
     dim = make.unique_(c(scidb_attributes(query), dimensions(query)), "i")
-    x = scidb(sprintf("unpack(%s, %s)", query@name, dim))
+    x = scidb(db, sprintf("unpack(%s, %s)", query@name, dim))
   } else
   {
     dims_query = dimensions(query)
     dims = paste(dims_query, dims_query, sep=",", collapse=",")
-    x = scidb(sprintf("project(apply(%s, %s), %s, %s)", query@name,
+    x = scidb(db, sprintf("project(apply(%s, %s), %s, %s)", query@name,
                       dims, paste(dims_query, collapse=","), paste(scidb_attributes(query), collapse=",")))
   }
   N = scidb_nullable(x)
@@ -56,13 +54,13 @@ scidb_unpack_to_dataframe = function(query, ...)
   ns[N] = "null"
   format_string = paste(paste(TYPES, ns), collapse=",")
   format_string = sprintf("(%s)", format_string)
-  sessionid = scidbquery(x@name, save=format_string, release=0)
-  on.exit( SGET("/release_session", list(id=sessionid), err=FALSE), add=TRUE)
+  sessionid = scidbquery(db, x@name, save=format_string, release=0)
+  on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
 
   dt2 = proc.time()
-  uri = URI("/read_bytes", list(id=sessionid, n=0))
+  uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
   h = new_handle()
-  handle_setheaders(h, .list=list(`Authorization`=digest_auth("GET", uri)))
+  handle_setheaders(h, .list=list(`Authorization`=digest_auth(db, "GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
                               ssl_verifypeer=0))
   resp = curl_fetch_memory(uri, h)
@@ -122,14 +120,16 @@ scidb_unpack_to_dataframe = function(query, ...)
 }
 
 #' Convenience function for digest authentication.
+#' @param db a scidb database connection object
 #' @param method digest method
 #' @param uri uri
 #' @param realm realm
 #' @param nonce nonce
 #' @keywords internal
 #' @importFrom digest digest
-digest_auth = function(method, uri, realm="", nonce="123456")
+digest_auth = function(db, method, uri, realm="", nonce="123456")
 {
+  .scidbenv = attr(db, "connection")
   if(exists("authtype", envir=.scidbenv))
   {
    if(.scidbenv$authtype != "digest") return("")
@@ -185,38 +185,36 @@ oldURLencode = function (URL, reserved = FALSE)
 
 
 # Internal function
-create_temp_array = function(name, schema)
+create_temp_array = function(db, name, schema)
 {
 # SciDB temporary array syntax varies with SciDB version
   TEMP = "'TEMP'"
-  if(compare_versions(options("scidb.version")[[1]], 14.12)) TEMP="true"
+  if(newer_than(options("scidb.version")[[1]], 14.12)) TEMP="true"
   query   = sprintf("create_array(%s, %s, %s)", name, schema, TEMP)
-  iquery(query, `return`=FALSE)
+  iquery(db, query, `return`=FALSE)
 }
 
 
-# An important internal convenience function that returns a scidb object.  If
-# eval=TRUE, a new SciDB array is created the returned scidb object refers to
-# that.  Otherwise, the returned scidb object represents a SciDB array promise.
-#
-# INPUT
-# expr: (character) A SciDB expression or array name
-# eval: (logical) If TRUE evaluate expression and assign to new SciDB array.
-#                 If FALSE, infer output schema but don't evaluate.
-# name: (optional character) If supplied, name for stored array when eval=TRUE
-# gc: (optional logical) If TRUE, tie SciDB object to  garbage collector.
-# depend: (optional list) An optional list of other scidb objects
-#         that this expression depends on (preventing their garbage collection
-#         if other references to them go away).
-# schema, temp: (optional) used to create SciDB temp arrays
-#               (requires scidb >= 14.8)
-#
-# OUTPUT
-# A `scidb` array object.
-#
-# NOTE
-# Only AFL supported.
-`.scidbeval` = function(expr, eval=FALSE, name, gc=TRUE, depend, schema, temp)
+#' An important internal convenience function that returns a scidb object.  If
+#' eval=TRUE, a new SciDB array is created the returned scidb object refers to
+#' that.  Otherwise, the returned scidb object represents a SciDB array promise.
+#'
+#' @param db scidb connection object
+#' @param expr (character) A SciDB expression or array name
+#' @param eval (logical) If TRUE evaluate expression and assign to new SciDB array.
+#'                 If FALSE, infer output schema but don't evaluate.
+#' @param name (optional character) If supplied, name for stored array when eval=TRUE
+#' @param gc (optional logical) If TRUE, tie SciDB object to  garbage collector.
+#' @param depend (optional list) An optional list of other scidb objects
+#'         that this expression depends on (preventing their garbage collection
+#'         if other references to them go away).
+#' @param schema (optional) used to create SciDB temp arrays
+#'               (requires scidb >= 14.8)
+#' @param temp (optional) used to create SciDB temp arrays
+#'               (requires scidb >= 14.8)
+#' @return A \code{scidb} array object
+#' @note Only AFL supported.
+`.scidbeval` = function(db, expr, eval=FALSE, name, gc=TRUE, depend, schema, temp)
 {
   ans = c()
   if(missing(depend)) depend = c()
@@ -230,17 +228,17 @@ create_temp_array = function(name, schema)
   {
     if(missing(name) || is.null(name))
     {
-      newarray = tmpnam()
-      if(temp) create_temp_array(newarray, schema)
+      newarray = tmpnam(db)
+      if(temp) create_temp_array(db, newarray, schema)
     }
     else newarray = name
     query = sprintf("store(%s,%s)", expr, newarray)
-    scidbquery(query, stream=0L)
-    ans = scidb(newarray, gc=gc)
+    scidbquery(db, query, stream=0L)
+    ans = scidb(db, newarray, gc=gc)
     if(temp) ans@gc$temp = TRUE
   } else
   {
-    ans = scidb(expr, gc=gc)
+    ans = scidb(db, expr, gc=gc)
 # Assign dependencies
     if(length(depend) > 0)
     {
@@ -265,17 +263,18 @@ make.unique_ = function(x, y)
 }
 
 # Make a name from a prefix and a unique SciDB identifier.
-tmpnam = function(prefix="R_array")
+tmpnam = function(db, prefix="R_array")
 {
+  .scidbenv = attr(db, "connection")
   salt = basename(tempfile(pattern=prefix))
   if(!exists("uid", envir=.scidbenv)) stop("Not connected...try scidbconnect")
   paste(salt, get("uid", envir=.scidbenv), sep="")
 }
 
 # Return a shim session ID or error
-getSession = function()
+getSession = function(db)
 {
-  session = SGET("/new_session")
+  session = SGET(db, "/new_session")
   if(length(session)<1) stop("SciDB http session error; are you connecting to a valid SciDB host?")
   session = gsub("\r", "", session)
   session = gsub("\n", "", session)
@@ -283,21 +282,21 @@ getSession = function()
 }
 
 # Supply the base SciDB URI from the global host, port and auth
-# parameters stored in the .scidbenv package environment.
+# parameters stored in the "connection" environment in the db object
 # Every function that needs to talk to the shim interface should use
 # this function to supply the URI.
 # Arguments:
+# db scidb database connection object
 # resource (string): A URI identifying the requested service
 # args (list): A list of named query parameters
-URI = function(resource="", args=list())
+URI = function(db, resource="", args=list())
 {
+  .scidbenv = attr(db, "connection")
   if(!exists("host", envir=.scidbenv)) stop("Not connected...try scidbconnect")
   if(exists("auth", envir=.scidbenv))
     args = c(args, list(auth=get("auth", envir=.scidbenv)))
-  if(exists("password", envir=.scidbenv))
-    args = c(args, list(password=get("password", envir=.scidbenv)))
-  if(exists("username", envir=.scidbenv))
-    args = c(args, list(user=get("username", envir=.scidbenv)))
+  if(!is.null(.scidbenv$password)) args = c(args, list(password=.scidbenv$password))
+  if(!is.null(.scidbenv$username)) args = c(args, list(user=.scidbenv$username))
   prot = paste(get("protocol", envir=.scidbenv), "//", sep=":")
   if("password" %in% names(args) || "auth" %in% names(args)) prot = "https://"
   ans  = paste(prot, get("host", envir=.scidbenv), ":", get("port", envir=.scidbenv), sep="")
@@ -307,14 +306,14 @@ URI = function(resource="", args=list())
   ans
 }
 
-SGET = function(resource, args=list(), err=TRUE, binary=FALSE)
+SGET = function(db, resource, args=list(), err=TRUE, binary=FALSE)
 {
   if(!(substr(resource, 1, 1)=="/")) resource = paste("/", resource, sep="")
-  uri = URI(resource, args)
+  uri = URI(db, resource, args)
   uri = oldURLencode(uri)
   uri = gsub("\\+", "%2B", uri, perl=TRUE)
   h = new_handle()
-  handle_setheaders(h, .list=list(Authorization=digest_auth("GET", uri)))
+  handle_setheaders(h, .list=list(Authorization=digest_auth(db, "GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
                               ssl_verifypeer=0))
   ans = curl_fetch_memory(uri, h)
@@ -328,29 +327,8 @@ SGET = function(resource, args=list(), err=TRUE, binary=FALSE)
   rawToChar(ans$content)
 }
 
-#' Basic HTTP GET request
-#' @param url a well-formed HTTP/HTTPS URL, will be url-encoded
-#' @return R raw binary content field
-#' @export
-GET_RAW = function(url)
-{
-  uri = oldURLencode(url)
-  h = new_handle()
-  handle_setheaders(h, .list=list(Authorization=digest_auth("GET", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
-                              ssl_verifypeer=0))
-  ans = curl_fetch_memory(uri, h)
-  if(ans$status_code > 299)
-  {
-    msg = sprintf("HTTP error %s", ans$status_code)
-    if(ans$status_code >= 500) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
-    stop(msg)
-  }
-  ans$content
-}
-
 # Normally called with raw data and args=list(id=whatever)
-POST = function(data, args=list(), err=TRUE)
+POST = function(db, data, args=list(), err=TRUE)
 {
 # check for new shim simple post option (/upload), otherwise use
 # multipart/file upload (/upload_file)
@@ -362,22 +340,22 @@ POST = function(data, args=list(), err=TRUE)
   simple = (shim_yr >= 15 && shim_mo >= 7) || shim_yr >= 16
   if(simple)
   {
-    uri = URI("/upload", args)
+    uri = URI(db, "/upload", args)
     uri = oldURLencode(uri)
     uri = gsub("\\+", "%2B", uri, perl=TRUE)
     h = new_handle()
-    handle_setheaders(h, .list=list(Authorization=digest_auth("POST", uri)))
+    handle_setheaders(h, .list=list(Authorization=digest_auth(db, "POST", uri)))
     handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
                                 ssl_verifypeer=0, post=TRUE, postfieldsize=length(data), postfields=data))
     ans = curl_fetch_memory(uri, h)
     if(ans$status_code > 299 && err) stop("HTTP error ", ans$status_code)
     return(rawToChar(ans$content))
   }
-  uri = URI("/upload_file", args)
+  uri = URI(db, "/upload_file", args)
   uri = oldURLencode(uri)
   uri = gsub("\\+", "%2B", uri, perl=TRUE)
   h = new_handle()
-  handle_setheaders(h, .list=list(Authorization=digest_auth("POST", uri)))
+  handle_setheaders(h, .list=list(Authorization=digest_auth(db, "POST", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
                               ssl_verifypeer=0))
   tmpf = tempfile()
@@ -398,6 +376,7 @@ POST = function(data, args=list(), err=TRUE)
 }
 
 # Basic low-level query. Returns query id. This is an internal function.
+# db: scidb database connection object
 # query: a character query string
 # save: Save format query string or NULL.
 # release: Set to zero preserve web session until manually calling release_session
@@ -411,7 +390,7 @@ POST = function(data, args=list(), err=TRUE)
 # save="(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=NULL)
+scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=NULL)
 {
   DEBUG = FALSE
   STREAM = 0L
@@ -424,7 +403,7 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
   if(is.null(session))
   {
 # Obtain a session from shim
-    sessionid = getSession()
+    sessionid = getSession(db)
   }
   if(is.null(save)) save=""
   if(DEBUG)
@@ -439,18 +418,18 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
       args$prefix = c(getOption("scidb.prefix"), prefix)
       if(!is.null(args$prefix)) args$prefix = paste(args$prefix, collapse=";")
       args$save = save
-      args = list(resource="/execute_query", args=args)
+      args = list(db=db, resource="/execute_query", args=args)
       do.call("SGET", args=args)
     }, error=function(e)
     {
       # User cancel?
-      SGET("/cancel", list(id=sessionid), err=FALSE)
-      SGET("/release_session", list(id=sessionid), err=FALSE)
+      SGET(db, "/cancel", list(id=sessionid), err=FALSE)
+      SGET(db, "/release_session", list(id=sessionid), err=FALSE)
       stop(as.character(e))
     }, interrupt=function(e)
     {
-      SGET("/cancel", list(id=sessionid), err=FALSE)
-      SGET("/release_session", list(id=sessionid), err=FALSE)
+      SGET(db, "/cancel", list(id=sessionid), err=FALSE)
+      SGET(db, "/release_session", list(id=sessionid), err=FALSE)
       stop("cancelled")
     })
   if(DEBUG) cat("Query time", (proc.time()-t1)[3], "\n")
@@ -459,7 +438,7 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
 }
 
 # Sparse matrix to SciDB
-.Matrix2scidb = function(X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0, 0), gc=TRUE, ...)
+.Matrix2scidb = function(db, X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0, 0), gc=TRUE, ...)
 {
   D = dim(X)
   rowOverlap = 0L
@@ -481,9 +460,9 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
   schema1d = sprintf("<i:int64 null, j:int64 null, val : %s null>[idx=0:*,100000,0]", type)
 
 # Obtain a session from shim for the upload process
-  session = getSession()
+  session = getSession(db)
   if(length(session)<1) stop("SciDB http session error")
-  on.exit(SGET("/release_session", list(id=session), err=FALSE) , add=TRUE)
+  on.exit(SGET(db, "/release_session", list(id=session), err=FALSE) , add=TRUE)
 
 # Compute the indices and assemble message to SciDB in the form
 # double, double, double for indices i, j and data val.
@@ -497,20 +476,20 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
 
 # redimension into a matrix
   query = sprintf("store(redimension(input(%s,'%s',-2,'(double null,double null,double null)'),%s),%s)", schema1d, ans, schema, name)
-  iquery(query)
-  scidb(name, gc=gc)
+  iquery(db, query)
+  scidb(db, name, gc=gc)
 }
 
 
 # raw value to special 1-element SciDB array
-raw2scidb = function(X, name, gc=TRUE, ...)
+raw2scidb = function(db, X, name, gc=TRUE, ...)
 {
   if(!is.raw(X)) stop("X must be a raw value")
   args = list(...)
 # Obtain a session from shim for the upload process
-  session = getSession()
+  session = getSession(db)
   if(length(session)<1) stop("SciDB http session error")
-  on.exit(SGET("/release_session", list(id=session), err=FALSE) , add=TRUE)
+  on.exit(SGET(db, "/release_session", list(id=session), err=FALSE) , add=TRUE)
 
   bytes = .Call("scidb_raw", X, PACKAGE="scidb")
   ans = POST(bytes, list(id=session))
@@ -519,12 +498,12 @@ raw2scidb = function(X, name, gc=TRUE, ...)
   schema = "<val:binary null>[i=0:0,1,0]"
   if(!is.null(args$temp))
   {
-    if(args$temp) create_temp_array(name, schema)
+    if(args$temp) create_temp_array(db, name, schema)
   }
 
   query = sprintf("store(input(%s,'%s',-2,'(binary null)'),%s)", schema, ans, name)
-  iquery(query)
-  scidb(name, gc=gc)
+  iquery(db, query)
+  scidb(db, name, gc=gc)
 }
 
 # Check for scidb missing flag
@@ -549,7 +528,7 @@ noE = function(w) sapply(w,
   })
 
 # Returns TRUE if version string x is greater than or equal to than version y
-compare_versions = function(x, y)
+newer_than = function(x, y)
 {
   b = as.numeric(strsplit(as.character(x), "\\.")[[1]])
   a = as.numeric(strsplit(as.character(y), "\\.")[[1]])
@@ -559,11 +538,11 @@ compare_versions = function(x, y)
 }
 
 # Used in delayed assignment of scidb object schema and logical_plan values.
-lazyeval = function(name)
+lazyeval = function(db, name)
 {
   escape = gsub("'", "\\\\'", name, perl=TRUE)
 # SciDB explain_logical operator changed in version 15.7
-  if(compare_versions(options("scidb.version")[[1]], 15.7))
+  if(newer_than(options("scidb.version")[[1]], 15.7))
   {
     query = sprintf("join(show('filter(%s,true)','afl'), _explain_logical('filter(%s,true)','afl'))", escape, escape)
   }
@@ -571,12 +550,13 @@ lazyeval = function(name)
   {
     query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape, escape)
   }
-  query = iquery(query, `return`=TRUE, binary=FALSE) # NOTE that we need binary=FALSE here to avoid a terrible recursion
+  query = iquery(db, query, `return`=TRUE, binary=FALSE) # NOTE that we need binary=FALSE here to avoid a terrible recursion
   list(schema = gsub("^.*<", "<", query$schema, perl=TRUE),
        logical_plan = query$logical_plan)
 }
 
 #' Internal function to upload an R data frame to SciDB
+#' @param db scidb database connection
 #' @param X a data frame
 #' @param name SciDB array name
 #' @param chunk_size passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools
@@ -584,12 +564,13 @@ lazyeval = function(name)
 #' @param gc set to \code{TRUE} to connect SciDB array to R's garbage collector
 #' @return a \code{\link{scidb}} object, or a character schema string if \code{schema_only=TRUE}.
 #' @keywords internal
-df2scidb = function(X,
-                    name=tmpnam(),
+df2scidb = function(db, X,
+                    name=tmpnam(db),
                     types=NULL,
                     chunk_size=100000,
                     gc)
 {
+  .scidbenv = attr(db, "connection")
   if(!is.data.frame(X)) stop("X must be a data frame")
   if(missing(gc)) gc = FALSE
   nullable = TRUE
@@ -615,15 +596,7 @@ df2scidb = function(X,
         typ[j] = "string"
       else if("factor" %in% class(X[,j])) 
       {
-        if("scidb_factor" %in% class(X[,j]))
-        {
-          typ[j] = paste("int64")
-          Xj = X[,j]
-          levels(Xj) = levels_scidb(Xj)
-          X[,j] = as.vector(Xj)
-        }
-        else
-          typ[j] = "string"
+        typ[j] = "string"
       }
       else if("POSIXct" %in% class(X[,j])) 
       {
@@ -643,7 +616,7 @@ df2scidb = function(X,
 
 # Obtain a session from the SciDB http service for the upload process
   session = getSession()
-  on.exit(SGET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
+  on.exit(SGET(db, "/release_session", list(id=session), err=FALSE) ,add=TRUE)
 
   ncolX = ncol(X)
   X = charToRaw(fwrite(X, file=return))
@@ -663,8 +636,8 @@ df2scidb = function(X,
                  ncolX, atts, paste(anames, collapse=","))
   }
   query = sprintf("store(%s,%s)", LOAD, name)
-  scidbquery(query, release=1, session=session, stream=0L)
-  scidb(name, gc=gc)
+  scidbquery(db, query, release=1, session=session, stream=0L)
+  scidb(db, name, gc=gc)
 }
 
 #' Fast write.table/textConnection substitute
@@ -689,8 +662,8 @@ fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), c
 }
 
 
-matvec2scidb = function(X,
-                        name=tmpnam(),
+matvec2scidb = function(db, X,
+                        name=tmpnam(db),
                         start,
                         gc=TRUE, ...)
 {
@@ -755,7 +728,7 @@ matvec2scidb = function(X,
   td1 = proc.time()
 # Obtain a session from shim for the upload process
   session = getSession()
-  on.exit( SGET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
+  on.exit( SGET(db, "/release_session", list(id=session), err=FALSE) ,add=TRUE)
 
 # Upload the data
   bytes = .Call("scidb_raw", as.vector(t(X)), PACKAGE="scidb")
@@ -769,7 +742,7 @@ matvec2scidb = function(X,
 # Load query
   if(!is.null(nd_reshape))
   {
-    return(scidbeval(reshape_scidb(scidb(sprintf("input(%s,'%s', 0, '(%s null)')",load_schema, ans, type)), shape=nd_reshape),name=name))
+    return(store(db, reshape_scidb(scidb(db, sprintf("input(%s,'%s', 0, '(%s null)')",load_schema, ans, type)), shape=nd_reshape),name=name))
   }
   if(do_reshape)
   {
@@ -778,8 +751,8 @@ matvec2scidb = function(X,
   {
     query = sprintf("store(input(%s,'%s', -2, '(%s null)'),%s)",load_schema, ans, type, name)
   }
-  iquery(query)
-  ans = scidb(name, gc=gc)
+  iquery(db, query)
+  ans = scidb(db, name, gc=gc)
   if(!nullable) ans = replaceNA(ans)
   ans
 }

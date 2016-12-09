@@ -4,9 +4,11 @@
 \alias{scidb}
 \title{Create an R reference to a SciDB array or expression.}
 \usage{
-scidb(name, gc = FALSE)
+scidb(db, name, gc = FALSE)
 }
 \arguments{
+\item{db}{scidb connection object from \code{\link{scidbconnect}}}
+
 \item{name}{a character string name of a stored SciDB array or a valid SciDB AFL expression}
 
 \item{gc}{a logical value, \code{TRUE} means connect the SciDB array to R's garbage collector}

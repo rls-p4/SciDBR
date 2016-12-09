@@ -22,22 +22,12 @@ scidbconnect(host = options("scidb.default_shim_host")[[1]],
 \item{protocol}{optional shim protocol type}
 }
 \value{
-\code{NULL} is returned invisibly; this function is used for its
-side effect.
+A scidb connection object.
 }
 \description{
 Connect to a SciDB database
 }
 \note{
-The SciDB connection state is maintained internally to the \code{scidb}
-package. We internalize state to facilitate operations involving \code{scidb}
-objects.
-Thus, only one open SciDB connection is supported at
-a time.
-One may connect to and use multiple SciDB databases by sequentially calling
-\code{scidbconnect} between operations. Note that \code{scidb} objects are not
-valid across different SciDB databases.
-
 Use the optional \code{username} and \code{password} arguments with
 \code{auth_type} set to "digest" to use HTTP digest authentication (see the
 shim documentation to configure this).  Digest authentication may use either
@@ -45,16 +35,14 @@ shim documentation to configure this).  Digest authentication may use either
 Set \code{auth_type = "scidb"} to use SciDB authentication, which only
 works over "https".
 
-Disconnection is automatically handled by the package.
-
 All arguments support partial matching.
 }
 \examples{
 \dontrun{
-scidbconnect()
+s <- scidbconnect()
 
 # SciDB 15.12 authentication example (using shim's default HTTPS port 8083)
-scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
+s <- scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
 }
 }
 
