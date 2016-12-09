@@ -471,7 +471,7 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
 
 # Upload the data
   bytes = .Call("scidb_raw", as.vector(t(matrix(c(X@i + start[[1]], j + start[[2]], X@x), length(X@x)))), PACKAGE="scidb")
-  ans = POST(bytes, list(id=session))
+  ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
 
 # redimension into a matrix
@@ -492,7 +492,7 @@ raw2scidb = function(db, X, name, gc=TRUE, ...)
   on.exit(SGET(db, "/release_session", list(id=session), err=FALSE) , add=TRUE)
 
   bytes = .Call("scidb_raw", X, PACKAGE="scidb")
-  ans = POST(bytes, list(id=session))
+  ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
 
   schema = "<val:binary null>[i=0:0,1,0]"
@@ -615,12 +615,13 @@ df2scidb = function(db, X,
   args = sprintf("<%s>", paste(anames, ":", typ, " null", collapse=","))
 
 # Obtain a session from the SciDB http service for the upload process
-  session = getSession()
+  session = getSession(db)
   on.exit(SGET(db, "/release_session", list(id=session), err=FALSE) ,add=TRUE)
 
   ncolX = ncol(X)
+  nrowX = nrow(X)
   X = charToRaw(fwrite(X, file=return))
-  tmp = POST(X, list(id=session))
+  tmp = POST(db, X, list(id=session))
   tmp = gsub("\n", "", gsub("\r", "", tmp))
 
 # Generate a load_tools query
@@ -632,8 +633,7 @@ df2scidb = function(db, X,
                  ncolX, chunk_size, atts, paste(anames, collapse=","))
   } else
   {
-    LOAD = sprintf("project(apply(parse(split('%s'),'num_attributes=%d'),%s), %s)", tmp,
-                 ncolX, atts, paste(anames, collapse=","))
+    LOAD = sprintf("input(%s, '%s', -2, 'tsv')", dfschema(anames, typ, nrowX, chunk_size), tmp)
   }
   query = sprintf("store(%s,%s)", LOAD, name)
   scidbquery(db, query, release=1, session=session, stream=0L)
@@ -727,12 +727,12 @@ matvec2scidb = function(db, X,
   if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
   td1 = proc.time()
 # Obtain a session from shim for the upload process
-  session = getSession()
+  session = getSession(db)
   on.exit( SGET(db, "/release_session", list(id=session), err=FALSE) ,add=TRUE)
 
 # Upload the data
   bytes = .Call("scidb_raw", as.vector(t(X)), PACKAGE="scidb")
-  ans = POST(bytes, list(id=session))
+  ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
   if(DEBUG)
   {

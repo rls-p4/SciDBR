@@ -52,8 +52,7 @@ scidb = function(db, name, gc=FALSE)
         {
           if (e$remove && exists("name", envir=e))
             {
-print("XXX FINALIZER WRITE ME XXX ")
-#              tryCatch(scidbremove(db, e$name, warn=FALSE), error = function(e) invisible())
+               scidbquery(db, sprintf("remove(%s)", e$name), release=1)
             }
         }, onexit = TRUE)
   }
@@ -214,4 +213,38 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
     scidbquery(db, query, release=1, stream=0L)
   }
   invisible()
+}
+
+
+#' Upload R data to SciDB
+#' @param db a scidb database connection returned from \code{\link{scidbconnect}}
+#' @param X an R data frame, raw value, Matrix, matrix, or vector object
+#' @param name a SciDB array name to use
+#' @param start starting SciDB integer coordinate index (does not apply to data frames)
+#' @param gc set to FALSE to disconnect the SciDB array from R's garbage collector
+#' @param ... other options, see \code{\link{df2scidb}}
+#' @return A \code{scidb} object
+#' @export
+as.scidb = function(db, X,
+                    name,
+                    start,
+                    gc=TRUE, ...)
+{
+  if(missing(name))
+  {
+    name = tmpnam(db)
+  }
+  if(inherits(X, "raw"))
+  {
+    return(raw2scidb(db, X, name=name, gc=gc,...))
+  }
+  if(inherits(X, "data.frame"))
+  {
+    return(df2scidb(db, X, name=name, gc=gc, ...))
+  }
+  if(inherits(db, X, "dgCMatrix"))
+  {
+    return(.Matrix2scidb(db, X, name=name, start=start, gc=gc, ...))
+  }
+  return(matvec2scidb(db, X, name=name, start=start, gc=gc, ...))
 }

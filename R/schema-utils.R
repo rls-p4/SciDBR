@@ -381,3 +381,8 @@ strdiff = function(x,y)
            gsub(sprintf("^%s",x[[i]]), "", y[[i]])
          }))
 }
+
+dfschema = function(names, types, len, chunk=10000)
+{
+  sprintf("<%s>[i=0:%d,%d,0]", paste(paste(names, types, sep=":"), collapse=","), len, chunk)
+}
