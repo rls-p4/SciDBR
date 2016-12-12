@@ -34,7 +34,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   DEBUG = FALSE
   projected = FALSE
   if(!inherits(query, "scidb")) query = scidb(db, query)
-  DEBUG = getOptions("scidb.debug", FALSE)
+  DEBUG = getOption("scidb.debug", FALSE)
   buffer = 100000L
   args = list(...)
   if(!is.null(args$buffer))
@@ -195,7 +195,7 @@ create_temp_array = function(db, name, schema)
 {
 # SciDB temporary array syntax varies with SciDB version
   TEMP = "'TEMP'"
-  if(newer_than(getOption("scidb.version", "14.12"))) TEMP="true"
+  if(newer_than(getOption("scidb.version", "14.12"), "14.12")) TEMP="true"
   query   = sprintf("create_array(%s, %s, %s)", name, schema, TEMP)
   iquery(db, query, `return`=FALSE)
 }
@@ -241,14 +241,14 @@ create_temp_array = function(db, name, schema)
     query = sprintf("store(%s,%s)", expr, newarray)
     scidbquery(db, query, stream=0L)
     ans = scidb(db, newarray, gc=gc)
-    if(temp) ans@gc$temp = TRUE
+    if(temp) ans@meta$temp = TRUE
   } else
   {
     ans = scidb(db, expr, gc=gc)
 # Assign dependencies
     if(length(depend) > 0)
     {
-      assign("depend", depend, envir=ans@gc)
+      assign("depend", depend, envir=ans@meta)
     }
   }
   ans
@@ -533,32 +533,26 @@ noE = function(w) sapply(w,
     sprintf("%.0f", x)
   })
 
-# Returns TRUE if version string x is greater than or equal to than version y
+#' Returns TRUE if version string x is greater than or equal to than version y
+#' @param x version string like "12.1", "15.12", etc. (non-numeric ignored)
+#' @param y version string like "12.1", "15.12", etc. (non-numeric ignored)
+#' @return logical TRUE if x is greater than or equal to y
 newer_than = function(x, y)
 {
-  b = as.numeric(strsplit(as.character(x), "\\.")[[1]])
-  a = as.numeric(strsplit(as.character(y), "\\.")[[1]])
-  ans = b[1] > a[1]
-  if(b[1] == a[1]) ans = b[2] >= a[2]
-  ans
+  b = as.numeric(gsub("-.*", "", gsub("[A-z].*", "", strsplit(sprintf("%s.0", x), "\\.")[[1]])))
+  b = b[1] + b[2] / 100
+  a = as.numeric(gsub("-.*", "", gsub("[A-z].*", "", strsplit(sprintf("%s.0", y), "\\.")[[1]])))
+  a = a[1] + a[2] / 100
+  b >= a
 }
 
-# Used in delayed assignment of scidb object schema and logical_plan values.
+# Used in delayed assignment of scidb object schema
 lazyeval = function(db, name)
 {
   escape = gsub("'", "\\\\'", name, perl=TRUE)
-# SciDB explain_logical operator changed in version 15.7
-  if(newer_than(getOption("scidb.version", "15.7"), 15.7))
-  {
-    query = sprintf("join(show('filter(%s,true)','afl'), _explain_logical('filter(%s,true)','afl'))", escape, escape)
-  }
-  else
-  {
-    query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape, escape)
-  }
-  query = iquery(db, query, `return`=TRUE, binary=FALSE) # NOTE that we need binary=FALSE here to avoid a terrible recursion
-  list(schema = gsub("^.*<", "<", query$schema, perl=TRUE),
-       logical_plan = query$logical_plan)
+  query = iquery(db, sprintf("show('filter(%s, true)', 'afl')", escape), `return`=TRUE, binary=FALSE)
+  # NOTE that we need binary=FALSE here to avoid a terrible recursion
+  list(schema = gsub("^.*<", "<", query$schema, perl=TRUE))
 }
 
 #' Internal function to upload an R data frame to SciDB

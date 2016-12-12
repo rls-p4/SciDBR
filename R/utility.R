@@ -14,7 +14,7 @@ store = function(db, expr, eval=TRUE, name, gc=TRUE, temp=FALSE)
   ans = eval(expr)
   if(!(inherits(ans,"scidb"))) return(ans)
 # If expr is a stored temp array, then re-use its name
-  if(!is.null(ans@gc$temp) && ans@gc$temp && missing(name)) name=ans@name
+  if(!is.null(ans@meta$temp) && ans@meta$temp && missing(name)) name=ans@name
   .scidbeval(db, ans@name, `eval`=eval, name=name, gc=gc, schema=schema(ans), temp=temp)
 }
 
@@ -35,24 +35,25 @@ scidb = function(db, name, gc=FALSE)
   }
 
   obj = new("scidb", name=name)
-  obj@gc = new.env()
   obj@meta = new.env()
+  obj@meta$db = db
   delayedAssign("state", lazyeval(db, name), assign.env=obj@meta)
   delayedAssign("schema", get("state")$schema, eval.env=obj@meta, assign.env=obj@meta)
-  delayedAssign("logical_plan", get("state")$logical_plan, eval.env=obj@meta, assign.env=obj@meta)
 
   if(gc)
   {
     if(length(grep("\\(", name)) == 0)
     {
-      obj@gc$name = name
+      obj@meta$name = name
     }
-    obj@gc$remove = TRUE
-    reg.finalizer(obj@gc, function(e)
+    obj@meta$remove = TRUE
+    reg.finalizer(obj@meta, function(e)
         {
           if (e$remove && exists("name", envir=e))
             {
-               scidbquery(db, sprintf("remove(%s)", e$name), release=1)
+# XXX
+browser()
+# XXX restrict to temp     scidbquery(db, sprintf("remove(%s)", e$name), release=1)
             }
         }, onexit = TRUE)
   }
@@ -141,8 +142,9 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
     assign("uid", id, envir=.scidbenv)
   }
 
-# Update available operators and return afl object
-  update.afl(db, iquery(db, "list('operators')", `return`=TRUE, binary=FALSE)[,2])
+# Update available operators and macros and return afl object
+  ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE)[,2]
+  update.afl(db, ops)
 }
 
 

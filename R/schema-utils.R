@@ -46,15 +46,6 @@
   c(scidb_attributes(x), dimensions(x))
 }
 
-#' SciDB logical plan
-#' @param x a \code{\link{scidb}} array object
-#' @return a character value containing the SciDB logical plan for the object
-#' @export
-logical_plan = function(x)
-{
-  x@meta$logical_plan
-}
-
 #' SciDB array attribute names
 #' @param x a \code{\link{scidb}} array object
 #' @return character vector of SciDB attribute names.
@@ -82,7 +73,7 @@ scidb_types = function(x)
 scidb_nullable = function(x)
 {
   # SciDB schema syntax changed in 15.12
-  if(newer_than(getOption("scidb.debug", "15.12")))
+  if(newer_than(getOption("scidb.debug", "15.12"), "15.12"))
   { 
     return (! grepl("NOT NULL", .attsplitter(x)))
   }
@@ -202,7 +193,6 @@ scidb_from_schemastring = function(s, expr=character())
               meta=new.env(),
               gc=new.env())
   obj@meta$schema = gsub("^.*<","<",s,perl=TRUE)
-  obj@meta$logical_plan = ""
   obj
 }
 
