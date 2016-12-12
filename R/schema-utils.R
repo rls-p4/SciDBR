@@ -5,29 +5,20 @@
 
 .dimsplitter = function(x)
 {
+  if(!(inherits(x, "scidb"))) return(NULL)
   if(is.character(x)) s = x
   else
   {
-    if(!(inherits(x, "scidb"))) return(NULL)
     s = schema(x)
   }
   d = gsub("\\]", "", strsplit(s, "\\[")[[1]][[2]])
-  strsplit(strsplit(d, "=")[[1]], ",")
-}
-
-.dimsplit = function(x)
-{
-  d = .dimsplitter(x)
-  n = lapply(d[-length(d)], function(x) x[[length(x)]])
-  p = d[-1]
-  l = length(p)
-  if(l > 1)
-  {
-    p[1:(l - 1)] = lapply(p[1:(l - 1)], function(x) x[1:(length(x) - 1)])
+  d = strsplit(strsplit(d, "=")[[1]], ",")
+  # SciDB schema syntax changed greatly in 16.9, convert it to old format.
+  if(newer_than(getOption("scidb.version", "16.9"), "16.9"))
+  { 
+    d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\3,\\4", x)), ",")[[1]])
   }
-  ans = paste(n, lapply(p, paste, collapse=","), sep="=")
-  names(ans) = n
-  ans
+  d
 }
 
 .attsplitter = function(x)
@@ -39,11 +30,6 @@
     s = schema(x)
   }
   strsplit(strsplit(strsplit(strsplit(s, ">")[[1]][1], "<")[[1]][2], ",")[[1]], ":")
-}
-
-.scidb_names = function(x)
-{
-  c(scidb_attributes(x), dimensions(x))
 }
 
 #' SciDB array attribute names
@@ -73,7 +59,7 @@ scidb_types = function(x)
 scidb_nullable = function(x)
 {
   # SciDB schema syntax changed in 15.12
-  if(newer_than(getOption("scidb.debug", "15.12"), "15.12"))
+  if(newer_than(getOption("scidb.version", "15.12"), "15.12"))
   { 
     return (! grepl("NOT NULL", .attsplitter(x)))
   }
@@ -127,7 +113,7 @@ scidb_coordinate_bounds = function(x)
 scidb_coordinate_chunksize = function(x)
 {
   d = .dimsplitter(x)
-  unlist(lapply(d[-1],function(x)x[2]))
+  unlist(lapply(d[-1], function(x) x[2]))
 }
 
 #' SciDB array coordinate overlap
