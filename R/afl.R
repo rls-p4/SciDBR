@@ -29,10 +29,11 @@ update.afl = function(db, new, ops)
 arg = function(x)
 {
   switch(class(x),
-    character = sprintf("'%s'", x),
+    character = sprintf("%s", x),
     numeric = sprintf("%.16g", x),
     integer = sprintf("%d", x),
-    scidb = x@name
+    scidb = x@name,
+    default = sprintf("%s", x)
   )
 }
 
@@ -44,7 +45,8 @@ arg = function(x)
 afl = function(...)
 {
   call = eval(as.list(match.call())[[1]])
-  expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(match.call()[-1], arg), collapse=","))
+# why two passes? XXX
+  expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch(eval(.x), error=function(e) capture.output(.x))), arg), collapse=","))
   scidb(attr(call, "conn"), expr)
 }
 

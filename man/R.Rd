@@ -15,6 +15,10 @@ An R \code{\link{data.frame}}
 \description{
 Download SciDB data to R
 }
+\note{
+This convenience function is equivalent to running \code{iquery(db, x, return=TRUE)} for
+a SciDB connection object \code{s}.
+}
 \examples{
 \dontrun{
 s = scidbconnect()

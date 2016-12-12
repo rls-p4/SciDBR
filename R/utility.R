@@ -252,6 +252,8 @@ as.scidb = function(db, x,
 #' Download SciDB data to R
 #' @param x a \code{\link{scidb}} object (a SciDB array or expression)
 #' @return An R \code{\link{data.frame}}
+#' @note This convenience function is equivalent to running \code{iquery(db, x, return=TRUE)} for
+#' a SciDB connection object \code{s}.
 #' @examples
 #' \dontrun{
 #' s = scidbconnect()
