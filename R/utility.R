@@ -218,14 +218,14 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
 
 #' Upload R data to SciDB
 #' @param db a scidb database connection returned from \code{\link{scidbconnect}}
-#' @param X an R data frame, raw value, Matrix, matrix, or vector object
+#' @param x an R data frame, raw value, Matrix, matrix, or vector object
 #' @param name a SciDB array name to use
 #' @param start starting SciDB integer coordinate index (does not apply to data frames)
 #' @param gc set to FALSE to disconnect the SciDB array from R's garbage collector
 #' @param ... other options, see \code{\link{df2scidb}}
 #' @return A \code{scidb} object
 #' @export
-as.scidb = function(db, X,
+as.scidb = function(db, x,
                     name,
                     start,
                     gc=TRUE, ...)
@@ -234,17 +234,39 @@ as.scidb = function(db, X,
   {
     name = tmpnam(db)
   }
-  if(inherits(X, "raw"))
+  if(inherits(x, "raw"))
   {
-    return(raw2scidb(db, X, name=name, gc=gc,...))
+    return(raw2scidb(db, x, name=name, gc=gc,...))
   }
-  if(inherits(X, "data.frame"))
+  if(inherits(x, "data.frame"))
   {
-    return(df2scidb(db, X, name=name, gc=gc, ...))
+    return(df2scidb(db, x, name=name, gc=gc, ...))
   }
-  if(inherits(db, X, "dgCMatrix"))
+  if(inherits(db, x, "dgCMatrix"))
   {
-    return(.Matrix2scidb(db, X, name=name, start=start, gc=gc, ...))
+    return(.Matrix2scidb(db, x, name=name, start=start, gc=gc, ...))
   }
-  return(matvec2scidb(db, X, name=name, start=start, gc=gc, ...))
+  return(matvec2scidb(db, x, name=name, start=start, gc=gc, ...))
+}
+
+#' Download SciDB data to R
+#' @param x a \code{\link{scidb}} object (a SciDB array or expression)
+#' @return An R \code{\link{data.frame}}
+#' @examples
+#' \dontrun{
+#' s = scidbconnect()
+#' x = scidb(s, "build(<v:double>[i=1:5], sin(i))")
+#' R(x)
+#'#  i          v
+#'#1 1  0.8414710
+#'#2 2  0.9092974
+#'#3 3  0.1411200
+#'#4 4 -0.7568025
+#'#5 5 -0.9589243
+#' }
+#' @export
+R = function(x)
+{
+  stopifnot(is.scidb(x))
+  iquery(x@meta$db, x, `return`=TRUE)
 }

@@ -4,12 +4,12 @@
 \alias{as.scidb}
 \title{Upload R data to SciDB}
 \usage{
-as.scidb(db, X, name, start, gc = TRUE, ...)
+as.scidb(db, x, name, start, gc = TRUE, ...)
 }
 \arguments{
 \item{db}{a scidb database connection returned from \code{\link{scidbconnect}}}
 
-\item{X}{an R data frame, raw value, Matrix, matrix, or vector object}
+\item{x}{an R data frame, raw value, Matrix, matrix, or vector object}
 
 \item{name}{a SciDB array name to use}
 
