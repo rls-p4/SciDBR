@@ -10,11 +10,8 @@ update.afl = function(db, new, ops)
   for(x in new)
   {
     db[[x]] = afl
-    class(db[[x]]) = "operator"
-    attr(db[[x]], "name") = x
-    attr(db[[x]], "conn") = conn
-    # update formal function arguments for nice tab completion help
     i = ops[,1] == x
+    # update formal function arguments for nice tab completion help
     if(any(i))
     {
       def = head(ops[i,], 1)
@@ -22,6 +19,9 @@ update.afl = function(db, new, ops)
       fml = strsplit(gsub("[=:].*", "", gsub("\\|.*", "", gsub(" *", "", gsub("\\]", "", gsub("\\[", "", gsub("\\[.*\\|.*\\]", "", gsub("[+*{})]", "", gsub(".*\\(", "", def[2])))))))), ",")[[1]]
       formals(db[[x]]) = eval(parse(text=sprintf("alist(%s, ...=)", paste(paste(fml ,"="), collapse=", "))))
     }
+    class(db[[x]]) = "operator"
+    attr(db[[x]], "name") = x
+    attr(db[[x]], "conn") = conn
   }
   db
 }
