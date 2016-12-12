@@ -35,6 +35,12 @@ shim documentation to configure this).  Digest authentication may use either
 Set \code{auth_type = "scidb"} to use SciDB authentication, which only
 works over "https".
 
+Use the returned SciDB connection object (of class \code{afl}) with other
+package functions to interact with SciDB arrays. Apply R's \code{\link{ls}}
+function on the returned value to see a list of arrays. The returned value
+contains a list of available SciDB AFL language operators and macro names.
+Use the dollar-sign function to accesss those functions.
+
 All arguments support partial matching.
 }
 \examples{
@@ -43,6 +49,14 @@ s <- scidbconnect()
 
 # SciDB 15.12 authentication example (using shim's default HTTPS port 8083)
 s <- scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
+
+# Explicitly upload an R matrix to SciDB:
+x <- as.scidb(s, matrix(rnorm(20), 5))
+# Implicitly do the same as part of an AFL expression
+y <- s$join(x,  as.scidb(matrix(1:20, 5)))
+print(y)
+
+as.R(y)   # Download a SciDB array to R.
 }
 }
 

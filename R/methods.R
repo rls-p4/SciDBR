@@ -82,9 +82,9 @@ setGeneric("ls")
 #' @param name \code{afl} SciDB connection object from \code{\link{scidbconnect}}
 #' @return a \code{data.frame} listing the contents of the database
 #' @export
-setMethod("ls", signature(name="afl"),
+setMethod("ls", signature(name="afl"), 
   function(name) {
-    iquery(name, "list()", return=TRUE)[, -5]
+    iquery(name, "list()", return=TRUE)
   })
 
 # AFL help
