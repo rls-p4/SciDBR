@@ -84,7 +84,7 @@ setGeneric("ls")
 #' @export
 setMethod("ls", signature(name="afl"),
   function(name) {
-    iquery(name, "list()", return=TRUE)
+    iquery(name, "list()", return=TRUE)[, -5]
   })
 
 # AFL help

@@ -28,12 +28,12 @@ update.afl = function(db, new, ops)
 
 #' Evaluate arguments in an AFL expression.
 #' @keywords internal
-arg = function(x)
+arg = function(x, db, env)
 {
   switch(class(x)[1],
-    raw = as.scidb(x)@name,
-    matrix = as.scidb(x)@name,
-    dgCMatrix = as.scidb(x)@name,
+    raw = {ans = as.scidb(db, x); assign(ans@name, ans, envir=env); ans@name},
+    matrix = {ans = as.scidb(db, x); assign(ans@name, ans, envir=env); ans@name},
+    dgCMatrix = {ans = as.scidb(db, x); assign(ans@name, ans, envir=env); ans@name},
     character = sprintf("%s", x),
     numeric = sprintf("%.16g", x),
     integer = sprintf("%d", x),
@@ -50,14 +50,17 @@ arg = function(x)
 afl = function(...)
 {
   call = eval(as.list(match.call())[[1]])
+  .env = new.env()
 # why two passes? XXX
-  expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch(eval(.x), error=function(e) capture.output(.x))), arg), collapse=","))
-# Some special AFL non-operators statements don't return arrays
+  expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch(eval(.x), error=function(e) capture.output(.x))), arg, attr(call, "conn"), .env), collapse=","))
+# Some special AFL non-operator expressions don't return arrays
   if(any(grepl(attr(call, "name"), c("remove"), ignore.case=TRUE)))
   {
     return(iquery(attr(call, "conn"), expr))
   }
-  scidb(attr(call, "conn"), expr)
+  ans = scidb(attr(call, "conn"), expr)
+  ans@meta$depend = as.list(.env)
+  ans
 }
 
 #' Display SciDB AFL operator documentation

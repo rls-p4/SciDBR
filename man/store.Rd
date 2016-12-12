@@ -4,16 +4,16 @@
 \alias{store}
 \title{Evaluate an expression to \code{scidb} or \code{scidb} objects}
 \usage{
-store(db, expr, eval = TRUE, name, gc = TRUE, temp = FALSE)
+store(db, expr, name, eval = TRUE, gc = TRUE, temp = FALSE)
 }
 \arguments{
 \item{db}{scidb connection object from \code{\link{scidbconnect}}}
 
 \item{expr}{a quoted SciDB expression \code{scidb} object}
 
-\item{eval}{\code{FALSE} do not evaluate the expression in SciDB (leave as a view)}
-
 \item{name}{(character) optional SciDB array name to store result to}
+
+\item{eval}{\code{FALSE} do not evaluate the expression in SciDB (leave as a view)}
 
 \item{gc}{(logical) optional, when TRUE tie result to R garbage collector}
 

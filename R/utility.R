@@ -9,7 +9,7 @@
 #' @param gc (logical) optional, when TRUE tie result to R garbage collector
 #' @param temp (logical, optional), when TRUE store as a SciDB temp array
 #' @export
-store = function(db, expr, eval=TRUE, name, gc=TRUE, temp=FALSE)
+store = function(db, expr, name, eval=TRUE, gc=TRUE, temp=FALSE)
 {
   ans = eval(expr)
   if(!(inherits(ans,"scidb"))) return(ans)
@@ -240,7 +240,7 @@ as.scidb = function(db, x,
   {
     return(df2scidb(db, x, name=name, gc=gc, ...))
   }
-  if(inherits(db, x, "dgCMatrix"))
+  if(inherits(x, "dgCMatrix"))
   {
     return(.Matrix2scidb(db, x, name=name, start=start, gc=gc, ...))
   }
