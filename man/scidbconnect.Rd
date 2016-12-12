@@ -4,8 +4,8 @@
 \alias{scidbconnect}
 \title{Connect to a SciDB database}
 \usage{
-scidbconnect(host = options("scidb.default_shim_host")[[1]],
-  port = options("scidb.default_shim_port")[[1]], username, password,
+scidbconnect(host = getOption("scidb.default_shim_host", "127.0.0.1"),
+  port = getOption("scidb.default_shim_port", 8080L), username, password,
   auth_type = c("scidb", "digest"), protocol = c("http", "https"))
 }
 \arguments{

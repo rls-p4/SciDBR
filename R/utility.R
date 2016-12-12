@@ -87,8 +87,8 @@ scidb = function(db, name, gc=FALSE)
 #' @importFrom digest digest
 #' @importFrom openssl base64_encode
 #' @export
-scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
-                        port=options("scidb.default_shim_port")[[1]],
+scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
+                        port=getOption("scidb.default_shim_port", 8080L),
                         username, password,
                         auth_type=c("scidb", "digest"), protocol=c("http", "https"))
 {
@@ -141,9 +141,8 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
     assign("uid", id, envir=.scidbenv)
   }
 
-# Save available operators
-  assign("ops", iquery(db, "list('operators')", `return`=TRUE, binary=FALSE), envir=.scidbenv)
-  db
+# Update available operators and return afl object
+  update.afl(db, iquery(db, "list('operators')", `return`=TRUE, binary=FALSE)[,2])
 }
 
 
@@ -158,8 +157,7 @@ scidbconnect = function(host=options("scidb.default_shim_host")[[1]],
 #' @export
 iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
 {
-  DEBUG = FALSE
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
+  DEBUG = getOption("scidb.debug", FALSE)
   if(is.scidb(query))  query = query@name
   n = -1    # Indicate to shim that we want all the output
   if(`return`)
@@ -169,7 +167,7 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
     ans = tryCatch(
        {
         # SciDB save syntax changed in 15.12
-        if(newer_than(options("scidb.version")[[1]],15.12))
+        if(newer_than(getOption("scidb.version", "15.12"),15.12))
         { 
           sessionid = scidbquery(db, query, save="csv+:l", release=0)
         } else sessionid = scidbquery(db, query, save="csv+", release=0)

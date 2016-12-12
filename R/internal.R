@@ -15,6 +15,12 @@
   cat("\n")
 }
 
+.aflstr = function(object)
+{
+  conn = attr(object, "connection")
+  message(sprintf("SciDB database connection %s:%s\nUse $ to access AFL operators.", conn$host, conn$port))
+}
+
 
 #' Unpack and return a SciDB query expression as a data frame
 #' @param db scidb database connection object
@@ -28,7 +34,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   DEBUG = FALSE
   projected = FALSE
   if(!inherits(query, "scidb")) query = scidb(db, query)
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG = TRUE
+  DEBUG = getOptions("scidb.debug", FALSE)
   buffer = 100000L
   args = list(...)
   if(!is.null(args$buffer))
@@ -61,7 +67,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
   h = new_handle()
   handle_setheaders(h, .list=list(`Authorization`=digest_auth(db, "GET", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0))
   resp = curl_fetch_memory(uri, h)
   if(resp$status_code > 299) stop("HTTP error", resp$status_code)
@@ -189,7 +195,7 @@ create_temp_array = function(db, name, schema)
 {
 # SciDB temporary array syntax varies with SciDB version
   TEMP = "'TEMP'"
-  if(newer_than(options("scidb.version")[[1]], 14.12)) TEMP="true"
+  if(newer_than(getOption("scidb.version", "14.12"))) TEMP="true"
   query   = sprintf("create_array(%s, %s, %s)", name, schema, TEMP)
   iquery(db, query, `return`=FALSE)
 }
@@ -314,7 +320,7 @@ SGET = function(db, resource, args=list(), err=TRUE, binary=FALSE)
   uri = gsub("\\+", "%2B", uri, perl=TRUE)
   h = new_handle()
   handle_setheaders(h, .list=list(Authorization=digest_auth(db, "GET", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0))
   ans = curl_fetch_memory(uri, h)
   if(ans$status_code > 299 && err)
@@ -332,7 +338,7 @@ POST = function(db, data, args=list(), err=TRUE)
 {
 # check for new shim simple post option (/upload), otherwise use
 # multipart/file upload (/upload_file)
-  shimspl = strsplit(options("shim.version")[[1]], "\\.")[[1]]
+  shimspl = strsplit(getOption("shim.version", "15.12"), "\\.")[[1]]
   shim_yr = tryCatch(as.integer(gsub("[A-z]", "", shimspl[1])), error=function(e) 16, warning=function(e) 8)
   shim_mo = tryCatch(as.integer(gsub("[A-z]", "", shimspl[2])), error=function(e) 16, warning=function(e) 8)
   if(is.na(shim_yr)) shim_yr = 16
@@ -345,7 +351,7 @@ POST = function(db, data, args=list(), err=TRUE)
     uri = gsub("\\+", "%2B", uri, perl=TRUE)
     h = new_handle()
     handle_setheaders(h, .list=list(Authorization=digest_auth(db, "POST", uri)))
-    handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+    handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                                 ssl_verifypeer=0, post=TRUE, postfieldsize=length(data), postfields=data))
     ans = curl_fetch_memory(uri, h)
     if(ans$status_code > 299 && err) stop("HTTP error ", ans$status_code)
@@ -356,7 +362,7 @@ POST = function(db, data, args=list(), err=TRUE)
   uri = gsub("\\+", "%2B", uri, perl=TRUE)
   h = new_handle()
   handle_setheaders(h, .list=list(Authorization=digest_auth(db, "POST", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0))
   tmpf = tempfile()
   if(is.character(data)) data = charToRaw(data)
@@ -382,7 +388,7 @@ POST = function(db, data, args=list(), err=TRUE)
 # release: Set to zero preserve web session until manually calling release_session
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
 # resp(logical): return http response
-# stream: Set to 0L or 1L to control streaming, otherwise use package options
+# stream: Set to 0L or 1L to control streaming (NOT USED)
 # prefix: optional AFL statement to prefix query in the same connection context.
 # Example values of save:
 # save="dcsv"
@@ -394,10 +400,10 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
 {
   DEBUG = FALSE
   STREAM = 0L
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
+  DEBUG = getOption("scidb.debug", FALSE)
   if(missing(stream))
   {
-    if(!is.null(options("scidb.stream")[[1]]) && TRUE==options("scidb.stream")[[1]]) STREAM=1L
+    STREAM = 0L
   } else STREAM = as.integer(stream)
   sessionid = session
   if(is.null(session))
@@ -542,7 +548,7 @@ lazyeval = function(db, name)
 {
   escape = gsub("'", "\\\\'", name, perl=TRUE)
 # SciDB explain_logical operator changed in version 15.7
-  if(newer_than(options("scidb.version")[[1]], 15.7))
+  if(newer_than(getOption("scidb.version", "15.7"), 15.7))
   {
     query = sprintf("join(show('filter(%s,true)','afl'), _explain_logical('filter(%s,true)','afl'))", escape, escape)
   }
@@ -723,8 +729,7 @@ matvec2scidb = function(db, X,
   }
   if(!is.matrix(X)) stop ("X must be a matrix or a vector")
 
-  DEBUG = FALSE
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
+  DEBUG = getOption("scidb.debug", FALSE)
   td1 = proc.time()
 # Obtain a session from shim for the upload process
   session = getSession(db)

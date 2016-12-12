@@ -82,7 +82,7 @@ scidb_types = function(x)
 scidb_nullable = function(x)
 {
   # SciDB schema syntax changed in 15.12
-  if(newer_than(options("scidb.version")[[1]],15.12))
+  if(newer_than(getOption("scidb.debug", "15.12")))
   { 
     return (! grepl("NOT NULL", .attsplitter(x)))
   }
@@ -384,5 +384,5 @@ strdiff = function(x,y)
 
 dfschema = function(names, types, len, chunk=10000)
 {
-  sprintf("<%s>[i=0:%d,%d,0]", paste(paste(names, types, sep=":"), collapse=","), len, chunk)
+  sprintf("<%s>[i=1:%d,%d,0]", paste(paste(names, types, sep=":"), collapse=","), len, chunk)
 }
