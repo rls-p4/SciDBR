@@ -77,6 +77,16 @@ print.afl = function(obj)
   .aflstr(obj)
 }
 
+setGeneric("ls")
+#' List contents of a SciDB database
+#' @param name \code{afl} SciDB connection object from \code{\link{scidbconnect}}
+#' @return a \code{data.frame} listing the contents of the database
+#' @export
+setMethod("ls", signature(name="afl"),
+  function(name) {
+    iquery(name, "list()", return=TRUE)
+  })
+
 # AFL help
 setGeneric("help")
 setOldClass("operator")

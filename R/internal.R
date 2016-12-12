@@ -379,13 +379,6 @@ POST = function(db, data, args=list(), err=TRUE)
   return(rawToChar(ans$content))
 }
 
-# Check if array exists
-.scidbexists = function(name)
-{
-  Q = scidblist()
-  return(name %in% Q)
-}
-
 # Basic low-level query. Returns query id. This is an internal function.
 # db: scidb database connection object
 # query: a character query string
@@ -515,12 +508,6 @@ raw2scidb = function(db, X, name, gc=TRUE, ...)
   query = sprintf("store(input(%s,'%s',-2,'(binary null)'),%s)", schema, ans, name)
   iquery(db, query)
   scidb(db, name, gc=gc)
-}
-
-# Check for scidb missing flag
-is.nullable = function(x)
-{
-  any(scidb_nullable(x))
 }
 
 # Internal utility function used to format numbers
