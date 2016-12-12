@@ -120,31 +120,6 @@ scidb_coordinate_bounds = function(x)
   list(start=noE(start), end=noE(end), length=len)
 }
 
-# A between-style string of coordinate bounds
-between_coordinate_bounds = function(s)
-{
-  if((inherits(s,"scidb"))) s = schema(s)
-  paste(t(matrix(unlist(lapply(strsplit(gsub("\\].*","",gsub(".*\\[","",s,perl=TRUE),perl=TRUE),"=")[[1]][-1],function(x)strsplit(strsplit(x,",")[[1]][1],":")[[1]])),2,byrow=FALSE)),collapse=",")
-}
-
-#' SciDB array coordinate start
-#' @param x a \code{\link{scidb}} array object
-#' @return character-valued vector of starting coordinate bounds
-#' @export
-scidb_coordinate_start = function(x)
-{
-  scidb_coordinate_bounds(x)$start
-}
-
-#' SciDB array coordinate end
-#' @param x a \code{\link{scidb}} array object
-#' @return character-valued vector of end coordinate bounds
-#' @export
-scidb_coordinate_end = function(x)
-{
-  scidb_coordinate_bounds(x)$end
-}
-
 #' SciDB array coordinate chunksize
 #' @param x a \code{\link{scidb}} array object
 #' @return character-valued vector of SciDB coordinate chunk sizes
