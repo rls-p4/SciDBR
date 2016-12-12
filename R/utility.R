@@ -28,7 +28,7 @@ store = function(db, expr, eval=TRUE, name, gc=TRUE, temp=FALSE)
 scidb = function(db, name, gc=FALSE)
 {
   if(missing(name)) stop("array or expression must be specified")
-  if(is.scidb(name))
+  if(inherits(name, "scidb"))
   {
     query = name@name
     return(.scidbeval(db, name@name, eval=FALSE, gc=gc, depend=list(name)))
@@ -160,7 +160,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
 {
   DEBUG = getOption("scidb.debug", FALSE)
-  if(is.scidb(query))  query = query@name
+  if(inherits(query, "scidb"))  query = query@name
   n = -1    # Indicate to shim that we want all the output
   if(`return`)
   {
@@ -269,6 +269,6 @@ as.scidb = function(db, x,
 #' @export
 R = function(x)
 {
-  stopifnot(is.scidb(x))
+  stopifnot(inherits(x, "scidb"))
   iquery(x@meta$db, x, `return`=TRUE)
 }

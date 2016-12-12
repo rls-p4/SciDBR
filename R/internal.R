@@ -1,5 +1,4 @@
 # Non-exported utility functions
-
 .scidbstr = function(object)
 {
   name = substr(object@name, 1, 35)
@@ -271,6 +270,7 @@ make.unique_ = function(x, y)
 # Make a name from a prefix and a unique SciDB identifier.
 tmpnam = function(db, prefix="R_array")
 {
+  stopifnot(inherits(db, "afl"))
   .scidbenv = attr(db, "connection")
   salt = basename(tempfile(pattern=prefix))
   if(!exists("uid", envir=.scidbenv)) stop("Not connected...try scidbconnect")
@@ -516,12 +516,6 @@ raw2scidb = function(db, X, name, gc=TRUE, ...)
 is.nullable = function(x)
 {
   any(scidb_nullable(x))
-}
-
-# Internal utility function, make every attribute of an array nullable
-make_nullable = function(x)
-{
-  cast(x, sprintf("%s%s", build_attr_schema(x, nullable=TRUE), build_dim_schema(x)))
 }
 
 # Internal utility function used to format numbers
