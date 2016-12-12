@@ -194,7 +194,7 @@ create_temp_array = function(db, name, schema)
 {
 # SciDB temporary array syntax varies with SciDB version
   TEMP = "'TEMP'"
-  if(newer_than(getOption("scidb.version", "14.12"), "14.12")) TEMP="true"
+  if(newer_than(attr(db, "connection")$scidb.version, "14.12")) TEMP="true"
   query   = sprintf("create_array(%s, %s, %s)", name, schema, TEMP)
   iquery(db, query, `return`=FALSE)
 }
@@ -343,7 +343,7 @@ POST = function(db, data, args=list(), err=TRUE)
 {
 # check for new shim simple post option (/upload), otherwise use
 # multipart/file upload (/upload_file)
-  shimspl = strsplit(getOption("shim.version", "15.12"), "\\.")[[1]]
+  shimspl = strsplit(attr(db, "connection"$scidb.version), "\\.")[[1]]
   shim_yr = tryCatch(as.integer(gsub("[A-z]", "", shimspl[1])), error=function(e) 16, warning=function(e) 8)
   shim_mo = tryCatch(as.integer(gsub("[A-z]", "", shimspl[2])), error=function(e) 16, warning=function(e) 8)
   if(is.na(shim_yr)) shim_yr = 16

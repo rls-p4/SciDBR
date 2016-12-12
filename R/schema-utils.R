@@ -14,7 +14,7 @@
   d = gsub("\\]", "", strsplit(s, "\\[")[[1]][[2]])
   d = strsplit(strsplit(d, "=")[[1]], ",")
   # SciDB schema syntax changed greatly in 16.9, convert it to old format.
-  if(newer_than(getOption("scidb.version", "16.9"), "16.9"))
+  if(newer_than(attr(x@meta$db, "connection")$scidb.version, "16.9"))
   { 
     d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\3,\\4", x)), ",")[[1]])
   }
@@ -59,7 +59,7 @@ scidb_types = function(x)
 scidb_nullable = function(x)
 {
   # SciDB schema syntax changed in 15.12
-  if(newer_than(getOption("scidb.version", "15.12"), "15.12"))
+  if(newer_than(attr(x@meta$db, "connection")$scidb.version, "15.12"))
   { 
     return (! grepl("NOT NULL", .attsplitter(x)))
   }

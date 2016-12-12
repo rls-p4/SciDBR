@@ -12,10 +12,6 @@ NULL
   packageStartupMessage("   ____    _ ___  ___\n  / __/___(_) _ \\/ _ )\n _\\ \\/ __/ / // / _  |\n/___/\\__/_/____/____/     Copyright 2016, Paradigm4, Inc.\n\n"    , domain = NULL, appendLF = TRUE)
 
   options(scidb.prefix=NULL)
-# The scidb.version option is set during scidbconnect(). However, users
-# may carefully override it to enable certain bug fixes specific to older
-# versions of SciDB.
-  options(scidb.version=16.9)
 # Default shim port and host.
   options(scidb.default_shim_port=8080L)
   options(scidb.default_shim_host="localhost")
@@ -39,14 +35,11 @@ NULL
 # Reset the various package options
 .onUnload = function(libpath)
 {
-  options(scidb.version=c())
   options(scidb.buffer_size=c())
   options(scidb.default_shim_port=c())
   options(scidb.default_shim_host=c())
   options(scidb.verifyhost=c())
   options(scidb.stream=c())
-  options(scidb.version=c())
-  options(shim.version=c())
 }
 
 # scidb array object type map.
