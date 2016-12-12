@@ -267,14 +267,19 @@ make.unique_ = function(x, y)
   gsub("\\.", "_", utils::tail(z, length(y)))
 }
 
+
 # Make a name from a prefix and a unique SciDB identifier.
+getuid = function(db)
+{
+  .scidbenv = attr(db, "connection")
+  if(!exists("uid", envir=.scidbenv)) stop("Not connected...try scidbconnect")
+  get("uid", envir=.scidbenv)
+}
 tmpnam = function(db, prefix="R_array")
 {
   stopifnot(inherits(db, "afl"))
-  .scidbenv = attr(db, "connection")
   salt = basename(tempfile(pattern=prefix))
-  if(!exists("uid", envir=.scidbenv)) stop("Not connected...try scidbconnect")
-  paste(salt, get("uid", envir=.scidbenv), sep="")
+  paste(salt, getuid(db), sep="")
 }
 
 # Return a shim session ID or error

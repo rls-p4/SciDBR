@@ -51,9 +51,7 @@ scidb = function(db, name, gc=FALSE)
         {
           if (e$remove && exists("name", envir=e))
             {
-# XXX
-browser()
-# XXX restrict to temp     scidbquery(db, sprintf("remove(%s)", e$name), release=1)
+              if(grepl(sprintf("%s$", getuid(e$db)), e$name)) scidbquery(db, sprintf("remove(%s)", e$name), release=1)
             }
         }, onexit = TRUE)
   }
