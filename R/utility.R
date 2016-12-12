@@ -256,7 +256,7 @@ as.scidb = function(db, x,
 #' \dontrun{
 #' s = scidbconnect()
 #' x = scidb(s, "build(<v:double>[i=1:5], sin(i))")
-#' R(x)
+#' as.R(x)
 #'#  i          v
 #'#1 1  0.8414710
 #'#2 2  0.9092974
@@ -265,7 +265,7 @@ as.scidb = function(db, x,
 #'#5 5 -0.9589243
 #' }
 #' @export
-R = function(x)
+as.R = function(x)
 {
   stopifnot(inherits(x, "scidb"))
   iquery(x@meta$db, x, `return`=TRUE)

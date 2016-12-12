@@ -30,6 +30,8 @@ update.afl = function(db, new, ops)
 #' @keywords internal
 arg = function(x, db, env)
 {
+# vectors are slightly special
+  if(length(x) > 1 && is.vector(x) && class(x)[1] %in% c("character", "numeric", "integer")) x = as.scidb(db, x)
   switch(class(x)[1],
     raw = {ans = as.scidb(db, x); assign(ans@name, ans, envir=env); ans@name},
     matrix = {ans = as.scidb(db, x); assign(ans@name, ans, envir=env); ans@name},
@@ -38,7 +40,7 @@ arg = function(x, db, env)
     numeric = sprintf("%.16g", x),
     integer = sprintf("%d", x),
     scidb = {assign(x@name, x, envir=env); x@name},
-    default = sprintf("%s", x)
+    default = sprintf("%s", x) # verbatim
   )
 }
 
