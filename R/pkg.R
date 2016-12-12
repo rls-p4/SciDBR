@@ -78,52 +78,12 @@ NULL
   datetime="Date"
 )
 
-# Default substitution values to remove null in replaceNA
-.scidb_default_subst = list(
-  double="double(nan)",
-  int64="int64(0)",
-  uint64="uint64(0)",
-  uint32="uint32(0)",
-  int32="int32(0)",
-  int16="int16(0)",
-  unit16="uint16(0)",
-  int8="int8(0)",
-  uint8="uint8(0)",
-  bool="false",
-  string="string('')",
-  char="char('')",
-  datetime="datetime(0)"
-)
-
 .typelen = list(
   double=8,
   integer=4,
   logical=1,
   character=1
 )
-
-#' A convenience mapper for a few common apply-style aggregate
-#' functions.
-#' @keywords internal
-#' @importFrom stats sd var median
-.scidbfun = function(FUN)
-{
-  fns = list(
-  mean="avg",
-  sd="stdev",
-  var="var",
-  sum="sum",
-  prod="prod",
-  max="max",
-  min="min",
-  median="median",
-  length="count",
-  count="count")
-  i = unlist(lapply(list(mean, sd, var, sum, prod, max, min, median, length, count),
-               function(x) identical(x, FUN)))
-  if(!any(i)) return(NULL)
-  fns[i][[1]]
-}
 
 # SciDB Integer dimension minimum, maximum
 .scidb_DIM_MIN = "-4611686018427387902"
