@@ -47,6 +47,11 @@ afl = function(...)
   call = eval(as.list(match.call())[[1]])
 # why two passes? XXX
   expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch(eval(.x), error=function(e) capture.output(.x))), arg), collapse=","))
+# Some special AFL non-operators statements don't return arrays
+  if(any(grepl(attr(call, "name"), c("remove"), ignore.case=TRUE)))
+  {
+    return(iquery(attr(call, "conn"), expr))
+  }
   scidb(attr(call, "conn"), expr)
 }
 
