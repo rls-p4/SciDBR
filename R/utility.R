@@ -135,7 +135,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   shim.version = SGET(db, "/version")
 
 # Update the scidb.version in the db connection environment
-  v = strsplit(gsub("[A-z\\-]", "", gsub("-.*", "", "shim.version")), "\\.")[[1]]
+  v = strsplit(gsub("[A-z\\-]", "", gsub("-.*", "", shim.version)), "\\.")[[1]]
   if(length(v) < 2) v = c(v, "1")
   .scidbenv$scidb.version = sprintf("%s.%s", v[1], v[2])
 
@@ -180,7 +180,7 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
     ans = tryCatch(
        {
         # SciDB save syntax changed in 15.12
-        if(newer_than(attr(db, "connection")$scidb.version,15.12))
+        if(newer_than(attr(db, "connection")$scidb.version, 15.12))
         { 
           sessionid = scidbquery(db, query, save="csv+:l", release=0)
         } else sessionid = scidbquery(db, query, save="csv+", release=0)
