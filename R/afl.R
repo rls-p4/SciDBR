@@ -37,7 +37,7 @@ arg = function(x, db, env)
     character = sprintf("%s", x),
     numeric = sprintf("%.16g", x),
     integer = sprintf("%d", x),
-    scidb = x@name,
+    scidb = {assign(x@name, x, envir=env); x@name},
     default = sprintf("%s", x)
   )
 }
