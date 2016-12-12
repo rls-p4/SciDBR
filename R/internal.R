@@ -17,7 +17,7 @@
 .aflstr = function(object)
 {
   conn = attr(object, "connection")
-  message(sprintf("SciDB database connection %s:%s\nUse $ to access AFL operators.", conn$host, conn$port))
+  message(sprintf("SciDB database connection %s:%s\nUse $ to access AFL operators; `ls` on this object lists SciDB arrays.", conn$host, conn$port))
 }
 
 
