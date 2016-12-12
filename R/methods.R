@@ -52,7 +52,7 @@ str.scidb = function(object, ...)
 #' @export
 str.afl = function(object, ...)
 {
-  str(uncalss(object))
+  str(unclass(object))
 }
 setOldClass("afl")
 #' Print a summary of a \code{afl} object

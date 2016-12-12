@@ -270,3 +270,24 @@ R = function(x)
   stopifnot(inherits(x, "scidb"))
   iquery(x@meta$db, x, `return`=TRUE)
 }
+
+#' Register an AFL prefix expression
+#'
+#' SciDB AFL statements are normally executed in a stateless query context.
+#' Use scidb_prefix to create compound AFL expressions useful in some
+#' circumstances.
+#' @param db a scidb database connection returned from \code{\link{scidbconnect}}
+#' @param expression a valid AFL expression to be issued prior to, and in the same context as all subsequent
+#' query expressions issued to the database corresponding to \code{db}. Set \code{expression=NULL} to remove the prefix expression.
+#' @note This is mostly useful for setting namespaces, see the examples.
+#' @examples
+#' \dontrun{
+#' # WRITE ME
+#' }
+#' @export
+scidb_prefix = function(db, expression=NULL)
+{
+  stopifnot(inherits(db, "afl"))
+  if(is.null(expression)) return()
+  attr(db, "prefix") = expression
+}

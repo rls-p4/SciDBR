@@ -26,9 +26,14 @@ update.afl = function(db, new, ops)
   db
 }
 
+#' Evaluate arguments in an AFL expression.
+#' @keywords internal
 arg = function(x)
 {
-  switch(class(x),
+  switch(class(x)[1],
+    raw = as.scidb(x)@name,
+    matrix = as.scidb(x)@name,
+    dgCMatrix = as.scidb(x)@name,
     character = sprintf("%s", x),
     numeric = sprintf("%.16g", x),
     integer = sprintf("%d", x),
