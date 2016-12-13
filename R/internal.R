@@ -322,7 +322,7 @@ POST = function(db, data, args=list(), err=TRUE)
 {
 # check for new shim simple post option (/upload), otherwise use
 # multipart/file upload (/upload_file)
-  shimspl = strsplit(attr(db, "connection"$scidb.version), "\\.")[[1]]
+  shimspl = strsplit(attr(db, "connection")$scidb.version, "\\.")[[1]]
   shim_yr = tryCatch(as.integer(gsub("[A-z]", "", shimspl[1])), error=function(e) 16, warning=function(e) 8)
   shim_mo = tryCatch(as.integer(gsub("[A-z]", "", shimspl[2])), error=function(e) 16, warning=function(e) 8)
   if(is.na(shim_yr)) shim_yr = 16
