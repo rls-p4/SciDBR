@@ -28,7 +28,7 @@ Developers please note that R CMD check-style unit tests are skipped unless a
 system environment variable named SCIDB\_TEST\_HOST is set to the host name or
 I.P. address of SciDB. See the tests directory for test code.
 
-GitHub branch policy: the "laboratory" branch is for new ideas that have a good
+GitHub branch policy: the "devel" branch is for new ideas that have a good
 chance of making it into the CRAN package, but all tests might not yet pass.
 The "master" branch should pass all `R CMD check` tests against the current
 R-devel version of R on all platforms, tested against the current SciDB release.
@@ -50,4 +50,3 @@ This is a major release that breaks API compatibility with previous package
 releases.  Array objects have been removed. All SciDB arrays are now presented
 as virtual data frames in R. This change was informed by the most common uses
 we've seen.
-

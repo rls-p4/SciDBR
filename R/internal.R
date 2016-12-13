@@ -373,7 +373,7 @@ POST = function(db, data, args=list(), err=TRUE)
 # save="(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=NULL)
+scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=attr(db, "prefix"))
 {
   DEBUG = FALSE
   STREAM = 0L
@@ -420,12 +420,12 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
   sessionid
 }
 
-# Sparse matrix to SciDB
 .Matrix2scidb = function(db, X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0, 0), gc=TRUE, ...)
 {
   D = dim(X)
   rowOverlap = 0L
   colOverlap = 0L
+  if(missing(start)) start=c(0, 0)
   if(length(start) < 1) stop ("Invalid starting coordinates")
   if(length(start) > 2) start = start[1:2]
   if(length(start) < 2) start = c(start, 0)
@@ -647,8 +647,8 @@ matvec2scidb = function(db, X,
   chunkSize = c(min(1000L, nrow(X)), min(1000L, ncol(X)))
   chunkSize = as.numeric(chunkSize)
   if(length(chunkSize) == 1) chunkSize = c(chunkSize, chunkSize)
-  overlap = c(0,0)
-  if(missing(start)) start = c(0,0)
+  overlap = c(0, 0)
+  if(missing(start)) start = c(0, 0)
   start     = as.numeric(start)
   if(length(start) ==1) start = c(start, start)
   D = dim(X)

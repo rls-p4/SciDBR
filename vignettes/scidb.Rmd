@@ -45,16 +45,13 @@ distributed storage, and efficient sparse array storage. SciDB arrays consist
 of a coordinate system whose coordinates are called _dimensions_, and one or
 more values at each coordinate called _attributes_.
 
-The `scidb` package provides two ways to interact with SciDB from R:
+The `scidb` package helps R interact with SciDB by directly running SciDB
+queries using the native array functional language (AFL) and  optionally
+returning results as data frames.
 
-* Directly running SciDB queries using the native array functional language (AFL),
-  optionally returning results as data frames
-* Using the `scidb` class and related methods.
-
-The SciDB array classes facilitate programming large-scale SciDB computation in
-R using natural R syntax.  This vignette illustrates using SciDB from R by
-example. For more detailed information on the functions described in this
-vignette, see the manual pages in the package.
+This vignette illustrates using SciDB from R by example. For more detailed
+information on the functions described in this vignette, see the manual pages
+in the package.
 
 
 ## Installing the package
@@ -78,11 +75,10 @@ the current release version of the database.
 ## Connecting to SciDB
 
 The `scidbconnect` function establishes a connection to a simple HTTP network
-service called shim (https://github.com/Paradigm4/shim)
-running on a SciDB coordinator instance.  The function may
-be safely called multiple times.  Once a connection is established, connection
-information is maintained until a different connection is established or the R
-session ends.
+service called shim (https://github.com/Paradigm4/shim) running on a SciDB
+coordinator instance.  The function may be safely called multiple times. The
+function return value contains the SciDB database connection state in an object
+of class `afl`.
 
 The network interface optionally supports SSL encryption and SciDB
 authentication or HTTP digest user authentication.
@@ -90,12 +86,14 @@ authentication or HTTP digest user authentication.
 *Connect to SciDB on the default shim port and localhost*
 ```{r, eval=FALSE}
 library("scidb")
-scidbconnect()
+db <- scidbconnect()
+print(db)
 ```
 
 *Connect to SciDB on an encrypted port 8083 with example SciDB authentication*
 ```{r, eval=FALSE}
-scidbconnect(port=8083, username="root", password="Paradigm4")
+db <- scidbconnect(port=8083, username="root", password="Paradigm4")
+print(db)
 ```
 Use encrypted sessions when communicating with SciDB over public networks.
 SciDB user authentication is only supported by SciDB versions 15.7 and greater.
@@ -106,7 +104,7 @@ SciDB user authentication is only supported by SciDB versions 15.7 and greater.
 See the official SciDB documentation for details about users, roles and namespaces
 https://paradigm4.atlassian.net/wiki/display/ESD/Security.
 
-The package option `scidb.prefix` is designed to simplify working with SciDB
+The global package option `scidb.prefix` is designed to simplify working with SciDB
 user roles from R. SciDB user roles are provided by the namespaces plugin and
 may require issuing the query `load_library('namespaces')` before use (usually
 performed by the SciDB system administrator). For instance, use the `scidb.prefix`
