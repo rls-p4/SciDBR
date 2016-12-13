@@ -6,6 +6,11 @@
 \usage{
 x \%as\% y
 }
+\arguments{
+\item{x}{an object of class \code{\link{scidb}} (a scidb array or expression)}
+
+\item{y}{alias name}
+}
 \description{
 AFL array aliasing
 }

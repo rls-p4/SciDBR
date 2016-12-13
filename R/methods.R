@@ -125,6 +125,8 @@ setMethod("help", signature(topic="operator"),
   function(topic) aflhelp(topic))
 
 #' AFL array aliasing
+#' @param x an object of class \code{\link{scidb}} (a scidb array or expression)
+#' @param y alias name
 #' @method  %as% default
 #' @export
 setGeneric("%as%", function(x, y) standardGeneric("%as%"))
