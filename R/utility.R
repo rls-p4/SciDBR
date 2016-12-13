@@ -293,6 +293,7 @@ as.R = function(x)
 #' @param db a scidb database connection returned from \code{\link{scidbconnect}}
 #' @param expression a valid AFL expression to be issued prior to, and in the same context as all subsequent
 #' query expressions issued to the database corresponding to \code{db}. Set \code{expression=NULL} to remove the prefix expression.
+#' @return A new SciDB database connection object
 #' @note This is mostly useful for setting namespaces, see the examples.
 #' @examples
 #' \dontrun{
@@ -304,4 +305,5 @@ scidb_prefix = function(db, expression=NULL)
   stopifnot(inherits(db, "afl"))
   if(is.null(expression)) return()
   attr(db, "prefix") = expression
+  db
 }

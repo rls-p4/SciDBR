@@ -117,52 +117,49 @@ After setting that, all queries will be prefixed with the role-setting statement
 You may use the `scidb.prefix` option to prefix queries with arbitrary AFL
 statements. Separate multiple statements with the semi-colon character.
 
-Use the `namespace` option with the `scidblist()` or `scidbls()` functions to
-list arrays in the specified namespace. Use the period character '.' as a path
-separator to prefix SciDB array names with their namespace location. The
-following example creates a namespace called 'cazart', uploads the `iris`
-data frame to an array named 'iris' in the 'cazart' namespace,
-and lists the arrays in that namespace.
+Alternatively, set a per-database-connection prefix with the `scidb_prefix()`
+function:
 ```{r, eval=FALSE}
-iquery("create_namespace('cazart')")
-scidbls(type="namespaces")
-x = as.scidb(iris, name="cazart.iris")
-scidbls(namespace="cazart")
+db <- scidb_prefix(db, "set_role('functionary')")
+```
+Note that the `scidb_prefix()` function simply attaches a character-valued
+attribute named "prefix" to the connection.
+
+
+
+## Listing SciDB arrays
+
+The `scidbconnect()` function returns a SciDB connection object of class `afl`.
+In addition to storing the connection state, the returned object has a few
+special methods. Printing the object shows a summary of the connection state.
+Running the `ls()` function on the object shows a list of SciDB arrays (subject
+to any potential namespace-setting prefix expression). And the object itself
+is really a list that contains available SciDB AFL operator and macro functions.
+
+```{r, eval=FALSE}
+db <- scidbconnect()
+print(db)    # summarize connection
+ls(db)       # quick list of arrays
+# db$<TAB>     # list of AFL operators
 ```
 
-You can remove arrays in namespaces (with sufficient privelege) by referring
-to the R object or fully qualified SciDB array name with path:
-```{r, eval=FALSE}
-scidbrm(x, force=TRUE)
-
-# or
-
-scidbrm("cazart.iris", force=TRUE)
-```
-(we use the `force=TRUE` option because the name is protected from easy
-removal by the R package as it's not a temporary array name).
+Each listed AFL operator is presented as an R function. RSudio users can use
+the TAB key in the function to see suggested AFL operator argument completions.
+Alternatively, command-line R users can see the argument list by pressing
+return to see the function definition. These functions can be used to compose
+AFL expressions from R, discussed in more detail in the next section.
 
 
-## Listing and removing SciDB arrays
 
-The `scidblist` function lists SciDB objects and features including aggregates,
-arrays, datastores, functions, instances, libraries, macros, namespaces,
-operators, queries, roles, types, and users, optionally showing detailed schema
-information for arrays. Returned results can be filtered using regular
-expression-style syntax.
+# Running AFL queries
 
-The `scidbremove` function removes a SciDB array, or optionally a set of SciDB
-arrays. The function accepts a vector of array names, resulting in the removal
-of all the specified arrays. Combine this feature with the regular expression
-filtering output of `scidblist` to remove sets of arrays matching the filter.
-Array names not associated with a specific R session are protected from easy
-removal.  Specify `force=TRUE` as indicated in the warning message to remove
-those arrays.
+The scidb package defines two ways to compose and execute SciDB queries:
 
-## Running AFL queries
+1. Directly running AFL expressions written as character strings (`iquery()`)
+2. Composing AFL expressions from the database connection AFL function list
 
-Use the `iquery` function to run arbitrary SciDB AFL queries, optionally
-returning results to R as data frames.
+Use the `iquery` function to run arbitrary SciDB AFL queries entered as
+character strings, optionally returning results to R as a data frame.
 
 ```{r, eval=FALSE, echo=TRUE}
 iquery("build(<v:double>[i=1:2,2,0, j=1:3,1,0], i*j)", return=TRUE)
