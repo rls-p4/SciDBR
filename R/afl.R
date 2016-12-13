@@ -37,11 +37,10 @@ arg = function(x, db, env)
     matrix = {ans = as.scidb(db, x); assign(ans@name, ans, envir=env); ans@name},
     dgCMatrix = {ans = as.scidb(db, x); assign(ans@name, ans, envir=env); ans@name},
     data.frame = {ans = as.scidb(db, x); assign(ans@name, ans, envir=env); ans@name},
-    character = sprintf("%s", x),
     numeric = sprintf("%.16g", x),
     integer = sprintf("%d", x),
     scidb = {assign(x@name, x, envir=env); x@name},
-    default = gsub("%as%", " as " ,sprintf("%s", x)) # almost verbatim
+    gsub("%as%", " as " ,sprintf("%s", x)) # almost verbatim
   )
 }
 
@@ -54,8 +53,13 @@ afl = function(...)
 {
   call = eval(as.list(match.call())[[1]])
   .env = new.env()
+  if(isTRUE(getOption("scidb.tryeval")))
+  {
 # why two passes? XXX
-  expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch({ans = eval(.x); if(inherits(ans, "function")) ans = as.character(ans); ans}, error=function(e) gsub("%as%", " as ", capture.output(.x)))), arg, attr(call, "conn"), .env), collapse=","))
+    expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch({ans = eval(.x); if(inherits(ans, "function")) ans = as.character(ans); ans}, error=function(e) gsub("%as%", " as ", capture.output(.x)))), arg, attr(call, "conn"), .env), collapse=","))
+  } else {
+    expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch({ans = eval(.x); if(!inherits(ans, "scidb")) stop(); ans}, error=function(e) gsub("%as%", " as ", capture.output(.x)))), arg, attr(call, "conn"), .env), collapse=","))
+  }
 # Some special AFL non-operator expressions don't return arrays
   if(any(grepl(attr(call, "name"), c("remove"), ignore.case=TRUE)))
   {
