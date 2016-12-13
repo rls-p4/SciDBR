@@ -12,8 +12,8 @@
 
 \item{y}{alias name}
 }
-\description{
-AFL arrary aliasing
+\value{
+a \code{\link{scidb}} object
 }
 \examples{
 \dontrun{

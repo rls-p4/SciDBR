@@ -12,7 +12,7 @@
 store = function(db, expr, name, eval=TRUE, gc=TRUE, temp=FALSE)
 {
   ans = eval(expr)
-  if(!(inherits(ans,"scidb"))) return(ans)
+  if(!(inherits(ans, "scidb"))) return(ans)
 # If expr is a stored temp array, then re-use its name
   if(!is.null(ans@meta$temp) && ans@meta$temp && missing(name)) name=ans@name
   .scidbeval(db, ans@name, `eval`=eval, name=name, gc=gc, schema=schema(ans), temp=temp)
@@ -27,6 +27,7 @@ store = function(db, expr, name, eval=TRUE, gc=TRUE, temp=FALSE)
 #' @export
 scidb = function(db, name, gc=FALSE)
 {
+  stopifnot(inherits(db, "afl"))
   if(missing(name)) stop("array or expression must be specified")
   if(inherits(name, "scidb"))
   {

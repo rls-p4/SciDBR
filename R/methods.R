@@ -64,6 +64,7 @@ dimnames.scidb = function(x)
   ans
 }
 
+#' @importFrom utils str
 #' @export
 str.scidb = function(object, ...)
 {
@@ -84,7 +85,7 @@ setMethod("show", "afl",
   function(object) {
     .aflstr(object)
   })
-#' Print a summary of a \code{afl} object
+#' Print a summary of a \code{afl} SciDB database connection object
 #' @param x  \code{afl} object
 #' @return printed object summary
 #' @export
@@ -92,10 +93,13 @@ setMethod("print", signature(x="afl"),
   function(x) {
     show(x)
   })
+#' Print a summary of a \code{afl} SciDB database connection object
+#' @param x  \code{afl} object
+#' @return printed object summary
 #' @export
-print.afl = function(obj, ...)
+print.afl = function(x, ...)
 {
-  .aflstr(obj)
+  .aflstr(x)
 }
 
 setGeneric("ls")
@@ -120,8 +124,12 @@ setMethod("help", signature(topic="operator"),
 
 setGeneric("%as%", function(x, y) standardGeneric("%as%"))
 #' AFL arrary aliasing
+#'
+#' Use the \code{%as%} operator in place of the native AFL "as" operator
+#' in AFL expressions written in R.
 #' @param x an object of class \code{\link{scidb}} (a scidb array or expression)
 #' @param y alias name
+#' @return a \code{\link{scidb}} object
 #' @examples
 #' \dontrun{
 #' s = scidbconnect()

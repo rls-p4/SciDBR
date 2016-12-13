@@ -639,7 +639,6 @@ matvec2scidb = function(db, X,
   if(!is.null(args$nullable)) nullable = as.logical(args$nullable) # control nullability
   if(!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
   do_reshape = TRUE
-  nd_reshape = NULL
   type = force_type = .Rtypes[[typeof(X)]]
   if(is.null(type)) {
     stop(paste("Unupported data type. The package presently supports: ",
@@ -671,8 +670,9 @@ matvec2scidb = function(db, X,
     load_schema = schema
   } else if(length(D) > 2)
   {
-    nd_reshape = dim(X)
-    do_reshape = FALSE
+# X is an n-d array
+    stop("not supported yet")
+    do_reshape = TRUE
     X = as.matrix(as.vector(aperm(X)))
     schema = sprintf(
         "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
@@ -704,10 +704,6 @@ matvec2scidb = function(db, X,
   }
 
 # Load query
-  if(!is.null(nd_reshape))
-  {
-    return(store(db, reshape_scidb(scidb(db, sprintf("input(%s,'%s', 0, '(%s null)')",load_schema, ans, type)), shape=nd_reshape),name=name))
-  }
   if(do_reshape)
   {
     query = sprintf("store(reshape(input(%s,'%s', -2, '(%s null)'),%s),%s)",load_schema, ans, type, schema, name)

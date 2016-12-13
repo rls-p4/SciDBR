@@ -17,11 +17,8 @@ Depends:
 Imports:
     methods,
     data.table,
-    stats,
-    graphics,
     digest,
     openssl,
-    codetools,
     curl
 Suggests:
     knitr (>= 1.8)

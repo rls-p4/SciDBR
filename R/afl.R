@@ -49,6 +49,7 @@ arg = function(x, db, env)
 #' @note The call list expected to look like: \code{(afl arguments, ...)}
 #' @return a \code{\link{scidb}} object
 #' @keywords internal function
+#' @importFrom utils capture.output
 afl = function(...)
 {
   call = eval(as.list(match.call())[[1]])
