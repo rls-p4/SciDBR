@@ -15,11 +15,18 @@
 \value{
 a \code{\link{scidb}} object
 }
+\description{
+AFL arrary aliasing
+}
+\note{
+Use the \code{\%as\%} operator in place of the native AFL "as" operator
+in AFL expressions written in R.
+}
 \examples{
 \dontrun{
-s = scidbconnect()
-x = scidb(s, "build(<v:double>[i=1:2,1,0], i)"
-x \%as\% y
+# s = scidbconnect()
+# x = scidb(s, "build(<v:double>[i=1:2,1,0], i)")
+# x \%as\% y
 }
 }
 

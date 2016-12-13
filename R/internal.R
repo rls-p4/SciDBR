@@ -635,8 +635,6 @@ matvec2scidb = function(db, X,
 # Check for a bunch of optional hidden arguments
   args = list(...)
   attr_name = "val"
-  nullable = TRUE
-  if(!is.null(args$nullable)) nullable = as.logical(args$nullable) # control nullability
   if(!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
   do_reshape = TRUE
   type = force_type = .Rtypes[[typeof(X)]]
@@ -671,7 +669,7 @@ matvec2scidb = function(db, X,
   } else if(length(D) > 2)
   {
 # X is an n-d array
-    stop("not supported yet")
+    stop("not supported yet") # XXX WRITE ME
     do_reshape = TRUE
     X = as.matrix(as.vector(aperm(X)))
     schema = sprintf(
@@ -712,7 +710,5 @@ matvec2scidb = function(db, X,
     query = sprintf("store(input(%s,'%s', -2, '(%s null)'),%s)",load_schema, ans, type, name)
   }
   iquery(db, query)
-  ans = scidb(db, name, gc=gc)
-  if(!nullable) ans = replaceNA(ans)
-  ans
+  scidb(db, name, gc=gc)
 }

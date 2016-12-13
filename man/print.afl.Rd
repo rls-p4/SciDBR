@@ -4,10 +4,12 @@
 \alias{print.afl}
 \title{Print a summary of a \code{afl} SciDB database connection object}
 \usage{
-print.afl(x, ...)
+\method{print}{afl}(x, ...)
 }
 \arguments{
 \item{x}{\code{afl} object}
+
+\item{...}{optional arguments (not used)}
 }
 \value{
 printed object summary
