@@ -41,7 +41,7 @@ arg = function(x, db, env)
     numeric = sprintf("%.16g", x),
     integer = sprintf("%d", x),
     scidb = {assign(x@name, x, envir=env); x@name},
-    default = sprintf("%s", x) # verbatim
+    default = gsub("%as%", " as " ,sprintf("%s", x)) # almost verbatim
   )
 }
 
@@ -55,7 +55,7 @@ afl = function(...)
   call = eval(as.list(match.call())[[1]])
   .env = new.env()
 # why two passes? XXX
-  expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch({ans = eval(.x); if(inherits(ans, "function")) ans = as.character(ans); ans}, error=function(e) capture.output(.x))), arg, attr(call, "conn"), .env), collapse=","))
+  expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch({ans = eval(.x); if(inherits(ans, "function")) ans = as.character(ans); ans}, error=function(e) gsub("%as%", " as ", capture.output(.x)))), arg, attr(call, "conn"), .env), collapse=","))
 # Some special AFL non-operator expressions don't return arrays
   if(any(grepl(attr(call, "name"), c("remove"), ignore.case=TRUE)))
   {

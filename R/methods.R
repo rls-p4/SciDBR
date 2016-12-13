@@ -134,5 +134,5 @@ setMethod("%as%", signature(x="scidb", y="ANY"),
   {
     scidb(x@meta$db, sprintf("%s as %s", x@name, as.character(as.list(match.call())$y)))
   },
-  valueClass="character"
+  valueClass="scidb"
 )
