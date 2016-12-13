@@ -1,25 +1,4 @@
 # Non-exported utility functions
-.scidbstr = function(object)
-{
-  name = substr(object@name, 1, 35)
-  if(nchar(object@name)>35) name = paste(name, "...", sep="")
-  cat("SciDB expression ", name)
-  cat("\nSciDB schema ", schema(object), "\n")
-  bounds = scidb_coordinate_bounds(object)
-  d = data.frame(variable=dimensions(object), dimension=TRUE, type="int64", nullable=FALSE, start=bounds$start, end=bounds$end, chunk=scidb_coordinate_chunksize(object), row.names=NULL, stringsAsFactors=FALSE)
-  d = rbind(d, data.frame(variable=scidb_attributes(object),
-                          dimension=FALSE,
-                          type=scidb_types(object), nullable=scidb_nullable(object), start="", end="", chunk=""))
-  cat(paste(utils::capture.output(print(d)), collapse="\n"))
-  cat("\n")
-}
-
-.aflstr = function(object)
-{
-  conn = attr(object, "connection")
-  message(sprintf("SciDB database connection %s:%s\nUse $ to access AFL operators; `ls` on this object lists SciDB arrays.", conn$host, conn$port))
-}
-
 
 #' Unpack and return a SciDB query expression as a data frame
 #' @param db scidb database connection object
