@@ -179,7 +179,7 @@ expression. The value of `x` is evaluated by SciDB either lazily when needed or
 when explicitly requested.
 
 Use the `store()` function to evaluate and materialize views in SciDB,
-returning a new `scidb` R object that points to the evaulated result in SciDB.
+returning a new `scidb` R object that points to the evaluated result in SciDB.
 The `store()` function stores the evaluation result into a new named SciDB
 array in the database. The array name may be optionally specified or
 automatically generated and the array may optionally be stored in a SciDB
@@ -235,8 +235,7 @@ schema(x, "dimensions")
 
 
 
-# Uploading R values to SciDB with `as.scidb()` and downloading SciDB
-  values to R with `as.R()`
+# Uploading R values to SciDB with `as.scidb()` and downloading SciDB values to R with `as.R()`
 
 The package provides limited convenience functions for converting and uploading
 R values to SciDB. The upload mechanism is much less efficient than available
