@@ -127,27 +127,91 @@ attribute named "prefix" to the connection.
 
 
 
-## Listing SciDB arrays
+## Listing SciDB arrays, operators and macros
 
 The `scidbconnect()` function returns a SciDB connection object of class `afl`.
 In addition to storing the connection state, the returned object has a few
 special methods. Printing the object shows a summary of the connection state.
 Running the `ls()` function on the object shows a list of SciDB arrays (subject
-to any potential namespace-setting prefix expression). And the object itself
-is really a list that contains available SciDB AFL operator and macro functions.
+to any potential namespace-setting prefix expression). And the object itself is
+really a list that contains available SciDB AFL operator and macro functions
+established upon connection. Run `ls.str()` on the object to list all AFL
+operators and macros, or use the dollar sign accessor function and interactive
+completion with the TAB key.
 
 ```{r, eval=FALSE}
 db <- scidbconnect()
 print(db)    # summarize connection
 ls(db)       # quick list of arrays
-# db$<TAB>     # list of AFL operators
+ls.str(db)   # quick list of AFL operators
+# db$<TAB>   # interactive completion list of AFL operators
 ```
 
 Each listed AFL operator is presented as an R function. RSudio users can use
 the TAB key in the function to see suggested AFL operator argument completions.
 Alternatively, command-line R users can see the argument list by pressing
 return to see the function definition. These functions can be used to compose
-AFL expressions from R, discussed in more detail in the next section.
+AFL expressions from R, discussed in more detail below.
+
+
+
+# Mapping SciDB arrays and query expressions to R variables
+
+The `scidb()` function returns an object of class `scidb` that contains a
+reference to a SciDB array or query expression. The returned object is
+presented with a data frame-like view that lists the SciDB schema components.
+
+```{r, eval=FALSE}
+x <- scidb(db, "build(<v:double>[i=1:2,2,0, j=1:3,1,0], i*j)")
+print(x)
+```
+```
+SciDB expression  build(<v:double>[i=1:2,2,0, j=1:3,1...
+SciDB schema  <v:double> [i=1:2,2,0,j=1:3,1,0] 
+  variable dimension   type nullable start end chunk
+1        i      TRUE  int64    FALSE     1   2     2
+2        j      TRUE  int64    FALSE     1   3     1
+3        v     FALSE double    FALSE                
+```
+
+The variable `x` is a sort of _SciDB array view_; an un-evaluated SciDB query
+expression. The value of `x` is evaluated by SciDB either lazily when needed or
+when explicitly requested.
+
+Use the `store()` function to evaluate and materialize views in SciDB,
+returning a new `scidb` R object that points to the evaulated result in SciDB.
+The `store()` function stores the evaluation result into a new named SciDB
+array in the database. The array name may be optionally specified or
+automatically generated and the array may optionally be stored in a SciDB
+temporary array.
+
+```{r, eval=FALSE}
+y <- store(db, x, temp=TRUE)
+print(y)
+```
+```
+SciDB expression  R_array1687f71a392851102980131950
+SciDB schema  <v:double> [i=1:2,2,0,j=1:3,1,0] 
+  variable dimension   type nullable start end chunk
+1        i      TRUE  int64    FALSE     1   2     2
+2        j      TRUE  int64    FALSE     1   3     1
+3        v     FALSE double    FALSE                
+```
+Note that the SciDB expression associated with the `y` R variable is now a
+named SciDB array (automatically named in this case); compare with the
+SciDB expression for `x` above.
+
+SciDB array values associated with R variables are by default tied to R's
+garbage collector. When the R variable's contents are garbage-collected by R,
+the associated SciDB array is removed.
+```{r, eval=FALSE}
+ls(s)   # (observe y's corresponding array in the list)
+
+rm(y)
+gc()
+
+ls(s)   # (y's corresponding array will no longer appear)
+```
 
 
 
@@ -156,7 +220,8 @@ AFL expressions from R, discussed in more detail in the next section.
 The scidb package defines two ways to compose and execute SciDB queries:
 
 1. Directly running AFL expressions written as character strings (`iquery()`)
-2. Composing AFL expressions from the database connection AFL function list
+2. Composing AFL expressions from the database connection AFL functions,
+   returning `scidb` objects.
 
 Use the `iquery` function to run arbitrary SciDB AFL queries entered as
 character strings, optionally returning results to R as a data frame.
@@ -174,108 +239,10 @@ iquery("build(<v:double>[i=1:2,2,0, j=1:3,1,0], i*j)", return=TRUE)
 6 2 3 6
 ```
 
+Use the AFL expressions listed in the SciDB database connection object
 
-# The scidb data frame-like class
 
-The `scidb` function returns representations of  SciDB arrays as data
-frame-like R objects with class `scidb`. The objects display the SciDB
-coordinate dimensions and attributes as columns of a data frame. The `scidb`
-function accepts arbitrary SciDB AFL expressions or named SciDB arrays.
 
-```{r, eval=FALSE}
-x <- scidb("build(<v:double>[i=1:2,2,0, j=1:3,1,0], i*j)")
-print(x)
-```
-```
-SciDB expression  build(<v:double>[i=1:2,2,0, j=1:3,1...
-SciDB schema  <v:double> [i=1:2,2,0,j=1:3,1,0] 
-  variable dimension   type nullable start end chunk
-1        i      TRUE  int64    FALSE     1   2     2
-2        j      TRUE  int64    FALSE     1   3     1
-3        v     FALSE double    FALSE                
-```
-The variable `x` is a sort of _SciDB array view_; an un-evaluated
-SciDB query expression. The value of `x` is evaluated by SciDB lazily when
-needed or when explicitly requested. One may force evaluation and return values from
-`x` to R in data frame form using the `iquery` function that we used above:
-```{r, eval=FALSE}
-iquery(x, return=TRUE)
-```
-```
-  i j v
-1 1 1 1
-2 2 1 2
-3 1 2 2
-4 2 2 4
-5 1 3 3
-6 2 3 6
-```
-Alternatively, use a special empty-indexing operator `[]` on any
-SciDB array object to return its values to R:
-```{r, eval=FALSE}
-x[]
-```
-```
-  i j v
-1 1 1 1
-2 2 1 2
-3 1 2 2
-4 2 2 4
-5 1 3 3
-6 2 3 6
-```
-
-Retrieve SciDB attribute values without corresponding SciDB array
-dimension coordinates using the `drop=TRUE` argument:
-```{r, eval=FALSE}
-x[, drop=TRUE]
-```
-```
-[1] 1 2 2 4 3 6
-```
-
-Use the `scidbeval` function to evaluate and materialize `scidb` views in
-SciDB, returning a new `scidb` R variable that points to the evaulated result
-in SciDB.  The `scidbeval` function stores the evaluation result into new named
-SciDB arrays in the database, including optionally temporary arrays.
-```{r, eval=FALSE}
-y <- scidbeval(x, temp=TRUE)
-print(y)
-```
-```
-SciDB expression  R_array1687f71a392851102980131950
-SciDB schema  <v:double> [i=1:2,2,0,j=1:3,1,0] 
-  variable dimension   type nullable start end chunk
-1        i      TRUE  int64    FALSE     1   2     2
-2        j      TRUE  int64    FALSE     1   3     1
-3        v     FALSE double    FALSE                
-```
-Note that the SciDB expression associated with the `y` R variable is now a
-named SciDB array (automatically named in this case); compare with the
-SciDB expression for `x` above.
-
-SciDB array values associated with R variables are by default tied to R's
-garbage collector. When the R variable's contents are garbage-collected by R,
-the associated SciDB array is removed:
-```{r, eval=FALSE}
-yname <- y@name
-scidbls(yname)
-```
-```
-[1] "R_array1687f71a392851102980131950"
-```
-```{r, eval=FALSE}
-rm(y)
-gc()
-scidbls(yname)
-```
-```
-character(0)
-```
-Note! that we use the `@name` slot of the `scidb` object directly here to
-interrogate the underlying SciDB expression associated with the R variable.
-See the help page for `scidbeval` for more on this topic, including disabling
-automatic garbage collection of SciDB arrays.
 
 ## Data upload from R to SciDB
 

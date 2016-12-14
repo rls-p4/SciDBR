@@ -16,7 +16,7 @@
   # SciDB schema syntax changed greatly in 16.9, convert it to old format.
   if(newer_than(attr(x@meta$db, "connection")$scidb.version, "16.9"))
   { 
-    d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\3,\\4", x)), ",")[[1]])
+    d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\4,\\3", x)), ",")[[1]])
   }
   d
 }
@@ -45,7 +45,6 @@ scidb_attributes = function(x)
 #' SciDB array attribute types
 #' @param x a \code{\link{scidb}} array object
 #' @return character vector of SciDB attribute types
-#' @export
 scidb_types = function(x)
 {
   a = .attsplitter(x)
@@ -55,7 +54,6 @@ scidb_types = function(x)
 #' SciDB array attribute nullability
 #' @param x a \code{\link{scidb}} array object
 #' @return logical vector of SciDB attribute nullability
-#' @export
 scidb_nullable = function(x)
 {
   # SciDB schema syntax changed in 15.12

@@ -12,6 +12,9 @@ scidb_prefix(db, expression = NULL)
 \item{expression}{a valid AFL expression to be issued prior to, and in the same context as all subsequent
 query expressions issued to the database corresponding to \code{db}. Set \code{expression=NULL} to remove the prefix expression.}
 }
+\value{
+A new SciDB database connection object
+}
 \description{
 SciDB AFL statements are normally executed in a stateless query context.
 Use scidb_prefix to create compound AFL expressions useful in some
