@@ -16,7 +16,7 @@
   # SciDB schema syntax changed greatly in 16.9, convert it to old format.
   if(newer_than(attr(x@meta$db, "connection")$scidb.version, "16.9"))
   { 
-    d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\4,\\3", x)), ",")[[1]])
+    d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\3,\\2,\\4", x)), ",")[[1]])
   }
   n = c(d[[1]], vapply(d[-c(1, length(d))], function(x) x[length(x)], ""))
   d = d[-1]
@@ -46,8 +46,9 @@
   null = if(newer_than(attr(x@meta$db, "connection")$scidb.version, "15.12"))
            ! grepl("NOT NULL", s)
          else grepl(" NULL", s)
+  type = gsub(" ", "", gsub("null", "", gsub("not null", "", vapply(s, function(x) x[2], ""), ignore.case=TRUE), ignore.case=TRUE))
   data.frame(name=vapply(s, function(x) x[1], ""),
-             type=vapply(s, function(x) x[2], ""),
+             type=type,
              nullable=null, stringsAsFactors=FALSE)
 }
 

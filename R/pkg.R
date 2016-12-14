@@ -28,10 +28,6 @@ NULL
 # encrypted session to work. Set this TRUE for stronger security (help avoid MTM)
 # in SSL connections.
   options(scidb.verifyhost=FALSE)
-# Set to TRUE to enable experimental shim stream protocol, avoids copying query
-# output to data file on server # (see https://github.com/Paradigm4/shim).
-# THIS MUST BE SET TO FALSE FOR VERSIONS OF SCIDB < 15.7.
-  options(scidb.stream=FALSE)
 }
 
 # Reset the various package options
@@ -42,7 +38,6 @@ NULL
   options(scidb.default_shim_port=c())
   options(scidb.default_shim_host=c())
   options(scidb.verifyhost=c())
-  options(scidb.stream=c())
 }
 
 # scidb array object type map.

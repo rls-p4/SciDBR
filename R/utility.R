@@ -282,7 +282,7 @@ as.scidb = function(db, x,
 as.R = function(x)
 {
   stopifnot(inherits(x, "scidb"))
-  iquery(x@meta$db, x, `return`=TRUE)
+  scidb_unpack_to_dataframe(x@meta$db, x)
 }
 
 #' Register an AFL prefix expression
