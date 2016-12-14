@@ -45,7 +45,7 @@ distributed storage, and efficient sparse array storage. SciDB arrays consist
 of a coordinate system whose coordinates are called _dimensions_, and one or
 more values at each coordinate called _attributes_.
 
-The `scidb` package helps R interact with SciDB by directly running SciDB
+The "scidb" package helps R interact with SciDB by directly running SciDB
 queries using the native array functional language (AFL) and  optionally
 returning results as data frames.
 
@@ -87,13 +87,11 @@ authentication or HTTP digest user authentication.
 ```{r, eval=FALSE}
 library("scidb")
 db <- scidbconnect()
-print(db)
 ```
 
 *Connect to SciDB on an encrypted port 8083 with example SciDB authentication*
 ```{r, eval=FALSE}
 db <- scidbconnect(port=8083, username="root", password="Paradigm4")
-print(db)
 ```
 Use encrypted sessions when communicating with SciDB over public networks.
 SciDB user authentication is only supported by SciDB versions 15.7 and greater.
@@ -117,25 +115,16 @@ After setting that, all queries will be prefixed with the role-setting statement
 You may use the `scidb.prefix` option to prefix queries with arbitrary AFL
 statements. Separate multiple statements with the semi-colon character.
 
-Alternatively, set a per-database-connection prefix with the `scidb_prefix()`
-function:
-```{r, eval=FALSE}
-db <- scidb_prefix(db, "set_role('functionary')")
-```
-Note that the `scidb_prefix()` function simply attaches a character-valued
-attribute named "prefix" to the connection.
-
-
 
 ## Listing SciDB arrays, operators and macros
 
 The `scidbconnect()` function returns a SciDB connection object of class `afl`.
 In addition to storing the connection state, the returned object has a few
 special methods. Printing the object shows a summary of the connection state.
-Running the `ls()` function on the object shows a list of SciDB arrays (subject
+Applying the `ls()` function to the object returns a list of SciDB arrays (subject
 to any potential namespace-setting prefix expression). And the object itself is
 really a list that contains available SciDB AFL operator and macro functions
-established upon connection. Run `ls.str()` on the object to list all AFL
+established upon connection. Apply the `ls.str()` to the object to list all AFL
 operators and macros, or use the dollar sign accessor function and interactive
 completion with the TAB key.
 
@@ -148,10 +137,10 @@ ls.str(db)   # quick list of AFL operators
 ```
 
 Each listed AFL operator is presented as an R function. RSudio users can use
-the TAB key in the function to see suggested AFL operator argument completions.
-Alternatively, command-line R users can see the argument list by pressing
-return to see the function definition. These functions can be used to compose
-AFL expressions from R, discussed in more detail below.
+the TAB key inside the function body to see suggested AFL operator argument
+completions. Alternatively, `ls.str(db)` shows the formal AFL operator
+arguments for each function.  These functions can be used to compose AFL
+expressions from R, discussed in more detail below.
 
 
 
@@ -178,12 +167,12 @@ The variable `x` is a sort of _SciDB array view_; an un-evaluated SciDB query
 expression. The value of `x` is evaluated by SciDB either lazily when needed or
 when explicitly requested.
 
-Use the `store()` function to evaluate and materialize views in SciDB,
-returning a new `scidb` R object that points to the evaluated result in SciDB.
+Use the `store()` function to evaluate and materialize views in SciDB.
+
 The `store()` function stores the evaluation result into a new named SciDB
-array in the database. The array name may be optionally specified or
-automatically generated and the array may optionally be stored in a SciDB
-temporary array.
+array in the database, returning a new `scidb` R object that points to the
+SciDB array.  The array name may be optionally specified or automatically
+generated and the array may optionally be stored in a SciDB temporary array.
 
 ```{r, eval=FALSE}
 y <- store(db, x, temp=TRUE)
@@ -201,15 +190,14 @@ Note that the SciDB expression associated with the `y` R variable is now a
 named SciDB array (automatically named in this case); compare with the
 SciDB expression for `x` above.
 
-SciDB array values associated with R variables are by default tied to R's
-garbage collector. When the R variable's contents are garbage-collected by R,
-the associated SciDB array is removed.
+SciDB array values associated with R variables are tied to R's garbage
+collector by default (unless the argument `gc=FALSE` is specified). When the R
+variable's contents are garbage-collected by R, the associated SciDB array is
+removed.
 ```{r, eval=FALSE}
 ls(s)   # (observe y's corresponding array in the list)
-
 rm(y)
 gc()
-
 ls(s)   # (y's corresponding array will no longer appear)
 ```
 
@@ -249,13 +237,14 @@ data. The following R objects are supported:
 - numeric column-compressed sparse matrices (class "dgCMatrix")
 - raw objects
 
-Factor values are uploaded as their corresponding level character
-strings.
+Factor values are uploaded as character value, replacing factor levels with
+their corresponding  character strings.
 
 The `as.scidb()` function uploads returns a reference to a SciDB array
-containing the uploaded data. The following example uploads a data frame
-to SciDB, warning us that variable names were changed, and then downloads
-the resulting SciDB object data back into R.
+containing the uploaded data. The following example uploads a data frame to
+SciDB, warning us that variable names were changed because SciDB does not
+support dots in names, and then downloads the resulting SciDB object data back
+into R.
 ```{r, eval=FALSE, echo=TRUE}
 x <- as.scidb(db, head(iris))
 as.R(x)
@@ -289,7 +278,7 @@ The scidb package defines two ways to compose and execute SciDB queries:
 ## The `iquery()` convenience function
 
 Use the `iquery` function to directly run arbitrary SciDB AFL queries supplied as
-`scidb` objects or character strings, optionally returning results to R as a
+character strings or `scidb` objects, optionally returning results to R as a
 data frame.
 ```{r, eval=FALSE, echo=TRUE}
 iquery("build(<v:double>[i=1:2,2,0, j=1:3,1,0], i*j)", return=TRUE)
@@ -345,11 +334,11 @@ arguments are processed as follows:
 6. All remaining arguments are passed verbatim into the SciDB query
    expression.
 
-There an important exception to the above process: SciDB schema
-expressions. SciDB schemas contain characters like `<`, `:`, `[` that
-correspond to R infix operators. It's difficult to always suppress their
-evaluation as operators. Thus SciDB schemas must be supplied as R character
-strings as shown in the example above: 
+SciDB schema literal values represent one important exception to the above
+process.  SciDB schemas contain characters like `<`, `:`, `[` that correspond
+to R infix operators. It's difficult to always suppress their evaluation as
+operators. Thus SciDB schemas must be supplied as R character strings as shown
+in the example above: 
 ```{r, eval=FALSE, echo=TRUE}
 x <- db$build("<v:double>[i=1:2,2,0, j=1:3,1,0]", i * j)
 ```
@@ -359,7 +348,7 @@ dimension values, not R values.
 If, however, a variable named `i` or `j` is defined in the enclosing
 R environment, the default evaluation process will replace those with
 corresponding evaluated R values. This default evaluation approach
-can be very flexible but use with caution.
+can be very flexible but must be used with caution.
 
 An alternative argument evaluation procedure that doesn't evaluate
 R objects (except for `scidb` array objects) may be enabled by
@@ -374,6 +363,9 @@ With this option, the evaluation procedure is
 2. Character strings are replaced by their unquoted value.
 3. All remaining arguments are passed verbatim into the SciDB query
    expression.
+
+Setting `options(scidb.tryeval=FALSE)` results in more straightforward but
+somewhat less flexible AFL expression handling.
 
 
 ## SciDB aliasing in AFL expressions with `%as%`
@@ -398,12 +390,11 @@ as.R(db$grouped_aggregate(x, Species, avg(Petal_Length) %as% avg))
 
 # Package options
 
-The following package options can be set with R's `options` function.
-The most interesting ones are the last two! Set
-`options(scidb.debug=TRUE)` to see interesting debugging information
-including all the issued SciDB queries. Set `options(scidb.stream=TRUE)`
-to avoid creating server-side data files which is most useful when you're
-downloading lots of data from SciDB into R.
+The following package options can be set with R's `options` function.  Set
+`options(scidb.debug=TRUE)` to see interesting debugging information including
+all the issued SciDB queries. Set `options(scidb.stream=TRUE)` to avoid
+creating server-side data files which is most useful when you're downloading
+lots of data from SciDB into R.
 
 ```
 # Set the scidb.prefix option to prefix queries with arbitrary AFL
@@ -429,4 +420,7 @@ options(scidb.unpack=FALSE)
 # encrypted session to work. Set this TRUE for stronger security (help avoid MTM)
 # in SSL connections.
 options(scidb.verifyhost=FALSE)
+
+# Enable or disable verbose debugging messages
+options(scidb.debug=FALSE)
 ```
