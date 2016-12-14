@@ -121,7 +121,7 @@ $(document).ready(function () {
 <!--
 ---
 title: "An R interface to SciDB"
-date: "2016-09-14"
+date: "2016-12-14"
 author: B. W. Lewis, Copyright (C) 2016 by Paradigm4, Inc.
 output:
   html_document:
@@ -157,12 +157,8 @@ vignette: >
 <div id="scidb" class="section level1">
 <h1>SciDB</h1>
 <p>SciDB is a free open-source database that organizes data in n-dimensional arrays. SciDB features include ACID transactions, parallel processing, distributed storage, and efficient sparse array storage. SciDB arrays consist of a coordinate system whose coordinates are called <em>dimensions</em>, and one or more values at each coordinate called <em>attributes</em>.</p>
-<p>The <code>scidb</code> package provides two ways to interact with SciDB from R:</p>
-<ul>
-<li>Directly running SciDB queries using the native array functional language (AFL), optionally returning results as data frames</li>
-<li>Using the <code>scidb</code> class and related methods.</li>
-</ul>
-<p>The SciDB array classes facilitate programming large-scale SciDB computation in R using natural R syntax. This vignette illustrates using SciDB from R by example. For more detailed information on the functions described in this vignette, see the manual pages in the package.</p>
+<p>The <code>scidb</code> package helps R interact with SciDB by directly running SciDB queries using the native array functional language (AFL) and optionally returning results as data frames.</p>
+<p>This vignette illustrates using SciDB from R by example. For more detailed information on the functions described in this vignette, see the manual pages in the package.</p>
 <div id="installing-the-package" class="section level2">
 <h2>Installing the package</h2>
 <p>From CRAN (stable, but may lag features on GitHub by several months):</p>
@@ -173,42 +169,121 @@ vignette: >
 </div>
 <div id="connecting-to-scidb" class="section level2">
 <h2>Connecting to SciDB</h2>
-<p>The <code>scidbconnect</code> function establishes a connection to a simple HTTP network service called shim (<a href="https://github.com/Paradigm4/shim" class="uri">https://github.com/Paradigm4/shim</a>) running on a SciDB coordinator instance. The function may be safely called multiple times. Once a connection is established, connection information is maintained until a different connection is established or the R session ends.</p>
+<p>The <code>scidbconnect</code> function establishes a connection to a simple HTTP network service called shim (<a href="https://github.com/Paradigm4/shim" class="uri">https://github.com/Paradigm4/shim</a>) running on a SciDB coordinator instance. The function may be safely called multiple times. The function return value contains the SciDB database connection state in an object of class <code>afl</code>.</p>
 <p>The network interface optionally supports SSL encryption and SciDB authentication or HTTP digest user authentication.</p>
 <p><em>Connect to SciDB on the default shim port and localhost</em></p>
 <pre class="r"><code>library(&quot;scidb&quot;)
-scidbconnect()</code></pre>
+db &lt;- scidbconnect()
+print(db)</code></pre>
 <p><em>Connect to SciDB on an encrypted port 8083 with example SciDB authentication</em></p>
-<pre class="r"><code>scidbconnect(port=8083, username=&quot;root&quot;, password=&quot;Paradigm4&quot;)</code></pre>
+<pre class="r"><code>db &lt;- scidbconnect(port=8083, username=&quot;root&quot;, password=&quot;Paradigm4&quot;)
+print(db)</code></pre>
 <p>Use encrypted sessions when communicating with SciDB over public networks. SciDB user authentication is only supported by SciDB versions 15.7 and greater.</p>
 <div id="more-on-scidb-authentication-namespaces-and-user-roles" class="section level3">
 <h3>More on SciDB authentication, namespaces and user roles</h3>
 <p>See the official SciDB documentation for details about users, roles and namespaces <a href="https://paradigm4.atlassian.net/wiki/display/ESD/Security" class="uri">https://paradigm4.atlassian.net/wiki/display/ESD/Security</a>.</p>
-<p>The package option <code>scidb.prefix</code> is designed to simplify working with SciDB user roles from R. SciDB user roles are provided by the namespaces plugin and may require issuing the query <code>load_library('namespaces')</code> before use (usually performed by the SciDB system administrator). For instance, use the <code>scidb.prefix</code> package option to assume a special database user role “functionary” shown in the following example:</p>
+<p>The global package option <code>scidb.prefix</code> is designed to simplify working with SciDB user roles from R. SciDB user roles are provided by the namespaces plugin and may require issuing the query <code>load_library('namespaces')</code> before use (usually performed by the SciDB system administrator). For instance, use the <code>scidb.prefix</code> package option to assume a special database user role “functionary” shown in the following example:</p>
 <pre class="r"><code>options(scidb.prefix=&quot;set_role('functionary')&quot;)</code></pre>
 <p>After setting that, all queries will be prefixed with the role-setting statement. You may use the <code>scidb.prefix</code> option to prefix queries with arbitrary AFL statements. Separate multiple statements with the semi-colon character.</p>
-<p>Use the <code>namespace</code> option with the <code>scidblist()</code> or <code>scidbls()</code> functions to list arrays in the specified namespace. Use the period character ‘.’ as a path separator to prefix SciDB array names with their namespace location. The following example creates a namespace called ‘cazart’, uploads the <code>iris</code> data frame to an array named ‘iris’ in the ‘cazart’ namespace, and lists the arrays in that namespace.</p>
-<pre class="r"><code>iquery(&quot;create_namespace('cazart')&quot;)
-scidbls(type=&quot;namespaces&quot;)
-x = as.scidb(iris, name=&quot;cazart.iris&quot;)
-scidbls(namespace=&quot;cazart&quot;)</code></pre>
-<p>You can remove arrays in namespaces (with sufficient privelege) by referring to the R object or fully qualified SciDB array name with path:</p>
-<pre class="r"><code>scidbrm(x, force=TRUE)
+<p>Alternatively, set a per-database-connection prefix with the <code>scidb_prefix()</code> function:</p>
+<pre class="r"><code>db &lt;- scidb_prefix(db, &quot;set_role('functionary')&quot;)</code></pre>
+<p>Note that the <code>scidb_prefix()</code> function simply attaches a character-valued attribute named “prefix” to the connection.</p>
+</div>
+</div>
+<div id="listing-scidb-arrays-operators-and-macros" class="section level2">
+<h2>Listing SciDB arrays, operators and macros</h2>
+<p>The <code>scidbconnect()</code> function returns a SciDB connection object of class <code>afl</code>. In addition to storing the connection state, the returned object has a few special methods. Printing the object shows a summary of the connection state. Running the <code>ls()</code> function on the object shows a list of SciDB arrays (subject to any potential namespace-setting prefix expression). And the object itself is really a list that contains available SciDB AFL operator and macro functions established upon connection. Run <code>ls.str()</code> on the object to list all AFL operators and macros, or use the dollar sign accessor function and interactive completion with the TAB key.</p>
+<pre class="r"><code>db &lt;- scidbconnect()
+print(db)    # summarize connection
+ls(db)       # quick list of arrays
+ls.str(db)   # quick list of AFL operators
+# db$&lt;TAB&gt;   # interactive completion list of AFL operators</code></pre>
+<p>Each listed AFL operator is presented as an R function. RSudio users can use the TAB key in the function to see suggested AFL operator argument completions. Alternatively, command-line R users can see the argument list by pressing return to see the function definition. These functions can be used to compose AFL expressions from R, discussed in more detail below.</p>
+</div>
+</div>
+<div id="mapping-scidb-arrays-and-query-expressions-to-r-variables" class="section level1">
+<h1>Mapping SciDB arrays and query expressions to R variables</h1>
+<p>The <code>scidb()</code> function returns an object of class <code>scidb</code> that contains a reference to a SciDB array or query expression. The returned object is presented with a data frame-like view that lists the SciDB schema components.</p>
+<pre class="r"><code>x &lt;- scidb(db, &quot;build(&lt;v:double&gt;[i=1:2,2,0, j=1:3,1,0], i*j)&quot;)
+print(x)</code></pre>
+<pre><code>SciDB expression  build(&lt;v:double&gt;[i=1:2,2,0, j=1:3,1...
+SciDB schema  &lt;v:double&gt; [i=1:2,2,0,j=1:3,1,0] 
+  variable dimension   type nullable start end chunk
+1        i      TRUE  int64    FALSE     1   2     2
+2        j      TRUE  int64    FALSE     1   3     1
+3        v     FALSE double    FALSE                </code></pre>
+<p>The variable <code>x</code> is a sort of <em>SciDB array view</em>; an un-evaluated SciDB query expression. The value of <code>x</code> is evaluated by SciDB either lazily when needed or when explicitly requested.</p>
+<p>Use the <code>store()</code> function to evaluate and materialize views in SciDB, returning a new <code>scidb</code> R object that points to the evaulated result in SciDB. The <code>store()</code> function stores the evaluation result into a new named SciDB array in the database. The array name may be optionally specified or automatically generated and the array may optionally be stored in a SciDB temporary array.</p>
+<pre class="r"><code>y &lt;- store(db, x, temp=TRUE)
+print(y)</code></pre>
+<pre><code>SciDB expression  R_array1687f71a392851102980131950
+SciDB schema  &lt;v:double&gt; [i=1:2,2,0,j=1:3,1,0] 
+  variable dimension   type nullable start end chunk
+1        i      TRUE  int64    FALSE     1   2     2
+2        j      TRUE  int64    FALSE     1   3     1
+3        v     FALSE double    FALSE                </code></pre>
+<p>Note that the SciDB expression associated with the <code>y</code> R variable is now a named SciDB array (automatically named in this case); compare with the SciDB expression for <code>x</code> above.</p>
+<p>SciDB array values associated with R variables are by default tied to R’s garbage collector. When the R variable’s contents are garbage-collected by R, the associated SciDB array is removed.</p>
+<pre class="r"><code>ls(s)   # (observe y's corresponding array in the list)
 
-# or
+rm(y)
+gc()
 
-scidbrm(&quot;cazart.iris&quot;, force=TRUE)</code></pre>
-<p>(we use the <code>force=TRUE</code> option because the name is protected from easy removal by the R package as it’s not a temporary array name).</p>
+ls(s)   # (y's corresponding array will no longer appear)</code></pre>
+<div id="the-schema-function" class="section level2">
+<h2>The <code>schema()</code> function</h2>
+<p>Use the <code>schema()</code> function to display the SciDB schema of <code>scidb</code> objects verbatim or in parsed detail for attributes and dimensions.</p>
+<pre class="r"><code>schema(x)
+# [1] &quot;&lt;v:double&gt; [i=1:2:0:2; j=1:3:0:1]&quot;
+
+schema(x, &quot;attributes&quot;)
+#   name   type nullable
+# 1    v double     TRUE
+
+schema(x, &quot;dimensions&quot;)
+#   name start end chunk overlap
+# 1    i     1   2     2       j
+# 2    0     1   3     1       0</code></pre>
 </div>
 </div>
-<div id="listing-and-removing-scidb-arrays" class="section level2">
-<h2>Listing and removing SciDB arrays</h2>
-<p>The <code>scidblist</code> function lists SciDB objects and features including aggregates, arrays, datastores, functions, instances, libraries, macros, namespaces, operators, queries, roles, types, and users, optionally showing detailed schema information for arrays. Returned results can be filtered using regular expression-style syntax.</p>
-<p>The <code>scidbremove</code> function removes a SciDB array, or optionally a set of SciDB arrays. The function accepts a vector of array names, resulting in the removal of all the specified arrays. Combine this feature with the regular expression filtering output of <code>scidblist</code> to remove sets of arrays matching the filter. Array names not associated with a specific R session are protected from easy removal. Specify <code>force=TRUE</code> as indicated in the warning message to remove those arrays.</p>
+<div id="uploading-r-values-to-scidb-with-as.scidb-and-downloading-scidb" class="section level1">
+<h1>Uploading R values to SciDB with <code>as.scidb()</code> and downloading SciDB</h1>
+<p>values to R with <code>as.R()</code></p>
+<p>The package provides limited convenience functions for converting and uploading R values to SciDB. The upload mechanism is much less efficient than available SciDB bulk load methods and should only be used for small to moderate-sized data. The following R objects are supported:</p>
+<ul>
+<li>logical, integer, numeric, and character vectors</li>
+<li>numeric matrices</li>
+<li>data frames with logical, character, integer, and numeric values (variable names may be changed to conform to SciDB naming convention)</li>
+<li>numeric column-compressed sparse matrices (class “dgCMatrix”)</li>
+<li>raw objects</li>
+</ul>
+<p>Factor values are uploaded as their corresponding level character strings.</p>
+<p>The <code>as.scidb()</code> function uploads returns a reference to a SciDB array containing the uploaded data. The following example uploads a data frame to SciDB, warning us that variable names were changed, and then downloads the resulting SciDB object data back into R.</p>
+<pre class="r"><code>x &lt;- as.scidb(db, head(iris))
+as.R(x)</code></pre>
+<pre><code>Warning message:
+In df2scidb(db, x, name = name, gc = gc, ...) :
+  Attribute names have been changed
+
+  i Sepal_Length Sepal_Width Petal_Length Petal_Width Species
+1 1          5.1         3.5          1.4         0.2  setosa
+2 2          4.9         3.0          1.4         0.2  setosa
+3 3          4.7         3.2          1.3         0.2  setosa
+4 4          4.6         3.1          1.5         0.2  setosa
+5 5          5.0         3.6          1.4         0.2  setosa
+6 6          5.4         3.9          1.7         0.4  setosa</code></pre>
+<p>Note that SciDB dimension indices (<code>i</code> above) are appended to the data when downloaded.</p>
 </div>
-<div id="running-afl-queries" class="section level2">
-<h2>Running AFL queries</h2>
-<p>Use the <code>iquery</code> function to run arbitrary SciDB AFL queries, optionally returning results to R as data frames.</p>
+<div id="running-afl-queries" class="section level1">
+<h1>Running AFL queries</h1>
+<p>The scidb package defines two ways to compose and execute SciDB queries:</p>
+<ol style="list-style-type: decimal">
+<li>Directly running AFL expressions written as character strings (<code>iquery()</code>)</li>
+<li>Composing AFL expressions from the database connection AFL functions, returning <code>scidb</code> objects.</li>
+</ol>
+<div id="the-iquery-convenience-function" class="section level2">
+<h2>The <code>iquery()</code> convenience function</h2>
+<p>Use the <code>iquery</code> function to directly run arbitrary SciDB AFL queries supplied as <code>scidb</code> objects or character strings, optionally returning results to R as a data frame.</p>
 <pre class="r"><code>iquery(&quot;build(&lt;v:double&gt;[i=1:2,2,0, j=1:3,1,0], i*j)&quot;, return=TRUE)</code></pre>
 <pre><code>  i j v
 1 1 1 1
@@ -218,340 +293,52 @@ scidbrm(&quot;cazart.iris&quot;, force=TRUE)</code></pre>
 5 1 3 3
 6 2 3 6</code></pre>
 </div>
-</div>
-<div id="the-scidb-data-frame-like-class" class="section level1">
-<h1>The scidb data frame-like class</h1>
-<p>The <code>scidb</code> function returns representations of SciDB arrays as data frame-like R objects with class <code>scidb</code>. The objects display the SciDB coordinate dimensions and attributes as columns of a data frame. The <code>scidb</code> function accepts arbitrary SciDB AFL expressions or named SciDB arrays.</p>
-<pre class="r"><code>x &lt;- scidb(&quot;build(&lt;v:double&gt;[i=1:2,2,0, j=1:3,1,0], i*j)&quot;)
-print(x)</code></pre>
-<pre><code>SciDB expression  build(&lt;v:double&gt;[i=1:2,2,0, j=1:3,1...
-SciDB schema  &lt;v:double&gt; [i=1:2,2,0,j=1:3,1,0] 
-  variable dimension   type nullable start end chunk
-1        i      TRUE  int64    FALSE     1   2     2
-2        j      TRUE  int64    FALSE     1   3     1
-3        v     FALSE double    FALSE                </code></pre>
-<p>The variable <code>x</code> is a sort of <em>SciDB array view</em>; an un-evaluated SciDB query expression. The value of <code>x</code> is evaluated by SciDB lazily when needed or when explicitly requested. One may force evaluation and return values from <code>x</code> to R in data frame form using the <code>iquery</code> function that we used above:</p>
-<pre class="r"><code>iquery(x, return=TRUE)</code></pre>
-<pre><code>  i j v
-1 1 1 1
-2 2 1 2
-3 1 2 2
-4 2 2 4
-5 1 3 3
-6 2 3 6</code></pre>
-<p>Alternatively, use a special empty-indexing operator <code>[]</code> on any SciDB array object to return its values to R:</p>
-<pre class="r"><code>x[]</code></pre>
-<pre><code>  i j v
-1 1 1 1
-2 2 1 2
-3 1 2 2
-4 2 2 4
-5 1 3 3
-6 2 3 6</code></pre>
-<p>Retrieve SciDB attribute values without corresponding SciDB array dimension coordinates using the <code>drop=TRUE</code> argument:</p>
-<pre class="r"><code>x[, drop=TRUE]</code></pre>
-<pre><code>[1] 1 2 2 4 3 6</code></pre>
-<p>Use the <code>scidbeval</code> function to evaluate and materialize <code>scidb</code> views in SciDB, returning a new <code>scidb</code> R variable that points to the evaulated result in SciDB. The <code>scidbeval</code> function stores the evaluation result into new named SciDB arrays in the database, including optionally temporary arrays.</p>
-<pre class="r"><code>y &lt;- scidbeval(x, temp=TRUE)
+<div id="afl-operators-and-macros-as-r-functions" class="section level2">
+<h2>AFL operators and macros as R functions</h2>
+<p>A SciDB database connection object returned by <code>scidbconnect()</code> contains a list of available AFL operators and macros presented as R functions. The functions return <code>scidb</code> objects, and those objects may be used as function arguments to compose complex AFL query expressions.</p>
+<pre class="r"><code>db &lt;- scidbconnect()
+x &lt;- db$build(&quot;&lt;v:double&gt;[i=1:2,2,0, j=1:3,1,0]&quot;, i * j)
+y &lt;- db$apply(x, a, 2 * v, b, &quot;'a character string'&quot;)
 print(y)</code></pre>
-<pre><code>SciDB expression  R_array1687f71a392851102980131950
-SciDB schema  &lt;v:double&gt; [i=1:2,2,0,j=1:3,1,0] 
-  variable dimension   type nullable start end chunk
-1        i      TRUE  int64    FALSE     1   2     2
-2        j      TRUE  int64    FALSE     1   3     1
-3        v     FALSE double    FALSE                </code></pre>
-<p>Note that the SciDB expression associated with the <code>y</code> R variable is now a named SciDB array (automatically named in this case); compare with the SciDB expression for <code>x</code> above.</p>
-<p>SciDB array values associated with R variables are by default tied to R’s garbage collector. When the R variable’s contents are garbage-collected by R, the associated SciDB array is removed:</p>
-<pre class="r"><code>yname &lt;- y@name
-scidbls(yname)</code></pre>
-<pre><code>[1] &quot;R_array1687f71a392851102980131950&quot;</code></pre>
-<pre class="r"><code>rm(y)
-gc()
-scidbls(yname)</code></pre>
-<pre><code>character(0)</code></pre>
-<p>Note! that we use the <code>@name</code> slot of the <code>scidb</code> object directly here to interrogate the underlying SciDB expression associated with the R variable. See the help page for <code>scidbeval</code> for more on this topic, including disabling automatic garbage collection of SciDB arrays.</p>
-<div id="data-upload-from-r-to-scidb" class="section level2">
-<h2>Data upload from R to SciDB</h2>
-<p>Upload local R variables into named SciDB arrays with the <code>as.scidb</code> function. It’s not as efficient as native SciDB bulk-uploading options, but works well to transfer small amounts of data from R into SciDB.</p>
-<p>Note that variable names may be changed to reflect naming conventions in SciDB.</p>
-<p>Supported R objects for upload include data frames, matrices and vectors, and numeric sparse matrices from the Matrix package. <strong>Note</strong>! Data frames are <em>uploaded</em> to SciDB using a TSV-delimited text format but matrices and vectors are uploaded using a binary format. (All data are <em>downloaded</em> from SciDB to R in binary format by default.)</p>
-<pre class="r"><code>i &lt;- as.scidb(iris)
-print(i)</code></pre>
-<pre><code>Warning message:
-In df2scidb(X, name = name, gc = gc, start = start, ...) :
-  Attribute names have been changed
-
-SciDB expression  R_array2cd623f34ac91470467539269804...
-SciDB schema  &lt;Sepal_Length:double,Sepal_Width:double,Petal_Length:double,
-               Petal_Width:double,Species:string&gt;
-              [tuple_no=0:*,100000,0,dst_instance_id=0:7,1,0,
-               src_instance_id=0:7,1,0] 
-         variable dimension   type nullable start end  chunk
-1        tuple_no      TRUE  int64    FALSE     0   * 100000
-2 dst_instance_id      TRUE  int64    FALSE     0   7      1
-3 src_instance_id      TRUE  int64    FALSE     0   7      1
-4    Sepal_Length     FALSE double     TRUE                 
-5     Sepal_Width     FALSE double     TRUE                 
-6    Petal_Length     FALSE double     TRUE                 
-7     Petal_Width     FALSE double     TRUE                 
-8         Species     FALSE string     TRUE                 </code></pre>
-<p>The dimension of the uploaded result shows eight <em>columns</em> (combined SciDB dimensions and attributes). The output of the upload process for data frames into SciDB uncludes a dimension without an explicit upper bound (the asterisk above), so the total number of elements is not known.</p>
-<pre class="r"><code>dim(i)</code></pre>
-<pre><code>[1] Inf 8</code></pre>
-<p>The <code>count</code> function always obtains an explicit count of elements of a SciDB array:</p>
-<pre class="r"><code>count(i)</code></pre>
-<pre><code>[1] 150</code></pre>
-<p>Data frames may be uploaded by one of several available SciDB upload plugins including the SciDB load_tools, prototype_load_tools, or aio_tools plugins depending on what the R package finds available. The dimensions of the resulting SciDB array may vary depending on the upload tool used (aio tools in the above example).</p>
-<p>Type conversion is applied as required. Some SciDB types (various non-32 bit integer sizes) are not available in R. Some R types (complex, factors, etc.) are not available in SciDB. Missing values in R are translated to SciDB <code>NULL</code> values and vice-versa. (SciDB has a notion of multiple <code>NULL</code> codes, but all codes are translated to R missing values.)</p>
-<p>The above example shows that some data upload operators in SciDB return 2- or 3-d arrays with variable dimension names depending on the SciDB upload tool used. In order to simplify later examples, we force the uploaded <code>iris</code> array into a 1-d SciDB array with a single dimension named “row”. The operations used here are described below.</p>
-<pre class="r"><code>i &lt;- scidbeval(
-       project(dimension_rename(unpack(as.scidb(iris)), new=&quot;row&quot;),
-               gsub(&quot;\\.&quot;, &quot;_&quot;, names(iris))),
-       temp=TRUE)
-print(i)</code></pre>
-<pre><code>SciDB expression  project(cast(unpack(R_array312a169b...
-SciDB schema  &lt;Sepal_Length:double,Sepal_Width:double,Petal_Length:double,
-               Petal_Width:double,Species:string&gt; [row=0:*,1000000,0]
-      variable dimension   type nullable start end   chunk
-1          row      TRUE  int64    FALSE     0   * 1000000
-2 Sepal_Length     FALSE double     TRUE
-3  Sepal_Width     FALSE double     TRUE
-4 Petal_Length     FALSE double     TRUE
-5  Petal_Width     FALSE double     TRUE
-6      Species     FALSE string     TRUE</code></pre>
-</div>
-</div>
-<div id="important-operations-on-scidb-values" class="section level1">
-<h1>Important operations on <code>scidb</code> values</h1>
-<p>This section covers a few of the most important operations on <code>scidb</code> array values in R. With few exceptions, operations on SciDB array objects produce new SciDB array objects. Since objects are effectively SciDB array views, compositions of R operations build up increasingly complex SciDB queries.</p>
-<div id="project-and-slice" class="section level2">
-<h2>Project and slice</h2>
-<p>Use <code>project</code>, or equivalently the data frame single column subset notation <code>$</code> to project the array object onto a subset of its SciDB attributes. The bracket <code>[</code> can also perform column projection, for instance <code>i[, c(&quot;Petal_Length&quot;, &quot;Species&quot;)]</code>.</p>
-<pre class="r"><code>i &lt;- as.scidb(iris)
-project(i, &quot;Species&quot;)</code></pre>
-<pre><code>SciDB expression  project(R_array1687f572177bd1102980...
-SciDB schema  &lt;Species:string NULL DEFAULT null&gt; [row=0:*,100000,0] 
-  variable dimension   type nullable start end chunk
-1      row      TRUE  int64    FALSE     1  *  100000
-2  Species     FALSE string     TRUE                </code></pre>
-<pre class="r"><code>i$Species   # or, equivalently, i[, &quot;Species&quot;]</code></pre>
-<pre><code>SciDB expression  project(project(cast(unpack(R_array...
-SciDB schema  &lt;Species:string&gt; [row=0:*,1000000,0]
-  variable dimension   type nullable start end   chunk
-1      row      TRUE  int64    FALSE     0   * 1000000
-2  Species     FALSE string     TRUE</code></pre>
-<p>Use the <code>slice</code> function to slice out one or more dimensions of a SciDB array at specific coordinate values.</p>
-<pre class="r"><code>(x &lt;- scidb(&quot;build(&lt;v:double&gt;[i=1:2,2,0, j=1:3,1,0], i*j)&quot;))</code></pre>
-<pre><code>SciDB expression  build(&lt;v:double&gt;[i=1:2,2,0, j=1:3,1...
-SciDB schema  &lt;v:double&gt; [i=1:2,2,0,j=1:3,1,0] 
-  variable dimension   type nullable start end chunk
-1        i      TRUE  int64    FALSE     1   2     2
-2        j      TRUE  int64    FALSE     1   3     1
-3        v     FALSE double    FALSE                </code></pre>
-<pre class="r"><code>slice(x, &quot;j&quot;, 2)</code></pre>
-<pre><code>SciDB expression  slice(build(&lt;v:double&gt;[i=1:2,2,0, j...
-SciDB schema  &lt;v:double&gt; [i=1:2,2,0] 
-  variable dimension   type nullable start end chunk
-1        i      TRUE  int64    FALSE     1   2     2
-2        v     FALSE double    FALSE                </code></pre>
-</div>
-<div id="subset" class="section level2">
-<h2>Subset</h2>
-<p>Filter SciDB array values with R’s <code>subset</code> function in one of two forms:</p>
-<ul>
-<li>Explicit AFL filter expressions</li>
-<li>Implicit queries generated from R expressions</li>
-</ul>
-<p>The implicit form can sometimes generate more efficient queries and allows you to mix simple R scalar values in the SciDB expression. However, the implicit form uses non-standard R evaluation which can be confusing to use in some cases and might not be well-suited for non-interactive use; see for example the warnings in the documentation for the base R <code>transform</code> function. The following examples illustrate each form.</p>
+<pre><code>SciDB expression  apply(build(&lt;v:double&gt;[i=1:2,2,0, j...
+SciDB schema  &lt;v:double,a:double,b:string NOT NULL&gt; [i=1:2:0:2; j=1:3:0:1] 
+  variable dimension            type nullable start end chunk
+1        i      TRUE           int64    FALSE     1   0     2
+2        j      TRUE           int64    FALSE     1   0     3
+3        v     FALSE          double     TRUE                
+4        a     FALSE          double     TRUE                
+5        b     FALSE string NOT NULL    FALSE                </code></pre>
+<p>Explanation of argument handling in AFL functions depends on a global package option, <code>scidb.tryeval</code>. With the default option, <code>options(scidb.tryeval=TRUE)</code> arguments are processed as follows:</p>
 <ol style="list-style-type: decimal">
-<li>Explicit AFL filter expression (note the quoted AFL expression)</li>
+<li>Each argument is evaluated by R; evaluation occurs in the usual current environment.</li>
+<li>Arguments that evaluate to SciDB arrays are replaced by their corresponding SciDB expression.</li>
+<li>Arguments that evaluate to R scalars are replaced by their scalar values</li>
+<li>Arguments that evaluate to R data frames, matrices, vectors, arrays, and some sparse matrices are uploaded to SciDB and replaced by their corresponding SciDB array name.</li>
+<li>Arguments evaluating to R character strings are replaced by their unquoted character string value.</li>
+<li>All remaining arguments are passed verbatim into the SciDB query expression.</li>
 </ol>
-<pre class="r"><code>y &lt;- subset(i, &quot;Species = 'setosa' and row &gt; 40&quot;)
-y@name</code></pre>
-<pre><code>[1] &quot;filter(R_array1687f572177bd1102980, Species = 'setosa' and row &gt; 40)&quot;</code></pre>
-<ol start="2" style="list-style-type: decimal">
-<li>Implicit query from R expression (note the unquoted R expression and use of R scalar variable)</li>
+<p>There an important exception to the above process: SciDB schema expressions. SciDB schemas contain characters like <code>&lt;</code>, <code>:</code>, <code>[</code> that correspond to R infix operators. It’s difficult to always suppress their evaluation as operators. Thus SciDB schemas must be supplied as R character strings as shown in the example above:</p>
+<pre class="r"><code>x &lt;- db$build(&quot;&lt;v:double&gt;[i=1:2,2,0, j=1:3,1,0]&quot;, i * j)</code></pre>
+<p>Note that in the above expression <code>i</code> and <code>j</code> are evaluated as SciDB dimension values, not R values. If, however, a variable named <code>i</code> or <code>j</code> is defined in the enclosing R environment, the default evaluation process will replace those with corresponding evaluated R values. This default evaluation approach can be very flexible but use with caution.</p>
+<p>An alternative argument evaluation procedure that doesn’t evaluate R objects (except for <code>scidb</code> array objects) may be enabled by setting the package option</p>
+<pre class="r"><code>options(scidb.tryeval = FALSE)</code></pre>
+<p>With this option, the evaluation procedure is</p>
+<ol style="list-style-type: decimal">
+<li>Arguments that evaluate to SciDB arrays are replaced by their corresponding SciDB expression.</li>
+<li>Character strings are replaced by their unquoted value.</li>
+<li>All remaining arguments are passed verbatim into the SciDB query expression.</li>
 </ol>
-<pre class="r"><code>rownum &lt;- 40
-z &lt;- subset(i, Species == 'setosa' &amp; row &gt; rownum)
-z@name</code></pre>
-<pre><code>[1] &quot;filter(between(R_array1687f572177bd1102980, 41, null), Species = 'setosa' )&quot;</code></pre>
-<p>See <code>?subset.scidb</code> for more details.</p>
 </div>
-<div id="transform" class="section level2">
-<h2>Transform</h2>
-<p>R’s <code>transform</code> function acts as a wrapper for the SciDB “apply” operator. With it, you can add new attributes (variables) to SciDB arrays or replace existing ones with new values.</p>
-<p>The syntax of <code>transform</code> is</p>
-<pre><code>transform(array, new_value1=&quot;quoted AFL expression 1&quot;,
-                 new_value2=&quot;quoted AFL expr 2&quot;, ...)</code></pre>
-<p>Let’s try it:</p>
-<pre class="r"><code>i &lt;- scidbeval(
-       project(dimension_rename(unpack(as.scidb(iris)), new=&quot;row&quot;),
-               gsub(&quot;\\.&quot;, &quot;_&quot;, names(iris))),
-       temp=TRUE)
-x &lt;- transform(i,
-       Species_index=&quot;iif(Species='virginica', 1, iif(Species='versicolor', 2, 3))&quot;)
-head(x)</code></pre>
-<pre><code>  row Sepal_Length Sepal_Width Petal_Length Petal_Width Species Species_index
-1   1          5.1         3.5          1.4         0.2  setosa             3
-2   2          4.9         3.0          1.4         0.2  setosa             3
-3   3          4.7         3.2          1.3         0.2  setosa             3
-4   4          4.6         3.1          1.5         0.2  setosa             3
-5   5          5.0         3.6          1.4         0.2  setosa             3
-6   6          5.4         3.9          1.7         0.4  setosa             3</code></pre>
-<p>See <code>?transform.scidb</code> for many more details.</p>
-</div>
-<div id="redimension" class="section level2">
-<h2>Redimension</h2>
-<p>Aggregations and other operations are most efficient along SciDB coordinate axes. The SciDB “redimension” operator is used to set those up from among existing dimension and attribute values in a SciDB array or array expression.</p>
-<p>Let’s illustrate by making the “Species_index” attribute in the last example a dimension, repeating the steps in the last example for completeness.</p>
-<pre class="r"><code>i &lt;- scidbeval(
-       project(dimension_rename(unpack(as.scidb(iris)), new=&quot;row&quot;),
-               gsub(&quot;\\.&quot;, &quot;_&quot;, names(iris))),
-       temp=TRUE)
-x &lt;- transform(i,
-       Species_index=&quot;iif(Species='virginica', 1, iif(Species='versicolor', 2, 3))&quot;)
-y &lt;- redimension(x, dim=c(&quot;row&quot;, &quot;Species_index&quot;))
-print(y)</code></pre>
-<pre><code>SciDB expression  redimension(apply(R_array312a65ae74...
-SciDB schema  &lt;Sepal_Length:double,Sepal_Width:double,Petal_Length:double,
-               Petal_Width:double,Species:string&gt;
-               [row=0:*,1000000,0,Species_index=0:*,1,0]
-       variable dimension   type nullable start end   chunk
-1           row      TRUE  int64    FALSE     0   * 1000000
-2 Species_index      TRUE  int64    FALSE     0   *       1
-3  Sepal_Length     FALSE double     TRUE
-4   Sepal_Width     FALSE double     TRUE
-5  Petal_Length     FALSE double     TRUE
-6   Petal_Width     FALSE double     TRUE
-7       Species     FALSE string     TRUE</code></pre>
-</div>
-<div id="aggregate" class="section level2">
-<h2>Aggregate</h2>
-<p>SciDB can very rapidly aggregate array data along the array coordinate system. R’s standard <code>aggregate</code> function is overloaded for <code>scidb</code> array objects with some SciDB-specific extensions.</p>
-<p>Let’s extend the last few examples to compute the average petal length grouped by Species_index. We include the original “Species” variable to help identify the index. We use the special empty indexing operator to return the result to R.</p>
-<pre class="r"><code>i &lt;- scidbeval(
-       project(dimension_rename(unpack(as.scidb(iris)), new=&quot;row&quot;),
-               gsub(&quot;\\.&quot;, &quot;_&quot;, names(iris))),
-       temp=TRUE)
-x &lt;- transform(i,
-       Species_index=&quot;iif(Species='virginica', 1, iif(Species='versicolor', 2, 3))&quot;)
-y &lt;- redimension(x, dim=c(&quot;row&quot;, &quot;Species_index&quot;))
-aggregate(y, by=&quot;Species_index&quot;, FUN=&quot;avg(Petal_Length), max(Species) as Species&quot;)[]</code></pre>
-<pre><code>  Species_index Petal_Length_avg    Species
-1             1            5.552  virginica
-2             2            4.260 versicolor
-3             3            1.462     setosa</code></pre>
-<p>SciDB users equipped with the grouped aggregate plugin available from <a href="https://github.com/Paradigm4/grouped_aggregate" class="uri">https://github.com/Paradigm4/grouped_aggregate</a> can also directly aggregate by attributes and/or SciDB dimensions.</p>
-<pre class="r"><code>aggregate(i, by=&quot;Species&quot;, FUN=&quot;avg(Petal_Length)&quot;)[]</code></pre>
-<pre><code>  instance_id value_no    Species Petal_Length_avg
-1           2        0 versicolor            4.260
-2           2        1     setosa            1.462
-3           7        0  virginica            5.552</code></pre>
-<p>Both of the above queries are equivalent to the R aggregation:</p>
-<pre class="r"><code>aggregate(iris$Petal.Length, by=list(iris$Species), FUN=mean)</code></pre>
-<pre><code>##      Group.1     x
-## 1     setosa 1.462
-## 2 versicolor 4.260
-## 3  virginica 5.552</code></pre>
-<p>SciDB’s version of <code>aggregate</code> includes many extras like windowed aggregates. SciDB cumulative aggregation is supported by the R <code>cumulate</code> function. See <code>?regrid</code> and <code>?xgrid</code> for help with high-performance SciDB coordinate-based aggregation and interpolation (to perform fast spatial or temporal decimation, for instance). See <code>?image</code> for a matrix image display function that uses <code>regrid</code> to visualize potentially very large sparse or dense matrices.</p>
-<p>See <code>?'aggregate,scidb-method'</code> for help and more examples.</p>
-</div>
-<div id="merge-and-join" class="section level2">
-<h2>Merge and join</h2>
-<p>R’s <code>merge</code> function implements SciDB <code>join</code>, <code>cross_join</code>, <code>equi_join</code> and <code>merge</code> operators. The following example illustrates the difference between join and merge.</p>
-<pre class="r"><code>i &lt;- scidbeval(
-       project(dimension_rename(unpack(as.scidb(iris)), new=&quot;row&quot;),
-               gsub(&quot;\\.&quot;, &quot;_&quot;, names(iris))),
-       temp=TRUE)
-a &lt;- i$Petal_Length
-b &lt;- i$Petal_Width
-merge(a, b)                # SciDB (inner) join</code></pre>
-<pre><code>SciDB expression  join(project(R_array312a4ca70b21146...
-SciDB schema  &lt;Petal_Length:double,Petal_Width:double&gt; [row=0:*,1000000,0]
-      variable dimension   type nullable start end   chunk
-1          row      TRUE  int64    FALSE     0   * 1000000
-2 Petal_Length     FALSE double     TRUE
-3  Petal_Width     FALSE double     TRUE</code></pre>
-<pre class="r"><code>merge(a, b, merge=TRUE)   # SciDB &quot;merge&quot;</code></pre>
-<pre><code>SciDB expression  merge(project(R_array312a4ca70b2114...
-SciDB schema  &lt;Petal_Length:double&gt; [row=0:*,1000000,0] 
-      variable dimension   type nullable start end   chunk
-1          row      TRUE  int64    FALSE     0   * 1000000
-2 Petal_Length     FALSE double     TRUE</code></pre>
-<p>Here is an example of a SciDB “cross join” along one common axis between two arrays with different dimensions.</p>
-<pre class="r"><code>a &lt;- i$Petal_Length
-x &lt;- transform(i,
-       Species_index=&quot;iif(Species='virginica', 1, iif(Species='versicolor', 2, 3))&quot;)
-y &lt;- redimension(x, dim=c(&quot;row&quot;, &quot;Species_index&quot;))$Petal_Width
-print(a)</code></pre>
-<pre><code>SciDB expression  project(R_array312a4ca70b2114695912...
-SciDB schema  &lt;Petal_Length:double&gt; [row=0:*,1000000,0] 
-      variable dimension   type nullable start end   chunk
-1          row      TRUE  int64    FALSE     0   * 1000000
-2 Petal_Length     FALSE double     TRUE</code></pre>
-<pre class="r"><code>print(y)</code></pre>
-<pre><code>SciDB expression  project(redimension(apply(R_array31...
-SciDB schema  &lt;Petal_Width:double&gt; [row=0:*,1000000,0,Species_index=0:*,1,0] 
-       variable dimension   type nullable start end   chunk
-1           row      TRUE  int64    FALSE     0   * 1000000
-2 Species_index      TRUE  int64    FALSE     0   *       1
-3   Petal_Width     FALSE double     TRUE</code></pre>
-<pre class="r"><code>merge(a, y)</code></pre>
-<pre><code>SciDB expression  cross_join(project(redimension(appl...
-SciDB schema  &lt;Petal_Width:double,Petal_Length:double&gt;
-              [row=0:*,1000000,0,Species_index=0:*,1,0] 
-       variable dimension   type nullable start end   chunk
-1           row      TRUE  int64    FALSE     0   * 1000000
-2 Species_index      TRUE  int64    FALSE     0   *       1
-3   Petal_Width     FALSE double     TRUE                  
-4  Petal_Length     FALSE double     TRUE                  </code></pre>
-<p>Many additional options are available, see <code>?merge.scidb</code> for examples.</p>
-<div id="antijon" class="section level3">
-<h3>Antijon</h3>
-<p>Use the <code>antijoin</code> function to return a logical-valued mask of array coordinates that <em>do not</em> join between two arrays with the same coordinate schema.</p>
-</div>
-</div>
-</div>
-<div id="other-scidb-operations" class="section level1">
-<h1>Other SciDB operations</h1>
-<p>The <code>scidb</code> package defines many additional SciDB-related functions besides the most important few outlined above.</p>
-<div id="scidb-schema-related-functions" class="section level2">
-<h2>SciDB schema-related functions</h2>
-<p>The <code>cast</code> function works like the SciDB “cast” operator; use it to rename any part of a SciDB schema, or use the slightly more convenient <code>dimension_rename</code> and <code>attribute_rename</code> functions.</p>
-<p>The following functions return scalar or vector values to R (not SciDB array objects). The <code>dimensions</code> and <code>scidb_attribute</code> functions return the names of the SciDB array dimension and attribute variables, respectively. The <code>scidb_nullable</code>, <code>scidb_types</code>, <code>scidb_coordinate_bounds</code>, and <code>schema</code> functions return information about SciDB attributes and array schema.</p>
-</div>
-<div id="scidb-schemashape-altering-operations" class="section level2">
-<h2>SciDB schema/shape-altering operations</h2>
-<p>We’ve already seen the very important <code>redimension</code> function. Use the <code>repart</code> function similarly to the SciDB “repart” operator to alter the SciDB array coordinate partitions. Use the <code>reshape</code> function to change the dimensionality of a SciDB array, and similarly the <code>unpack</code> function to flatten a SciDB array into a table.</p>
-<p>The <code>subarray</code> function is a wrapper for the SciDB “subarray” operator that filters an array along its coordinates and resets the top-left coordinate to the origin.</p>
-</div>
-<div id="filling-in-missing-values" class="section level2">
-<h2>Filling in missing values</h2>
-<p>Use the <code>replaceNA</code> function to replace missing values in SciDB arrays with a constant, similarly to the SciDB “substitute” operator (the name “substitute” already had a substantially different meaning in R, so we picked a different function name).</p>
-</div>
-<div id="scidb-catalog-operations" class="section level2">
-<h2>SciDB catalog operations</h2>
-<p>Use <code>scidbremove</code> or, equivalently, <code>scidbrm</code> to remove SciDB arrays from the database (permanently!). Related to this topic, use <code>scidbeval</code> to control the connection of R’s garbage collector to SciDB arrays associated with R variables. The <code>persist</code> function can be used to recursively modify the garbage-collection association for any R <code>scidb</code> array object, including all its dependencies.</p>
-<p>The <code>scidbls</code> function can be used to list arrays and many other SciDB database objects.</p>
-<p>Use the <code>remove_old_versions</code> function to remove all the old versions in the SciDB catalog of a named array, leaving only the last version.</p>
-<p>Use <code>rename</code> to rename a stored SciDB array in the database.</p>
-<p>The <code>count</code> function counts the number of elements in the specified SciDB array or expression just like the SciDB “op_count” operator/macro.</p>
-</div>
-<div id="math-operations" class="section level2">
-<h2>Math operations</h2>
-<p>The scidb package defines a number of mathematical functions that operate on SciDB arrays.</p>
-<ul>
-<li><code>gemm</code> Compute a dense matrix product of two dense SciDB matrices</li>
-<li><code>gesvd</code> Compute the full singular value decomposition of a dense SciDB matrix</li>
-<li><code>cov,cor</code> Covariance and correlation matrices</li>
-<li><code>glm</code>,<code>glm.fit</code>,<code>predict</code> Compute various generalized linear models similarly to R’s <code>glm</code> function see <code>?&quot;glm,ANY,ANY,scidb-method&quot;</code> for help and examples of generalized linear models</li>
-<li><code>t</code> Form a SciDB matrix transpose</li>
-<li><code>image</code> Optionally decimate, dowload and display a 2-d matrix image representation of a dense or sparse SciDB matrix</li>
-<li><code>phyper</code>,<code>qhyper</code> Distribution and quantile functions for the hypergeometric distribution</li>
-<li><code>scidb_fisher.test</code> Fisher’s exact test for count data including conditional odds estimate computed by maximum likelihood</li>
-</ul>
-<p>See online R help for the above functions for details and examples. Other mathematical operations are available through direct use of SciDB’s native AFL query language.</p>
+<div id="scidb-aliasing-in-afl-expressions-with-as" class="section level2">
+<h2>SciDB aliasing in AFL expressions with <code>%as%</code></h2>
+<p>Use the special <code>%as%</code> R infix operator in place of the usual AFL word “as” in SciDB expressions using aliasing, either to rename a SciDB array, expression, or certain AFL expression arguments often in aggregations.</p>
+<pre class="r"><code>db &lt;- scidbconnect()
+x &lt;- as.scidb(iris)     # upload the iris data frame to SciDB
+as.R(db$grouped_aggregate(x, Species, avg(Petal_Length) %as% avg))</code></pre>
+<pre><code>  instance_id value_no    Species   avg
+1           2        0     setosa 1.462
+2           3        0 versicolor 4.260
+3           4        0  virginica 5.552</code></pre>
 </div>
 </div>
 <div id="package-options" class="section level1">
@@ -561,38 +348,25 @@ SciDB schema  &lt;Petal_Width:double,Petal_Length:double&gt;
 # statements (issued in the same connection context as the query).
 # This is mostly useful for authentication-related options like set_role
 # and in some cases set_namespace.
-  options(scidb.prefix=NULL)
-
-# The scidb.version option is set during scidbconnect(). However, users
-# may carefully override it to enable certain bug fixes specific to older
-# versions of SciDB.
-  options(scidb.version=15.7)
+options(scidb.prefix=NULL)
 
 # Default shim port and host.
-  options(scidb.default_shim_port=8080L)
-  options(scidb.default_shim_host=&quot;localhost&quot;)
+options(scidb.default_shim_port=8080L)
+options(scidb.default_shim_host=&quot;localhost&quot;)
 
-# Make it harder to remove arrays. When this option is TRUE, users
-# have to specify scidbrm(array, force=TRUE) to remove arrays that do not
-# begin with &quot;R_array&quot;.
-  options(scidb.safe_remove=TRUE)
+# Should we try to evaluate R objects inside AFL expressions?
+options(scidb.tryeval = TRUE)
+
+# How to download arrays and their coordinates. Set scidb.unpack=FALSE
+# to use apply, which can be faster in some cases when used with aio.
+options(scidb.unpack=FALSE)
 
 # Disable SSL certificate host name checking by default. This is important mostly
 # for Amazon EC2 where hostnames rarely match their DNS names. If you enable this
 # then the shim SSL certificate CN entry *must* match the server host name for the
 # encrypted session to work. Set this TRUE for stronger security (help avoid MTM)
 # in SSL connections.
-  options(scidb.verifyhost=FALSE)
-
-# Set to TRUE to enable debugging that shows SciDB queries as they run.
-  options(scidb.debug=FALSE)</code></pre>
-</div>
-<div id="special-note-on-the-curl-package-dependency" class="section level1">
-<h1>Special note on the <code>curl</code> package dependency</h1>
-<p>Newer versions of the <code>scidb</code> package depend on Jeroen Ooms’ <code>curl</code> package, replacing the older <code>RCurl</code> dependency and fixing a number of memory, performance and stability issues.</p>
-<p>As of this writing, the <code>curl</code> package has one significant problem. Users are not able to cancel HTTP requests until data transfers begin. In the context of SciDB interaction, that means that users can’t cancel a SciDB query until data starts flowing back to R.</p>
-<p>There exists an experimental version of the <code>curl</code> package that does add this capability, but at the cost of some additional CPU overhead. If you want to try that out, you can install it directly from GitHub using the <code>devtools</code> package with:</p>
-<pre class="r"><code>devtools::install_github(&quot;jeroenooms/curl&quot;, ref=&quot;interrupt&quot;)</code></pre>
+options(scidb.verifyhost=FALSE)</code></pre>
 </div>
 
 

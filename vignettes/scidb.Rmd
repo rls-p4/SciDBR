@@ -232,6 +232,53 @@ schema(x, "dimensions")
 ```
 
 
+
+
+
+# Uploading R values to SciDB with `as.scidb()` and downloading SciDB
+  values to R with `as.R()`
+
+The package provides limited convenience functions for converting and uploading
+R values to SciDB. The upload mechanism is much less efficient than available
+SciDB bulk load methods and should only be used for small to moderate-sized
+data. The following R objects are supported:
+
+- logical, integer, numeric, and character vectors
+- numeric matrices
+- data frames with logical, character, integer, and numeric values
+  (variable names may be changed to conform to SciDB naming convention)
+- numeric column-compressed sparse matrices (class "dgCMatrix")
+- raw objects
+
+Factor values are uploaded as their corresponding level character
+strings.
+
+The `as.scidb()` function uploads returns a reference to a SciDB array
+containing the uploaded data. The following example uploads a data frame
+to SciDB, warning us that variable names were changed, and then downloads
+the resulting SciDB object data back into R.
+```{r, eval=FALSE, echo=TRUE}
+x <- as.scidb(db, head(iris))
+as.R(x)
+```
+```
+Warning message:
+In df2scidb(db, x, name = name, gc = gc, ...) :
+  Attribute names have been changed
+
+  i Sepal_Length Sepal_Width Petal_Length Petal_Width Species
+1 1          5.1         3.5          1.4         0.2  setosa
+2 2          4.9         3.0          1.4         0.2  setosa
+3 3          4.7         3.2          1.3         0.2  setosa
+4 4          4.6         3.1          1.5         0.2  setosa
+5 5          5.0         3.6          1.4         0.2  setosa
+6 6          5.4         3.9          1.7         0.4  setosa
+```
+Note that SciDB dimension indices (`i` above) are appended to the data
+when downloaded.
+
+
+
 # Running AFL queries
 
 The scidb package defines two ways to compose and execute SciDB queries:
@@ -258,7 +305,7 @@ iquery("build(<v:double>[i=1:2,2,0, j=1:3,1,0], i*j)", return=TRUE)
 6 2 3 6
 ```
 
-## AFL functions
+## AFL operators and macros as R functions
 
 A SciDB database connection object returned by `scidbconnect()` contains
 a list of available AFL operators and macros presented as R functions.
@@ -330,14 +377,22 @@ With this option, the evaluation procedure is
    expression.
 
 
-## Evaluating `scidb` objects and downloading their data to R
+## SciDB aliasing in AFL expressions with `%as%`
 
-Results of SciDB expressions in `scidb` R objects can be downloaded
-to R data frames with the `as.R()` function.
+Use the special `%as%` R infix operator in place of the usual AFL
+word "as" in SciDB expressions using aliasing, either to rename a
+SciDB array, expression, or certain AFL expression arguments often
+in aggregations.
 ```{r, eval=FALSE, echo=TRUE}
 db <- scidbconnect()
-x <- db$build("<v:double>[i=1:2,2,0, j=1:3,1,0]", i * j)
-as.R(x)
+x <- as.scidb(iris)     # upload the iris data frame to SciDB
+as.R(db$grouped_aggregate(x, Species, avg(Petal_Length) %as% avg))
+```
+```
+  instance_id value_no    Species   avg
+1           2        0     setosa 1.462
+2           3        0 versicolor 4.260
+3           4        0  virginica 5.552
 ```
 
 
