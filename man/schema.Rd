@@ -4,15 +4,33 @@
 \alias{schema}
 \title{SciDB array schema}
 \usage{
-schema(x)
+schema(x, what = c("schema", "attributes", "dimensions"))
 }
 \arguments{
 \item{x}{a \code{\link{scidb}} array object}
+
+\item{what}{optional schema subset (subsets are returned in data frames; partial
+argument matching is supported)}
 }
 \value{
 character-valued SciDB array schema
 }
 \description{
 SciDB array schema
+}
+\examples{
+\dontrun{
+s <- scidbconnect()
+x <- scidb(s,"build(<v:double>[i=1:10,2,0,j=0:19,1,0],0)")
+schema(x)
+# [1] "<v:double> [i=1:10:0:2; j=0:19:0:1]"
+schema(x, "attributes")
+#  name   type nullable
+#1    v double     TRUE
+schema(x, "dimensions")
+  name start end chunk overlap
+#1    i     1  10     2       j
+#2    0     0  19     1       0
+}
 }
 

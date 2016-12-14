@@ -18,7 +18,19 @@
   { 
     d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\4,\\3", x)), ",")[[1]])
   }
-  d
+  n = c(d[[1]], vapply(d[-c(1, length(d))], function(x) x[length(x)], ""))
+  d = d[-1]
+  if(length(d) > 1)
+  {
+    i = 1:(length(d) - 1)
+    d[i] = lapply(d[i], function(x) x[-length(x)])
+  }
+  d = lapply(d, function(x) c(strsplit(x[1], ":")[[1]], x[-1]))
+  data.frame(name=n,
+             start=vapply(d, function(x) x[1], ""),
+             end=vapply(d, function(x) x[2], ""),
+             chunk=vapply(d, function(x) x[3], ""),
+             overlap=vapply(d, function(x) x[4], ""), stringsAsFactors=FALSE)
 }
 
 .attsplitter = function(x)
@@ -29,120 +41,48 @@
     if(!(inherits(x, "scidb"))) return(NULL)
     s = schema(x)
   }
-  strsplit(strsplit(strsplit(strsplit(s, ">")[[1]][1], "<")[[1]][2], ",")[[1]], ":")
-}
-
-#' SciDB array attribute names
-#' @param x a \code{\link{scidb}} array object
-#' @return character vector of SciDB attribute names.
-#' @export
-scidb_attributes = function(x)
-{
-  a = .attsplitter(x)
-  unlist(lapply(a, function(x) x[[1]]))
-}
-
-#' SciDB array attribute types
-#' @param x a \code{\link{scidb}} array object
-#' @return character vector of SciDB attribute types
-scidb_types = function(x)
-{
-  a = .attsplitter(x)
-  unlist(lapply(a, function(x) strsplit(x[2]," ")[[1]][1]))
-}
-
-#' SciDB array attribute nullability
-#' @param x a \code{\link{scidb}} array object
-#' @return logical vector of SciDB attribute nullability
-scidb_nullable = function(x)
-{
+  s = strsplit(strsplit(strsplit(strsplit(s, ">")[[1]][1], "<")[[1]][2], ",")[[1]], ":")
   # SciDB schema syntax changed in 15.12
-  if(newer_than(attr(x@meta$db, "connection")$scidb.version, "15.12"))
-  { 
-    return (! grepl("NOT NULL", .attsplitter(x)))
-  }
-  grepl(" NULL", .attsplitter(x))
+  null = if(newer_than(attr(x@meta$db, "connection")$scidb.version, "15.12"))
+           ! grepl("NOT NULL", s)
+         else grepl(" NULL", s)
+  data.frame(name=vapply(s, function(x) x[1], ""),
+             type=vapply(s, function(x) x[2], ""),
+             nullable=null, stringsAsFactors=FALSE)
 }
 
-#' SciDB array dimension names
-#' @param x a \code{\link{scidb}} array object
-#' @return character vector of SciDB dimension names
-#' @export
-dimensions = function(x)
-{
-  d = .dimsplitter(x)
-#  gsub("^ *","",unlist(lapply(d[-length(d)],function(x) x[[length(x)]])))
-  h = paste(gsub("^ *","",d[[1]]), collapse="|")
-  d = d[-1]
-  if(length(d)>1)
-  {
-    h = c(h,gsub("^ *","",unlist(lapply(d[-length(d)],function(x) paste(x[4:length(x)],collapse="|")))))
-  }
-  h
-}
 
-#' SciDB array coordinate bounds
-#' @param x a \code{\link{scidb}} array object
-#' @return list of character-valued vectors of starting and ending coordinate bounds
-#' @export
-scidb_coordinate_bounds = function(x)
-{
-  d = .dimsplitter(x)
-  start = unlist(lapply(d[-1],function(x)strsplit(x[1],":")[[1]][1]))
-  end = unlist(lapply(d[-1],function(x)strsplit(x[1],":")[[1]][2]))
-  start = gsub("NA","0",start)
-  end = gsub("NA","\\*",end)
-  s1 = gsub("\\*",.scidb_DIM_MAX,start)
-  s2 = gsub("\\*",.scidb_DIM_MAX,end)
-  len = as.numeric(s2) - as.numeric(s1) + 1
-  i = len >= as.double(.scidb_DIM_MAX)
-  len = noE(len) # in particular, len is now character
-  if(any(i))
-  {
-    len[i] = "Inf"
-  }
-  list(start=noE(start), end=noE(end), length=len)
-}
-
-#' SciDB array coordinate chunksize
-#' @param x a \code{\link{scidb}} array object
-#' @return character-valued vector of SciDB coordinate chunk sizes
-#' @export
-scidb_coordinate_chunksize = function(x)
-{
-  d = .dimsplitter(x)
-  unlist(lapply(d[-1], function(x) x[2]))
-}
-
-#' SciDB array coordinate overlap
-#' @param x a \code{\link{scidb}} array object
-#' @return character-valued vector of SciDB coordinate overlap
-#' @export
-scidb_coordinate_overlap = function(x)
-{
-  d = .dimsplitter(x)
-  unlist(lapply(d[-1], function(x) x[3]))
-}
 
 #' SciDB array schema
 #' @param x a \code{\link{scidb}} array object
+#' @param what optional schema subset (subsets are returned in data frames; partial
+#'  argument matching is supported)
 #' @return character-valued SciDB array schema
+#' @examples
+#' \dontrun{
+#' s <- scidbconnect()
+#' x <- scidb(s,"build(<v:double>[i=1:10,2,0,j=0:19,1,0],0)")
+#' schema(x)
+#' # [1] "<v:double> [i=1:10:0:2; j=0:19:0:1]"
+#' schema(x, "attributes")
+#' #  name   type nullable
+#' #1    v double     TRUE
+#' schema(x, "dimensions")
+#'   name start end chunk overlap
+#' #1    i     1  10     2       j
+#' #2    0     0  19     1       0
+#' }
 #' @export
-schema = function(x)
+schema = function(x, what=c("schema", "attributes", "dimensions"))
 {
   if(!(inherits(x, "scidb"))) return(NULL)
-  gsub(".*<", "<", x@meta$schema)
+  switch(match.arg(what),
+    schema = gsub(".*<", "<", x@meta$schema),
+    attributes = .attsplitter(x),
+    dimensions = .dimsplitter(x),
+    invisible()
+  )
 }
-
-# A utility function for operations that require a single attribute
-# Throws error if a multi-attribute array is specified.
-.get_attribute = function(x)
-{
-  a = scidb_attributes(x)
-  if(length(a) > 1) stop("This function requires a single-attribute array. Consider using project.")
-  a
-}
-
 
 dfschema = function(names, types, len, chunk=10000)
 {

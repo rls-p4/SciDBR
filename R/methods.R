@@ -1,14 +1,15 @@
 .scidbstr = function(object)
 {
   name = substr(object@name, 1, 35)
-  if(nchar(object@name)>35) name = paste(name, "...", sep="")
+  if(nchar(object@name) > 35) name = paste(name, "...", sep="")
   cat("SciDB expression ", name)
   cat("\nSciDB schema ", schema(object), "\n")
-  bounds = scidb_coordinate_bounds(object)
-  d = data.frame(variable=dimensions(object), dimension=TRUE, type="int64", nullable=FALSE, start=bounds$start, end=bounds$end, chunk=scidb_coordinate_chunksize(object), row.names=NULL, stringsAsFactors=FALSE)
-  d = rbind(d, data.frame(variable=scidb_attributes(object),
+  dims = schema(object, "dimensions")
+  atts = schema(object, "attributes")
+  d = data.frame(variable=dims$name, dimension=TRUE, type="int64", nullable=FALSE, start=dims$start, end=dims$end, chunk=dims$chunk, row.names=NULL, stringsAsFactors=FALSE)
+  d = rbind(d, data.frame(variable=atts$name,
                           dimension=FALSE,
-                          type=scidb_types(object), nullable=scidb_nullable(object), start="", end="", chunk=""))
+                          type=atts$type, nullable=atts$nullable, start="", end="", chunk=""))
   cat(paste(utils::capture.output(print(d)), collapse="\n"))
   cat("\n")
 }
@@ -45,7 +46,7 @@ setMethod("show", "scidb",
 #' @export
 names.scidb = function(x)
 {
-  c(dimensions(x), scidb_attributes(x))
+  c(schema(x, "dimensions")$name, schema(x, "attributes")$name)
 }
 
 #' Names of array dimensions
@@ -54,13 +55,18 @@ names.scidb = function(x)
 #' @export
 dimnames.scidb = function(x)
 {
-  dimensions(x)
+  schema(x, "dimensions")$name
 }
 
 #' @export
 `dim.scidb` = function(x)
 {
-  ans = c(prod(as.numeric(scidb_coordinate_bounds(x)$length)), length(dimensions(x)) + length(scidb_attributes(x)))
+  d = schema(x, "dimensions")
+  i = tryCatch(as.numeric(d$start), warning=function(w) Inf)
+  j = tryCatch(as.numeric(d$end), warning=function(w) Inf)
+  l = prod(j - i + 1)
+  n = length(i) + length(schema(x, "attributes")$name)
+  ans = c(l, n)
   warnonce("count")
   ans
 }
