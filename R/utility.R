@@ -297,7 +297,9 @@ as.R = function(x)
 #' @note This is mostly useful for setting namespaces, see the examples.
 #' @examples
 #' \dontrun{
-#' # WRITE ME
+#' library(scidb)
+#' db <- scidbconnect()
+#' db <- scidb_prefix("set_role('functionary')")
 #' }
 #' @export
 scidb_prefix = function(db, expression=NULL)

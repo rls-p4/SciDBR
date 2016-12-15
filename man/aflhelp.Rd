@@ -4,10 +4,12 @@
 \alias{aflhelp}
 \title{Display SciDB AFL operator documentation}
 \usage{
-aflhelp(topic)
+aflhelp(topic, db)
 }
 \arguments{
-\item{topic}{a SciDB operator or macro name as character string or \code{\link{afl}} object}
+\item{topic}{an \code{\link{afl}} object from a SciDB database connection, or optionally a character string name}
+
+\item{optional}{database connection from \code{\link{scidbconnect}} (only needed when \code{topic} is a character string)}
 }
 \value{
 displays help

@@ -115,6 +115,15 @@ After setting that, all queries will be prefixed with the role-setting statement
 You may use the `scidb.prefix` option to prefix queries with arbitrary AFL
 statements. Separate multiple statements with the semi-colon character.
 
+Alternatively, use the `scidb_prefix()` function on a per-database connection
+level. The prefix will be displayed in the connection summary.
+```{r, eval=FALSE}
+library(scidb)
+db <- scidbconnect()
+db <- scidb_prefix("set_role('functionary')")
+print(db)
+```
+
 
 ## Listing SciDB arrays, operators and macros
 

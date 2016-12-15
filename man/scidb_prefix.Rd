@@ -25,7 +25,9 @@ This is mostly useful for setting namespaces, see the examples.
 }
 \examples{
 \dontrun{
-# WRITE ME
+library(scidb)
+db <- scidbconnect()
+db <- scidb_prefix("set_role('functionary')")
 }
 }
 

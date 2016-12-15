@@ -14,7 +14,6 @@ update.afl = function(db, new, ops)
     e = new.env()
     data("operators", package="scidb", envir=e)
     ops = e$operators
-    options(scidb.operators = ops)  # for posterity and aflhelp below XXX NO! FIX
   }
   conn = db  # need a reference to the scidb connection in the afl function below
   for(x in new)
@@ -28,6 +27,8 @@ update.afl = function(db, new, ops)
       # XXX very ugly...
       fml = strsplit(gsub("[=:].*", "", gsub("\\|.*", "", gsub(" *", "", gsub("\\]", "", gsub("\\[", "", gsub("\\[.*\\|.*\\]", "", gsub("[+*{})]", "", gsub(".*\\(", "", def[2])))))))), ",")[[1]]
       formals(db[[x]]) = eval(parse(text=sprintf("alist(%s, ...=)", paste(paste(fml ,"="), collapse=", "))))
+      attr(db[[x]], "help") = def[3]
+      attr(db[[x]], "signature") = def[2]
     }
     class(db[[x]]) = "operator"
     attr(db[[x]], "name") = x
@@ -82,7 +83,8 @@ afl = function(...)
 }
 
 #' Display SciDB AFL operator documentation
-#' @param topic a SciDB operator or macro name as character string or \code{\link{afl}} object
+#' @param topic an \code{\link{afl}} object from a SciDB database connection, or optionally a character string name
+#' @param optional database connection from \code{\link{scidbconnect}} (only needed when \code{topic} is a character string)
 #' @return displays help
 #' @examples
 #' \dontrun{
@@ -92,18 +94,13 @@ afl = function(...)
 #' }
 #' @importFrom  utils data
 #' @export
-aflhelp = function(topic)
+aflhelp = function(topic, db)
 {
-  if(is.null(options("scidb.operators")))
+  if(is.character(topic))
   {
-    data("operators", package="scidb", envir=environment())
-    options(scidb.operators = ops)
+    if(missing(db)) stop("character topics require a database connection argument")
+    topic = db[[topic]]
   }
-  ops = getOption("scidb.operators")
-  name = attr(topic, "name")
-  if(is.null(name) && is.character(topic)) name = topic
-  i = which(name == ops[, 1])
-  if(length(i) < 1 || is.na(i)) stop("not found")
-  h = sprintf("%s\n\n%s", ops[i, 2], gsub("\\n{2,}", "\n", ops[i, 3]))
+  h = sprintf("%s\n\n%s", attr(topic, "signature"), gsub("\\n{2,}", "\n", attr(topic, "help")))
   message(h)
 }
