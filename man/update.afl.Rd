@@ -9,7 +9,7 @@
 \arguments{
 \item{db}{an \code{afl} object (a SciDB database connection returned from \code{\link{scidbconnect}})}
 
-\item{new}{an optional list of new operators}
+\item{new}{a character vector of operator names}
 
 \item{ops}{an optional three-variable data frame with variables name, signature, help, corresponding
 to the operator names, signatures, and help files (from SciDB Doxygen documentation)}

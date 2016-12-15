@@ -1,7 +1,7 @@
 #' Update available AFL operators
 #'
 #' @param db an \code{afl} object (a SciDB database connection returned from \code{\link{scidbconnect}})
-#' @param new an optional list of new operators
+#' @param new a character vector of operator names
 #' @param ops an optional three-variable data frame with variables name, signature, help, corresponding
 #' to the operator names, signatures, and help files (from SciDB Doxygen documentation)
 #' @return the updated database object

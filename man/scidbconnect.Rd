@@ -6,7 +6,7 @@
 \usage{
 scidbconnect(host = getOption("scidb.default_shim_host", "127.0.0.1"),
   port = getOption("scidb.default_shim_port", 8080L), username, password,
-  auth_type = c("scidb", "digest"), protocol = c("http", "https"))
+  auth_type = c("scidb", "digest"), protocol = c("http", "https"), doc)
 }
 \arguments{
 \item{host}{optional host name or I.P. address of a SciDB shim service to connect to}
@@ -20,6 +20,8 @@ scidbconnect(host = getOption("scidb.default_shim_host", "127.0.0.1"),
 \item{auth_type}{optional SciDB authentication type}
 
 \item{protocol}{optional shim protocol type}
+
+\item{doc}{optional AFL operator/macro documentation (see notes)}
 }
 \value{
 A scidb connection object.
@@ -40,6 +42,11 @@ package functions to interact with SciDB arrays. Apply R's \code{\link{ls}}
 function on the returned value to see a list of arrays. The returned value
 contains a list of available SciDB AFL language operators and macro names.
 Use the dollar-sign function to accesss those functions.
+
+The optional \code{doc} argument may be a three-column data frame with
+character-valued columns name, signature, and help containing AFL operator
+names, function signatures, and help strings, respectively. See
+`data("operators", package="scidb")` for an example.
 
 All arguments support partial matching.
 }

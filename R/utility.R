@@ -67,6 +67,7 @@ scidb = function(db, name, gc=FALSE)
 #' @param password optional authentication password
 #' @param auth_type optional SciDB authentication type
 #' @param protocol optional shim protocol type
+#' @param doc optional AFL operator/macro documentation (see notes)
 #' @note
 #' Use the optional \code{username} and \code{password} arguments with
 #' \code{auth_type} set to "digest" to use HTTP digest authentication (see the
@@ -80,6 +81,11 @@ scidb = function(db, name, gc=FALSE)
 #' function on the returned value to see a list of arrays. The returned value
 #' contains a list of available SciDB AFL language operators and macro names.
 #' Use the dollar-sign function to accesss those functions.
+#'
+#' The optional \code{doc} argument may be a three-column data frame with
+#' character-valued columns name, signature, and help containing AFL operator
+#' names, function signatures, and help strings, respectively. See
+#' `data("operators", package="scidb")` for an example.
 #'
 #' All arguments support partial matching.
 #' @return A scidb connection object.
@@ -104,7 +110,8 @@ scidb = function(db, name, gc=FALSE)
 scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
                         port=getOption("scidb.default_shim_port", 8080L),
                         username, password,
-                        auth_type=c("scidb", "digest"), protocol=c("http", "https"))
+                        auth_type=c("scidb", "digest"), protocol=c("http", "https"),
+                        doc)
 {
   .scidbenv = new.env() # connection state
   auth_type = match.arg(auth_type)
@@ -156,7 +163,8 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 
 # Update available operators and macros and return afl object
   ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE)[,2]
-  update.afl(db, ops)
+  if(missing(doc)) return (update.afl(db, ops))
+  update.afl(db, ops, doc)
 }
 
 
