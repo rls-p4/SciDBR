@@ -4,10 +4,12 @@
 \alias{as.R}
 \title{Download SciDB data to R}
 \usage{
-as.R(x)
+as.R(x, attributes_only = FALSE)
 }
 \arguments{
 \item{x}{a \code{\link{scidb}} object (a SciDB array or expression)}
+
+\item{attributes_only}{optional logical argument, if \code{TRUE} do not download SciDB dimensions}
 }
 \value{
 An R \code{\link{data.frame}}
@@ -30,6 +32,14 @@ as.R(x)
 #3 3  0.1411200
 #4 4 -0.7568025
 #5 5 -0.9589243
+
+as.R(x, attributes_only=TRUE)
+#           v
+#1  0.8414710
+#2  0.9092974
+#3  0.1411200
+#4 -0.7568025
+#5 -0.9589243
 }
 }
 

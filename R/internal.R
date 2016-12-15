@@ -20,17 +20,23 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     argsbuf = tryCatch(as.integer(args$buffer), warning=function(e) NA)
     if(!is.na(argsbuf) && argsbuf <= 1e9) buffer = as.integer(argsbuf)
   }
-  ndim = length(schema(query, "dimensions")$name)
-  if(getOption("scidb.unpack"))
+  if(!is.null(args$attributes))
   {
-    dim = make.unique_(c(schema(query, "attributes")$name, schema(query, "dimensions")$name), "i")
-    x = scidb(db, sprintf("unpack(%s, %s)", query@name, dim))
+      x = scidb(db, sprintf("project(%s, %s)", query@name, paste(schema(query, "attributes")$name, collapse=",")))
   } else
   {
-    dims_query = schema(query, "dimensions")$name
-    dims = paste(dims_query, dims_query, sep=",", collapse=",")
-    x = scidb(db, sprintf("project(apply(%s, %s), %s, %s)", query@name,
+    ndim = length(schema(query, "dimensions")$name)
+    if(getOption("scidb.unpack"))
+    {
+      dim = make.unique_(c(schema(query, "attributes")$name, schema(query, "dimensions")$name), "i")
+      x = scidb(db, sprintf("unpack(%s, %s)", query@name, dim))
+    } else
+    {
+      dims_query = schema(query, "dimensions")$name
+      dims = paste(dims_query, dims_query, sep=",", collapse=",")
+      x = scidb(db, sprintf("project(apply(%s, %s), %s, %s)", query@name,
                       dims, paste(dims_query, collapse=","), paste(schema(query, "attributes")$name, collapse=",")))
+    }
   }
   A = schema(x, "attributes")
   ns = rep("", length(A$nullable))

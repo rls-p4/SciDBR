@@ -271,6 +271,7 @@ as.scidb = function(db, x,
 
 #' Download SciDB data to R
 #' @param x a \code{\link{scidb}} object (a SciDB array or expression)
+#' @param attributes_only optional logical argument, if \code{TRUE} do not download SciDB dimensions
 #' @return An R \code{\link{data.frame}}
 #' @note This convenience function is equivalent to running \code{iquery(db, x, return=TRUE)} for
 #' a SciDB connection object \code{s}.
@@ -285,11 +286,20 @@ as.scidb = function(db, x,
 #'#3 3  0.1411200
 #'#4 4 -0.7568025
 #'#5 5 -0.9589243
+#'
+#' as.R(x, attributes_only=TRUE)
+#'#           v
+#'#1  0.8414710
+#'#2  0.9092974
+#'#3  0.1411200
+#'#4 -0.7568025
+#'#5 -0.9589243
 #' }
 #' @export
-as.R = function(x)
+as.R = function(x, attributes_only=FALSE)
 {
   stopifnot(inherits(x, "scidb"))
+  if(attributes_only) return(scidb_unpack_to_dataframe(x@meta$db, x, attributes=TRUE))
   scidb_unpack_to_dataframe(x@meta$db, x)
 }
 
