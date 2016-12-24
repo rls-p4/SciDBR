@@ -344,6 +344,23 @@ in the following example (also used above).
 x <- db$build("<v:double>[i=1:2,2,0, j=1:3,1,0]", i * j)
 ```
 
+
+## Using scalar-valued R expressions within AFL statements
+
+Use the special `R()` function syntax within any portion of an AFL statement to
+replace the enclosed R expression with its scalar value.  The R expression is
+evaluated in the calling environment (the parent frame of the AFL function).
+The evaluated R expression must be a scalar character, numeric, or logical
+value.  The next example uses two R values, one for the upper limit of the
+`j` dimension and another in the build statement.
+```{r, eval=FALSE, echo=TRUE}
+jlim <- 3
+z <- pi
+x <- db$build("<v:double>[i=1:2,2,0, j=1:R(jlim),1,0]", i * j + R(z))
+```
+
+
+
 ## Help on AFL expressions
 
 Use the TAB key for argument lists within an AFL function (RStudio only).
@@ -357,7 +374,6 @@ to the `aflhelp` function to show SciDB help for the operator.
 ```{r, eval=FALSE}
 aflhelp("aggregate")
 ```
-
 
 
 ## SciDB aliasing in AFL expressions with `%as%`
