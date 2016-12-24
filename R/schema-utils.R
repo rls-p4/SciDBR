@@ -14,9 +14,11 @@
   d = gsub("\\]", "", strsplit(s, "\\[")[[1]][[2]])
   d = strsplit(strsplit(d, "=")[[1]], ",")
   # SciDB schema syntax changed greatly in 16.9, convert it to old format.
+  chunk = 3; overlap = 4
   if(newer_than(attr(x@meta$db, "connection")$scidb.version, "16.9"))
   { 
-    d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\4,\\3", x)), ",")[[1]])
+    d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\3,\\4", x)), ",")[[1]])
+    chunk = 4; overlap = 3
   }
   n = c(d[[1]], vapply(d[-c(1, length(d))], function(x) x[length(x)], ""))
   d = d[-1]
@@ -29,8 +31,8 @@
   data.frame(name=n,
              start=vapply(d, function(x) x[1], ""),
              end=vapply(d, function(x) x[2], ""),
-             chunk=vapply(d, function(x) x[3], ""),
-             overlap=vapply(d, function(x) x[4], ""), stringsAsFactors=FALSE)
+             chunk=vapply(d, function(x) x[chunk], ""),
+             overlap=vapply(d, function(x) x[overlap], ""), stringsAsFactors=FALSE)
 }
 
 .attsplitter = function(x)
