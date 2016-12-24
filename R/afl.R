@@ -71,6 +71,7 @@ afl = function(...)
   {
     return(iquery(attr(call, "conn"), expr))
   }
+  if(getOption("scidb.debug", FALSE)) message("AFL EXPRESSION: ", expr)
   ans = scidb(attr(call, "conn"), expr)
   ans@meta$depend = as.list(.env)
   ans
