@@ -65,13 +65,7 @@ afl = function(...)
 {
   call = eval(as.list(match.call())[[1]])
   .env = new.env()
-  if(isTRUE(getOption("scidb.tryeval")))
-  {
-# why two passes? XXX
-    expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch({ans = eval(.x); if(inherits(ans, "function")) ans = as.character(ans); ans}, error=function(e) gsub("%as%", " as ", capture.output(.x)))), arg, attr(call, "conn"), .env), collapse=","))
-  } else {
-    expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch({ans = eval(.x); if(!inherits(ans, "scidb")) stop(); ans}, error=function(e) gsub("%as%", " as ", capture.output(.x)))), arg, attr(call, "conn"), .env), collapse=","))
-  }
+  expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch({ans = eval(.x); if(!inherits(ans, "scidb")) stop(); ans}, error=function(e) gsub("%as%", " as ", capture.output(.x)))), arg, attr(call, "conn"), .env), collapse=","))
 # Some special AFL non-operator expressions don't return arrays
   if(any(grepl(attr(call, "name"), c("remove"), ignore.case=TRUE)))
   {

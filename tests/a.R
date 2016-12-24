@@ -21,6 +21,8 @@ if(nchar(host) > 0)
   check(iris[, 1:4], iquery(db, x, return=TRUE)[, -1][, 1:4])
 # iquery CSV download
   check(iris[, 1:4], iquery(db, x, return=TRUE, binary=FALSE)[, -1][, 1:4])
+# as.R attributes only
+  check(as.R(x)[,2],  as.R(x, attributes_only=TRUE)[,1])
 
 # upload vector
   check(1:5, as.R(as.scidb(db, 1:5))[,2])

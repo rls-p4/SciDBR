@@ -17,8 +17,6 @@ NULL
   options(scidb.default_shim_host="localhost")
 # Binary data parser buffer size
   options(scidb.buffer_size = 5e7)
-# Should we try to evaluate R objects inside AFL expressions?
-  options(scidb.tryeval = TRUE)
 # How to download arrays and their coordinates. Set scidb.unpack=FALSE
 # to use apply, which can be faster in some cases when used with aio.
   options(scidb.unpack=FALSE)
@@ -33,7 +31,6 @@ NULL
 # Reset the various package options
 .onUnload = function(libpath)
 {
-  options(scidb.tryeval=c())
   options(scidb.buffer_size=c())
   options(scidb.default_shim_port=c())
   options(scidb.default_shim_host=c())
