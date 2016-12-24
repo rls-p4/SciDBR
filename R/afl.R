@@ -51,7 +51,7 @@ arg = function(x, db, env)
     numeric = sprintf("%.16g", x),
     integer = sprintf("%d", x),
     scidb = {assign(x@name, x, envir=env); x@name},
-    gsub("%as%", " as " ,sprintf("%s", x)) # almost verbatim
+    gsub("%as%", " as " ,sprintf("%s", x)) # almost verbatim default case
   )
 }
 
@@ -65,7 +65,15 @@ afl = function(...)
 {
   call = eval(as.list(match.call())[[1]])
   .env = new.env()
-  expr = sprintf("%s(%s)", attr(call, "name"), paste(lapply(lapply(as.list(match.call())[-1], function(.x) tryCatch({ans = eval(.x); if(!inherits(ans, "scidb")) stop(); ans}, error=function(e) gsub("%as%", " as ", capture.output(.x)))), arg, attr(call, "conn"), .env), collapse=","))
+  expr = sprintf("%s(%s)", attr(call, "name"), paste(
+           lapply(
+             lapply(as.list(match.call())[-1],
+               function(.x) tryCatch({
+                   ans = eval(.x)  # allow this to fail, handling error below
+                   if(inherits(ans, "scidb") || inherits(ans, "character")) return(ans)
+                   stop()},
+                 error=function(e) gsub("%as%", " as ", paste(capture.output(.x), collapse="")))),
+             arg, attr(call, "conn"), .env), collapse=","))
 # Some special AFL non-operator expressions don't return arrays
   if(any(grepl(attr(call, "name"), c("remove"), ignore.case=TRUE)))
   {

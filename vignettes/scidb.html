@@ -121,7 +121,7 @@ $(document).ready(function () {
 <!--
 ---
 title: "An R interface to SciDB"
-date: "2016-12-14"
+date: "2016-12-24"
 author: B. W. Lewis, Copyright (C) 2016 by Paradigm4, Inc.
 output:
   html_document:
@@ -306,27 +306,14 @@ SciDB schema  &lt;v:double,a:double,b:string NOT NULL&gt; [i=1:2:0:2; j=1:3:0:1]
 3        v     FALSE          double     TRUE                
 4        a     FALSE          double     TRUE                
 5        b     FALSE string NOT NULL    FALSE                </code></pre>
-<p>Explanation of argument handling in AFL functions depends on a global package option, <code>scidb.tryeval</code>. With the default option, <code>options(scidb.tryeval=TRUE)</code> arguments are processed as follows:</p>
-<ol style="list-style-type: decimal">
-<li>Each argument is evaluated by R; evaluation occurs in the usual current environment.</li>
-<li>Arguments that evaluate to SciDB arrays are replaced by their corresponding SciDB expression.</li>
-<li>Arguments that evaluate to R scalars are replaced by their scalar values</li>
-<li>Arguments that evaluate to R data frames, matrices, vectors, arrays, and some sparse matrices are uploaded to SciDB and replaced by their corresponding SciDB array name.</li>
-<li>Arguments evaluating to R character strings are replaced by their unquoted character string value.</li>
-<li>All remaining arguments are passed verbatim into the SciDB query expression.</li>
-</ol>
-<p>SciDB schema literal values represent one important exception to the above process. SciDB schemas contain characters like <code>&lt;</code>, <code>:</code>, <code>[</code> that correspond to R infix operators. It’s difficult to always suppress their evaluation as operators. Thus SciDB schemas must be supplied as R character strings as shown in the example above:</p>
-<pre class="r"><code>x &lt;- db$build(&quot;&lt;v:double&gt;[i=1:2,2,0, j=1:3,1,0]&quot;, i * j)</code></pre>
-<p>Note that in the above expression <code>i</code> and <code>j</code> are evaluated as SciDB dimension values, not R values. If, however, a variable named <code>i</code> or <code>j</code> is defined in the enclosing R environment, the default evaluation process will replace those with corresponding evaluated R values. This default evaluation approach can be very flexible but must be used with caution.</p>
-<p>An alternative argument evaluation procedure that doesn’t evaluate R objects (except for <code>scidb</code> array objects) may be enabled by setting the package option</p>
-<pre class="r"><code>options(scidb.tryeval = FALSE)</code></pre>
-<p>With this option, the evaluation procedure is</p>
+<p>Note that in the above expression <code>i</code> and <code>j</code> are evaluated as SciDB dimension values, not R values. The expression evaluation procedure is</p>
 <ol style="list-style-type: decimal">
 <li>Arguments that evaluate to SciDB arrays are replaced by their corresponding SciDB expression.</li>
 <li>Character strings are replaced by their unquoted value.</li>
 <li>All remaining arguments are passed verbatim into the SciDB query expression.</li>
 </ol>
-<p>Setting <code>options(scidb.tryeval=FALSE)</code> results in more straightforward but somewhat less flexible AFL expression handling.</p>
+<p>SciDB schema literal values represent one important exception to the above process. SciDB schemas contain characters like <code>&lt;</code>, <code>:</code>, <code>[</code> that correspond to R infix operators. It’s difficult to always suppress their evaluation as operators. Thus SciDB schemas must be supplied as R character strings as shown in the example above:</p>
+<pre class="r"><code>x &lt;- db$build(&quot;&lt;v:double&gt;[i=1:2,2,0, j=1:3,1,0]&quot;, i * j)</code></pre>
 </div>
 <div id="scidb-aliasing-in-afl-expressions-with-as" class="section level2">
 <h2>SciDB aliasing in AFL expressions with <code>%as%</code></h2>
