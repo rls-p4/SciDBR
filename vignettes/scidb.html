@@ -315,6 +315,13 @@ SciDB schema  &lt;v:double,a:double,b:string NOT NULL&gt; [i=1:2:0:2; j=1:3:0:1]
 <p>SciDB schema literal values represent one important exception to the above process. SciDB schemas contain characters like <code>&lt;</code>, <code>:</code>, <code>[</code> that correspond to R infix operators. It’s difficult to always suppress their evaluation as operators. Thus SciDB schemas must be supplied as R character strings as shown in the following example (also used above).</p>
 <pre class="r"><code>x &lt;- db$build(&quot;&lt;v:double&gt;[i=1:2,2,0, j=1:3,1,0]&quot;, i * j)</code></pre>
 </div>
+<div id="help-on-afl-expressions" class="section level2">
+<h2>Help on AFL expressions</h2>
+<p>Use the TAB key for argument lists within an AFL function (RStudio only). The standard R <code>help</code> function shows SciDB doxygen help for AFL function arguments, for instance</p>
+<pre class="r"><code>help(db$aggregate)</code></pre>
+<p>Alternatively, supply a character string argument naming a SciDB operator to the <code>aflhelp</code> function to show SciDB help for the operator.</p>
+<pre class="r"><code>aflhelp(&quot;aggregate&quot;)</code></pre>
+</div>
 <div id="scidb-aliasing-in-afl-expressions-with-as" class="section level2">
 <h2>SciDB aliasing in AFL expressions with <code>%as%</code></h2>
 <p>Use the special <code>%as%</code> R infix operator in place of the usual AFL word “as” in SciDB expressions using aliasing, either to rename a SciDB array, expression, or certain AFL expression arguments often in aggregations.</p>
