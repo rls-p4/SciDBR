@@ -26,7 +26,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   } else
   {
     ndim = length(schema(query, "dimensions")$name)
-    if(getOption("scidb.unpack"))
+    if(getOption("scidb.unpack", TRUE))
     {
       dim = make.unique_(c(schema(query, "attributes")$name, schema(query, "dimensions")$name), "i")
       x = scidb(db, sprintf("unpack(%s, %s)", query@name, dim))
@@ -34,8 +34,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     {
       dims_query = schema(query, "dimensions")$name
       dims = paste(dims_query, dims_query, sep=",", collapse=",")
-      x = scidb(db, sprintf("project(apply(%s, %s), %s, %s)", query@name,
-                      dims, paste(dims_query, collapse=","), paste(schema(query, "attributes")$name, collapse=",")))
+      x = scidb(db, sprintf("apply(%s, %s)", query@name, dims))
     }
   }
   A = schema(x, "attributes")
@@ -82,7 +81,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
       if("binary" %in% A$type)
       {
         if(DEBUG) cat("  R rbind/df assembly time", (proc.time() - dt2)[3], "\n")
-        return(lapply(1:n, function(j) tmp[[j]][1:lines]))
+        return(lapply(1:n, function(j) tmp[[j]][1:lines])) # XXX issue 33
       }
       len_out = length(tmp[[1]])
       if(lines < len_out) tmp = lapply(tmp[1:n], function(x) x[1:lines])
@@ -90,8 +89,8 @@ scidb_unpack_to_dataframe = function(db, query, ...)
       avg_bytes_per_line = ceiling((p - p_old) / lines)
       buffer = min(getOption("scidb.buffer_size"), ceiling(1.3 * (len - p) / avg_bytes_per_line)) # Engineering factors
 # Assemble the data frame
-      if(is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE))
-      else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE)))
+      if(is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE))
+      else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE)))
     }
     if(DEBUG) cat("  R rbind/df assembly time", (proc.time() - dt2)[3], "\n")
   }
@@ -106,7 +105,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     return(ans)
   }
   if(DEBUG) cat("Total R parsing time", (proc.time() - dt1)[3], "\n")
-  ans = as.data.frame(ans)
+  ans = as.data.frame(ans, check.names=FALSE)
   gc()
   ans
 }

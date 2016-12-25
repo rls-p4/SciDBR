@@ -70,7 +70,7 @@ afl = function(...)
              lapply(as.list(match.call())[-1],
                function(.x) tryCatch({
                    ans = eval(.x)  # allow this to fail, handling error below
-                   if(inherits(ans, "scidb") || inherits(ans, "character") || inherits(ans, "integer") || inherits(ans, "numeric") || inherits(ans, "logical")) return(ans)
+                   if(class(ans)[1] %in% c("character", "numeric", "integer", "logical", "scidb")) return(ans)
                    stop()},
                  error=function(e) gsub("%as%", " as ", paste(capture.output(.x), collapse="")))),
              arg, attr(call, "conn"), .env), collapse=","))
