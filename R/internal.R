@@ -96,8 +96,8 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   }
   if(is.null(ans))
   {
-    xa = schema(x, "attributes")$name
-    xd = schema(x, "dimensions")$name
+    xa = schema(query, "attributes")$name
+    xd = schema(query, "dimensions")$name
     n = length(xd) + length(xa)
     ans = vector(mode="list", length=n)
     names(ans) = c(xd, xa)
@@ -106,6 +106,12 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   }
   if(DEBUG) cat("Total R parsing time", (proc.time() - dt1)[3], "\n")
   ans = as.data.frame(ans, check.names=FALSE)
+  if(!getOption("scidb.unpack", TRUE) && is.null(args$attributes)) # permute cols, see issue #125
+  {
+    nd = length(schema(query, "dimensions")$name)
+    i = ncol(ans) - nd
+    ans = ans[, c((i+1):ncol(ans), 1:i)]
+  }
   gc()
   ans
 }
