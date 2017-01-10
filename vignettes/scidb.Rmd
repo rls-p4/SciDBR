@@ -204,10 +204,10 @@ collector by default (unless the argument `gc=FALSE` is specified). When the R
 variable's contents are garbage-collected by R, the associated SciDB array is
 removed.
 ```{r, eval=FALSE}
-ls(s)   # (observe y's corresponding array in the list)
+ls(db)   # (observe y's corresponding array in the list)
 rm(y)
 gc()
-ls(s)   # (y's corresponding array will no longer appear)
+ls(db)   # (y's corresponding array will no longer appear)
 ```
 
 ## The `schema()` function
