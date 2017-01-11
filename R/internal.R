@@ -634,6 +634,13 @@ df2scidb = function(db, X,
 fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), collapse=sep))
 {
   if(!is.data.frame(x)) stop("x must be a data.frame")
+  if(is.null(file) || ncol(x) > 97) # use slow write.table method
+  {
+    tc = textConnection("foo", open="w")
+    write.table(x, sep=sep, col.names=FALSE, row.names=FALSE, file=tc, quote=FALSE)
+    close(tc)
+    return(paste(foo, collapse="\n"))
+  }
   if(is.function(file)) return(paste(do.call("sprintf", args=c(format, as.list(x))), collapse="\n"))
   write(paste(do.call("sprintf", args=c(format, as.list(x))), collapse="\n"), file=file)
   invisible()

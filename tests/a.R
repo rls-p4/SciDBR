@@ -33,6 +33,11 @@ if(nchar(host) > 0)
   x = Matrix::sparseMatrix(i=sample(10, 10), j=sample(10, 10),x=runif(10))
   y = as.R(as.scidb(db, x))
   check(x, Matrix::sparseMatrix(i=y$i + 1, j=y$j + 1, x=y$val))
+# issue #126
+  df = as.data.frame(matrix(runif(10*100), 10, 100))
+  sdf = as.scidb(db, df)
+  check(df, sdf[, -1])
+
 # upload n-d array
 # XXX WRITE ME, not implemented yet
 
