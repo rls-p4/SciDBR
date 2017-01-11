@@ -415,9 +415,6 @@ options(scidb.prefix=NULL)
 options(scidb.default_shim_port=8080L)
 options(scidb.default_shim_host="localhost")
 
-# Should we try to evaluate R objects inside AFL expressions?
-options(scidb.tryeval = TRUE)
-
 # How to download arrays and their coordinates. Set scidb.unpack=FALSE
 # to use apply, which can be faster in some cases when used with aio.
 options(scidb.unpack=FALSE)
