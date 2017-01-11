@@ -37,6 +37,10 @@ if(nchar(host) > 0)
   df = as.data.frame(matrix(runif(10*100), 10, 100))
   sdf = as.scidb(db, df)
   check(df, as.R(sdf)[, -1])
+# issue #130
+  df = data.frame(x1 = c("NA", NA), x2 = c(0.13, NA), x3 = c(TRUE, NA), stringsAsFactors=FALSE)
+  x = as.scidb(db, df)
+  check(df, as.R(x)[, -1])
 
 # upload n-d array
 # XXX WRITE ME, not implemented yet

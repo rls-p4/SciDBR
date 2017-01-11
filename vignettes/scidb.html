@@ -225,10 +225,10 @@ SciDB schema  &lt;v:double&gt; [i=1:2,2,0,j=1:3,1,0]
 3        v     FALSE double    FALSE                </code></pre>
 <p>Note that the SciDB expression associated with the <code>y</code> R variable is now a named SciDB array (automatically named in this case); compare with the SciDB expression for <code>x</code> above.</p>
 <p>SciDB array values associated with R variables are tied to R’s garbage collector by default (unless the argument <code>gc=FALSE</code> is specified). When the R variable’s contents are garbage-collected by R, the associated SciDB array is removed.</p>
-<pre class="r"><code>ls(s)   # (observe y's corresponding array in the list)
+<pre class="r"><code>ls(db)   # (observe y's corresponding array in the list)
 rm(y)
 gc()
-ls(s)   # (y's corresponding array will no longer appear)</code></pre>
+ls(db)   # (y's corresponding array will no longer appear)</code></pre>
 <div id="the-schema-function" class="section level2">
 <h2>The <code>schema()</code> function</h2>
 <p>Use the <code>schema()</code> function to display the SciDB schema of <code>scidb</code> objects verbatim or in parsed detail for attributes and dimensions.</p>

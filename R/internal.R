@@ -553,9 +553,9 @@ df2scidb = function(db, X,
   if(missing(gc)) gc = FALSE
   nullable = TRUE
   anames = make.names(names(X), unique=TRUE)
-  anames = gsub("\\.","_", anames, perl=TRUE)
-  if(length(anames)!=ncol(X)) anames = make.names(1:ncol(X))
-  if(!all(anames==names(X))) warning("Attribute names have been changed")
+  anames = gsub("\\.", "_", anames, perl=TRUE)
+  if(length(anames) != ncol(X)) anames = make.names(1:ncol(X))
+  if(!all(anames == names(X))) warning("Attribute names have been changed")
 
 # Default type is string
   typ = rep("string", ncol(X))
@@ -564,31 +564,47 @@ df2scidb = function(db, X,
     for(j in 1:ncol(X)) typ[j] = types[j]
   } else {
     for(j in 1:ncol(X)) {
-      if("numeric" %in% class(X[,j])) 
+      if("numeric" %in% class(X[, j])) 
+      {
         typ[j] = "double"
-      else if("integer" %in% class(X[,j])) 
+        X[, j] = gsub("NA", "null", sprintf("%.16f", X[, j]))
+      }
+      else if("integer" %in% class(X[, j])) 
+      {
         typ[j] = "int32"
-      else if("logical" %in% class(X[,j])) 
+        X[, j] = gsub("NA", "null", sprintf("%d", X[, j]))
+      }
+      else if("logical" %in% class(X[, j])) 
+      {
         typ[j] = "bool"
-      else if("character" %in% class(X[,j])) 
-        typ[j] = "string"
-      else if("factor" %in% class(X[,j])) 
+        X[, j] = gsub("na", "null", tolower(sprintf("%s", X[, j])))
+      }
+      else if("character" %in% class(X[, j])) 
       {
         typ[j] = "string"
+        X[is.na(X[, j]), j] = "null"
       }
-      else if("POSIXct" %in% class(X[,j])) 
+      else if("factor" %in% class(X[, j])) 
+      {
+        typ[j] = "string"
+        isna = is.na(X[, j])
+        X[, j] = sprintf("%s", X[, j])
+        if(any(isna)) X[isna, j] = "null"
+      }
+      else if("POSIXct" %in% class(X[, j])) 
       {
         warning("Converting R POSIXct to SciDB datetime as UTC time. Subsecond times rounded to seconds.")
-        X[,j] = format(X[,j],tz="UTC")
+        X[, j] = format(X[, j], tz="UTC")
+        X[is.na(X[, j]), j] = "null"
         typ[j] = "datetime"
       }
     }  
   }
   for(j in 1:ncol(X))
   {
-    if(typ[j] == "datetime") dcast[j] = sprintf("%s, datetime(a%d)",anames[j],j-1)
-    else if(typ[j] == "string") dcast[j] = sprintf("%s, a%d", anames[j], j-1)
-    else dcast[j] = sprintf("%s, dcast(a%d, %s(null))", anames[j], j-1, typ[j])
+    if(typ[j] == "datetime") dcast[j] = sprintf("%s, datetime(a%d)", anames[j], j - 1)
+    else if(typ[j] == "string") dcast[j] = sprintf("%s, a%d", anames[j], j - 1)
+    else dcast[j] = sprintf("%s, dcast(a%d, %s(null))", anames[j], j - 1, typ[j])
   }
   args = sprintf("<%s>", paste(anames, ":", typ, " null", collapse=","))
 
