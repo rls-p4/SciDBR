@@ -37,24 +37,6 @@ update.afl = function(db, new, ops)
   db
 }
 
-#' Evaluate arguments in an AFL expression.
-#' @keywords internal
-arg = function(x, db, env)
-{
-# vectors are slightly special
-  if(length(x) > 1 && is.vector(x) && class(x)[1] %in% c("character", "numeric", "integer")) x = as.scidb(db, x)
-  switch(class(x)[1],
-    raw = {ans = as.scidb(db, x); assign(ans@name, ans, envir=env); ans@name},
-    matrix = {ans = as.scidb(db, x); assign(ans@name, ans, envir=env); ans@name},
-    dgCMatrix = {ans = as.scidb(db, x); assign(ans@name, ans, envir=env); ans@name},
-    data.frame = {ans = as.scidb(db, x); assign(ans@name, ans, envir=env); ans@name},
-    numeric = sprintf("%.16g", x),
-    integer = sprintf("%d", x),
-    scidb = {assign(x@name, x, envir=env); x@name},
-    gsub("%as%", " as " ,sprintf("%s", x)) # almost verbatim default case
-  )
-}
-
 #' Substitute scalar-valued R expressions into an AFL expression
 #' R expressions are marked with R(expression)
 #' @param x character valued AFL expression
@@ -91,14 +73,14 @@ afl = function(...)
   call = eval(as.list(match.call())[[1]])
   .env = new.env()
   expr = sprintf("%s(%s)", attr(call, "name"), paste(
-           lapply(
              lapply(as.list(match.call())[-1],
                function(.x) tryCatch({
-                   ans = eval(.x)  # allow this to fail, handling error below
-                   if(class(ans)[1] %in% c("character", "numeric", "integer", "logical", "scidb")) return(ans)
-                   stop()},
-                 error=function(e) gsub("%as%", " as ", paste(capture.output(.x), collapse="")))),
-             arg, attr(call, "conn"), .env), collapse=","))
+                   if(class(eval(.x))[1] %in% "scidb") eval(.x)@name
+                   else .x
+               }, error=function(e) .x)),
+         collapse=","))
+# handle aliasing
+  expr = gsub("%as%", " as ", expr)
 # handle R scalar variable substitutions
   expr = rsub(expr, parent.frame())
 # Some special AFL non-operator expressions don't return arrays
@@ -114,7 +96,7 @@ afl = function(...)
 
 #' Display SciDB AFL operator documentation
 #' @param topic an \code{\link{afl}} object from a SciDB database connection, or optionally a character string name
-#' @param optional database connection from \code{\link{scidbconnect}} (only needed when \code{topic} is a character string)
+#' @param db optional database connection from \code{\link{scidbconnect}} (only needed when \code{topic} is a character string)
 #' @return displays help
 #' @examples
 #' \dontrun{

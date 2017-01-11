@@ -34,15 +34,23 @@ if(nchar(host) > 0)
   y = as.R(as.scidb(db, x))
   check(x, Matrix::sparseMatrix(i=y$i + 1, j=y$j + 1, x=y$val))
 # upload n-d array
-# XXX WRITE ME
+# XXX WRITE ME, not implemented yet
 
 # garbage collection
   gc()
 
+
 # 2 AFL tests
-# XXX WRITE ME
+
+# Issue #128
+ i = 4
+ j = 6
+ x = db$build("<v:double>[i=1:2,2,0, j=1:3,1,0]", i * j)
+ check(as.R(x)$v, c(1, 2, 2, 4, 3, 6))
+ x = db$apply(x, w, R(i) * R(j))
+ check(as.R(x)$w, rep(24, 6))
+
 
 # 3 Miscellaneous tests
-# XXX WRITE ME
 
 }
