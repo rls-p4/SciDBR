@@ -603,7 +603,7 @@ df2scidb = function(db, X,
   tmp = gsub("\n", "", gsub("\r", "", tmp))
 
 # Generate a load_tools query
-  aio = length(grep("aio_input", .scidbenv$ops)) > 0
+  aio = length(grep("aio_input", names(db))) > 0
   atts = paste(dcast, collapse=",")
   if(aio)
   {
