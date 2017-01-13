@@ -110,6 +110,7 @@ scidb = function(db, name, gc=FALSE)
 scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
                         port=getOption("scidb.default_shim_port", 8080L),
                         username, password,
+                        password_digest=FALSE,  #set this to TRUE if connecting to an older SciDB version
                         auth_type=c("scidb", "digest"), protocol=c("http", "https"),
                         doc)
 {
@@ -129,8 +130,14 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
     if(auth_type=="scidb")
     {
       assign("username", username, envir=.scidbenv)
-      assign("password", base64_encode(digest(charToRaw(password),
-        serialize=FALSE, raw=TRUE, algo="sha512")), envir=.scidbenv)
+      if(!password_digest)
+      {
+        #16.9 no longer hashes the password
+        assign("password", password, envir=.scidbenv)
+      } else 
+      {
+        assign("password", base64_encode(digest(charToRaw(password), serialize=FALSE, raw=TRUE, algo="sha512")), envir=.scidbenv)
+      }
     } else # HTTP basic digest auth
     {
       assign("digest", paste(username, password, sep=":"), envir=.scidbenv)
