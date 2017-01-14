@@ -11,7 +11,6 @@ scidb_unpack_to_dataframe = function(db, query, ...)
 {
   DEBUG = FALSE
   projected = FALSE
-  if(!inherits(query, "scidb")) query = scidb(db, query)
   DEBUG = getOption("scidb.debug", FALSE)
   buffer = 100000L
   args = list(...)
@@ -20,29 +19,53 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     argsbuf = tryCatch(as.integer(args$buffer), warning=function(e) NA)
     if(!is.na(argsbuf) && argsbuf <= 1e9) buffer = as.integer(argsbuf)
   }
-  if(!is.null(args$attributes))
+  if(is.null(args$attributes) || is.null(args$dimensions))
   {
-      x = scidb(db, sprintf("project(%s, %s)", query@name, paste(schema(query, "attributes")$name, collapse=",")))
-  } else
-  {
-    ndim = length(schema(query, "dimensions")$name)
-    if(getOption("scidb.unpack", TRUE))
-    {
-      dim = make.unique_(c(schema(query, "attributes")$name, schema(query, "dimensions")$name), "i")
-      x = scidb(db, sprintf("unpack(%s, %s)", query@name, dim))
-    } else
-    {
-      dims_query = schema(query, "dimensions")$name
-      dims = paste(dims_query, dims_query, sep=",", collapse=",")
-      x = scidb(db, sprintf("apply(%s, %s)", query@name, dims))
-    }
+    if(!inherits(query, "scidb")) query = scidb(db, query)
+    attributes = schema(query, "attributes")
+    dimensions = schema(query, "dimensions")
+  } else {
+    attributes = args$attributes
+    attributes$name = as.character(attributes$name)
+    attributes$type = as.character(attributes$type)
+    dimensions = args$dimensions
+    dimensions$name = as.character(dimensions$name)
   }
-  A = schema(x, "attributes")
-  ns = rep("", length(A$nullable))
-  ns[A$nullable] = "null"
-  format_string = paste(paste(A$type, ns), collapse=",")
+  if(inherits(query, "scidb")) 
+  {
+    query = query@name
+  }
+  if(is.null(args$only_attributes)) 
+  {
+    dim_names = dimensions$name
+    attr_names = attributes$name
+    all_names = c(dim_names, attr_names)
+    internal_query = query
+    if(length(all_names) != length(unique(all_names)))
+    {
+      #Cast to completeley unique names to be safe:
+      cast_dim_names = make.names_(dim_names)
+      cast_attr_names = make.unique_(cast_dim_names, make.names_(attributes$name))
+      cast_schema = sprintf("<%s>[%s]", paste(paste(cast_attr_names, attributes$type, sep=":"), collapse=","), paste(cast_dim_names, collapse=","))
+      internal_query = sprintf("cast(%s, %s)", internal_query, cast_schema)
+      all_names = c(cast_dim_names, cast_attr_names)
+      dim_names = cast_dim_names
+    }
+    #Apply dimensions as attributes, using unique names. Manually construct the list of resulting attributes:
+    dimensional_attributes = data.frame(name=dimensions$name, type="int64", nullable=FALSE) #original dimension names (used below)
+    internal_attributes = rbind(attributes, dimensional_attributes) 
+    dim_apply = paste(make.unique_(all_names, dim_names), dim_names, sep=",", collapse=",") 
+    internal_query = sprintf("apply(%s, %s)", internal_query, dim_apply)
+  } else #Just grab the attributes
+  {
+    internal_attributes = attributes
+    internal_query = query
+  }
+  ns = rep("", length(internal_attributes$nullable))
+  ns[internal_attributes$nullable] = "null"
+  format_string = paste(paste(internal_attributes$type, ns), collapse=",")
   format_string = sprintf("(%s)", format_string)
-  sessionid = scidbquery(db, x@name, save=format_string, release=0)
+  sessionid = scidbquery(db, internal_query, save=format_string, release=0)
   on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
 
   dt2 = proc.time()
@@ -61,15 +84,13 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   len = length(resp$content)
   p = 0
   ans = c()
-  atts = schema(x, "attributes")$name
-  cnames = c(atts, "lines", "p")  # we are unpacking to a SciDB array, ignore dims
-  n = length(atts)
+  cnames = c(internal_attributes$name, "lines", "p")  # we are unpacking to a SciDB array, ignore dims
+  n = nrow(internal_attributes)
   rnames = c()
-  if(projected) n = length(args$project)
   while(p < len)
   {
     dt2 = proc.time()
-    tmp   = .Call("scidb_parse", as.integer(buffer), A$type, A$nullable, resp$content, as.double(p), PACKAGE="scidb")
+    tmp   = .Call("scidb_parse", as.integer(buffer), internal_attributes$type, internal_attributes$nullable, resp$content, as.double(p), PACKAGE="scidb")
     names(tmp) = cnames
     lines = tmp[[n+1]]
     p_old = p
@@ -78,7 +99,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     dt2 = proc.time()
     if(lines > 0)
     {
-      if("binary" %in% A$type)
+      if("binary" %in% internal_attributes$type)
       {
         if(DEBUG) cat("  R rbind/df assembly time", (proc.time() - dt2)[3], "\n")
         return(lapply(1:n, function(j) tmp[[j]][1:lines])) # XXX issue 33
@@ -96,21 +117,33 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   }
   if(is.null(ans))
   {
-    xa = schema(query, "attributes")$name
-    xd = schema(query, "dimensions")$name
+    xa = attributes$name
+    if(is.null(args$only_attributes)) # permute cols, see issue #125
+    {
+      xd = dimensions$name  
+    } 
+    else 
+    {
+      xd = c()
+    }
     n = length(xd) + length(xa)
     ans = vector(mode="list", length=n)
-    names(ans) = c(xd, xa)
+    names(ans) = make.names_(c(xd, xa))
     class(ans) = "data.frame"
     return(ans)
   }
   if(DEBUG) cat("Total R parsing time", (proc.time() - dt1)[3], "\n")
   ans = as.data.frame(ans, check.names=FALSE)
-  if(!getOption("scidb.unpack", TRUE) && is.null(args$attributes)) # permute cols, see issue #125
+  if(is.null(args$only_attributes)) # permute cols, see issue #125
   {
-    nd = length(schema(query, "dimensions")$name)
+    nd = length(dimensions$name)
     i = ncol(ans) - nd
     ans = ans[, c((i+1):ncol(ans), 1:i)]
+    colnames(ans) = make.names_(c(dimensions$name, attributes$name))
+  }
+  else
+  {
+    colnames(ans) = make.names_(attributes$name)
   }
   gc()
   ans
