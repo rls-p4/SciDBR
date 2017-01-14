@@ -19,7 +19,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     argsbuf = tryCatch(as.integer(args$buffer), warning=function(e) NA)
     if(!is.na(argsbuf) && argsbuf <= 1e9) buffer = as.integer(argsbuf)
   }
-  if(is.null(args$attributes) || is.null(args$dimensions))
+  if(is.null(args$attributes) || (is.null(args$dimensions) && is.null(args$only_attributes)))
   {
     if(!inherits(query, "scidb")) query = scidb(db, query)
     attributes = schema(query, "attributes")
@@ -28,8 +28,15 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     attributes = args$attributes
     attributes$name = as.character(attributes$name)
     attributes$type = as.character(attributes$type)
-    dimensions = args$dimensions
-    dimensions$name = as.character(dimensions$name)
+    if(is.null(attributes$nullable))
+    {
+      attributes$nullable=TRUE
+    }
+    if(is.null(args$only_attributes))
+    {
+      dimensions = args$dimensions
+      dimensions$name = as.character(dimensions$name)
+    }
   }
   if(inherits(query, "scidb")) 
   {
