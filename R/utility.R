@@ -110,6 +110,7 @@ scidb = function(db, name, gc=FALSE)
 scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
                         port=getOption("scidb.default_shim_port", 8080L),
                         username, password,
+                        password_digest=FALSE,  #set this to TRUE if connecting to an older SciDB version
                         auth_type=c("scidb", "digest"), protocol=c("http", "https"),
                         doc)
 {
@@ -129,8 +130,14 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
     if(auth_type=="scidb")
     {
       assign("username", username, envir=.scidbenv)
-      assign("password", base64_encode(digest(charToRaw(password),
-        serialize=FALSE, raw=TRUE, algo="sha512")), envir=.scidbenv)
+      if(!password_digest)
+      {
+        #16.9 no longer hashes the password
+        assign("password", password, envir=.scidbenv)
+      } else 
+      {
+        assign("password", base64_encode(digest(charToRaw(password), serialize=FALSE, raw=TRUE, algo="sha512")), envir=.scidbenv)
+      }
     } else # HTTP basic digest auth
     {
       assign("digest", paste(username, password, sep=":"), envir=.scidbenv)
@@ -271,7 +278,7 @@ as.scidb = function(db, x,
 
 #' Download SciDB data to R
 #' @param x a \code{\link{scidb}} object (a SciDB array or expression)
-#' @param attributes_only optional logical argument, if \code{TRUE} do not download SciDB dimensions
+#' @param only_attributes optional logical argument, if \code{TRUE} do not download SciDB dimensions
 #' @return An R \code{\link{data.frame}}
 #' @note This convenience function is equivalent to running \code{iquery(db, x, return=TRUE)} for
 #' a SciDB connection object \code{s}.
@@ -287,7 +294,7 @@ as.scidb = function(db, x,
 #'#4 4 -0.7568025
 #'#5 5 -0.9589243
 #'
-#' as.R(x, attributes_only=TRUE)
+#' as.R(x, only_attributes=TRUE)
 #'#           v
 #'#1  0.8414710
 #'#2  0.9092974
@@ -296,10 +303,10 @@ as.scidb = function(db, x,
 #'#5 -0.9589243
 #' }
 #' @export
-as.R = function(x, attributes_only=FALSE)
+as.R = function(x, only_attributes=FALSE)
 {
   stopifnot(inherits(x, "scidb"))
-  if(attributes_only) return(scidb_unpack_to_dataframe(x@meta$db, x, attributes=TRUE))
+  if(only_attributes) return(scidb_unpack_to_dataframe(x@meta$db, x, only_attributes=TRUE))
   scidb_unpack_to_dataframe(x@meta$db, x)
 }
 
