@@ -80,18 +80,18 @@ afl = function(...)
                    else .x
                }, error=function(e) .x)),
          collapse=",")
-  expr = sprintf("%s(%s)", attr(call, "name"), .args)
+  expr = sprintf("%s(%s)", attributes(call)$name, .args)
 # handle aliasing
   expr = gsub("%as%", " as ", expr)
 # handle R scalar variable substitutions
   expr = rsub(expr, pf)
 # Some special AFL non-operator expressions don't return arrays
-  if(any(grepl(attr(call, "name"), c("remove"), ignore.case=TRUE)))
+  if(any(grepl(attributes(call)$name, c("remove"), ignore.case=TRUE)))
   {
-    return(iquery(attr(call, "conn"), expr))
+    return(iquery(attributes(call)$conn, expr))
   }
   if(getOption("scidb.debug", FALSE)) message("AFL EXPRESSION: ", expr)
-  ans = scidb(attr(call, "conn"), expr)
+  ans = scidb(attributes(call)$conn, expr)
   ans@meta$depend = as.list(.env)
   ans
 }
