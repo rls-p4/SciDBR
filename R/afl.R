@@ -57,9 +57,9 @@ rsub = function(x, env)
     i = imbalance_paren(x)
     rexp = eval(parse(text=substring(x, 1, i - 1)), envir=env)
     rmdr = substring(x, i + 1)
-    paste(rexp, rmdr, sep=" ")
+    paste(rexp, rmdr, sep="")
   }, y[-1])
-  sprintf("%s %s", y[1], paste(expr, collapse=" "))
+  sprintf("%s%s", y[1], paste(expr, collapse=""))
 }
 
 #' Create an AFL expression
