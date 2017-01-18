@@ -73,17 +73,18 @@ afl = function(...)
   call = eval(as.list(match.call())[[1]])
   .env = new.env()
   pf = parent.frame()
-  expr = sprintf("%s(%s)", attr(call, "name"), paste(
+  .args = paste(
              lapply(as.list(match.call())[-1],
                function(.x) tryCatch({
                    if(class(eval(.x, envir=pf))[1] %in% "scidb") eval(.x, envir=pf)@name
                    else .x
                }, error=function(e) .x)),
-         collapse=","))
+         collapse=",")
+  expr = sprintf("%s(%s)", attr(call, "name"), .args)
 # handle aliasing
   expr = gsub("%as%", " as ", expr)
 # handle R scalar variable substitutions
-  expr = rsub(expr, parent.frame())
+  expr = rsub(expr, pf)
 # Some special AFL non-operator expressions don't return arrays
   if(any(grepl(attr(call, "name"), c("remove"), ignore.case=TRUE)))
   {
