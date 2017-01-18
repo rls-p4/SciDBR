@@ -72,10 +72,11 @@ afl = function(...)
 {
   call = eval(as.list(match.call())[[1]])
   .env = new.env()
+  pf = parent.frame()
   expr = sprintf("%s(%s)", attr(call, "name"), paste(
              lapply(as.list(match.call())[-1],
                function(.x) tryCatch({
-                   if(class(eval(.x))[1] %in% "scidb") eval(.x)@name
+                   if(class(eval(.x, envir=pf))[1] %in% "scidb") eval(.x)@name
                    else .x
                }, error=function(e) .x)),
          collapse=","))
