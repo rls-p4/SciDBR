@@ -76,7 +76,7 @@ afl = function(...)
   expr = sprintf("%s(%s)", attr(call, "name"), paste(
              lapply(as.list(match.call())[-1],
                function(.x) tryCatch({
-                   if(class(eval(.x, envir=pf))[1] %in% "scidb") eval(.x)@name
+                   if(class(eval(.x, envir=pf))[1] %in% "scidb") eval(.x, envir=pf)@name
                    else .x
                }, error=function(e) .x)),
          collapse=","))
