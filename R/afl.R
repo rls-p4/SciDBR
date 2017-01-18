@@ -57,9 +57,9 @@ rsub = function(x, env)
     i = imbalance_paren(x)
     rexp = eval(parse(text=substring(x, 1, i - 1)), envir=env)
     rmdr = substring(x, i + 1)
-    paste(rexp, rmdr, sep=" ")
+    paste(rexp, rmdr, sep="")
   }, y[-1])
-  sprintf("%s %s", y[1], paste(expr, collapse=" "))
+  sprintf("%s%s", y[1], paste(expr, collapse=""))
 }
 
 #' Create an AFL expression
@@ -72,24 +72,26 @@ afl = function(...)
 {
   call = eval(as.list(match.call())[[1]])
   .env = new.env()
-  expr = sprintf("%s(%s)", attr(call, "name"), paste(
+  pf = parent.frame()
+  .args = paste(
              lapply(as.list(match.call())[-1],
                function(.x) tryCatch({
-                   if(class(eval(.x))[1] %in% "scidb") eval(.x)@name
+                   if(class(eval(.x, envir=pf))[1] %in% "scidb") eval(.x, envir=pf)@name
                    else .x
                }, error=function(e) .x)),
-         collapse=","))
+         collapse=",")
+  expr = sprintf("%s(%s)", attributes(call)$name, .args)
 # handle aliasing
   expr = gsub("%as%", " as ", expr)
 # handle R scalar variable substitutions
-  expr = rsub(expr, parent.frame())
+  expr = rsub(expr, pf)
 # Some special AFL non-operator expressions don't return arrays
-  if(any(grepl(attr(call, "name"), c("remove"), ignore.case=TRUE)))
+  if(any(grepl(attributes(call)$name, c("remove"), ignore.case=TRUE)))
   {
-    return(iquery(attr(call, "conn"), expr))
+    return(iquery(attributes(call)$conn, expr))
   }
   if(getOption("scidb.debug", FALSE)) message("AFL EXPRESSION: ", expr)
-  ans = scidb(attr(call, "conn"), expr)
+  ans = scidb(attributes(call)$conn, expr)
   ans@meta$depend = as.list(.env)
   ans
 }

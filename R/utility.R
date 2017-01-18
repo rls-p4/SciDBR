@@ -330,7 +330,7 @@ as.R = function(x, only_attributes=FALSE)
 scidb_prefix = function(db, expression=NULL)
 {
   stopifnot(inherits(db, "afl"))
-  if(is.null(expression)) return()
-  attr(db, "prefix") = expression
+  if(is.null(expression)) attributes(db)$prefix = c()
+  else attr(db, "prefix") = expression
   db
 }
