@@ -86,7 +86,7 @@ afl = function(...)
 # handle R scalar variable substitutions
   expr = rsub(expr, pf)
 # Some special AFL non-operator expressions don't return arrays
-  if(any(grepl(attributes(call)$name, c("remove"), ignore.case=TRUE)))
+  if(any(grepl(attributes(call)$name, getOption("scidb.ddl"), ignore.case=TRUE)))
   {
     return(iquery(attributes(call)$conn, expr))
   }
