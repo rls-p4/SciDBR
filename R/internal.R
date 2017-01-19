@@ -426,7 +426,7 @@ POST = function(db, data, args=list(), err=TRUE)
 # save="(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=attr(db, "prefix"))
+scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=attributes(db)$connection$prefix)
 {
   DEBUG = FALSE
   STREAM = 0L

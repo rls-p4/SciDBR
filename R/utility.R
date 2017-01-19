@@ -318,19 +318,20 @@ as.R = function(x, only_attributes=FALSE)
 #' @param db a scidb database connection returned from \code{\link{scidbconnect}}
 #' @param expression a valid AFL expression to be issued prior to, and in the same context as all subsequent
 #' query expressions issued to the database corresponding to \code{db}. Set \code{expression=NULL} to remove the prefix expression.
-#' @return A new SciDB database connection object
-#' @note This is mostly useful for setting namespaces, see the examples.
+#' @return The SciDB database connection object with the prefix set.
+#' @note This is mostly useful for setting namespaces, see the examples. This function
+#' modifies its argument, setting the prefix in the specified connection.
 #' @examples
 #' \dontrun{
 #' library(scidb)
 #' db <- scidbconnect()
-#' db <- scidb_prefix("set_role('functionary')")
+#' scidb_prefix(db, "set_role('functionary')")
 #' }
 #' @export
 scidb_prefix = function(db, expression=NULL)
 {
   stopifnot(inherits(db, "afl"))
-  if(is.null(expression)) attributes(db)$prefix = c()
-  else attr(db, "prefix") = expression
+  if(is.null(expression)) attributes(db)$connection$prefix = c()
+  else attributes(db)$connection$prefix = expression
   db
 }
