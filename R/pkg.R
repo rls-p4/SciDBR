@@ -46,7 +46,29 @@ NULL
 # in SSL connections.
   options(scidb.verifyhost=FALSE)
 # List of special DDL operators
-  options(scidb.ddl=c("create_array", "remove", "rename"))
+  options(scidb.ddl=c("cancel",
+                      "create_array",
+                      "remove",
+                      "rename",
+                      "sync",
+                      "add_instances",
+                      "remove_instances",
+                      "unregister_instances",
+                      "create_namespace",
+                      "drop_namespace",
+                      "move_array_to_namespace",
+                      "create_role",
+                      "create_user",
+                      "drop_namespace",
+                      "drop_role",
+                      "drop_user",
+                      "add_user_to_role",
+                      "drop_user_from_role",
+                      "set_namespace",
+                      "set_role",
+                      "set_role_permissions",
+                      "verity_user",
+                      "create_with_residency")
 }
 
 # Reset the various package options
