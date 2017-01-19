@@ -366,7 +366,32 @@ options(scidb.unpack=FALSE)
 options(scidb.verifyhost=FALSE)
 
 # Enable or disable verbose debugging messages
-options(scidb.debug=FALSE)</code></pre>
+options(scidb.debug=FALSE)
+
+# List of special DDL operators
+options(scidb.ddl=c(&quot;cancel&quot;,
+                    &quot;create_array&quot;,
+                    &quot;remove&quot;,
+                    &quot;rename&quot;,
+                    &quot;sync&quot;,
+                    &quot;add_instances&quot;,
+                    &quot;remove_instances&quot;,
+                    &quot;unregister_instances&quot;,
+                    &quot;create_namespace&quot;,
+                    &quot;drop_namespace&quot;,
+                    &quot;move_array_to_namespace&quot;,
+                    &quot;create_role&quot;,
+                    &quot;create_user&quot;,
+                    &quot;drop_namespace&quot;,
+                    &quot;drop_role&quot;,
+                    &quot;drop_user&quot;,
+                    &quot;add_user_to_role&quot;,
+                    &quot;drop_user_from_role&quot;,
+                    &quot;set_namespace&quot;,
+                    &quot;set_role&quot;,
+                    &quot;set_role_permissions&quot;,
+                    &quot;verity_user&quot;,
+                    &quot;create_with_residency&quot;)</code></pre>
 </div>
 
 
