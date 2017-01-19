@@ -275,6 +275,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     if(isnull)
     {
       SET_STRING_ELT(vec,i,NA_STRING);
+      (*p)+=sizeof(char);
       return;
     }
     char *buf = (char *)calloc(2,1);
