@@ -68,7 +68,7 @@ NULL
                       "set_role",
                       "set_role_permissions",
                       "verity_user",
-                      "create_with_residency")
+                      "create_with_residency"))
 }
 
 # Reset the various package options
