@@ -56,21 +56,21 @@ All arguments support partial matching.
 }
 \examples{
 \dontrun{
-s <- scidbconnect()
+db <- scidbconnect()
 
 # SciDB 15.12 authentication example (using shim's default HTTPS port 8083)
-s <- scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
+db <- scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
 
 # List available AFL operators
-names(s)
+names(db)
 
 # List arrays
-ls(s)
+ls(db)
 
 # Explicitly upload an R matrix to SciDB:
-x <- as.scidb(s, matrix(rnorm(20), 5))
+x <- as.scidb(db, matrix(rnorm(20), 5))
 # Implicitly do the same as part of an AFL expression
-y <- s$join(x,  as.scidb(matrix(1:20, 5)))
+y <- db$join(x,  as.scidb(matrix(1:20, 5)))
 print(y)
 
 as.R(y)   # Download a SciDB array to R.
