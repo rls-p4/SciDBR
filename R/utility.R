@@ -88,13 +88,22 @@ scidb = function(db, name, gc=FALSE)
 #' `data("operators", package="scidb")` for an example.
 #'
 #' All arguments support partial matching.
-#' @return A scidb connection object.
+#' @return A scidb connection object. Use \code{$} to access AFL operators
+#' and macros, \code{ls()} on the returned object to list SciDB arrays,
+#' and \code{names()} on the returned object to list all available AFL operators
+#' and macros.
 #' @examples
 #' \dontrun{
 #' s <- scidbconnect()
 #'
 #' # SciDB 15.12 authentication example (using shim's default HTTPS port 8083)
 #' s <- scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
+#'
+#' # List available AFL operators
+#' names(s)
+#'
+#' # List arrays
+#' ls(s)
 #'
 #' # Explicitly upload an R matrix to SciDB:
 #' x <- as.scidb(s, matrix(rnorm(20), 5))
@@ -106,6 +115,7 @@ scidb = function(db, name, gc=FALSE)
 #' }
 #' @importFrom digest digest
 #' @importFrom openssl base64_encode
+#' @seealso \link{\code{scidb_prefix}}
 #' @export
 scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
                         port=getOption("scidb.default_shim_port", 8080L),
@@ -114,39 +124,39 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
                         auth_type=c("scidb", "digest"), protocol=c("http", "https"),
                         doc)
 {
-  .scidbenv = new.env() # connection state
+  .scidbenv = list() # connection state
   auth_type = match.arg(auth_type)
   protocol = match.arg(protocol)
-  assign("host", host, envir=.scidbenv)
-  assign("port", port, envir=.scidbenv)
-  assign("protocol", protocol, envir=.scidbenv)
+  .scidbenv$host = host
+  .scidbenv$port = port
+  .scidbenv$protocol = protocol
   if(missing(username)) username = c()
   if(missing(password)) password = c()
 # Check for login using either scidb or HTTP digest authentication
   if(!is.null(username))
   {
-    assign("authtype", auth_type, envir=.scidbenv)
-    assign("authenv", new.env(), envir=.scidbenv)
+    .scidbenv$authtype = auth_type
+    .scidbenv$authenv = new.env()
     if(auth_type=="scidb")
     {
-      assign("username", username, envir=.scidbenv)
+      .scidbenv$username = username
       if(!password_digest)
       {
         #16.9 no longer hashes the password
-        assign("password", password, envir=.scidbenv)
+        .scidbenv$password = password
       } else 
       {
-        assign("password", base64_encode(digest(charToRaw(password), serialize=FALSE, raw=TRUE, algo="sha512")), envir=.scidbenv)
+        .scidbenv$password = base64_encode(digest(charToRaw(password), serialize=FALSE, raw=TRUE, algo="sha512"))
       }
     } else # HTTP basic digest auth
     {
-      assign("digest", paste(username, password, sep=":"), envir=.scidbenv)
+      .scidbenv$digest = paste(username, password, sep=":")
     }
   }
 # Set up a db object
   db = list()
   class(db) = "afl"
-  attr(db, "connection") = .scidbenv
+  attr(db, "connection") = .scidbenv   # temporary assignment
   shim.version = SGET(db, "/version")
 
 # Update the scidb.version in the db connection environment
@@ -164,9 +174,10 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   {
     id = tryCatch(strsplit(x$response, split="\\r\\n")[[1]],
            error=function(e) stop("Connection error"))
-    id = id[[length(id)]]
-    assign("uid", id, envir=.scidbenv)
+    .scidbenv$id = id[[length(id)]]
   }
+
+  attr(db, "connection") = .scidbenv   # updated assignment with id/version
 
 # Update available operators and macros and return afl object
   ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE)[,2]
@@ -318,14 +329,15 @@ as.R = function(x, only_attributes=FALSE)
 #' @param db a scidb database connection returned from \code{\link{scidbconnect}}
 #' @param expression a valid AFL expression to be issued prior to, and in the same context as all subsequent
 #' query expressions issued to the database corresponding to \code{db}. Set \code{expression=NULL} to remove the prefix expression.
-#' @return The SciDB database connection object with the prefix set.
-#' @note This is mostly useful for setting namespaces, see the examples. This function
-#' modifies its argument, setting the prefix in the specified connection.
+#' @return A new SciDB database connection object with the prefix set.
+#' @note This is mostly useful for setting namespaces, see the examples.
 #' @examples
 #' \dontrun{
 #' library(scidb)
 #' db <- scidbconnect()
-#' scidb_prefix(db, "set_role('functionary')")
+#' ls(db)
+#' new_db <- scidb_prefix(db, "set_role('functionary')")
+#' ls(new_db)
 #' }
 #' @export
 scidb_prefix = function(db, expression=NULL)

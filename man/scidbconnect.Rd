@@ -25,7 +25,10 @@ scidbconnect(host = getOption("scidb.default_shim_host", "127.0.0.1"),
 \item{doc}{optional AFL operator/macro documentation (see notes)}
 }
 \value{
-A scidb connection object.
+A scidb connection object. Use \code{$} to access AFL operators
+and macros, \code{ls()} on the returned object to list SciDB arrays,
+and \code{names()} on the returned object to list all available AFL operators
+and macros.
 }
 \description{
 Connect to a SciDB database
@@ -58,6 +61,12 @@ s <- scidbconnect()
 # SciDB 15.12 authentication example (using shim's default HTTPS port 8083)
 s <- scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
 
+# List available AFL operators
+names(s)
+
+# List arrays
+ls(s)
+
 # Explicitly upload an R matrix to SciDB:
 x <- as.scidb(s, matrix(rnorm(20), 5))
 # Implicitly do the same as part of an AFL expression
@@ -66,5 +75,8 @@ print(y)
 
 as.R(y)   # Download a SciDB array to R.
 }
+}
+\seealso{
+\link{\code{scidb_prefix}}
 }
 

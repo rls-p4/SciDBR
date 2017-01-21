@@ -13,7 +13,7 @@ scidb_prefix(db, expression = NULL)
 query expressions issued to the database corresponding to \code{db}. Set \code{expression=NULL} to remove the prefix expression.}
 }
 \value{
-The SciDB database connection object with the prefix set.
+A new SciDB database connection object with the prefix set.
 }
 \description{
 SciDB AFL statements are normally executed in a stateless query context.
@@ -21,14 +21,15 @@ Use scidb_prefix to create compound AFL expressions useful in some
 circumstances.
 }
 \note{
-This is mostly useful for setting namespaces, see the examples. This function
-modifies its argument, setting the prefix in the specified connection.
+This is mostly useful for setting namespaces, see the examples.
 }
 \examples{
 \dontrun{
 library(scidb)
 db <- scidbconnect()
-scidb_prefix(db, "set_role('functionary')")
+ls(db)
+new_db <- scidb_prefix(db, "set_role('functionary')")
+ls(new_db)
 }
 }
 
