@@ -176,12 +176,16 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
            error=function(e) stop("Connection error"))
     .scidbenv$id = id[[length(id)]]
   }
-
-  attr(db, "connection") = .scidbenv   # updated assignment with id/version
+  attr(db, "connection") = .scidbenv   # updated state
 
 # Update available operators and macros and return afl object
   ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE)[,2]
+  .scidbenv$ops = ops
+  attr(db, "connection") = .scidbenv   # updated state
   if(missing(doc)) return (update.afl(db, ops))
+
+  .scidbenv$doc = doc
+  attr(db, "connection") = .scidbenv   # updated state
   update.afl(db, ops, doc)
 }
 
@@ -345,5 +349,7 @@ scidb_prefix = function(db, expression=NULL)
   stopifnot(inherits(db, "afl"))
   if(is.null(expression)) attributes(db)$connection$prefix = c()
   else attributes(db)$connection$prefix = expression
-  db
+  if(is.null(db$connection$doc))
+    return(update.afl(db, attributes(db)$connection$ops))
+  update.afl(db, attributes(db)$connection$ops, attributes(db)$connection$doc)
 }
