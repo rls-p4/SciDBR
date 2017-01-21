@@ -170,7 +170,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   x = tryCatch(
         scidbquery(db, query="list('libraries')", release=1, resp=TRUE),
         error=function(e) stop("Connection error"))
-  if(is.null(.scidbenv$uid))
+  if(is.null(.scidbenv$id))
   {
     id = tryCatch(strsplit(x$response, split="\\r\\n")[[1]],
            error=function(e) stop("Connection error"))

@@ -303,9 +303,9 @@ make.unique_ = function(x, y)
 # Make a name from a prefix and a unique SciDB identifier.
 getuid = function(db)
 {
-  .scidbenv = attr(db, "connection")
-  if(is.null(.scidbenv$uid)) stop("Not connected...try scidbconnect")
-  .scidbenv$uid
+  .scidbenv = attributes(db)$connection
+  if(is.null(.scidbenv$id)) stop("Not connected...try scidbconnect")
+  .scidbenv$id
 }
 
 tmpnam = function(db, prefix="R_array")
