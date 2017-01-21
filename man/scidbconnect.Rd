@@ -77,6 +77,6 @@ as.R(y)   # Download a SciDB array to R.
 }
 }
 \seealso{
-\link{\code{scidb_prefix}}
+\code{\link{scidb_prefix}}
 }
 

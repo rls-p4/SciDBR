@@ -115,7 +115,7 @@ scidb = function(db, name, gc=FALSE)
 #' }
 #' @importFrom digest digest
 #' @importFrom openssl base64_encode
-#' @seealso \link{\code{scidb_prefix}}
+#' @seealso \code{\link{scidb_prefix}}
 #' @export
 scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
                         port=getOption("scidb.default_shim_port", 8080L),
