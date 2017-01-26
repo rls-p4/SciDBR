@@ -1,6 +1,25 @@
 #' SciDB/R Interface
 #'
 #' @name scidb-package
+#'
+#' @section Package options:
+#' 
+#'  options(scidb.prefix=NULL)
+#'# Default shim port and host.
+#'  options(scidb.default_shim_port=8080L)
+#'  options(scidb.default_shim_host="localhost")
+#'# How to download arrays and their coordinates. Set scidb.unpack=FALSE
+#'# to use apply, which can be faster in some cases when used with aio.
+#'  options(scidb.unpack=FALSE)
+#'# Disable SSL certificate host name checking by default. This is important mostly
+#'# for Amazon EC2 where hostnames rarely match their DNS names. If you enable this
+#'# then the shim SSL certificate CN entry *must* match the server host name for the
+#'# encrypted session to work. Set this TRUE for stronger security (help avoid MTM)
+#'# in SSL connections.
+#'  options(scidb.verifyhost=FALSE)
+#'# List of special DDL operators
+#'  options(scidb.ddl=c("create_array", "remove", "rename"))
+#'
 #' 
 #' @useDynLib scidb
 #' @seealso \code{\link{scidb}}, \code{\link{iquery}}
@@ -26,6 +45,30 @@ NULL
 # encrypted session to work. Set this TRUE for stronger security (help avoid MTM)
 # in SSL connections.
   options(scidb.verifyhost=FALSE)
+# List of special DDL operators
+  options(scidb.ddl=c("cancel",
+                      "create_array",
+                      "remove",
+                      "rename",
+                      "sync",
+                      "add_instances",
+                      "remove_instances",
+                      "unregister_instances",
+                      "create_namespace",
+                      "drop_namespace",
+                      "move_array_to_namespace",
+                      "create_role",
+                      "create_user",
+                      "drop_namespace",
+                      "drop_role",
+                      "drop_user",
+                      "add_user_to_role",
+                      "drop_user_from_role",
+                      "set_namespace",
+                      "set_role",
+                      "set_role_permissions",
+                      "verity_user",
+                      "create_with_residency"))
 }
 
 # Reset the various package options
@@ -35,6 +78,7 @@ NULL
   options(scidb.default_shim_port=c())
   options(scidb.default_shim_host=c())
   options(scidb.verifyhost=c())
+  options(scidb.ddl=c())
 }
 
 # scidb array object type map.

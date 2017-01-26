@@ -167,7 +167,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
 digest_auth = function(db, method, uri, realm="", nonce="123456")
 {
   .scidbenv = attr(db, "connection")
-  if(exists("authtype", envir=.scidbenv))
+  if(!is.null(.scidbenv$authtype))
   {
    if(.scidbenv$authtype != "digest") return("")
   }
@@ -303,10 +303,11 @@ make.unique_ = function(x, y)
 # Make a name from a prefix and a unique SciDB identifier.
 getuid = function(db)
 {
-  .scidbenv = attr(db, "connection")
-  if(!exists("uid", envir=.scidbenv)) stop("Not connected...try scidbconnect")
-  get("uid", envir=.scidbenv)
+  .scidbenv = attributes(db)$connection
+  if(is.null(.scidbenv$id)) stop("Not connected...try scidbconnect")
+  .scidbenv$id
 }
+
 tmpnam = function(db, prefix="R_array")
 {
   stopifnot(inherits(db, "afl"))
@@ -335,14 +336,14 @@ getSession = function(db)
 URI = function(db, resource="", args=list())
 {
   .scidbenv = attr(db, "connection")
-  if(!exists("host", envir=.scidbenv)) stop("Not connected...try scidbconnect")
-  if(exists("auth", envir=.scidbenv))
-    args = c(args, list(auth=get("auth", envir=.scidbenv)))
+  if(is.null(.scidbenv$host)) stop("Not connected...try scidbconnect")
+  if(!is.null(.scidbenv$auth))
+    args = c(args, list(auth=.scidbenv$auth))
   if(!is.null(.scidbenv$password)) args = c(args, list(password=.scidbenv$password))
   if(!is.null(.scidbenv$username)) args = c(args, list(user=.scidbenv$username))
-  prot = paste(get("protocol", envir=.scidbenv), "//", sep=":")
+  prot = paste(.scidbenv$protocol, "//", sep=":")
   if("password" %in% names(args) || "auth" %in% names(args)) prot = "https://"
-  ans  = paste(prot, get("host", envir=.scidbenv), ":", get("port", envir=.scidbenv), sep="")
+  ans  = paste(prot, .scidbenv$host, ":", .scidbenv$port, sep="")
   ans = paste(ans, resource, sep="/")
   if(length(args)>0)
     ans = paste(ans, paste(paste(names(args), args, sep="="), collapse="&"), sep="?")
@@ -426,7 +427,7 @@ POST = function(db, data, args=list(), err=TRUE)
 # save="(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=attr(db, "prefix"))
+scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=attributes(db)$connection$prefix)
 {
   DEBUG = FALSE
   STREAM = 0L

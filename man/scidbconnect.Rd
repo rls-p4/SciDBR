@@ -6,7 +6,8 @@
 \usage{
 scidbconnect(host = getOption("scidb.default_shim_host", "127.0.0.1"),
   port = getOption("scidb.default_shim_port", 8080L), username, password,
-  auth_type = c("scidb", "digest"), protocol = c("http", "https"), doc)
+  password_digest = FALSE, auth_type = c("scidb", "digest"),
+  protocol = c("http", "https"), doc)
 }
 \arguments{
 \item{host}{optional host name or I.P. address of a SciDB shim service to connect to}
@@ -24,7 +25,10 @@ scidbconnect(host = getOption("scidb.default_shim_host", "127.0.0.1"),
 \item{doc}{optional AFL operator/macro documentation (see notes)}
 }
 \value{
-A scidb connection object.
+A scidb connection object. Use \code{$} to access AFL operators
+and macros, \code{ls()} on the returned object to list SciDB arrays,
+and \code{names()} on the returned object to list all available AFL operators
+and macros.
 }
 \description{
 Connect to a SciDB database
@@ -52,18 +56,27 @@ All arguments support partial matching.
 }
 \examples{
 \dontrun{
-s <- scidbconnect()
+db <- scidbconnect()
 
 # SciDB 15.12 authentication example (using shim's default HTTPS port 8083)
-s <- scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
+db <- scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
+
+# List available AFL operators
+names(db)
+
+# List arrays
+ls(db)
 
 # Explicitly upload an R matrix to SciDB:
-x <- as.scidb(s, matrix(rnorm(20), 5))
+x <- as.scidb(db, matrix(rnorm(20), 5))
 # Implicitly do the same as part of an AFL expression
-y <- s$join(x,  as.scidb(matrix(1:20, 5)))
+y <- db$join(x,  as.scidb(matrix(1:20, 5)))
 print(y)
 
 as.R(y)   # Download a SciDB array to R.
 }
+}
+\seealso{
+\code{\link{scidb_prefix}}
 }
 
