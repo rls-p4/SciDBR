@@ -48,7 +48,7 @@
   null = if(newer_than(attr(x@meta$db, "connection")$scidb.version, "15.12"))
            ! grepl("NOT NULL", s)
          else grepl(" NULL", s)
-  type = gsub(" ", "", gsub("null", "", gsub("not null", "",  gsub("compression '.*'", "",   vapply(s, function(x) x[2], ""), ignore.case=TRUE), ignore.case=TRUE), ignore.case=TRUE))
+  type = gsub(" ", "", gsub("null", "", gsub("not null", "", gsub("compression '.*'", "", vapply(s, function(x) x[2], ""), ignore.case=TRUE), ignore.case=TRUE), ignore.case=TRUE))
   data.frame(name=vapply(s, function(x) x[1], ""),
              type=type,
              nullable=null, stringsAsFactors=FALSE)
