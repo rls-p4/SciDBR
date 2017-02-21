@@ -97,7 +97,8 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   while(p < len)
   {
     dt2 = proc.time()
-    tmp   = .Call("scidb_parse", as.integer(buffer), internal_attributes$type, internal_attributes$nullable, resp$content, as.double(p), PACKAGE="scidb")
+    tmp   = .Call("scidb_parse", as.integer(buffer), internal_attributes$type,
+                  internal_attributes$nullable, resp$content, as.double(p), PACKAGE="scidb")
     names(tmp) = cnames
     lines = tmp[[n+1]]
     p_old = p
@@ -141,6 +142,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   }
   if(DEBUG) cat("Total R parsing time", (proc.time() - dt1)[3], "\n")
   ans = as.data.frame(ans, check.names=FALSE)
+  for(i64 in which(internal_attributes$type %in% "int64")) oldClass(ans[, i64]) = "integer64"
   if(is.null(args$only_attributes)) # permute cols, see issue #125
   {
     nd = length(dimensions$name)
@@ -615,6 +617,11 @@ df2scidb = function(db, X,
         typ[j] = "int32"
         X[, j] = gsub("NA", "null", sprintf("%d", X[, j]))
       }
+      else if("integer64" %in% class(X[, j])) 
+      {
+        typ[j] = "int64"
+        X[, j] = gsub("NA", "null", as.character(X[, j]))
+      }
       else if("logical" %in% class(X[, j])) 
       {
         typ[j] = "bool"
@@ -715,6 +722,7 @@ matvec2scidb = function(db, X,
   if(!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
   do_reshape = TRUE
   type = force_type = .Rtypes[[typeof(X)]]
+  if(class(X) %in% "integer64") type = force_type = "int64"
   if(is.null(type)) {
     stop(paste("Unupported data type. The package presently supports: ",
        paste(unique(names(.Rtypes)), collapse=" "), ".", sep=""))
@@ -735,7 +743,7 @@ matvec2scidb = function(db, X,
   if(is.null(D))
   {
 # X is a vector
-    if(!is.vector(X)) stop ("Unsupported object")
+    if(!is.vector(X) && !(type =="int64")) stop ("Unsupported object") # XXX bit64/integer64 bug?
     do_reshape = FALSE
     chunkSize = min(chunkSize[[1]], length(X))
     X = as.matrix(X)
@@ -747,12 +755,6 @@ matvec2scidb = function(db, X,
   {
 # X is an n-d array
     stop("not supported yet") # XXX WRITE ME
-    do_reshape = TRUE
-    X = as.matrix(as.vector(aperm(X)))
-    schema = sprintf(
-        "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
-        nrow(X) - 1 + start[[1]], min(nrow(X), chunkSize), overlap[[1]])
-    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type, length(X))
   } else {
 # X is a matrix
     schema = sprintf(

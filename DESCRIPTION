@@ -13,13 +13,13 @@ BugReports: https://github.com/Paradigm4/SciDBR/issues
 URL: http://paradigm4.github.io/SciDBR
 VignetteBuilder: knitr
 Depends:
-    R (>= 3.0.0)
+    R (>= 3.0.0), bit64
 Imports:
-    methods,
+    curl,
     data.table,
     digest,
-    openssl,
-    curl
+    methods,
+    openssl
 Suggests:
     Matrix,
     knitr (>= 1.8)

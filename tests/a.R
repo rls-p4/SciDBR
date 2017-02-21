@@ -15,14 +15,15 @@ if(nchar(host) > 0)
 
 # upload data frame
   x = as.scidb(db, iris)
+  a =  schema(x, "attributes")$name
 # binary download
-  check(iris[, 1:4], as.R(x)[, -1][, 1:4])
+  check(iris[, 1:4], as.R(x)[, a][, 1:4])
 # iquery binary download
-  check(iris[, 1:4], iquery(db, x, return=TRUE)[, -1][, 1:4])
+  check(iris[, 1:4], iquery(db, x, return=TRUE)[, a][, 1:4])
 # iquery CSV download
-  check(iris[, 1:4], iquery(db, x, return=TRUE, binary=FALSE)[, -1][, 1:4])
+  check(iris[, 1:4], iquery(db, x, return=TRUE, binary=FALSE)[, a][, 1:4])
 # as.R only attributes
-  check(as.R(x)[,2],  as.R(x, only_attributes=TRUE)[,1])
+  check(iris[, 1],  as.R(x, only_attributes=TRUE)[, 1])
 
 # upload vector
   check(1:5, as.R(as.scidb(db, 1:5))[,2])
@@ -36,11 +37,11 @@ if(nchar(host) > 0)
 # issue #126
   df = as.data.frame(matrix(runif(10*100), 10, 100))
   sdf = as.scidb(db, df)
-  check(df, as.R(sdf)[, -1])
+  check(df, as.R(sdf, only_attributes=TRUE))
 # issue #130
   df = data.frame(x1 = c("NA", NA), x2 = c(0.13, NA), x3 = c(TRUE, NA), stringsAsFactors=FALSE)
   x = as.scidb(db, df)
-  check(df, as.R(x)[, -1])
+  check(df, as.R(x, only_attributes=TRUE))
 
 # upload n-d array
 # XXX WRITE ME, not implemented yet

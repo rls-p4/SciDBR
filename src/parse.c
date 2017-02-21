@@ -125,7 +125,8 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
       REAL(vec)[i] = NA_REAL;
       return;
     }
-    REAL(vec)[i] = (double)ll; // XXX CHECK BOUNDS HERE XXX
+    memcpy(&REAL(vec)[i], &ll, 8);
+//    REAL(vec)[i] = (double)ll;
     return;
   }
   else if(scmp(type,"uint64"))
