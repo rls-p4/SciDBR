@@ -58,7 +58,7 @@ if(nchar(host) > 0)
  x = db$build("<v:double>[i=1:2,2,0, j=1:3,1,0]", i * j)
  check(as.R(x)$v, c(1, 2, 2, 4, 3, 6))
  x = db$apply(x, w, R(i) * R(j))
- check(as.R(x)$w, rep(24, 6))
+ check(as.integer(as.R(x)$w), rep(24, 6))  ## Need as.integer() for integer64 coversion
 
 
 # 3 Miscellaneous tests
