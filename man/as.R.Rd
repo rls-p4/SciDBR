@@ -42,8 +42,8 @@ corresponding R types as follows:
 }
 \examples{
 \dontrun{
-s = scidbconnect()
-x = scidb(s, "build(<v:double>[i=1:5], sin(i))")
+db <- scidbconnect()
+x <- scidb(s, "build(<v:double>[i=1:5], sin(i))")
 as.R(x)
 #  i          v
 #1 1  0.8414710
