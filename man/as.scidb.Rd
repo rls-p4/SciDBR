@@ -25,4 +25,22 @@ A \code{scidb} object
 \description{
 Upload R data to SciDB
 }
+\note{
+Supported R objects include data frames, scalars, vectors, dense matrices,
+and double-precision sparse matrices of class CsparseMatrix. Supported R scalar
+types and their resulting SciDB types are:
+ \itemize{
+ \item{integer   -> }{int32}
+ \item{logical   -> }{int32}
+ \item{character -> }{string}
+ \item{double    -> }{double}
+ \item{integer64 -> }{int64}
+ \item{raw       -> }{binary}
+ \item{Date      -> }{datetime}
+}
+R factor values are converted to their corresponding character levels.
+}
+\seealso{
+\code{\link{as.R}}
+}
 

@@ -20,6 +20,25 @@ Download SciDB data to R
 \note{
 This convenience function is equivalent to running \code{iquery(db, x, return=TRUE)} for
 a SciDB connection object \code{s}.
+
+SciDB values are always returned as R data frames. SciDB scalar types are converted to
+corresponding R types as follows:
+ \itemize{
+   \item{double   -> }{double}
+   \item{int64    -> }{integer64}
+   \item{uint64   -> }{double}
+   \item{uint32   -> }{double}
+   \item{int32    -> }{integer}
+   \item{int16    -> }{integer}
+   \item{unit16   -> }{integer}
+   \item{int8     -> }{integer}
+   \item{uint8    -> }{integer}
+   \item{bool     -> }{logical}
+   \item{string   -> }{character}
+   \item{char     -> }{character}
+   \item{binary   -> }{raw}
+   \item{datetime -> }{Date}
+}
 }
 \examples{
 \dontrun{
@@ -41,5 +60,8 @@ as.R(x, only_attributes=TRUE)
 #4 -0.7568025
 #5 -0.9589243
 }
+}
+\seealso{
+\code{\link{as.scidb}}
 }
 

@@ -265,6 +265,20 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
 #' @param start starting SciDB integer coordinate index (does not apply to data frames)
 #' @param gc set to FALSE to disconnect the SciDB array from R's garbage collector
 #' @param ... other options, see \code{\link{df2scidb}}
+#' @note Supported R objects include data frames, scalars, vectors, dense matrices,
+#' and double-precision sparse matrices of class CsparseMatrix. Supported R scalar
+#' types and their resulting SciDB types are:
+#'  \itemize{
+#'  \item{integer   -> }{int32}
+#'  \item{logical   -> }{int32}
+#'  \item{character -> }{string}
+#'  \item{double    -> }{double}
+#'  \item{integer64 -> }{int64}
+#'  \item{raw       -> }{binary}
+#'  \item{Date      -> }{datetime}
+#' }
+#' R factor values are converted to their corresponding character levels.
+#' @seealso \code{\link{as.R}}
 #' @return A \code{scidb} object
 #' @export
 as.scidb = function(db, x,
@@ -297,6 +311,26 @@ as.scidb = function(db, x,
 #' @return An R \code{\link{data.frame}}
 #' @note This convenience function is equivalent to running \code{iquery(db, x, return=TRUE)} for
 #' a SciDB connection object \code{s}.
+#'
+#' SciDB values are always returned as R data frames. SciDB scalar types are converted to
+#' corresponding R types as follows:
+#'  \itemize{
+#'    \item{double   -> }{double}
+#'    \item{int64    -> }{integer64}
+#'    \item{uint64   -> }{double}
+#'    \item{uint32   -> }{double}
+#'    \item{int32    -> }{integer}
+#'    \item{int16    -> }{integer}
+#'    \item{unit16   -> }{integer}
+#'    \item{int8     -> }{integer}
+#'    \item{uint8    -> }{integer}
+#'    \item{bool     -> }{logical}
+#'    \item{string   -> }{character}
+#'    \item{char     -> }{character}
+#'    \item{binary   -> }{raw}
+#'    \item{datetime -> }{Date}
+#' }
+#' @seealso \code{\link{as.scidb}}
 #' @examples
 #' \dontrun{
 #' s = scidbconnect()
