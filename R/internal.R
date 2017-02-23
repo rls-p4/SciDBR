@@ -25,7 +25,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     argsbuf = tryCatch(as.integer(args$buffer), warning=function(e) NA)
     if(!is.na(argsbuf) && argsbuf <= 1e9) buffer = as.integer(argsbuf)
   }
-  if(!inherits(query, "scidb")) query = scidb(db, query)
+  if(!inherits(query, "scidb"))
   {
 # make a scidb object out of the query, optionally using a supplied schema to skip metadata query
     if(is.null(args$schema)) query = scidb(db, query)

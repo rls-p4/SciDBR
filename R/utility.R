@@ -353,6 +353,7 @@ as.scidb = function(db, x,
 #'#3  0.1411200
 #'#4 -0.7568025
 #'#5 -0.9589243
+
 #' }
 #' @export
 as.R = function(x, only_attributes=FALSE)
