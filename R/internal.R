@@ -3,46 +3,42 @@
 #' Unpack and return a SciDB query expression as a data frame
 #' @param db scidb database connection object
 #' @param query A SciDB query expression or scidb object
-#' @param ... optional extra arguments
+#' @param ... optional extra arguments (see below)
+#' @note option extra arguments
+#' \itemize{
+#'   \item{buffer}{ integer initial parse buffer size in bytes, adaptively resized as needed: larger buffers can be faster but comsume more memory, default size is 100000L.}
+#'   \item{only_attributes}{ optional logical value, \code{TRUE} means don't retrieve dimension coordinates, only return attribute values; defaults to \code{FALSE}.}
+#"   \item{schema}{ optional result schema string, only applies when \code{query} is not a SciDB object. Supplying this avois one extra metadata query to determine result schema. Defaults to \code{schema(query)}.}
+#' }
 #' @keywords internal
 #' @importFrom curl new_handle handle_setheaders handle_setopt curl_fetch_memory handle_setform form_file
 #' @importFrom data.table  data.table
 scidb_unpack_to_dataframe = function(db, query, ...)
 {
   DEBUG = FALSE
-  projected = FALSE
   DEBUG = getOption("scidb.debug", FALSE)
   buffer = 100000L
   args = list(...)
+  if(is.null(args$only_attributes)) args$only_attributes = FALSE
   if(!is.null(args$buffer))
   {
     argsbuf = tryCatch(as.integer(args$buffer), warning=function(e) NA)
     if(!is.na(argsbuf) && argsbuf <= 1e9) buffer = as.integer(argsbuf)
   }
-  if(is.null(args$attributes) || (is.null(args$dimensions) && is.null(args$only_attributes)))
+  if(!inherits(query, "scidb")) query = scidb(db, query)
   {
-    if(!inherits(query, "scidb")) query = scidb(db, query)
-    attributes = schema(query, "attributes")
-    dimensions = schema(query, "dimensions")
-  } else {
-    attributes = args$attributes
-    attributes$name = as.character(attributes$name)
-    attributes$type = as.character(attributes$type)
-    if(is.null(attributes$nullable))
-    {
-      attributes$nullable=TRUE
-    }
-    if(is.null(args$only_attributes))
-    {
-      dimensions = args$dimensions
-      dimensions$name = as.character(dimensions$name)
-    }
+# make a scidb object out of the query, optionally using a supplied schema to skip metadata query
+    if(is.null(args$schema)) query = scidb(db, query)
+    else query = scidb(db, query, schema=args$schema)
   }
-  if(inherits(query, "scidb")) 
+  attributes = schema(query, "attributes")
+  dimensions = schema(query, "dimensions")
+  query = query@name
+  if(args$only_attributes)
   {
-    query = query@name
-  }
-  if(is.null(args$only_attributes)) 
+    internal_attributes = attributes
+    internal_query = query
+  } else
   {
     dim_names = dimensions$name
     attr_names = attributes$name
@@ -50,7 +46,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     internal_query = query
     if(length(all_names) != length(unique(all_names)))
     {
-      #Cast to completeley unique names to be safe:
+      # Cast to completeley unique names to be safe:
       cast_dim_names = make.names_(dim_names)
       cast_attr_names = make.unique_(cast_dim_names, make.names_(attributes$name))
       cast_schema = sprintf("<%s>[%s]", paste(paste(cast_attr_names, attributes$type, sep=":"), collapse=","), paste(cast_dim_names, collapse=","))
@@ -58,15 +54,11 @@ scidb_unpack_to_dataframe = function(db, query, ...)
       all_names = c(cast_dim_names, cast_attr_names)
       dim_names = cast_dim_names
     }
-    #Apply dimensions as attributes, using unique names. Manually construct the list of resulting attributes:
-    dimensional_attributes = data.frame(name=dimensions$name, type="int64", nullable=FALSE) #original dimension names (used below)
+    # Apply dimensions as attributes, using unique names. Manually construct the list of resulting attributes:
+    dimensional_attributes = data.frame(name=dimensions$name, type="int64", nullable=FALSE) # original dimension names (used below)
     internal_attributes = rbind(attributes, dimensional_attributes) 
-    dim_apply = paste(make.unique_(all_names, dim_names), dim_names, sep=",", collapse=",") 
+    dim_apply = paste(dim_names, dim_names, sep=",", collapse=",") 
     internal_query = sprintf("apply(%s, %s)", internal_query, dim_apply)
-  } else #Just grab the attributes
-  {
-    internal_attributes = attributes
-    internal_query = query
   }
   ns = rep("", length(internal_attributes$nullable))
   ns[internal_attributes$nullable] = "null"
@@ -126,14 +118,10 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   if(is.null(ans))
   {
     xa = attributes$name
-    if(is.null(args$only_attributes)) # permute cols, see issue #125
-    {
-      xd = dimensions$name  
-    } 
-    else 
-    {
+    if(args$only_attributes) # permute cols, see issue #125
       xd = c()
-    }
+    else 
+      xd = dimensions$name
     n = length(xd) + length(xa)
     ans = vector(mode="list", length=n)
     names(ans) = make.names_(c(xd, xa))
@@ -143,16 +131,16 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   if(DEBUG) cat("Total R parsing time", (proc.time() - dt1)[3], "\n")
   ans = as.data.frame(ans, check.names=FALSE)
   for(i64 in which(internal_attributes$type %in% "int64")) oldClass(ans[, i64]) = "integer64"
-  if(is.null(args$only_attributes)) # permute cols, see issue #125
+  if(args$only_attributes) # permute cols, see issue #125
+  {
+    colnames(ans) = make.names_(attributes$name)
+  }
+  else
   {
     nd = length(dimensions$name)
     i = ncol(ans) - nd
     ans = ans[, c((i+1):ncol(ans), 1:i)]
     colnames(ans) = make.names_(c(dimensions$name, attributes$name))
-  }
-  else
-  {
-    colnames(ans) = make.names_(attributes$name)
   }
   gc()
   ans

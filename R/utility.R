@@ -22,10 +22,12 @@ store = function(db, expr, name, eval=TRUE, gc=TRUE, temp=FALSE)
 #' @param db scidb connection object from \code{\link{scidbconnect}}
 #' @param name a character string name of a stored SciDB array or a valid SciDB AFL expression
 #' @param gc a logical value, \code{TRUE} means connect the SciDB array to R's garbage collector
+#' @param schema optional SciDB array schema, if specified avoid an extra metadata query to determine array schema.
+#'        Use this option with care, the schema must exactly match the SciDB array result.
 #' @return a \code{scidb} object
 #' @importFrom methods new show
 #' @export
-scidb = function(db, name, gc=FALSE)
+scidb = function(db, name, gc=FALSE, schema)
 {
   stopifnot(inherits(db, "afl"))
   if(missing(name)) stop("array or expression must be specified")
@@ -38,7 +40,8 @@ scidb = function(db, name, gc=FALSE)
   obj = new("scidb", name=name)
   obj@meta = new.env()
   obj@meta$db = db
-  delayedAssign("state", lazyeval(db, name), assign.env=obj@meta)
+  if(missing(schema)) delayedAssign("state", lazyeval(db, name), assign.env=obj@meta)
+  else assign("state", list(schema=schema), envir=obj@meta)
   delayedAssign("schema", get("state")$schema, eval.env=obj@meta, assign.env=obj@meta)
 
   if(gc)

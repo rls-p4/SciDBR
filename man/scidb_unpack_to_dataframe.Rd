@@ -11,10 +11,17 @@ scidb_unpack_to_dataframe(db, query, ...)
 
 \item{query}{A SciDB query expression or scidb object}
 
-\item{...}{optional extra arguments}
+\item{...}{optional extra arguments (see below)}
 }
 \description{
 Unpack and return a SciDB query expression as a data frame
+}
+\note{
+option extra arguments
+\itemize{
+  \item{buffer}{ integer initial parse buffer size in bytes, adaptively resized as needed: larger buffers can be faster but comsume more memory, default size is 100000L.}
+  \item{only_attributes}{ optional logical value, \code{TRUE} means don't retrieve dimension coordinates, only return attribute values; defaults to \code{FALSE}.}
+}
 }
 \keyword{internal}
 
