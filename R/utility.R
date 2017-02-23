@@ -196,10 +196,15 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 # binary=FALSE is needed by some queries, don't get rid of it.
 #' Run a SciDB query, optionally returning the result.
 #' @param db a scidb database connection from \code{\link{scidbconnect}}
-#' @param query a single SciDB query string
+#' @param query a single SciDB query string or scidb array object
 #' @param return if \code{TRUE}, return the result
 #' @param binary set to \code{FALSE} to read result from SciDB in text form
-#' @param ... additional options passed to \code{read.table} when \code{binary=FALSE}
+#' @param ... additional options passed to \code{read.table} when \code{binary=FALSE},
+#' or optional result schema when \code{binary=TRUE} (see note below).
+#' @note When \code{query} is an arbitrary AFL query string and \code{binary=TRUE},
+#'   optionally specify \code{schema} with a valid result array schema to skip
+#'   an extra metadata lookup query (see \code{\link{scidb}}).
+#' @seealso \code{\link{scidb}} \code{\link{as.R}}
 #' @importFrom utils read.table
 #' @export
 iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)

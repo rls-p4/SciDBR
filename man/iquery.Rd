@@ -9,15 +9,24 @@ iquery(db, query, return = FALSE, binary = TRUE, ...)
 \arguments{
 \item{db}{a scidb database connection from \code{\link{scidbconnect}}}
 
-\item{query}{a single SciDB query string}
+\item{query}{a single SciDB query string or scidb array object}
 
 \item{return}{if \code{TRUE}, return the result}
 
 \item{binary}{set to \code{FALSE} to read result from SciDB in text form}
 
-\item{...}{additional options passed to \code{read.table} when \code{binary=FALSE}}
+\item{...}{additional options passed to \code{read.table} when \code{binary=FALSE},
+or optional result schema when \code{binary=TRUE} (see note below).}
 }
 \description{
 Run a SciDB query, optionally returning the result.
+}
+\note{
+When \code{query} is an arbitrary AFL query string and \code{binary=TRUE},
+  optionally specify \code{schema} with a valid result array schema to skip
+  an extra metadata lookup query (see \code{\link{scidb}}).
+}
+\seealso{
+\code{\link{scidb}} \code{\link{as.R}}
 }
 
