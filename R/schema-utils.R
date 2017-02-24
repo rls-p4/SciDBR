@@ -11,28 +11,32 @@
   {
     s = schema(x)
   }
-  d = gsub("\\]", "", strsplit(s, "\\[")[[1]][[2]])
-  d = strsplit(strsplit(d, "=")[[1]], ",")
-  # SciDB schema syntax changed greatly in 16.9, convert it to old format.
-  chunk = 3; overlap = 4
-  if(newer_than(attr(x@meta$db, "connection")$scidb.version, "16.9"))
-  { 
-    d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\3,\\4", x)), ",")[[1]])
-    chunk = 4; overlap = 3
-  }
-  n = c(d[[1]], vapply(d[-c(1, length(d))], function(x) x[length(x)], ""))
-  d = d[-1]
-  if(length(d) > 1)
+  ans = tryCatch(
   {
-    i = 1:(length(d) - 1)
-    d[i] = lapply(d[i], function(x) x[-length(x)])
-  }
-  d = lapply(d, function(x) c(strsplit(x[1], ":")[[1]], x[-1]))
-  data.frame(name=n,
+    d = gsub("\\]", "", strsplit(s, "\\[")[[1]][[2]])
+    d = strsplit(strsplit(d, "=")[[1]], ",")
+    # SciDB schema syntax changed greatly in 16.9, convert it to old format.
+    chunk = 3; overlap = 4
+    if(newer_than(attr(x@meta$db, "connection")$scidb.version, "16.9"))
+    { 
+      d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\3,\\4", x)), ",")[[1]])
+      chunk = 4; overlap = 3
+    }
+    n = c(d[[1]], vapply(d[-c(1, length(d))], function(x) x[length(x)], ""))
+    d = d[-1]
+    if(length(d) > 1)
+    {
+      i = 1:(length(d) - 1)
+      d[i] = lapply(d[i], function(x) x[-length(x)])
+    }
+    d = lapply(d, function(x) c(strsplit(x[1], ":")[[1]], x[-1]))
+    data.frame(name=n,
              start=vapply(d, function(x) x[1], ""),
              end=vapply(d, function(x) x[2], ""),
              chunk=vapply(d, function(x) x[chunk], ""),
              overlap=vapply(d, function(x) x[overlap], ""), stringsAsFactors=FALSE)
+  }, error=function(e) NULL)
+  ans
 }
 
 .attsplitter = function(x)

@@ -364,6 +364,7 @@ as.scidb = function(db, x,
 as.R = function(x, only_attributes=FALSE)
 {
   stopifnot(inherits(x, "scidb"))
+  if(is.null(schema(x, "dimensions"))) only_attributes = TRUE
   if(only_attributes) return(scidb_unpack_to_dataframe(x@meta$db, x, only_attributes=TRUE))
   scidb_unpack_to_dataframe(x@meta$db, x)
 }

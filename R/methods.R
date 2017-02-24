@@ -6,7 +6,7 @@
   cat("\nSciDB schema ", schema(object), "\n")
   dims = schema(object, "dimensions")
   atts = schema(object, "attributes")
-  d = data.frame(variable=dims$name, dimension=TRUE, type="int64", nullable=FALSE, start=dims$start, end=dims$end, chunk=dims$chunk, row.names=NULL, stringsAsFactors=FALSE)
+  d = tryCatch(data.frame(variable=dims$name, dimension=TRUE, type="int64", nullable=FALSE, start=dims$start, end=dims$end, chunk=dims$chunk, row.names=NULL, stringsAsFactors=FALSE), error=function(e) NULL)
   d = rbind(d, data.frame(variable=atts$name,
                           dimension=FALSE,
                           type=atts$type, nullable=atts$nullable, start="", end="", chunk=""))

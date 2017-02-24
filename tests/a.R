@@ -25,6 +25,12 @@ if(nchar(host) > 0)
 # as.R only attributes
   check(iris[, 1],  as.R(x, only_attributes=TRUE)[, 1])
 
+# only attributes and optional skipping of metadata query by supplying schema in full and abbreviated forms
+  check(nrow(x), nrow(as.R(x)))
+  check(nrow(x), nrow(as.R(x, only_attributes=TRUE)))
+  a = scidb(s, x@name, schema=gsub("\\[.*", "", schema(x)))
+  check(nrow(x), nrow(as.R(a)))
+
 # upload vector
   check(1:5, as.R(as.scidb(db, 1:5))[,2])
 # upload matrix

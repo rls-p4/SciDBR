@@ -64,6 +64,8 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   ns[internal_attributes$nullable] = "null"
   format_string = paste(paste(internal_attributes$type, ns), collapse=",")
   format_string = sprintf("(%s)", format_string)
+  if(DEBUG) message("Data query ", internal_query)
+  if(DEBUG) message("Format ", format_string)
   sessionid = scidbquery(db, internal_query, save=format_string, release=0)
   on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
 
@@ -78,7 +80,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
 # Explicitly reap the handle to avoid short-term build up of socket descriptors
   rm(h)
   gc()
-  if(DEBUG) cat("Data transfer time", (proc.time() - dt2)[3], "\n")
+  if(DEBUG) message("Data transfer time ", (proc.time() - dt2)[3])
   dt1 = proc.time()
   len = length(resp$content)
   p = 0
@@ -95,13 +97,13 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     lines = tmp[[n+1]]
     p_old = p
     p     = tmp[[n+2]]
-    if(DEBUG) cat("  R buffer ", p, "/", len, " bytes parsing time", (proc.time() - dt2)[3], "\n")
+    if(DEBUG) message("  R buffer ", p, "/", len, " bytes parsing time ", round((proc.time() - dt2)[3], 4))
     dt2 = proc.time()
     if(lines > 0)
     {
       if("binary" %in% internal_attributes$type)
       {
-        if(DEBUG) cat("  R rbind/df assembly time", (proc.time() - dt2)[3], "\n")
+        if(DEBUG) message("  R rbind/df assembly time ", round((proc.time() - dt2)[3], 4))
         return(lapply(1:n, function(j) tmp[[j]][1:lines])) # XXX issue 33
       }
       len_out = length(tmp[[1]])
@@ -113,7 +115,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
       if(is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE))
       else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE)))
     }
-    if(DEBUG) cat("  R rbind/df assembly time", (proc.time() - dt2)[3], "\n")
+    if(DEBUG) message("  R rbind/df assembly time ", round((proc.time() - dt2)[3], 4))
   }
   if(is.null(ans))
   {
@@ -128,7 +130,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     class(ans) = "data.frame"
     return(ans)
   }
-  if(DEBUG) cat("Total R parsing time", (proc.time() - dt1)[3], "\n")
+  if(DEBUG) message("Total R parsing time ", round((proc.time() - dt1)[3], 4))
   ans = as.data.frame(ans, check.names=FALSE)
   for(i64 in which(internal_attributes$type %in% "int64")) oldClass(ans[, i64]) = "integer64"
   if(args$only_attributes) # permute cols, see issue #125
@@ -435,8 +437,8 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
   if(is.null(save)) save=""
   if(DEBUG)
   {
-    cat(query, "\n")
-    t1=proc.time()
+    message(query, "\n")
+    t1 = proc.time()
   }
   ans = tryCatch(
     {
@@ -459,7 +461,7 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
       SGET(db, "/release_session", list(id=sessionid), err=FALSE)
       stop("cancelled")
     })
-  if(DEBUG) cat("Query time", (proc.time()-t1)[3], "\n")
+  if(DEBUG) message("Query time ", round((proc.time()-t1)[3], 4))
   if(resp) return(list(session=sessionid, response=ans))
   sessionid
 }
@@ -765,7 +767,7 @@ matvec2scidb = function(db, X,
   ans = gsub("\n", "", gsub("\r", "", ans))
   if(DEBUG)
   {
-    cat("Data upload time", (proc.time() - td1)[3], "\n")
+    message("Data upload time ", (proc.time() - td1)[3], "\n")
   }
 
 # Load query
