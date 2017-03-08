@@ -460,7 +460,7 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
       SGET(db, "/cancel", list(id=sessionid), err=FALSE)
       SGET(db, "/release_session", list(id=sessionid), err=FALSE)
       stop("cancelled")
-    })
+    }, warning=invisible)
   if(DEBUG) message("Query time ", round((proc.time()-t1)[3], 4))
   if(resp) return(list(session=sessionid, response=ans))
   sessionid

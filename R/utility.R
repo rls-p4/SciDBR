@@ -172,11 +172,11 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 # array name generation.
   x = tryCatch(
         scidbquery(db, query="list('libraries')", release=1, resp=TRUE),
-        error=function(e) stop("Connection error"))
+        error=function(e) stop("Connection error"), warning=invisible)
   if(is.null(.scidbenv$id))
   {
     id = tryCatch(strsplit(x$response, split="\\r\\n")[[1]],
-           error=function(e) stop("Connection error"))
+           error=function(e) stop("Connection error"), warning=invisible)
     .scidbenv$id = id[[length(id)]]
   }
   attr(db, "connection") = .scidbenv   # updated state
@@ -263,7 +263,7 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
        }, error = function(e)
            {
              stop(e)
-           })
+           }, warning=invisible)
       return(ans)
   } else
   {
