@@ -570,7 +570,7 @@ lazyeval = function(db, name)
 #' @param db scidb database connection
 #' @param X a data frame
 #' @param name SciDB array name
-#' @param chunk_size passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools
+#' @param chunk_size optional value passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools
 #' @param types SciDB attribute types
 #' @param gc set to \code{TRUE} to connect SciDB array to R's garbage collector
 #' @return a \code{\link{scidb}} object, or a character schema string if \code{schema_only=TRUE}.
@@ -578,7 +578,7 @@ lazyeval = function(db, name)
 df2scidb = function(db, X,
                     name=tmpnam(db),
                     types=NULL,
-                    chunk_size=100000,
+                    chunk_size,
                     gc)
 {
   .scidbenv = attr(db, "connection")
@@ -661,11 +661,18 @@ df2scidb = function(db, X,
   atts = paste(dcast, collapse=",")
   if(aio)
   {
-    LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d','chunk_size=%.0f'),%s),%s)", tmp,
+    if(missing(chunk_size))
+      LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d'),%s),%s)", tmp,
+                 ncolX, atts, paste(anames, collapse=","))
+    else
+      LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d','chunk_size=%.0f'),%s),%s)", tmp,
                  ncolX, chunk_size, atts, paste(anames, collapse=","))
   } else
   {
-    LOAD = sprintf("input(%s, '%s', -2, 'tsv')", dfschema(anames, typ, nrowX, chunk_size), tmp)
+    if(missing(chunk_size))
+      LOAD = sprintf("input(%s, '%s', -2, 'tsv')", dfschema(anames, typ, nrowX), tmp)
+    else
+      LOAD = sprintf("input(%s, '%s', -2, 'tsv')", dfschema(anames, typ, nrowX, chunk_size), tmp)
   }
   query = sprintf("store(%s,%s)", LOAD, name)
   scidbquery(db, query, release=1, session=session, stream=0L)
