@@ -6,10 +6,9 @@ check = function(a, b)
 
 library("scidb")
 host = Sys.getenv("SCIDB_TEST_HOST")
-if(nchar(host) > 0)
+if (nchar(host) > 0)
 {
   db = scidbconnect(host)
-#  options(scidb.debug=TRUE)
 
 # 1 Data movement tests
 
@@ -32,13 +31,13 @@ if(nchar(host) > 0)
   check(nrow(x), nrow(as.R(a)))
 
 # upload vector
-  check(1:5, as.R(as.scidb(db, 1:5))[,2])
+  check(1:5, as.R(as.scidb(db, 1:5))[, 2])
 # upload matrix
   x = matrix(rnorm(100), 10)
-  check(x, matrix(as.R(as.scidb(db, x))[,3], 10, byrow=TRUE))
+  check(x, matrix(as.R(as.scidb(db, x))[, 3], 10, byrow=TRUE))
 # upload csparse matrix
 # also check shorthand projection syntax
-  x = Matrix::sparseMatrix(i=sample(10, 10), j=sample(10, 10),x=runif(10))
+  x = Matrix::sparseMatrix(i=sample(10, 10), j=sample(10, 10), x=runif(10))
   y = as.R(as.scidb(db, x))
   check(x, Matrix::sparseMatrix(i=y$i + 1, j=y$j + 1, x=y$val))
 # issue #126
@@ -65,7 +64,8 @@ if(nchar(host) > 0)
  x = db$build("<v:double>[i=1:2,2,0, j=1:3,1,0]", i * j)
  check(as.R(x)$v, c(1, 2, 2, 4, 3, 6))
  x = db$apply(x, w, R(i) * R(j))
- check(as.integer(as.R(x)$w), rep(24, 6))  ## Need as.integer() for integer64 coversion
+ # Need as.integer() for integer64 coversion below
+ check(as.integer(as.R(x)$w), rep(24, 6))
 
 
 # 3 Miscellaneous tests

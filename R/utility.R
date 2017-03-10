@@ -12,9 +12,9 @@
 store = function(db, expr, name, eval=TRUE, gc=TRUE, temp=FALSE)
 {
   ans = eval(expr)
-  if(!(inherits(ans, "scidb"))) return(ans)
+  if (!(inherits(ans, "scidb"))) return(ans)
 # If expr is a stored temp array, then re-use its name
-  if(!is.null(ans@meta$temp) && ans@meta$temp && missing(name)) name=ans@name
+  if (!is.null(ans@meta$temp) && ans@meta$temp && missing(name)) name=ans@name
   .scidbeval(db, ans@name, `eval`=eval, name=name, gc=gc, schema=schema(ans), temp=temp)
 }
 
@@ -30,8 +30,8 @@ store = function(db, expr, name, eval=TRUE, gc=TRUE, temp=FALSE)
 scidb = function(db, name, gc=FALSE, schema)
 {
   stopifnot(inherits(db, "afl"))
-  if(missing(name)) stop("array or expression must be specified")
-  if(inherits(name, "scidb"))
+  if (missing(name)) stop("array or expression must be specified")
+  if (inherits(name, "scidb"))
   {
     query = name@name
     return(.scidbeval(db, name@name, eval=FALSE, gc=gc, depend=list(name)))
@@ -40,13 +40,13 @@ scidb = function(db, name, gc=FALSE, schema)
   obj = new("scidb", name=name)
   obj@meta = new.env()
   obj@meta$db = db
-  if(missing(schema)) delayedAssign("state", lazyeval(db, name), assign.env=obj@meta)
+  if (missing(schema)) delayedAssign("state", lazyeval(db, name), assign.env=obj@meta)
   else assign("state", list(schema=schema), envir=obj@meta)
   delayedAssign("schema", get("state")$schema, eval.env=obj@meta, assign.env=obj@meta)
 
-  if(gc)
+  if (gc)
   {
-    if(length(grep("\\(", name)) == 0)
+    if (length(grep("\\(", name)) == 0)
     {
       obj@meta$name = name
     }
@@ -55,7 +55,7 @@ scidb = function(db, name, gc=FALSE, schema)
         {
           if (e$remove && exists("name", envir=e))
             {
-              if(grepl(sprintf("%s$", getuid(e$db)), e$name)) scidbquery(db, sprintf("remove(%s)", e$name), release=1)
+              if (grepl(sprintf("%s$", getuid(e$db)), e$name)) scidbquery(db, sprintf("remove(%s)", e$name), release=1)
             }
         }, onexit = TRUE)
   }
@@ -144,23 +144,23 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 # Update the scidb.version in the db connection environment
   shim.version = SGET(db, "/version")
   v = strsplit(gsub("[A-z\\-]", "", gsub("-.*", "", shim.version)), "\\.")[[1]]
-  if(length(v) < 2) v = c(v, "1")
+  if (length(v) < 2) v = c(v, "1")
   attr(db, "connection")$scidb.version = sprintf("%s.%s", v[1], v[2])
 
 # set this to TRUE if connecting to an older SciDB version than 16.9
   password_digest = ! at_least(attr(db, "connection")$scidb.version, "16.9")
 
-  if(missing(username)) username = c()
-  if(missing(password)) password = c()
+  if (missing(username)) username = c()
+  if (missing(password)) password = c()
 # Check for login using either scidb or HTTP digest authentication
-  if(!is.null(username))
+  if (!is.null(username))
   {
     attr(db, "connection")$authtype = auth_type
     attr(db, "connection")$authenv = new.env()
-    if(auth_type=="scidb")
+    if (auth_type=="scidb")
     {
       attr(db, "connection")$username = username
-      if(password_digest)
+      if (password_digest)
         attr(db, "connection")$password = base64_encode(digest(charToRaw(password), serialize=FALSE, raw=TRUE, algo="sha512"))
       else #16.9 no longer hashes the password
         attr(db, "connection")$password = password
@@ -176,7 +176,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   x = tryCatch(
         scidbquery(db, query="list('libraries')", release=1, resp=TRUE),
         error=function(e) stop("Connection error"), warning=invisible)
-  if(is.null(attr(db, "connection")$id))
+  if (is.null(attr(db, "connection")$id))
   {
     id = tryCatch(strsplit(x$response, split="\\r\\n")[[1]],
            error=function(e) stop("Connection error"), warning=invisible)
@@ -186,7 +186,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 # Update available operators and macros and return afl object
   ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE)[,2]
   attr(db, "connection")$ops = ops
-  if(missing(doc)) return (update.afl(db, ops))
+  if (missing(doc)) return (update.afl(db, ops))
 
   attr(db, "connection")$doc = doc
   update.afl(db, ops, doc)
@@ -217,16 +217,16 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
 {
   DEBUG = getOption("scidb.debug", FALSE)
-  if(inherits(query, "scidb"))  query = query@name
+  if (inherits(query, "scidb"))  query = query@name
   n = -1    # Indicate to shim that we want all the output
-  if(`return`)
+  if (`return`)
   {
-    if(binary) return(scidb_unpack_to_dataframe(db, query, ...))
+    if (binary) return(scidb_unpack_to_dataframe(db, query, ...))
 
     ans = tryCatch(
        {
         # SciDB save syntax changed in 15.12
-        if(at_least(attr(db, "connection")$scidb.version, 15.12))
+        if (at_least(attr(db, "connection")$scidb.version, 15.12))
         { 
           sessionid = scidbquery(db, query, save="csv+:l", release=0)
         } else sessionid = scidbquery(db, query, save="csv+", release=0)
@@ -242,23 +242,23 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
              stop(e)
           })
         SGET(db, "/release_session", list(id=sessionid), err=FALSE)
-        if(DEBUG) cat("Data transfer time",(proc.time() - dt1)[3],"\n")
+        if (DEBUG) cat("Data transfer time", (proc.time() - dt1)[3], "\n")
         dt1 = proc.time()
 # Handle escaped quotes
-        result = gsub("\\\\'","''", result, perl=TRUE)
-        result = gsub("\\\\\"","''", result, perl=TRUE)
+        result = gsub("\\\\'", "''", result, perl=TRUE)
+        result = gsub("\\\\\"", "''", result, perl=TRUE)
 # Map SciDB missing (aka null) to NA, but preserve DEFAULT null.
 # This sucky parsing is not a problem for binary transfers.
-        result = gsub("DEFAULT null","@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", result, perl=TRUE)
-        result = gsub("null","NA", result, perl=TRUE)
-        result = gsub("@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo","DEFAULT null", result, perl=TRUE)
+        result = gsub("DEFAULT null", "@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", result, perl=TRUE)
+        result = gsub("null", "NA", result, perl=TRUE)
+        result = gsub("@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", "DEFAULT null", result, perl=TRUE)
         val = textConnection(result)
         ret = c()
-        if(length(val) > 0)
+        if (length(val) > 0)
           ret = tryCatch(read.table(val, sep=",", stringsAsFactors=FALSE, header=TRUE, ...),
                 error = function(e) stop("SciDB query error"))
         close(val)
-        if(DEBUG) cat("R parsing time",(proc.time()-dt1)[3],"\n")
+        if (DEBUG) cat("R parsing time", (proc.time()-dt1)[3], "\n")
         ret
        }, error = function(e)
            {
@@ -301,19 +301,19 @@ as.scidb = function(db, x,
                     start,
                     gc=TRUE, ...)
 {
-  if(missing(name))
+  if (missing(name))
   {
     name = tmpnam(db)
   }
-  if(inherits(x, "raw"))
+  if (inherits(x, "raw"))
   {
-    return(raw2scidb(db, x, name=name, gc=gc,...))
+    return(raw2scidb(db, x, name=name, gc=gc, ...))
   }
-  if(inherits(x, "data.frame"))
+  if (inherits(x, "data.frame"))
   {
     return(df2scidb(db, x, name=name, gc=gc, ...))
   }
-  if(inherits(x, "dgCMatrix"))
+  if (inherits(x, "dgCMatrix"))
   {
     return(.Matrix2scidb(db, x, name=name, start=start, gc=gc, ...))
   }
@@ -365,14 +365,13 @@ as.scidb = function(db, x,
 #'#3  0.1411200
 #'#4 -0.7568025
 #'#5 -0.9589243
-
 #' }
 #' @export
 as.R = function(x, only_attributes=FALSE)
 {
   stopifnot(inherits(x, "scidb"))
-  if(is.null(schema(x, "dimensions"))) only_attributes = TRUE
-  if(only_attributes) return(scidb_unpack_to_dataframe(x@meta$db, x, only_attributes=TRUE))
+  if (is.null(schema(x, "dimensions"))) only_attributes = TRUE
+  if (only_attributes) return(scidb_unpack_to_dataframe(x@meta$db, x, only_attributes=TRUE))
   scidb_unpack_to_dataframe(x@meta$db, x)
 }
 
@@ -398,9 +397,9 @@ as.R = function(x, only_attributes=FALSE)
 scidb_prefix = function(db, expression=NULL)
 {
   stopifnot(inherits(db, "afl"))
-  if(is.null(expression)) attributes(db)$connection$prefix = c()
+  if (is.null(expression)) attributes(db)$connection$prefix = c()
   else attributes(db)$connection$prefix = expression
-  if(is.null(db$connection$doc))
+  if (is.null(db$connection$doc))
     return(update.afl(db, attributes(db)$connection$ops))
   update.afl(db, attributes(db)$connection$ops, attributes(db)$connection$doc)
 }
@@ -412,7 +411,7 @@ scidb_prefix = function(db, expression=NULL)
 #' @export
 getpwd = function(prompt="Password:")
 {
-  if(grepl("mingw", R.version["os"])) return(readline(sprintf("%s ", prompt)))
+  if (grepl("mingw", R.version["os"])) return(readline(sprintf("%s ", prompt)))
   cat(prompt, " ")
   system("stty -echo")
   a = readline()
