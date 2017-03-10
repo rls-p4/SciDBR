@@ -17,7 +17,7 @@
     d = strsplit(strsplit(d, "=")[[1]], ",")
     # SciDB schema syntax changed greatly in 16.9, convert it to old format.
     chunk = 3; overlap = 4
-    if(newer_than(attr(x@meta$db, "connection")$scidb.version, "16.9"))
+    if(at_least(attr(x@meta$db, "connection")$scidb.version, "16.9"))
     { 
       d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\3,\\4", x)), ",")[[1]])
       chunk = 4; overlap = 3
@@ -49,7 +49,7 @@
   }
   s = strsplit(strsplit(strsplit(strsplit(s, ">")[[1]][1], "<")[[1]][2], ",")[[1]], ":")
   # SciDB schema syntax changed in 15.12
-  null = if(newer_than(attr(x@meta$db, "connection")$scidb.version, "15.12"))
+  null = if(at_least(attr(x@meta$db, "connection")$scidb.version, "15.12"))
            ! grepl("NOT NULL", s)
          else grepl(" NULL", s)
   type = gsub("default", "", gsub(" ", "", gsub("null", "", gsub("not null", "", gsub("compression '.*'", "", vapply(s, function(x) x[2], ""), ignore.case=TRUE), ignore.case=TRUE), ignore.case=TRUE)), ignore.case=TRUE)

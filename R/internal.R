@@ -16,6 +16,7 @@
 scidb_unpack_to_dataframe = function(db, query, ...)
 {
   DEBUG = FALSE
+  INT64 = TRUE
   DEBUG = getOption("scidb.debug", FALSE)
   buffer = 100000L
   args = list(...)
@@ -92,7 +93,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   {
     dt2 = proc.time()
     tmp   = .Call("scidb_parse", as.integer(buffer), internal_attributes$type,
-                  internal_attributes$nullable, resp$content, as.double(p), PACKAGE="scidb")
+                  internal_attributes$nullable, resp$content, as.double(p), as.integer(INT64), PACKAGE="scidb")
     names(tmp) = cnames
     lines = tmp[[n+1]]
     p_old = p
@@ -132,7 +133,10 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   }
   if(DEBUG) message("Total R parsing time ", round((proc.time() - dt1)[3], 4))
   ans = as.data.frame(ans, check.names=FALSE)
-  for(i64 in which(internal_attributes$type %in% "int64")) oldClass(ans[, i64]) = "integer64"
+  if(INT64)
+  {
+    for(i64 in which(internal_attributes$type %in% "int64")) oldClass(ans[, i64]) = "integer64"
+  }
   if(args$only_attributes) # permute cols, see issue #125
   {
     colnames(ans) = make.names_(attributes$name)
@@ -218,7 +222,7 @@ create_temp_array = function(db, name, schema)
 {
 # SciDB temporary array syntax varies with SciDB version
   TEMP = "'TEMP'"
-  if(newer_than(attr(db, "connection")$scidb.version, "14.12")) TEMP="true"
+  if(at_least(attr(db, "connection")$scidb.version, "14.12")) TEMP="true"
   query   = sprintf("create_array(%s, %s, %s)", name, schema, TEMP)
   iquery(db, query, `return`=FALSE)
 }
@@ -548,7 +552,7 @@ noE = function(w) sapply(w,
 #' @param x version string like "12.1", "15.12", etc. (non-numeric ignored)
 #' @param y version string like "12.1", "15.12", etc. (non-numeric ignored)
 #' @return logical TRUE if x is greater than or equal to y
-newer_than = function(x, y)
+at_least = function(x, y)
 {
   b = as.numeric(gsub("-.*", "", gsub("[A-z].*", "", strsplit(sprintf("%s.0", x), "\\.")[[1]])))
   b = b[1] + b[2] / 100

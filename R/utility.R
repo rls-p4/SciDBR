@@ -123,49 +123,51 @@ scidb = function(db, name, gc=FALSE, schema)
 scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
                         port=getOption("scidb.default_shim_port", 8080L),
                         username, password,
-                        password_digest=FALSE,  #set this to TRUE if connecting to an older SciDB version
                         auth_type=c("scidb", "digest"), protocol=c("http", "https"),
                         doc)
 {
-  .scidbenv = list() # connection state
+# Set up a db object
+  db = list()
+  class(db) = "afl"
+  attr(db, "connection") = list() # connection state
   auth_type = match.arg(auth_type)
   protocol = match.arg(protocol)
-  .scidbenv$host = host
-  .scidbenv$port = port
-  .scidbenv$protocol = protocol
+  attr(db, "connection")$host = host
+  attr(db, "connection")$port = port
+  attr(db, "connection")$protocol = protocol
+
+# Update the scidb.version in the db connection environment
+  shim.version = SGET(db, "/version")
+  v = strsplit(gsub("[A-z\\-]", "", gsub("-.*", "", shim.version)), "\\.")[[1]]
+  if(length(v) < 2) v = c(v, "1")
+  attr(db, "connection")$scidb.version = sprintf("%s.%s", v[1], v[2])
+
+# set this to TRUE if connecting to an older SciDB version
+  password_digest = at_least(attr(db, "connection")$scidb.version, "16.9")
+
   if(missing(username)) username = c()
   if(missing(password)) password = c()
 # Check for login using either scidb or HTTP digest authentication
   if(!is.null(username))
   {
-    .scidbenv$authtype = auth_type
-    .scidbenv$authenv = new.env()
+    attr(db, "connection")$authtype = auth_type
+    attr(db, "connection")$authenv = new.env()
     if(auth_type=="scidb")
     {
-      .scidbenv$username = username
+      attr(db, "connection")$username = username
       if(!password_digest)
       {
         #16.9 no longer hashes the password
-        .scidbenv$password = password
+        attr(db, "connection")$password = password
       } else 
       {
-        .scidbenv$password = base64_encode(digest(charToRaw(password), serialize=FALSE, raw=TRUE, algo="sha512"))
+        attr(db, "connection")$password = base64_encode(digest(charToRaw(password), serialize=FALSE, raw=TRUE, algo="sha512"))
       }
     } else # HTTP basic digest auth
     {
-      .scidbenv$digest = paste(username, password, sep=":")
+      attr(db, "connection")$digest = paste(username, password, sep=":")
     }
   }
-# Set up a db object
-  db = list()
-  class(db) = "afl"
-  attr(db, "connection") = .scidbenv   # temporary assignment
-  shim.version = SGET(db, "/version")
-
-# Update the scidb.version in the db connection environment
-  v = strsplit(gsub("[A-z\\-]", "", gsub("-.*", "", shim.version)), "\\.")[[1]]
-  if(length(v) < 2) v = c(v, "1")
-  .scidbenv$scidb.version = sprintf("%s.%s", v[1], v[2])
 
 
 # Use the query ID from a query as a unique ID for automated
@@ -173,22 +175,19 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   x = tryCatch(
         scidbquery(db, query="list('libraries')", release=1, resp=TRUE),
         error=function(e) stop("Connection error"), warning=invisible)
-  if(is.null(.scidbenv$id))
+  if(is.null(attr(db, "connection")$id))
   {
     id = tryCatch(strsplit(x$response, split="\\r\\n")[[1]],
            error=function(e) stop("Connection error"), warning=invisible)
-    .scidbenv$id = id[[length(id)]]
+    attr(db, "connection")$id = id[[length(id)]]
   }
-  attr(db, "connection") = .scidbenv   # updated state
 
 # Update available operators and macros and return afl object
   ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE)[,2]
-  .scidbenv$ops = ops
-  attr(db, "connection") = .scidbenv   # updated state
+  attr(db, "connection")$ops = ops
   if(missing(doc)) return (update.afl(db, ops))
 
-  .scidbenv$doc = doc
-  attr(db, "connection") = .scidbenv   # updated state
+  attr(db, "connection")$doc = doc
   update.afl(db, ops, doc)
 }
 
@@ -226,7 +225,7 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
     ans = tryCatch(
        {
         # SciDB save syntax changed in 15.12
-        if(newer_than(attr(db, "connection")$scidb.version, 15.12))
+        if(at_least(attr(db, "connection")$scidb.version, 15.12))
         { 
           sessionid = scidbquery(db, query, save="csv+:l", release=0)
         } else sessionid = scidbquery(db, query, save="csv+", release=0)
