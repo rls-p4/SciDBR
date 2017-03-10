@@ -1,40 +1,22 @@
-<!--
 ---
-title: "An R interface to SciDB"
+title: "An R Interface to SciDB"
 date: "`r Sys.Date()`"
-author: B. W. Lewis, Copyright (C) 2016 by Paradigm4, Inc.
 output:
   html_document:
-    theme: flatly
-    highlight: tango
+    fig_caption: false
     toc: true
-    toc_depth: 4
-    mathjax: null
-    css: style.css
+    toc_depth: 3
 vignette: >
-  \VignetteIndexEntry{scidb}
-  \VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}
-output:
-  pdf_document:
-    theme: flatly
-    highlight: tango
-    toc: true
-    toc_depth: 4
-    mathjax: null
-    css: style.css
-vignette: >
-  \VignetteIndexEntry{scidb}
-  \VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}
+  %\VignetteIndexEntry{scidb}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
----
--->
 
-<!--
-%\VignetteEngine{knitr::knitr}
-%\VignetteIndexEntry{scidb overview}
--->
+
+```{r, echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(comment = "")
+options(width = 120, max.print = 100)
+```
 
 
 # SciDB
@@ -69,12 +51,13 @@ devtools::install_github("Paradigm4/SciDBR")
 "Stable" means that all CRAN checks and package unit tests pass when tested
 using the current SciDB release. We try to make sure that the scidb package
 works with _all_ previous versions of SciDB but we only actively test against
-the current release version of the database.
+the current release version of the database. Other experimental and development
+branches exist; see the GitHub repository for a list.
 
 
 ## Connecting to SciDB
 
-The `scidbconnect` function establishes a connection to a simple HTTP network
+The `scidbconnect()` function establishes a connection to a simple HTTP network
 service called shim (https://github.com/Paradigm4/shim) running on a SciDB
 coordinator instance.  The function may be safely called multiple times. The
 function return value contains the SciDB database connection state in an object
@@ -92,6 +75,10 @@ db <- scidbconnect()
 *Connect to shim on an encrypted port 8083 with example SciDB authentication*
 ```{r, eval=FALSE}
 db <- scidbconnect(port=8083, username="root", password="Paradigm4")
+```
+*Connect to shim on an encrypted port 8083 with example SciDB authentication, interactively entering password*
+```{r, eval=FALSE}
+db <- scidbconnect(port=8083, username="root", password=getpwd())
 ```
 Use encrypted sessions when communicating with SciDB over public networks.
 SciDB user authentication is only supported by SciDB versions 15.7 and greater and
@@ -325,34 +312,35 @@ print(y)
 ```
 SciDB expression  apply(build(<v:double>[i=1:2,2,0, j...
 SciDB schema  <v:double,a:double,b:string NOT NULL> [i=1:2:0:2; j=1:3:0:1] 
-  variable dimension            type nullable start end chunk
-1        i      TRUE           int64    FALSE     1   0     2
-2        j      TRUE           int64    FALSE     1   0     3
-3        v     FALSE          double     TRUE                
-4        a     FALSE          double     TRUE                
-5        b     FALSE string NOT NULL    FALSE                
+  variable dimension   type nullable start end chunk
+1        i      TRUE  int64    FALSE     1   2     2
+2        j      TRUE  int64    FALSE     1   3     1
+3        v     FALSE double     TRUE                
+4        a     FALSE double     TRUE                
+5        b     FALSE string    FALSE                
 ```
 
-**Note** that in the above expression `i` and `j` are evaluated as SciDB dimension
-values, not R values.  The expression evaluation procedure is:
+**Note** that in the above expression `i` and `j` are treated verbatim as SciDB dimension
+values, not R values.  The function argument evaluation procedure in SciDB AFL methods
+is, in order of precedence:
 
 1. Arguments that evaluate to SciDB arrays are replaced by their
    corresponding SciDB expression.
-2. Character strings are replaced by their unquoted value.
+2. Character strings are replaced by their unquoted value. (This means that you usually need to
+   supply quote marks (') in values you wish SciDB to treat as strings.)
 3. All remaining arguments are passed verbatim into the SciDB query
-   expression.
+   expression, unless escaped by the special `R()` function (see next section).
 
-SciDB schema literal values represent one important exception to the above
+Certain SciDB schema literal values represent one important exception to the above
 process.  SciDB schemas contain characters like `<`, `:`, `[` that correspond
 to R infix operators. It's difficult to always overload their evaluation as
-R operators. Thus, SciDB schemas must simply be supplied as R character strings
+R operators. Thus, SciDB schemas must simply always be supplied as R character strings
 instead of verbatim text as shown in the following example (also used above).
 ```{r, eval=FALSE, echo=TRUE}
 x <- db$build("<v:double>[i=1:2,2,0, j=1:3,1,0]", i * j)
 ```
 
-
-## Using scalar-valued R expressions within AFL statements
+### Using scalar-valued R expressions within AFL statements
 
 Use the special `R()` function syntax within any portion of an AFL statement to
 replace the enclosed R expression with its scalar value.  The R expression is
@@ -365,10 +353,10 @@ jlim <- 3
 z <- pi
 x <- db$build("<v:double>[i=1:2,2,0, j=1:R(jlim),1,0]", i * j + R(z))
 ```
+Use this syntax to mix scalar R values into SciDB AFL expressions.
 
 
-
-## Help on AFL expressions
+### Help on AFL expressions
 
 Use the TAB key for argument lists within an AFL function (RStudio only).
 The standard R `help()` function shows SciDB doxygen help for AFL function
@@ -383,7 +371,7 @@ aflhelp(db, "aggregate")
 ```
 
 
-## SciDB aliasing in AFL expressions with `%as%`
+### SciDB aliasing in AFL expressions with `%as%`
 
 Use the special `%as%` R infix operator in place of the usual AFL
 word "as" in SciDB expressions using aliasing, either to rename a
@@ -419,9 +407,7 @@ iquery(db, paste("grouped_aggregate(", x@name, ", Species, avg(Petal_Length) as 
 
 The following package options can be set with R's `options` function.  Set
 `options(scidb.debug=TRUE)` to see interesting debugging information including
-all the issued SciDB queries. Set `options(scidb.stream=TRUE)` to avoid
-creating server-side data files which is most useful when you're downloading
-lots of data from SciDB into R.
+all the issued SciDB queries.
 
 ```
 # Set the scidb.prefix option to prefix queries with arbitrary AFL
