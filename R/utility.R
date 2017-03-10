@@ -412,6 +412,7 @@ scidb_prefix = function(db, expression=NULL)
 #' @export
 getpwd = function(prompt="Password:")
 {
+  if(grepl("mingw", R.version["os"])) return(readline(sprintf("%s ", prompt)))
   cat(prompt, " ")
   system("stty -echo")
   a = readline()
