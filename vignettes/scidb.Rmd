@@ -6,6 +6,7 @@ output:
     fig_caption: false
     toc: true
     toc_depth: 3
+    css: style.css
 vignette: >
   %\VignetteIndexEntry{scidb}
   %\VignetteEngine{knitr::rmarkdown}
