@@ -5,8 +5,8 @@
 
 .dimsplitter = function(x)
 {
-  if(!(inherits(x, "scidb"))) return(NULL)
-  if(is.character(x)) s = x
+  if (!(inherits(x, "scidb"))) return(NULL)
+  if (is.character(x)) s = x
   else
   {
     s = schema(x)
@@ -17,14 +17,14 @@
     d = strsplit(strsplit(d, "=")[[1]], ",")
     # SciDB schema syntax changed greatly in 16.9, convert it to old format.
     chunk = 3; overlap = 4
-    if(at_least(attr(x@meta$db, "connection")$scidb.version, "16.9"))
-    { 
+    if (at_least(attr(x@meta$db, "connection")$scidb.version, "16.9"))
+    {
       d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\3,\\4", x)), ",")[[1]])
       chunk = 4; overlap = 3
     }
     n = c(d[[1]], vapply(d[-c(1, length(d))], function(x) x[length(x)], ""))
     d = d[-1]
-    if(length(d) > 1)
+    if (length(d) > 1)
     {
       i = 1:(length(d) - 1)
       d[i] = lapply(d[i], function(x) x[-length(x)])
@@ -41,15 +41,15 @@
 
 .attsplitter = function(x)
 {
-  if(is.character(x)) s = x
+  if (is.character(x)) s = x
   else
   {
-    if(!(inherits(x, "scidb"))) return(NULL)
+    if (!(inherits(x, "scidb"))) return(NULL)
     s = schema(x)
   }
   s = strsplit(strsplit(strsplit(strsplit(s, ">")[[1]][1], "<")[[1]][2], ",")[[1]], ":")
   # SciDB schema syntax changed in 15.12
-  null = if(at_least(attr(x@meta$db, "connection")$scidb.version, "15.12"))
+  null = if (at_least(attr(x@meta$db, "connection")$scidb.version, "15.12"))
            ! grepl("NOT NULL", s)
          else grepl(" NULL", s)
   type = gsub("default", "", gsub(" ", "", gsub("null", "", gsub("not null", "", gsub("compression '.*'", "", vapply(s, function(x) x[2], ""), ignore.case=TRUE), ignore.case=TRUE), ignore.case=TRUE)), ignore.case=TRUE)
@@ -82,7 +82,7 @@
 #' @export
 schema = function(x, what=c("schema", "attributes", "dimensions"))
 {
-  if(!(inherits(x, "scidb"))) return(NULL)
+  if (!(inherits(x, "scidb"))) return(NULL)
   switch(match.arg(what),
     schema = gsub(".*<", "<", x@meta$schema),
     attributes = .attsplitter(x),

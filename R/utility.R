@@ -185,7 +185,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   }
 
 # Update available operators and macros and return afl object
-  ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE)[,2]
+  ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE)[, 2]
   attr(db, "connection")$ops = ops
   if (missing(doc)) return (update.afl(db, ops))
 
@@ -228,7 +228,7 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
        {
         # SciDB save syntax changed in 15.12
         if (at_least(attr(db, "connection")$scidb.version, 15.12))
-        { 
+        {
           sessionid = scidbquery(db, query, save="csv+:l", release=0)
         } else sessionid = scidbquery(db, query, save="csv+", release=0)
         dt1 = proc.time()
@@ -352,20 +352,20 @@ as.scidb = function(db, x,
 #' db <- scidbconnect()
 #' x <- scidb(s, "build(<v:double>[i=1:5], sin(i))")
 #' as.R(x)
-#'#  i          v
-#'#1 1  0.8414710
-#'#2 2  0.9092974
-#'#3 3  0.1411200
-#'#4 4 -0.7568025
-#'#5 5 -0.9589243
+#'## i          v
+#'## 1  0.8414710
+#'## 2  0.9092974
+#'## 3  0.1411200
+#'## 4 -0.7568025
+#'## 5 -0.9589243
 #'
 #' as.R(x, only_attributes=TRUE)
-#'#           v
-#'#1  0.8414710
-#'#2  0.9092974
-#'#3  0.1411200
-#'#4 -0.7568025
-#'#5 -0.9589243
+#'##          v
+#'##  0.8414710
+#'##  0.9092974
+#'##  0.1411200
+#'## -0.7568025
+#'## -0.9589243
 #' }
 #' @export
 as.R = function(x, only_attributes=FALSE)

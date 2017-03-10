@@ -9,24 +9,24 @@
 #' @importFrom utils head
 update.afl = function(db, new, ops)
 {
-  if(missing(ops))
+  if (missing(ops))
   {
     e = new.env()
     data("operators", package="scidb", envir=e)
     ops = e$operators
   }
   conn = db  # need a reference to the scidb connection in the afl function below
-  for(x in new)
+  for (x in new)
   {
     db[[x]] = afl
-    i = ops[,1] == x
+    i = ops[, 1] == x
     # update formal function arguments for nice tab completion help
-    if(any(i))
+    if (any(i))
     {
-      def = head(ops[i,], 1)
+      def = head(ops[i, ], 1)
       # XXX very ugly...
       fml = strsplit(gsub("[=:].*", "", gsub("\\|.*", "", gsub(" *", "", gsub("\\]", "", gsub("\\[", "", gsub("\\[.*\\|.*\\]", "", gsub("[+*{})]", "", gsub(".*\\(", "", def[2])))))))), ",")[[1]]
-      formals(db[[x]]) = eval(parse(text=sprintf("alist(%s, ...=)", paste(paste(fml ,"="), collapse=", "))))
+      formals(db[[x]]) = eval(parse(text=sprintf("alist(%s, ...=)", paste(paste(fml, "="), collapse=", "))))
       attr(db[[x]], "help") = def[3]
       attr(db[[x]], "signature") = def[2]
     }
@@ -45,10 +45,10 @@ update.afl = function(db, new, ops)
 #' @keywords internal function
 rsub = function(x, env)
 {
-  if(! grepl("[^[:alnum:]_]R\\(" ,x)) return(x)
+  if (! grepl("[^[:alnum:]_]R\\(", x)) return(x)
   imbalance_paren = function(x) # efficiently find the first imbalanced ")" character position
   {
-    which(cumsum((as.numeric(charToRaw(x) == charToRaw("("))) - (as.numeric(charToRaw(x) == charToRaw(")"))) ) < 0)[1]
+    which (cumsum( (as.numeric(charToRaw(x) == charToRaw("("))) - (as.numeric(charToRaw(x) == charToRaw(")"))) ) < 0)[1]
   }
   y = gsub("([^[:alnum:]_])R\\(", "\\1@R(", x)
   y = strsplit(y, "@R\\(")[[1]]
@@ -76,7 +76,7 @@ afl = function(...)
   .args = paste(
              lapply(as.list(match.call())[-1],
                function(.x) tryCatch({
-                   if(class(eval(.x, envir=pf))[1] %in% "scidb") eval(.x, envir=pf)@name
+                   if (class(eval(.x, envir=pf))[1] %in% "scidb") eval(.x, envir=pf)@name
                    else .x
                }, error=function(e) .x)),
          collapse=",")
@@ -86,11 +86,11 @@ afl = function(...)
 # handle R scalar variable substitutions
   expr = rsub(expr, pf)
 # Some special AFL non-operator expressions don't return arrays
-  if(any(grepl(attributes(call)$name, getOption("scidb.ddl"), ignore.case=TRUE)))
+  if (any(grepl(attributes(call)$name, getOption("scidb.ddl"), ignore.case=TRUE)))
   {
     return(iquery(attributes(call)$conn, expr))
   }
-  if(getOption("scidb.debug", FALSE)) message("AFL EXPRESSION: ", expr)
+  if (getOption("scidb.debug", FALSE)) message("AFL EXPRESSION: ", expr)
   ans = scidb(attributes(call)$conn, expr)
   ans@meta$depend = as.list(.env)
   ans
@@ -110,9 +110,9 @@ afl = function(...)
 #' @export
 aflhelp = function(topic, db)
 {
-  if(is.character(topic))
+  if (is.character(topic))
   {
-    if(missing(db)) stop("character topics require a database connection argument")
+    if (missing(db)) stop("character topics require a database connection argument")
     topic = db[[topic]]
   }
   h = sprintf("%s\n\n%s", attr(topic, "signature"), gsub("\\n{2,}", "\n", attr(topic, "help")))

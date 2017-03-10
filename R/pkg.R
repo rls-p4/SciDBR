@@ -26,9 +26,9 @@
 #' @docType package
 NULL
 
-.onAttach = function(libname,pkgname)
+.onAttach = function(libname, pkgname)
 {
-  packageStartupMessage("   ____    _ ___  ___\n  / __/___(_) _ \\/ _ )\n _\\ \\/ __/ / // / _  |\n/___/\\__/_/____/____/     Copyright 2016, Paradigm4, Inc.\n\n"    , domain = NULL, appendLF = TRUE)
+  packageStartupMessage("   ____    _ ___  ___\n  / __/___(_) _ \\/ _ )\n _\\ \\/ __/ / // / _  |\n/___/\\__/_/____/____/     Copyright 2016, Paradigm4, Inc.\n\n", domain = NULL, appendLF = TRUE)
 
   options(scidb.prefix=NULL)
 # Default shim port and host.
@@ -122,4 +122,4 @@ NULL
 .scidb_DIM_MAX = "4611686018427387903"
 
 # To quiet a check NOTE:
-if(getRversion() >= "2.15.1")  utils::globalVariables(c("n", "p"))
+if (getRversion() >= "2.15.1")  utils::globalVariables(c("n", "p"))
