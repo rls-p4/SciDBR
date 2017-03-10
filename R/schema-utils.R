@@ -93,5 +93,6 @@ schema = function(x, what=c("schema", "attributes", "dimensions"))
 
 dfschema = function(names, types, len, chunk=10000)
 {
-  sprintf("<%s>[i=1:%d,%d,0]", paste(paste(names, types, sep=":"), collapse=","), len, chunk)
+  dimname = make.unique_(names, "i")
+  sprintf("<%s>[%s=1:%d,%d,0]", paste(paste(names, types, sep=":"), collapse=","), dimname, len, chunk)
 }

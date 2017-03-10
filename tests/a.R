@@ -69,4 +69,11 @@ if(nchar(host) > 0)
 
 # 3 Miscellaneous tests
 
+# int64 option
+ db = scidbconnect(host, int64=TRUE)
+ x = db$build("<v:int64>[i=1:2,2,0]", i)
+ check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE))))
+ db = scidbconnect(host, int64=FALSE)
+ x = db$build("<v:int64>[i=1:2,2,0]", i)
+ check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE))))
 }

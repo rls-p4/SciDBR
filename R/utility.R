@@ -70,6 +70,9 @@ scidb = function(db, name, gc=FALSE, schema)
 #' @param password optional authentication password
 #' @param auth_type optional SciDB authentication type
 #' @param protocol optional shim protocol type
+#' @param int64 logical value, if \code{TRUE} then preserve signed 64-bit SciDB integers
+#' as R integer64 values from the bit64 package. Otherwise, 64-bit integers from SciDB
+#' are converted to R double values, possibly losing precision.
 #' @param doc optional AFL operator/macro documentation (see notes)
 #' @note
 #' Use the optional \code{username} and \code{password} arguments with
@@ -124,6 +127,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
                         port=getOption("scidb.default_shim_port", 8080L),
                         username, password,
                         auth_type=c("scidb", "digest"), protocol=c("http", "https"),
+                        int64=FALSE,
                         doc)
 {
 # Set up a db object
@@ -135,6 +139,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   attr(db, "connection")$host = host
   attr(db, "connection")$port = port
   attr(db, "connection")$protocol = protocol
+  attr(db, "connection")$int64 = int64
 
 # Update the scidb.version in the db connection environment
   shim.version = SGET(db, "/version")

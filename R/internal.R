@@ -16,7 +16,7 @@
 scidb_unpack_to_dataframe = function(db, query, ...)
 {
   DEBUG = FALSE
-  INT64 = TRUE
+  INT64 = attr(db, "connection")$int64
   DEBUG = getOption("scidb.debug", FALSE)
   buffer = 100000L
   args = list(...)
