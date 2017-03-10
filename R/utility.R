@@ -142,8 +142,8 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   if(length(v) < 2) v = c(v, "1")
   attr(db, "connection")$scidb.version = sprintf("%s.%s", v[1], v[2])
 
-# set this to TRUE if connecting to an older SciDB version
-  password_digest = at_least(attr(db, "connection")$scidb.version, "16.9")
+# set this to TRUE if connecting to an older SciDB version than 16.9
+  password_digest = ! at_least(attr(db, "connection")$scidb.version, "16.9")
 
   if(missing(username)) username = c()
   if(missing(password)) password = c()
@@ -155,14 +155,10 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
     if(auth_type=="scidb")
     {
       attr(db, "connection")$username = username
-      if(!password_digest)
-      {
-        #16.9 no longer hashes the password
-        attr(db, "connection")$password = password
-      } else 
-      {
+      if(password_digest)
         attr(db, "connection")$password = base64_encode(digest(charToRaw(password), serialize=FALSE, raw=TRUE, algo="sha512"))
-      }
+      else #16.9 no longer hashes the password
+        attr(db, "connection")$password = password
     } else # HTTP basic digest auth
     {
       attr(db, "connection")$digest = paste(username, password, sep=":")
