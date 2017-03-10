@@ -404,3 +404,18 @@ scidb_prefix = function(db, expression=NULL)
     return(update.afl(db, attributes(db)$connection$ops))
   update.afl(db, attributes(db)$connection$ops, attributes(db)$connection$doc)
 }
+
+
+#' Simple utility to interactively enter a password without showing it on the screen
+#'
+#' @param prompt a text prompt to display, defaults to "Password:"
+#' @export
+getpwd = function(prompt="Password:")
+{
+  cat(prompt, " ")
+  system("stty -echo")
+  a = readline()
+  system("stty echo")
+  cat("\n")
+  a
+}
