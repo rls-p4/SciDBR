@@ -121,7 +121,7 @@ level. The prefix will be displayed in the connection summary.
 ```{r, eval=FALSE}
 library(scidb)
 db <- scidbconnect()
-db <- scidb_prefix("set_role('functionary')")
+db <- scidb_prefix(db, "set_role('functionary')")
 print(db)
 ```
 
