@@ -103,7 +103,7 @@ scidb = function(db, name, gc=FALSE, schema)
 #' db <- scidbconnect()
 #'
 #' # SciDB 15.12 authentication example (using shim's default HTTPS port 8083)
-#' db <- scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
+#' db <- scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083, protocol="https")
 #'
 #' # List available AFL operators
 #' names(db)
@@ -159,6 +159,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
     attr(db, "connection")$authenv = new.env()
     if (auth_type=="scidb")
     {
+      attr(db, "connection")$protocol = "https"
       attr(db, "connection")$username = username
       if (password_digest)
         attr(db, "connection")$password = base64_encode(digest(charToRaw(password), serialize=FALSE, raw=TRUE, algo="sha512"))

@@ -23,7 +23,7 @@ return a character value when \code{file=return}.
 \description{
 Conversions are vectorized and the entire output is buffered in memory and written in
 one shot. Great option for replacing writing to a textConnection (much much faster).
-Not such a great option for writing to files, only 10% faster than write.table and
+Not such a great option for writing to files, marginal difference from write.table and
 obviously much greater memory use.
 }
 \keyword{internal}
