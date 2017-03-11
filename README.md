@@ -33,11 +33,6 @@ chance of making it into the CRAN package, but all tests might not yet pass.
 The "master" branch should pass all `R CMD check` tests against the current
 R-devel version of R on all platforms, tested against the current SciDB release.
 
-## Wiki
-Check out (and feel free to contribute to) examples in the wiki pages for
-this project here:
-
-https://github.com/Paradigm4/SciDBR/wiki/_pages
 
 ## Getting Started Documentation
 
