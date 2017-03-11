@@ -37,6 +37,7 @@ if(nchar(host) > 0)
   x = matrix(rnorm(100), 10)
   check(x, matrix(as.R(as.scidb(db, x))[,3], 10, byrow=TRUE))
 # upload csparse matrix
+# also check shorthand projection syntax
   x = Matrix::sparseMatrix(i=sample(10, 10), j=sample(10, 10),x=runif(10))
   y = as.R(as.scidb(db, x))
   check(x, Matrix::sparseMatrix(i=y$i + 1, j=y$j + 1, x=y$val))

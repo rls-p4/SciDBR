@@ -13,6 +13,7 @@
 #' @keywords internal
 #' @importFrom curl new_handle handle_setheaders handle_setopt curl_fetch_memory handle_setform form_file
 #' @importFrom data.table  data.table
+#' @import bit64
 scidb_unpack_to_dataframe = function(db, query, ...)
 {
   DEBUG = FALSE
@@ -687,7 +688,7 @@ df2scidb = function(db, X,
 #'
 #' Conversions are vectorized and the entire output is buffered in memory and written in
 #' one shot. Great option for replacing writing to a textConnection (much much faster).
-#' Not such a great option for writing to files, only 10% faster than write.table and
+#' Not such a great option for writing to files, marginal difference from write.table and
 #' obviously much greater memory use.
 #' @param x a data frame
 #' @param file a connection or \code{return} to return character output directly (fast)
@@ -695,9 +696,12 @@ df2scidb = function(db, X,
 #' @param format optional fprint-style column format specifyer
 #' @return Use for the side effect of writing to the connection returning \code{NULL}, or
 #' return a character value when \code{file=return}.
+#' @importFrom utils write.table
 #' @keywords internal
 fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), collapse=sep))
 {
+  foo = NULL
+  rm(list="foo") # avoid package R CMD check warnings of undeclared variable
   if(!is.data.frame(x)) stop("x must be a data.frame")
   if(is.null(file) || ncol(x) > 97) # use slow write.table method
   {

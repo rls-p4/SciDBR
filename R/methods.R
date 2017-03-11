@@ -163,5 +163,5 @@ setMethod("%as%", signature(x="scidb", y="ANY"),
 `$.scidb` = function(x, ...)
 {
   a = as.character(as.list(match.call())[[3]])
-  attributes(x)$meta$db$project(x, R(a))
+  attributes(x)$meta$db$project(x, a)
 }

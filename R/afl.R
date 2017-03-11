@@ -45,7 +45,7 @@ update.afl = function(db, new, ops)
 #' @keywords internal function
 rsub = function(x, env)
 {
-  if(!grepl("[^[:alnum:]_]R\\(" ,x)) return(x)
+  if(! grepl("[^[:alnum:]_]R\\(" ,x)) return(x)
   imbalance_paren = function(x) # efficiently find the first imbalanced ")" character position
   {
     which(cumsum((as.numeric(charToRaw(x) == charToRaw("("))) - (as.numeric(charToRaw(x) == charToRaw(")"))) ) < 0)[1]
