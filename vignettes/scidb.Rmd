@@ -146,7 +146,7 @@ ls.str(db)   # quick list of AFL operators
 # db$<TAB>   # interactive completion list of AFL operators
 ```
 
-Each listed AFL operator is presented as an R function. RSudio users can use
+Each listed AFL operator is presented as an R function. RStudio users can use
 the TAB key inside the function body to see suggested AFL operator argument
 completions. Alternatively, `ls.str(db)` shows the formal AFL operator
 arguments for each function.  These functions can be used to compose AFL

@@ -198,7 +198,7 @@ print(db)    # summarize connection
 ls(db)       # quick list of arrays
 ls.str(db)   # quick list of AFL operators
 # db$&lt;TAB&gt;   # interactive completion list of AFL operators</code></pre>
-<p>Each listed AFL operator is presented as an R function. RSudio users can use the TAB key inside the function body to see suggested AFL operator argument completions. Alternatively, <code>ls.str(db)</code> shows the formal AFL operator arguments for each function. These functions can be used to compose AFL expressions from R, discussed in more detail below.</p>
+<p>Each listed AFL operator is presented as an R function. RStudio users can use the TAB key inside the function body to see suggested AFL operator argument completions. Alternatively, <code>ls.str(db)</code> shows the formal AFL operator arguments for each function. These functions can be used to compose AFL expressions from R, discussed in more detail below.</p>
 <p><strong>NOTE</strong> The list of operators and macros is established at connection time. If the database operators change after establishing the connection, for instance by loading a new SciDB plugin, then those changes will not be shown in the database connection object. New connection objects will show the current list of operators and macros.</p>
 </div>
 </div>
