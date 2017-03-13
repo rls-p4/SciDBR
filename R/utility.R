@@ -324,6 +324,7 @@ as.scidb = function(db, x,
 #' Download SciDB data to R
 #' @param x a \code{\link{scidb}} object (a SciDB array or expression)
 #' @param only_attributes optional logical argument, if \code{TRUE} do not download SciDB dimensions
+#' @param binary optional logical value, set to \code{FALSE} to download data using text format (useful for some unsupported SciDB types)
 #' @return An R \code{\link{data.frame}}
 #' @note This convenience function is equivalent to running \code{iquery(db, x, return=TRUE)} for
 #' a SciDB connection object \code{s}.
@@ -368,12 +369,12 @@ as.scidb = function(db, x,
 #'## -0.9589243
 #' }
 #' @export
-as.R = function(x, only_attributes=FALSE)
+as.R = function(x, only_attributes=FALSE, binary=TRUE)
 {
   stopifnot(inherits(x, "scidb"))
   if (is.null(schema(x, "dimensions"))) only_attributes = TRUE
   if (only_attributes) return(scidb_unpack_to_dataframe(x@meta$db, x, only_attributes=TRUE))
-  scidb_unpack_to_dataframe(x@meta$db, x)
+  scidb_unpack_to_dataframe(x@meta$db, x, binary=binary)
 }
 
 #' Register an AFL prefix expression

@@ -6,6 +6,7 @@
 #' @param ... optional extra arguments (see below)
 #' @note option extra arguments
 #' \itemize{
+#'   \item{binar}{ optional logical value, if \code{FALSE} use iquery text transfer, otherwise binary transfer, defaults \code{TRUE}}
 #'   \item{buffer}{ integer initial parse buffer size in bytes, adaptively resized as needed: larger buffers can be faster but comsume more memory, default size is 100000L.}
 #'   \item{only_attributes}{ optional logical value, \code{TRUE} means don't retrieve dimension coordinates, only return attribute values; defaults to \code{FALSE}.}
 #"   \item{schema}{ optional result schema string, only applies when \code{query} is not a SciDB object. Supplying this avois one extra metadata query to determine result schema. Defaults to \code{schema(query)}.}
@@ -22,6 +23,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   buffer = 100000L
   args = list(...)
   if (is.null(args$only_attributes)) args$only_attributes = FALSE
+  if (is.null(args$binary)) args$binary = TRUE
   if (!is.null(args$buffer))
   {
     argsbuf = tryCatch(as.integer(args$buffer), warning=function(e) NA)
@@ -36,6 +38,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   attributes = schema(query, "attributes")
   dimensions = schema(query, "dimensions")
   query = query@name
+  if(! args$binary) return(iquery(db, internal_query, binary=FALSE, `return`=TRUE))
   if (args$only_attributes)
   {
     internal_attributes = attributes

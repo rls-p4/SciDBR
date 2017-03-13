@@ -24,9 +24,9 @@ in AFL expressions written in R.
 }
 \examples{
 \dontrun{
-# s = scidbconnect()
-# x = scidb(s, "build(<v:double>[i=1:2,1,0], i)")
-# x \%as\% y
+db <- scidbconnect()
+x <- scidb(db, "build(<v:double>[i=1:2,1,0], i)")
+x \%as\% y
 }
 }
 

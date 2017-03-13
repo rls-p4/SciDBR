@@ -19,9 +19,9 @@ Display SciDB AFL operator documentation
 }
 \examples{
 \dontrun{
-s = scidbconnect()
-aflhelp("list")     # explicitly look up a character string
-help(s$list)        # same thing via R's \\code{help} function
+d <- scidbconnect()
+aflhelp("list", d)     # explicitly look up a character string
+help(d$list)        # same thing via R's \\code{help} function
 }
 }
 

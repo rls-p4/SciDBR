@@ -4,12 +4,14 @@
 \alias{as.R}
 \title{Download SciDB data to R}
 \usage{
-as.R(x, only_attributes = FALSE)
+as.R(x, only_attributes = FALSE, binary = TRUE)
 }
 \arguments{
 \item{x}{a \code{\link{scidb}} object (a SciDB array or expression)}
 
 \item{only_attributes}{optional logical argument, if \code{TRUE} do not download SciDB dimensions}
+
+\item{binary}{optional logical value, set to \code{FALSE} to download data using text format (useful for some unsupported SciDB types)}
 }
 \value{
 An R \code{\link{data.frame}}
@@ -45,20 +47,20 @@ corresponding R types as follows:
 db <- scidbconnect()
 x <- scidb(s, "build(<v:double>[i=1:5], sin(i))")
 as.R(x)
-#  i          v
-#1 1  0.8414710
-#2 2  0.9092974
-#3 3  0.1411200
-#4 4 -0.7568025
-#5 5 -0.9589243
+## i          v
+## 1  0.8414710
+## 2  0.9092974
+## 3  0.1411200
+## 4 -0.7568025
+## 5 -0.9589243
 
 as.R(x, only_attributes=TRUE)
-#           v
-#1  0.8414710
-#2  0.9092974
-#3  0.1411200
-#4 -0.7568025
-#5 -0.9589243
+##          v
+##  0.8414710
+##  0.9092974
+##  0.1411200
+## -0.7568025
+## -0.9589243
 }
 }
 \seealso{
