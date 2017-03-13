@@ -59,7 +59,6 @@ int scmp (const char *a, const char *b)
  * bool          logical
  * char          character
  * datetime      double (aka real, numeric)
- * datetimetz    double
  * float         double
  * double        double
  * int64         double
@@ -80,7 +79,7 @@ SEXP scidb_type_vector (const char *type, int len)
   if(scmp(type, "bool"))
   {
     return NEW_LOGICAL(len);
-  } else if(scmp(type, "datetime") || scmp(type, "datetimetz") || scmp(type, "float") ||
+  } else if(scmp(type, "datetime") || scmp(type, "float") ||
             scmp(type, "double") || scmp(type, "int64") || scmp(type, "uint64") || scmp(type, "uint32"))
   {
     return NEW_NUMERIC(len);
@@ -257,7 +256,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i, int
     REAL(vec)[i] = d;
     return;
   }
-  else if(scmp(type, "datetime") || scmp(type, "datetimetz"))
+  else if(scmp(type, "datetime"))
   {
     double d;
     long long l;
