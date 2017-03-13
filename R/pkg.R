@@ -107,7 +107,7 @@ NULL
   bool="logical",
   string="character",
   char="character",
-  datetime="Date"
+  datetime="POSIXct"
 )
 
 .typelen = list(

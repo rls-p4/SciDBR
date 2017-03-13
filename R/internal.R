@@ -90,6 +90,11 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   cnames = c(internal_attributes$name, "lines", "p")  # we are unpacking to a SciDB array, ignore dims
   n = nrow(internal_attributes)
   rnames = c()
+  typediff = setdiff(internal_attributes$type, names(.scidbtypes))
+  if(length(typediff) > 0)
+  {
+    stop(typediff, " SciDB type not supported. Try converting to string in SciDB or use a binary=FALSE data transfer")
+  }
   while (p < len)
   {
     dt2 = proc.time()
@@ -138,6 +143,8 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   {
     for (i64 in which(internal_attributes$type %in% "int64")) oldClass(ans[, i64]) = "integer64"
   }
+  # Handle datetime (integer POSIX time)
+  for (idx in which(internal_attributes$type %in% "datetime")) ans[, idx] = as.POSIXct(ans[, idx], origin="1970-1-1")
   if (args$only_attributes) # permute cols, see issue #125
   {
     colnames(ans) = make.names_(attributes$name)
