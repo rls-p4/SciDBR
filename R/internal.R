@@ -1,157 +1,190 @@
 # Non-exported utility functions
 
-# An environment to hold connection state
-.scidbenv = new.env()
-
-# Map scidb object column classes into R, adding an extra integer at the start for the index!
-scidbcc = function(x)
-{
-  if(!is.null(options("scidb.test")[[1]]))
-  {
-    cat("Using old method for data.frame import")
-    return(NA)
-  }
-  c("integer", as.vector(unlist(lapply(.scidbtypes[scidb_types(x)], function(x) ifelse(is.null(x), NA, x)))))
-}
-
-.scidbstr = function(object)
-{
-  name = substr(object@name, 1, 35)
-  if(nchar(object@name)>35) name = paste(name, "...", sep="")
-  cat("SciDB expression ", name)
-  cat("\nSciDB schema ", schema(object), "\n")
-  bounds = scidb_coordinate_bounds(object)
-  d = data.frame(variable=dimensions(object), dimension=TRUE, type="int64", nullable=FALSE, start=bounds$start, end=bounds$end, chunk=scidb_coordinate_chunksize(object), row.names=NULL, stringsAsFactors=FALSE)
-  d = rbind(d, data.frame(variable=scidb_attributes(object),
-                          dimension=FALSE,
-                          type=scidb_types(object), nullable=scidb_nullable(object), start="", end="", chunk=""))
-  cat(paste(utils::capture.output(print(d)), collapse="\n"))
-  cat("\n")
-}
-
-
 #' Unpack and return a SciDB query expression as a data frame
+#' @param db scidb database connection object
 #' @param query A SciDB query expression or scidb object
-#' @param ... optional extra arguments
+#' @param ... optional extra arguments (see below)
+#' @note option extra arguments
+#' \itemize{
+#'   \item{binar}{ optional logical value, if \code{FALSE} use iquery text transfer, otherwise binary transfer, defaults \code{TRUE}}
+#'   \item{buffer}{ integer initial parse buffer size in bytes, adaptively resized as needed: larger buffers can be faster but comsume more memory, default size is 100000L.}
+#'   \item{only_attributes}{ optional logical value, \code{TRUE} means don't retrieve dimension coordinates, only return attribute values; defaults to \code{FALSE}.}
+#"   \item{schema}{ optional result schema string, only applies when \code{query} is not a SciDB object. Supplying this avois one extra metadata query to determine result schema. Defaults to \code{schema(query)}.}
+#' }
 #' @keywords internal
 #' @importFrom curl new_handle handle_setheaders handle_setopt curl_fetch_memory handle_setform form_file
 #' @importFrom data.table  data.table
-scidb_unpack_to_dataframe = function(query, ...)
+#' @import bit64
+scidb_unpack_to_dataframe = function(db, query, ...)
 {
   DEBUG = FALSE
-  projected = FALSE
-  if(!inherits(query, "scidb")) query = scidb(query)
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG = TRUE
+  INT64 = attr(db, "connection")$int64
+  DEBUG = getOption("scidb.debug", FALSE)
   buffer = 100000L
   args = list(...)
-  if(!is.null(args$buffer))
+  if (is.null(args$only_attributes)) args$only_attributes = FALSE
+  if (is.null(args$binary)) args$binary = TRUE
+  if (!is.null(args$buffer))
   {
     argsbuf = tryCatch(as.integer(args$buffer), warning=function(e) NA)
-    if(!is.na(argsbuf) && argsbuf <= 1e9) buffer = as.integer(argsbuf)
+    if (!is.na(argsbuf) && argsbuf <= 1e9) buffer = as.integer(argsbuf)
   }
-  ndim = length(dimensions(query))
-  if(getOption("scidb.unpack"))
+  if (!inherits(query, "scidb"))
   {
-    dim = make.unique_(c(scidb_attributes(query), dimensions(query)), "i")
-    x = scidb(sprintf("unpack(%s, %s)", query@name, dim))
+# make a scidb object out of the query, optionally using a supplied schema to skip metadata query
+    if (is.null(args$schema)) query = scidb(db, query)
+    else query = scidb(db, query, schema=args$schema)
+  }
+  attributes = schema(query, "attributes")
+  dimensions = schema(query, "dimensions")
+  query = query@name
+  if(! args$binary) return(iquery(db, internal_query, binary=FALSE, `return`=TRUE))
+  if (args$only_attributes)
+  {
+    internal_attributes = attributes
+    internal_query = query
   } else
   {
-    dims_query = dimensions(query)
-    dims = paste(dims_query, dims_query, sep=",", collapse=",")
-    x = scidb(sprintf("project(apply(%s, %s), %s, %s)", query@name,
-                      dims, paste(dims_query, collapse=","), paste(scidb_attributes(query), collapse=",")))
+    dim_names = dimensions$name
+    attr_names = attributes$name
+    all_names = c(dim_names, attr_names)
+    internal_query = query
+    if (length(all_names) != length(unique(all_names)))
+    {
+      # Cast to completeley unique names to be safe:
+      cast_dim_names = make.names_(dim_names)
+      cast_attr_names = make.unique_(cast_dim_names, make.names_(attributes$name))
+      cast_schema = sprintf("<%s>[%s]", paste(paste(cast_attr_names, attributes$type, sep=":"), collapse=","), paste(cast_dim_names, collapse=","))
+      internal_query = sprintf("cast(%s, %s)", internal_query, cast_schema)
+      all_names = c(cast_dim_names, cast_attr_names)
+      dim_names = cast_dim_names
+    }
+    # Apply dimensions as attributes, using unique names. Manually construct the list of resulting attributes:
+    dimensional_attributes = data.frame(name=dimensions$name, type="int64", nullable=FALSE) # original dimension names (used below)
+    internal_attributes = rbind(attributes, dimensional_attributes)
+    dim_apply = paste(dim_names, dim_names, sep=",", collapse=",")
+    internal_query = sprintf("apply(%s, %s)", internal_query, dim_apply)
   }
-  N = scidb_nullable(x)
-  TYPES = scidb_types(x)
-  ns = rep("", length(N))
-  ns[N] = "null"
-  format_string = paste(paste(TYPES, ns), collapse=",")
+  ns = rep("", length(internal_attributes$nullable))
+  ns[internal_attributes$nullable] = "null"
+  format_string = paste(paste(internal_attributes$type, ns), collapse=",")
   format_string = sprintf("(%s)", format_string)
-  sessionid = scidbquery(x@name, save=format_string, release=0)
-  on.exit( SGET("/release_session", list(id=sessionid), err=FALSE), add=TRUE)
+  if (DEBUG) message("Data query ", internal_query)
+  if (DEBUG) message("Format ", format_string)
+  sessionid = scidbquery(db, internal_query, save=format_string, release=0)
+  on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
 
   dt2 = proc.time()
-  uri = URI("/read_bytes", list(id=sessionid, n=0))
+  uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
   h = new_handle()
-  handle_setheaders(h, .list=list(`Authorization`=digest_auth("GET", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+  handle_setheaders(h, .list=list(`Authorization`=digest_auth(db, "GET", uri)))
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0))
   resp = curl_fetch_memory(uri, h)
-  if(resp$status_code > 299) stop("HTTP error", resp$status_code)
+  if (resp$status_code > 299) stop("HTTP error", resp$status_code)
 # Explicitly reap the handle to avoid short-term build up of socket descriptors
   rm(h)
   gc()
-  if(DEBUG) cat("Data transfer time", (proc.time() - dt2)[3], "\n")
+  if (DEBUG) message("Data transfer time ", (proc.time() - dt2)[3])
   dt1 = proc.time()
   len = length(resp$content)
   p = 0
   ans = c()
-  cnames = c(scidb_attributes(x), "lines", "p")  # we are unpacking to a SciDB array, ignore dims
-  n = length(scidb_attributes(x))
+  cnames = c(internal_attributes$name, "lines", "p")  # we are unpacking to a SciDB array, ignore dims
+  n = nrow(internal_attributes)
   rnames = c()
-  if(projected) n = length(args$project)
-  while(p < len)
+  typediff = setdiff(internal_attributes$type, names(.scidbtypes))
+  if(length(typediff) > 0)
+  {
+    stop(typediff, " SciDB type not supported. Try converting to string in SciDB or use a binary=FALSE data transfer")
+  }
+  while (p < len)
   {
     dt2 = proc.time()
-    tmp   = .Call("scidb_parse", as.integer(buffer), TYPES, N, resp$content, as.double(p), PACKAGE="scidb")
+    tmp   = .Call("scidb_parse", as.integer(buffer), internal_attributes$type,
+                  internal_attributes$nullable, resp$content, as.double(p), as.integer(INT64), PACKAGE="scidb")
     names(tmp) = cnames
     lines = tmp[[n+1]]
     p_old = p
     p     = tmp[[n+2]]
-    if(DEBUG) cat("  R buffer ", p, "/", len, " bytes parsing time", (proc.time() - dt2)[3], "\n")
+    if (DEBUG) message("  R buffer ", p, "/", len, " bytes parsing time ", round( (proc.time() - dt2)[3], 4))
     dt2 = proc.time()
-    if(lines > 0)
+    if (lines > 0)
     {
-      if("binary" %in% TYPES)
+      if ("binary" %in% internal_attributes$type)
       {
-        if(DEBUG) cat("  R rbind/df assembly time", (proc.time() - dt2)[3], "\n")
-        return(lapply(1:n, function(j) tmp[[j]][1:lines]))
+        if (DEBUG) message("  R rbind/df assembly time ", round( (proc.time() - dt2)[3], 4))
+        return(lapply(1:n, function(j) tmp[[j]][1:lines])) # XXX issue 33
       }
       len_out = length(tmp[[1]])
-      if(lines < len_out) tmp = lapply(tmp[1:n], function(x) x[1:lines])
+      if (lines < len_out) tmp = lapply(tmp[1:n], function(x) x[1:lines])
 # adaptively re-estimate a buffer size
-      avg_bytes_per_line = ceiling((p - p_old) / lines)
+      avg_bytes_per_line = ceiling( (p - p_old) / lines)
       buffer = min(getOption("scidb.buffer_size"), ceiling(1.3 * (len - p) / avg_bytes_per_line)) # Engineering factors
 # Assemble the data frame
-      if(is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE))
-      else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE)))
+      if (is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE))
+      else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE)))
     }
-    if(DEBUG) cat("  R rbind/df assembly time", (proc.time() - dt2)[3], "\n")
+    if (DEBUG) message("  R rbind/df assembly time ", round( (proc.time() - dt2)[3], 4))
   }
-  if(is.null(ans))
+  if (is.null(ans))
   {
-    n = length(dimensions(x)) + length(scidb_attributes(x))
+    xa = attributes$name
+    if (args$only_attributes) # permute cols, see issue #125
+      xd = c()
+    else
+      xd = dimensions$name
+    n = length(xd) + length(xa)
     ans = vector(mode="list", length=n)
-    names(ans) = c(dimensions(x), scidb_attributes(x))
+    names(ans) = make.names_(c(xd, xa))
     class(ans) = "data.frame"
     return(ans)
   }
-  if(DEBUG) cat("Total R parsing time", (proc.time() - dt1)[3], "\n")
-  ans = as.data.frame(ans)
+  if (DEBUG) message("Total R parsing time ", round( (proc.time() - dt1)[3], 4))
+  ans = as.data.frame(ans, check.names=FALSE)
+  if (INT64)
+  {
+    for (i64 in which(internal_attributes$type %in% "int64")) oldClass(ans[, i64]) = "integer64"
+  }
+  # Handle datetime (integer POSIX time)
+  for (idx in which(internal_attributes$type %in% "datetime")) ans[, idx] = as.POSIXct(ans[, idx], origin="1970-1-1")
+  if (args$only_attributes) # permute cols, see issue #125
+  {
+    colnames(ans) = make.names_(attributes$name)
+  }
+  else
+  {
+    nd = length(dimensions$name)
+    i = ncol(ans) - nd
+    ans = ans[, c( (i+1):ncol(ans), 1:i)]
+    colnames(ans) = make.names_(c(dimensions$name, attributes$name))
+  }
   gc()
   ans
 }
 
 #' Convenience function for digest authentication.
+#' @param db a scidb database connection object
 #' @param method digest method
 #' @param uri uri
 #' @param realm realm
 #' @param nonce nonce
 #' @keywords internal
 #' @importFrom digest digest
-digest_auth = function(method, uri, realm="", nonce="123456")
+digest_auth = function(db, method, uri, realm="", nonce="123456")
 {
-  if(exists("authtype", envir=.scidbenv))
+  .scidbenv = attr(db, "connection")
+  if (!is.null(.scidbenv$authtype))
   {
-   if(.scidbenv$authtype != "digest") return("")
+   if (.scidbenv$authtype != "digest") return("")
   }
   uri = gsub(".*/", "/", uri)
   userpwd = .scidbenv$digest
-  if(is.null(userpwd)) userpwd=":"
+  if (is.null(userpwd)) userpwd=":"
   up = strsplit(userpwd, ":")[[1]]
   user = up[1]
   pwd  = up[2]
-  if(is.na(pwd)) pwd=""
+  if (is.na(pwd)) pwd=""
   ha1=digest(sprintf("%s:%s:%s", user, realm, pwd, algo="md5"), serialize=FALSE)
   ha2=digest(sprintf("%s:%s", method,  uri, algo="md5"), serialize=FALSE)
   cnonce="MDc1YmFhOWFkY2M0YWY2MDAwMDBlY2JhMDAwMmYxNTI="
@@ -164,11 +197,11 @@ digest_auth = function(method, uri, realm="", nonce="123456")
 # Internal warning function
 warnonce = (function() {
   state = list(
-    count="Use `count` for an exact count of data rows.",
+    count="Use the AFL op_count macro operator for an exact count of data rows.",
     nonum="Note: The R sparse Matrix package does not support certain value types like\ncharacter strings"
   )
   function(warn) {
-    if(!is.null(state[warn][[1]])) {
+    if (!is.null(state[warn][[1]])) {
       message(state[warn])
       s <<- state
       s[warn] = c()
@@ -178,60 +211,16 @@ warnonce = (function() {
 }) ()
 
 
-# Utility function that parses an aggregation expression
-# makes sense of statements like
-# max(a) as amax, avg(b) as bmean, ...
-# Input
-# x: scidb object
-# expr: aggregation expression (as is required)
-# Output
-# New attribute schema
-aparser = function(x, expr)
-{
-  map = list(
-    ApproxDC    = function(x) "double null",
-    avg         = function(x) "double null",
-    count       = function(x) "uint64 null",
-    first_value = function(x) sprintf("%s null", x),
-    last_value  = function(x) sprintf("%s null", x),
-    mad         = function(x) sprintf("%s null", x),
-    max         = function(x) sprintf("%s null", x),
-    min         = function(x) sprintf("%s null", x),
-    median      = function(x) sprintf("%s null", x),
-    prod        = function(x) sprintf("%s null", x),
-    stdev       = function(x) "double null",
-    sum         = function(x) sprintf("%s null", x),
-    top_five    = function(x) sprintf("%s null", x),
-    var         = function(x) "double null")
-
-  p = strsplit(expr, ", ")[[1]]                      # comma separated
-  p = lapply(p, function(v) strsplit(v, "as")[[1]])  # as is required
-  new_attrs = lapply(p, function(v) v[[2]])        # output attribute names
-  y = lapply(p, function(v)strsplit(v, "\\(")[[1]])  #
-  fun = lapply(y, function(v) gsub(" ", "", v[[1]])) # functions
-  old_attrs = unlist(lapply(y, function(v)gsub("[\\) ]", "", v[[2]])))
-  i = 1:length(scidb_attributes(x))
-  names(i) = scidb_attributes(x)
-  old_types = scidb_types(x)[i[old_attrs]]
-  old_types[is.na(old_types)] = "int64"    # catch all
-  z = rep("", length(new_attrs))
-  for(j in 1:length(z))
-  {
-    z[j] = sprintf("%s:%s", new_attrs[j], map[unlist(fun)][[j]](old_types[j]))
-  }
-  sprintf("<%s>", paste(z, collapse=","))
-}
-
 # Some versions of RCurl seem to contain a broken URLencode function.
-oldURLencode = function (URL, reserved = FALSE) 
+oldURLencode = function (URL, reserved = FALSE)
 {
-    OK = paste0("[^-ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz0123456789$_.+!*'(),", 
-        if (!reserved) 
+    OK = paste0("[^-ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz0123456789$_.+!*'(),",
+        if (!reserved)
             ";/?:@=&", "]")
     x = strsplit(URL, "")[[1L]]
     z = grep(OK, x)
     if (length(z)) {
-        y = sapply(x[z], function(x) paste0("%", as.character(charToRaw(x)), 
+        y = sapply(x[z], function(x) paste0("%", as.character(charToRaw(x)),
             collapse = ""))
         x[z] = y
     }
@@ -239,229 +228,65 @@ oldURLencode = function (URL, reserved = FALSE)
 }
 
 
-#' Nightmarish internal function that converts R expressions to SciDB expressions
-#' Used to support NSE in \code{transform}. NSE is bad.
-#' @param expr an R 'language' type object to parse
-#' @param sci a SciDB array 
-#' @param frame to evaluate expression for replacement values
-#' @keywords internal
-#' @return character-valued SciDB expression
-#' @importFrom codetools makeCodeWalker walkCode
-rewrite_subset_expression = function(expr, sci, frame)
-{
-  dims = dimensions(sci)
-  n = length(dims)
-  template = rep("", 2 * n)
-  DEBUG = FALSE
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
-
-  .toList = makeCodeWalker(call=function(e, w)
-                                {
-                                  tryCatch(eval(e, frame),
-                                    error=function(err) lapply(e, walkCode, w))
-                                },
-                           leaf=function(e, w) e)
-
-# Walk the ast for R expression x, annotating elements with identifying
-# attributes. Specify a character vector of array dimension in dims.
-# Substitute evaluated R scalars for variables where possible (but not more
-# complext R expressions).  The output is a list that can be parsed by the
-# `.compose_r` function below.
-  .annotate = function(x, dims=NULL, attr=NULL, op="")
-  {
-    if(is.list(x))
-    {
-      if(length(x) > 1) op = c(op, as.character(x[[1]]))
-      return(lapply(x, .annotate, dims, attr, op))
-    }
-    op = paste(op, collapse="")
-    s = as.character(x)
-    if(!(s %in% c(dims, attr, ">", "<", "!", "|", "=", "&", "||", "&&", "!=", "==", "<=", ">=")))
-    {
-      test = tryCatch(eval(x, frame), error=function(e) s)
-      if(length(test) > 0)
-      {
-        test = test[!grepl("condition", lapply(test, class))]
-        if(length(test) > 0)
-        {
-          if(DEBUG) cat("Replacing symbol", s, "with ")
-          if(is.logical(test[[1]]))
-          {
-            s = ifelse(test, "true", "false")
-          } else if(is.numeric(test[[1]]))
-          {
-            s = tryCatch(sprintf("%.16f", test[[1]]), error=function(e) s)
-          } else
-          {
-            s = test[[1]]
-          }
-          if(DEBUG) cat(s, "\n")
-        }
-      }
-    }
-    attr(s, "what") = "element"
-    if(is.character(x))
-    {
-      attr(s, "what") = "character"
-    }
-    if(nchar(gsub("null", "", gsub("[0-9 -\\.]+", "", s, perl=TRUE), ignore.case=TRUE)) == 0)
-      attr(s, "what") = "scalar"
-    if(any(dims %in% gsub(" ", "", s)) && nchar(gsub("[&(<>=) ]*", "", op)) == 0)
-    {
-      attr(s, "what") = "dimension"
-    }
-    s
-  }
-
-  .compose_r = function(x)
-  {
-    if(is.list(x))
-    {
-      if(length(x)==3)
-      {
-        if(!is.list(x[[2]]) && !is.list(x[[3]]) &&
-           all( c("scalar", "dimension") %in%
-                c(attr(x[[2]], "what"), attr(x[[3]], "what"))))
-        {
-          b = template
-          d = which(c(attr(x[[2]], "what"), attr(x[[3]], "what")) == "dimension") + 1
-          s = which(c(attr(x[[2]], "what"), attr(x[[3]], "what")) == "scalar") + 1
-          i = which(dims %in% x[[d]]) # template index
-          intx = round(as.numeric(x[[s]]))
-          if(intx >= 2 ^ 53) stop("Values too large, use an explicit SciDB filter expression")
-          numx = as.numeric(x[[s]])
-          lb = ceiling(numx)
-          ub = floor(intx)
-          if(intx == numx)
-          {
-            lb = intx + 1
-            ub = intx - 1
-          }
-          if(x[[1]] == "==" || x[[1]] == "=") b[i] = b[i + n] = x[[s]]
-          else if(x[[1]] == "<") b[i + n] = sprintf("%.0f", ub)
-          else if(x[[1]] == "<=") b[i + n] = sprintf("%.0f", intx)
-          else if(x[[1]] == ">") b[i] = sprintf("%.0f", lb)
-          else if(x[[1]] == ">=") b[i] = sprintf("%.0f", intx)
-          b = paste(b, collapse=",")
-          return(sprintf("::%s", b))
-        }
-        return(c(.compose_r(x[[2]]), as.character(x[[1]]), .compose_r(x[[3]])))
-      }
-      if(length(x)==2)
-      {
-        if(as.character(x[[1]]) == "(") return(c(.compose_r(x[[1]]), .compose_r(x[[2]]), ")"))
-        return(c(.compose_r(x[[1]]), .compose_r(x[[2]])))
-      }
-    }
-    if(attr(x, "what") == "character") return(sprintf("'%s'", as.character(x)))
-    as.character(x)
-  }
-
-  ans = .compose_r(.annotate(walkCode(expr, .toList), dims=dims, attr=scidb_attributes(sci)))
-  i   = grepl("::", ans)
-  ans = gsub("==", "=", gsub("!", "not", gsub("\\|", "or", gsub("\\|\\|", "or",
-          gsub("&", "and", gsub("&&", "and", gsub("!=", "<>", ans)))))))
-  if(any(i))
-  {
-# Compose the betweens in a highly non-elegant way
-    b = strsplit(paste(gsub("::", "", ans[i]), ""), ",")
-    ans[i] = "true"
-    b = Reduce(function(x, y)
-    {
-      n = length(x)
-      x = tryCatch(as.numeric(x), warning=function(e) rep(NA, n))
-      y = tryCatch(as.numeric(y), warning=function(e) rep(NA, n))
-      m = n / 2
-      x1 = x[1:m]
-      y1 = y[1:m]
-      x1[is.na(x1)] = -Inf
-      y1[is.na(y1)] = -Inf
-      x1 = pmax(x1, y1)
-      x2 = x[(m+1):n]
-      y2 = y[(m+1):n]
-      x2[is.na(x2)] = Inf
-      y2[is.na(y2)] = Inf
-      x2 = pmin(x2, y2)
-      c(x1, x2)
-    }, b, init=template)
-    b = gsub("Inf", "null", gsub("-Inf", "null", sprintf("%.0f", b)))
-    ans = gsub("and true", "", paste(ans, collapse=" "))
-    if(nchar(gsub(" ", "", ans)) == 0 || gsub(" ", "", ans) == "true")
-      return(sprintf("between(%s,%s)", sci@name, paste(b, collapse=",")))
-    return(sprintf("filter(between(%s,%s),%s)", sci@name, paste(b, collapse=","), ans))
-  }
-  sprintf("filter(%s,%s)", sci@name, paste(ans, collapse=" "))
-}
-
-
 # Internal function
-create_temp_array = function(name, schema)
+create_temp_array = function(db, name, schema)
 {
 # SciDB temporary array syntax varies with SciDB version
   TEMP = "'TEMP'"
-  if(compare_versions(options("scidb.version")[[1]], 14.12)) TEMP="true"
+  if (at_least(attr(db, "connection")$scidb.version, "14.12")) TEMP="true"
   query   = sprintf("create_array(%s, %s, %s)", name, schema, TEMP)
-  iquery(query, `return`=FALSE)
+  iquery(db, query, `return`=FALSE)
 }
 
 
-# An important internal convenience function that returns a scidb object.  If
-# eval=TRUE, a new SciDB array is created the returned scidb object refers to
-# that.  Otherwise, the returned scidb object represents a SciDB array promise.
-#
-# INPUT
-# expr: (character) A SciDB expression or array name
-# eval: (logical) If TRUE evaluate expression and assign to new SciDB array.
-#                 If FALSE, infer output schema but don't evaluate.
-# name: (optional character) If supplied, name for stored array when eval=TRUE
-# gc: (optional logical) If TRUE, tie SciDB object to  garbage collector.
-# depend: (optional list) An optional list of other scidb objects
-#         that this expression depends on (preventing their garbage collection
-#         if other references to them go away).
-# schema, temp: (optional) used to create SciDB temp arrays
-#               (requires scidb >= 14.8)
-#
-# OUTPUT
-# A `scidb` array object.
-#
-# NOTE
-# Only AFL supported.
-`.scidbeval` = function(expr, eval=FALSE, name, gc=TRUE, depend, schema, temp)
+#' An important internal convenience function that returns a scidb object.  If
+#' eval=TRUE, a new SciDB array is created the returned scidb object refers to
+#' that.  Otherwise, the returned scidb object represents a SciDB array promise.
+#'
+#' @param db scidb connection object
+#' @param expr (character) A SciDB expression or array name
+#' @param eval (logical) If TRUE evaluate expression and assign to new SciDB array.
+#'                 If FALSE, infer output schema but don't evaluate.
+#' @param name (optional character) If supplied, name for stored array when eval=TRUE
+#' @param gc (optional logical) If TRUE, tie SciDB object to  garbage collector.
+#' @param depend (optional list) An optional list of other scidb objects
+#'         that this expression depends on (preventing their garbage collection
+#'         if other references to them go away).
+#' @param schema (optional) used to create SciDB temp arrays
+#'               (requires scidb >= 14.8)
+#' @param temp (optional) used to create SciDB temp arrays
+#'               (requires scidb >= 14.8)
+#' @return A \code{scidb} array object
+#' @note Only AFL supported.
+`.scidbeval` = function(db, expr, eval=FALSE, name, gc=TRUE, depend, schema, temp)
 {
   ans = c()
-  if(missing(depend)) depend = c()
-  if(missing(schema)) schema = ""
-  if(missing(temp)) temp = FALSE
-  if(!is.list(depend)) depend = list(depend)
+  if (missing(depend)) depend = c()
+  if (missing(schema)) schema = ""
+  if (missing(temp)) temp = FALSE
+  if (!is.list(depend)) depend = list(depend)
 # Address bug #45. Try to cheaply determine if expr refers to a named array
 # or an AFL expression. If it's a named array, then eval must be set TRUE.
-  if(!grepl("\\(", expr, perl=TRUE)) eval = TRUE
-  if(`eval`)
+  if (!grepl("\\(", expr, perl=TRUE)) eval = TRUE
+  if (`eval`)
   {
-    if(missing(name) || is.null(name))
+    if (missing(name) || is.null(name))
     {
-      newarray = tmpnam()
-      if(temp) create_temp_array(newarray, schema)
+      newarray = tmpnam(db)
+      if (temp) create_temp_array(db, newarray, schema)
     }
     else newarray = name
     query = sprintf("store(%s,%s)", expr, newarray)
-    scidbquery(query, stream=0L)
-    ans = scidb(newarray, gc=gc)
-    if(temp) ans@gc$temp = TRUE
-# This is a fix for a SciDB issue that can unexpectedly change schema
-# bounds. And another fix to allow unexpected dimname and attribute name
-# changes. Arrgh.
-#    if(schema != "" && !compare_schema(ans, schema, ignore_attributes=TRUE, ignore_dimnames=TRUE))
-#    {
-#      ans = repart(ans, schema)
-#    }
+    scidbquery(db, query, stream=0L)
+    ans = scidb(db, newarray, gc=gc)
+    if (temp) ans@meta$temp = TRUE
   } else
   {
-    ans = scidb(expr, gc=gc)
+    ans = scidb(db, expr, gc=gc)
 # Assign dependencies
-    if(length(depend) > 0)
+    if (length(depend) > 0)
     {
-      assign("depend", depend, envir=ans@gc)
+      assign("depend", depend, envir=ans@meta)
     }
   }
   ans
@@ -469,7 +294,7 @@ create_temp_array = function(name, schema)
 
 make.names_ = function(x)
 {
-  gsub("\\.","_", make.names(x, unique=TRUE), perl=TRUE)
+  gsub("\\.", "_", make.names(x, unique=TRUE), perl=TRUE)
 }
 
 # x is vector of existing values
@@ -481,216 +306,194 @@ make.unique_ = function(x, y)
   gsub("\\.", "_", utils::tail(z, length(y)))
 }
 
+
 # Make a name from a prefix and a unique SciDB identifier.
-tmpnam = function(prefix="R_array")
+getuid = function(db)
 {
+  .scidbenv = attributes(db)$connection
+  if (is.null(.scidbenv$id)) stop("Not connected...try scidbconnect")
+  .scidbenv$id
+}
+
+tmpnam = function(db, prefix="R_array")
+{
+  stopifnot(inherits(db, "afl"))
   salt = basename(tempfile(pattern=prefix))
-  if(!exists("uid", envir=.scidbenv)) stop("Not connected...try scidbconnect")
-  paste(salt, get("uid", envir=.scidbenv), sep="")
+  paste(salt, getuid(db), sep="")
 }
 
 # Return a shim session ID or error
-getSession = function()
+getSession = function(db)
 {
-  session = SGET("/new_session")
-  if(length(session)<1) stop("SciDB http session error; are you connecting to a valid SciDB host?")
+  session = SGET(db, "/new_session")
+  if (length(session)<1) stop("SciDB http session error; are you connecting to a valid SciDB host?")
   session = gsub("\r", "", session)
   session = gsub("\n", "", session)
   session
 }
 
 # Supply the base SciDB URI from the global host, port and auth
-# parameters stored in the .scidbenv package environment.
+# parameters stored in the "connection" environment in the db object
 # Every function that needs to talk to the shim interface should use
 # this function to supply the URI.
 # Arguments:
+# db scidb database connection object
 # resource (string): A URI identifying the requested service
 # args (list): A list of named query parameters
-URI = function(resource="", args=list())
+URI = function(db, resource="", args=list())
 {
-  if(!exists("host", envir=.scidbenv)) stop("Not connected...try scidbconnect")
-  if(exists("auth", envir=.scidbenv))
-    args = c(args, list(auth=get("auth", envir=.scidbenv)))
-  if(exists("password", envir=.scidbenv))
-    args = c(args, list(password=get("password", envir=.scidbenv)))
-  if(exists("username", envir=.scidbenv))
-    args = c(args, list(user=get("username", envir=.scidbenv)))
-  prot = paste(get("protocol", envir=.scidbenv), "//", sep=":")
-  if("password" %in% names(args) || "auth" %in% names(args)) prot = "https://"
-  ans  = paste(prot, get("host", envir=.scidbenv), ":", get("port", envir=.scidbenv), sep="")
+  .scidbenv = attr(db, "connection")
+  if (is.null(.scidbenv$host)) stop("Not connected...try scidbconnect")
+  if (!is.null(.scidbenv$auth))
+    args = c(args, list(auth=.scidbenv$auth))
+  if (!is.null(.scidbenv$password)) args = c(args, list(password=.scidbenv$password))
+  if (!is.null(.scidbenv$username)) args = c(args, list(user=.scidbenv$username))
+  prot = paste(.scidbenv$protocol, "//", sep=":")
+  if ("password" %in% names(args) || "auth" %in% names(args)) prot = "https://"
+  ans  = paste(prot, .scidbenv$host, ":", .scidbenv$port, sep="")
   ans = paste(ans, resource, sep="/")
-  if(length(args)>0)
+  if (length(args)>0)
     ans = paste(ans, paste(paste(names(args), args, sep="="), collapse="&"), sep="?")
   ans
 }
 
-SGET = function(resource, args=list(), err=TRUE, binary=FALSE)
+SGET = function(db, resource, args=list(), err=TRUE, binary=FALSE)
 {
-  if(!(substr(resource, 1, 1)=="/")) resource = paste("/", resource, sep="")
-  uri = URI(resource, args)
+  if (!(substr(resource, 1, 1)=="/")) resource = paste("/", resource, sep="")
+  uri = URI(db, resource, args)
   uri = oldURLencode(uri)
   uri = gsub("\\+", "%2B", uri, perl=TRUE)
   h = new_handle()
-  handle_setheaders(h, .list=list(Authorization=digest_auth("GET", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+  handle_setheaders(h, .list=list(Authorization=digest_auth(db, "GET", uri)))
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0))
   ans = curl_fetch_memory(uri, h)
-  if(ans$status_code > 299 && err)
+  if (ans$status_code > 299 && err)
   {
     msg = sprintf("HTTP error %s", ans$status_code)
-    if(ans$status_code >= 500) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
+    if (ans$status_code >= 500) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
     stop(msg)
   }
-  if(binary) return(ans$content)
+  if (binary) return(ans$content)
   rawToChar(ans$content)
 }
 
-#' Basic HTTP GET request
-#' @param url a well-formed HTTP/HTTPS URL, will be url-encoded
-#' @return R raw binary content field
-#' @export
-GET_RAW = function(url)
-{
-  uri = oldURLencode(url)
-  h = new_handle()
-  handle_setheaders(h, .list=list(Authorization=digest_auth("GET", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
-                              ssl_verifypeer=0))
-  ans = curl_fetch_memory(uri, h)
-  if(ans$status_code > 299)
-  {
-    msg = sprintf("HTTP error %s", ans$status_code)
-    if(ans$status_code >= 500) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
-    stop(msg)
-  }
-  ans$content
-}
-
 # Normally called with raw data and args=list(id=whatever)
-POST = function(data, args=list(), err=TRUE)
+POST = function(db, data, args=list(), err=TRUE)
 {
 # check for new shim simple post option (/upload), otherwise use
 # multipart/file upload (/upload_file)
-  shimspl = strsplit(options("shim.version")[[1]], "\\.")[[1]]
+  shimspl = strsplit(attr(db, "connection")$scidb.version, "\\.")[[1]]
   shim_yr = tryCatch(as.integer(gsub("[A-z]", "", shimspl[1])), error=function(e) 16, warning=function(e) 8)
   shim_mo = tryCatch(as.integer(gsub("[A-z]", "", shimspl[2])), error=function(e) 16, warning=function(e) 8)
-  if(is.na(shim_yr)) shim_yr = 16
-  if(is.na(shim_mo)) shim_mo = 8
+  if (is.na(shim_yr)) shim_yr = 16
+  if (is.na(shim_mo)) shim_mo = 8
   simple = (shim_yr >= 15 && shim_mo >= 7) || shim_yr >= 16
-  if(simple)
+  if (simple)
   {
-    uri = URI("/upload", args)
+    uri = URI(db, "/upload", args)
     uri = oldURLencode(uri)
     uri = gsub("\\+", "%2B", uri, perl=TRUE)
     h = new_handle()
-    handle_setheaders(h, .list=list(Authorization=digest_auth("POST", uri)))
-    handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+    handle_setheaders(h, .list=list(Authorization=digest_auth(db, "POST", uri)))
+    handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                                 ssl_verifypeer=0, post=TRUE, postfieldsize=length(data), postfields=data))
     ans = curl_fetch_memory(uri, h)
-    if(ans$status_code > 299 && err) stop("HTTP error ", ans$status_code)
+    if (ans$status_code > 299 && err) stop("HTTP error ", ans$status_code)
     return(rawToChar(ans$content))
   }
-  uri = URI("/upload_file", args)
+  uri = URI(db, "/upload_file", args)
   uri = oldURLencode(uri)
   uri = gsub("\\+", "%2B", uri, perl=TRUE)
   h = new_handle()
-  handle_setheaders(h, .list=list(Authorization=digest_auth("POST", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(options("scidb.verifyhost")),
+  handle_setheaders(h, .list=list(Authorization=digest_auth(db, "POST", uri)))
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0))
   tmpf = tempfile()
-  if(is.character(data)) data = charToRaw(data)
+  if (is.character(data)) data = charToRaw(data)
   writeBin(data, tmpf)
   handle_setform(h, file=form_file(tmpf))
   ans = curl_fetch_memory(uri, h)
   unlink(tmpf)
-  if(ans$status_code > 299 && err) stop("HTTP error", ans$status_code)
+  if (ans$status_code > 299 && err) stop("HTTP error", ans$status_code)
   return(rawToChar(ans$content))
 }
 
-# Check if array exists
-.scidbexists = function(name)
-{
-  Q = scidblist()
-  return(name %in% Q)
-}
-
 # Basic low-level query. Returns query id. This is an internal function.
+# db: scidb database connection object
 # query: a character query string
 # save: Save format query string or NULL.
 # release: Set to zero preserve web session until manually calling release_session
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
 # resp(logical): return http response
-# stream: Set to 0L or 1L to control streaming, otherwise use package options
+# stream: Set to 0L or 1L to control streaming (NOT USED)
 # prefix: optional AFL statement to prefix query in the same connection context.
-# Example values of save:
-# save="dcsv"
-# save="csv+"
-# save="(double NULL, int32)"
+# Example values of save: "dcsv", "csv+", "(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=NULL)
+scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=attributes(db)$connection$prefix)
 {
   DEBUG = FALSE
   STREAM = 0L
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE==options("scidb.debug")[[1]]) DEBUG=TRUE
-  if(missing(stream))
+  DEBUG = getOption("scidb.debug", FALSE)
+  if (missing(stream))
   {
-    if(!is.null(options("scidb.stream")[[1]]) && TRUE==options("scidb.stream")[[1]]) STREAM=1L
+    STREAM = 0L
   } else STREAM = as.integer(stream)
   sessionid = session
-  if(is.null(session))
+  if (is.null(session))
   {
 # Obtain a session from shim
-    sessionid = getSession()
+    sessionid = getSession(db)
   }
-  if(is.null(save)) save=""
-  if(DEBUG)
+  if (is.null(save)) save=""
+  if (DEBUG)
   {
-    cat(query, "\n")
-    t1=proc.time()
+    message(query, "\n")
+    t1 = proc.time()
   }
   ans = tryCatch(
     {
       args = list(id=sessionid, afl=0L, query=query, stream=0L)
       args$release = release
       args$prefix = c(getOption("scidb.prefix"), prefix)
-      if(!is.null(args$prefix)) args$prefix = paste(args$prefix, collapse=";")
+      if (!is.null(args$prefix)) args$prefix = paste(args$prefix, collapse=";")
       args$save = save
-      args = list(resource="/execute_query", args=args)
+      args = list(db=db, resource="/execute_query", args=args)
       do.call("SGET", args=args)
     }, error=function(e)
     {
       # User cancel?
-      SGET("/cancel", list(id=sessionid), err=FALSE)
-      SGET("/release_session", list(id=sessionid), err=FALSE)
+      SGET(db, "/cancel", list(id=sessionid), err=FALSE)
+      SGET(db, "/release_session", list(id=sessionid), err=FALSE)
       stop(as.character(e))
     }, interrupt=function(e)
     {
-      SGET("/cancel", list(id=sessionid), err=FALSE)
-      SGET("/release_session", list(id=sessionid), err=FALSE)
+      SGET(db, "/cancel", list(id=sessionid), err=FALSE)
+      SGET(db, "/release_session", list(id=sessionid), err=FALSE)
       stop("cancelled")
-    })
-  if(DEBUG) cat("Query time", (proc.time()-t1)[3], "\n")
-  if(resp) return(list(session=sessionid, response=ans))
+    }, warning=invisible)
+  if (DEBUG) message("Query time ", round( (proc.time() - t1)[3], 4))
+  if (resp) return(list(session=sessionid, response=ans))
   sessionid
 }
 
-# Sparse matrix to SciDB
-.Matrix2scidb = function(X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0, 0), gc=TRUE, ...)
+.Matrix2scidb = function(db, X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0, 0), gc=TRUE, ...)
 {
   D = dim(X)
   rowOverlap = 0L
   colOverlap = 0L
-  if(length(start) < 1) stop ("Invalid starting coordinates")
-  if(length(start) > 2) start = start[1:2]
-  if(length(start) < 2) start = c(start, 0)
+  if (missing(start)) start=c(0, 0)
+  if (length(start) < 1) stop ("Invalid starting coordinates")
+  if (length(start) > 2) start = start[1:2]
+  if (length(start) < 2) start = c(start, 0)
   start = as.integer(start)
   type = .scidbtypes[[typeof(X@x)]]
-  if(is.null(type)) {
+  if (is.null(type)) {
     stop(paste("Unupported data type. The package presently supports: ",
        paste(.scidbtypes, collapse=" "), ".", sep=""))
   }
-  if(type != "double") stop("Sorry, the package only supports double-precision sparse matrices right now.")
+  if (type != "double") stop("Sorry, the package only supports double-precision sparse matrices right now.")
   schema = sprintf(
       "< val : %s null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
       nrow(X)-1+start[[1]], min(nrow(X), rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],
@@ -698,9 +501,9 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
   schema1d = sprintf("<i:int64 null, j:int64 null, val : %s null>[idx=0:*,100000,0]", type)
 
 # Obtain a session from shim for the upload process
-  session = getSession()
-  if(length(session)<1) stop("SciDB http session error")
-  on.exit(SGET("/release_session", list(id=session), err=FALSE) , add=TRUE)
+  session = getSession(db)
+  if (length(session)<1) stop("SciDB http session error")
+  on.exit(SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
 # Compute the indices and assemble message to SciDB in the form
 # double, double, double for indices i, j and data val.
@@ -709,186 +512,190 @@ scidbquery = function(query, save=NULL, release=1, session=NULL, resp=FALSE, str
 
 # Upload the data
   bytes = .Call("scidb_raw", as.vector(t(matrix(c(X@i + start[[1]], j + start[[2]], X@x), length(X@x)))), PACKAGE="scidb")
-  ans = POST(bytes, list(id=session))
+  ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
 
 # redimension into a matrix
   query = sprintf("store(redimension(input(%s,'%s',-2,'(double null,double null,double null)'),%s),%s)", schema1d, ans, schema, name)
-  iquery(query)
-  scidb(name, gc=gc)
+  iquery(db, query)
+  scidb(db, name, gc=gc)
 }
 
 
 # raw value to special 1-element SciDB array
-raw2scidb = function(X, name, gc=TRUE, ...)
+raw2scidb = function(db, X, name, gc=TRUE, ...)
 {
-  if(!is.raw(X)) stop("X must be a raw value")
+  if (!is.raw(X)) stop("X must be a raw value")
   args = list(...)
 # Obtain a session from shim for the upload process
-  session = getSession()
-  if(length(session)<1) stop("SciDB http session error")
-  on.exit(SGET("/release_session", list(id=session), err=FALSE) , add=TRUE)
+  session = getSession(db)
+  if (length(session)<1) stop("SciDB http session error")
+  on.exit(SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
   bytes = .Call("scidb_raw", X, PACKAGE="scidb")
-  ans = POST(bytes, list(id=session))
+  ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
 
   schema = "<val:binary null>[i=0:0,1,0]"
-  if(!is.null(args$temp))
+  if (!is.null(args$temp))
   {
-    if(args$temp) create_temp_array(name, schema)
+    if (args$temp) create_temp_array(db, name, schema)
   }
 
   query = sprintf("store(input(%s,'%s',-2,'(binary null)'),%s)", schema, ans, name)
-  iquery(query)
-  scidb(name, gc=gc)
-}
-
-# Check for scidb missing flag
-is.nullable = function(x)
-{
-  any(scidb_nullable(x))
-}
-
-# Internal utility function, make every attribute of an array nullable
-make_nullable = function(x)
-{
-  cast(x, sprintf("%s%s", build_attr_schema(x, nullable=TRUE), build_dim_schema(x)))
+  iquery(db, query)
+  scidb(db, name, gc=gc)
 }
 
 # Internal utility function used to format numbers
 noE = function(w) sapply(w,
   function(x)
   {
-    if(is.infinite(x)) return("*")
-    if(is.character(x)) return(x)
+    if (is.infinite(x)) return("*")
+    if (is.character(x)) return(x)
     sprintf("%.0f", x)
   })
 
-# Returns TRUE if version string x is greater than or equal to than version y
-compare_versions = function(x, y)
+#' Returns TRUE if version string x is greater than or equal to than version y
+#' @param x version string like "12.1", "15.12", etc. (non-numeric ignored)
+#' @param y version string like "12.1", "15.12", etc. (non-numeric ignored)
+#' @return logical TRUE if x is greater than or equal to y
+at_least = function(x, y)
 {
-  b = as.numeric(strsplit(as.character(x), "\\.")[[1]])
-  a = as.numeric(strsplit(as.character(y), "\\.")[[1]])
-  ans = b[1] > a[1]
-  if(b[1] == a[1]) ans = b[2] >= a[2]
-  ans
+  b = as.numeric(gsub("-.*", "", gsub("[A-z].*", "", strsplit(sprintf("%s.0", x), "\\.")[[1]])))
+  b = b[1] + b[2] / 100
+  a = as.numeric(gsub("-.*", "", gsub("[A-z].*", "", strsplit(sprintf("%s.0", y), "\\.")[[1]])))
+  a = a[1] + a[2] / 100
+  b >= a
 }
 
-# Used in delayed assignment of scidb object schema and logical_plan values.
-lazyeval = function(name)
+# Used in delayed assignment of scidb object schema
+lazyeval = function(db, name)
 {
   escape = gsub("'", "\\\\'", name, perl=TRUE)
-# SciDB explain_logical operator changed in version 15.7
-  if(compare_versions(options("scidb.version")[[1]], 15.7))
-  {
-    query = sprintf("join(show('filter(%s,true)','afl'), _explain_logical('filter(%s,true)','afl'))", escape, escape)
-  }
-  else
-  {
-    query = sprintf("join(show('filter(%s,true)','afl'), explain_logical('filter(%s,true)','afl'))", escape, escape)
-  }
-  query = iquery(query, `return`=TRUE, binary=FALSE) # NOTE that we need binary=FALSE here to avoid a terrible recursion
-  list(schema = gsub("^.*<", "<", query$schema, perl=TRUE),
-       logical_plan = query$logical_plan)
+  query = iquery(db, sprintf("show('filter(%s, true)', 'afl')", escape), `return`=TRUE, binary=FALSE)
+  # NOTE that we need binary=FALSE here to avoid a terrible recursion
+  list(schema = gsub("^.*<", "<", query$schema, perl=TRUE))
 }
 
 #' Internal function to upload an R data frame to SciDB
+#' @param db scidb database connection
 #' @param X a data frame
 #' @param name SciDB array name
-#' @param chunk_size passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools
+#' @param chunk_size optional value passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools
 #' @param types SciDB attribute types
 #' @param gc set to \code{TRUE} to connect SciDB array to R's garbage collector
 #' @return a \code{\link{scidb}} object, or a character schema string if \code{schema_only=TRUE}.
 #' @keywords internal
-df2scidb = function(X,
-                    name=tmpnam(),
+df2scidb = function(db, X,
+                    name=tmpnam(db),
                     types=NULL,
-                    chunk_size=100000,
+                    chunk_size,
                     gc)
 {
-  if(!is.data.frame(X)) stop("X must be a data frame")
-  if(missing(gc)) gc = FALSE
+  .scidbenv = attr(db, "connection")
+  if (!is.data.frame(X)) stop("X must be a data frame")
+  if (missing(gc)) gc = FALSE
   nullable = TRUE
   anames = make.names(names(X), unique=TRUE)
-  anames = gsub("\\.","_", anames, perl=TRUE)
-  if(length(anames)!=ncol(X)) anames = make.names(1:ncol(X))
-  if(!all(anames==names(X))) warning("Attribute names have been changed")
+  anames = gsub("\\.", "_", anames, perl=TRUE)
+  if (length(anames) != ncol(X)) anames = make.names(1:ncol(X))
+  if (!all(anames == names(X))) warning("Attribute names have been changed")
 
 # Default type is string
   typ = rep("string", ncol(X))
   dcast = anames
-  if(!is.null(types)) {
-    for(j in 1:ncol(X)) typ[j] = types[j]
+  if (!is.null(types)) {
+    for (j in 1:ncol(X)) typ[j] = types[j]
   } else {
-    for(j in 1:ncol(X)) {
-      if("numeric" %in% class(X[,j])) 
-        typ[j] = "double"
-      else if("integer" %in% class(X[,j])) 
-        typ[j] = "int32"
-      else if("logical" %in% class(X[,j])) 
-        typ[j] = "bool"
-      else if("character" %in% class(X[,j])) 
-        typ[j] = "string"
-      else if("factor" %in% class(X[,j])) 
+    for (j in 1:ncol(X)) {
+      if ("numeric" %in% class(X[, j]))
       {
-        if("scidb_factor" %in% class(X[,j]))
-        {
-          typ[j] = paste("int64")
-          Xj = X[,j]
-          levels(Xj) = levels_scidb(Xj)
-          X[,j] = as.vector(Xj)
-        }
-        else
-          typ[j] = "string"
+        typ[j] = "double"
+        X[, j] = gsub("NA", "null", sprintf("%.16f", X[, j]))
       }
-      else if("POSIXct" %in% class(X[,j])) 
+      else if ("integer" %in% class(X[, j]))
+      {
+        typ[j] = "int32"
+        X[, j] = gsub("NA", "null", sprintf("%d", X[, j]))
+      }
+      else if ("integer64" %in% class(X[, j]))
+      {
+        typ[j] = "int64"
+        X[, j] = gsub("NA", "null", as.character(X[, j]))
+      }
+      else if ("logical" %in% class(X[, j]))
+      {
+        typ[j] = "bool"
+        X[, j] = gsub("na", "null", tolower(sprintf("%s", X[, j])))
+      }
+      else if ("character" %in% class(X[, j]))
+      {
+        typ[j] = "string"
+        X[is.na(X[, j]), j] = "null"
+      }
+      else if ("factor" %in% class(X[, j]))
+      {
+        typ[j] = "string"
+        isna = is.na(X[, j])
+        X[, j] = sprintf("%s", X[, j])
+        if (any(isna)) X[isna, j] = "null"
+      }
+      else if ("POSIXct" %in% class(X[, j]))
       {
         warning("Converting R POSIXct to SciDB datetime as UTC time. Subsecond times rounded to seconds.")
-        X[,j] = format(X[,j],tz="UTC")
+        X[, j] = format(X[, j], tz="UTC")
+        X[is.na(X[, j]), j] = "null"
         typ[j] = "datetime"
       }
-    }  
+    }
   }
-  for(j in 1:ncol(X))
+  for (j in 1:ncol(X))
   {
-    if(typ[j] == "datetime") dcast[j] = sprintf("%s, datetime(a%d)",anames[j],j-1)
-    else if(typ[j] == "string") dcast[j] = sprintf("%s, a%d", anames[j], j-1)
-    else dcast[j] = sprintf("%s, dcast(a%d, %s(null))", anames[j], j-1, typ[j])
+    if (typ[j] == "datetime") dcast[j] = sprintf("%s, datetime(a%d)", anames[j], j - 1)
+    else if (typ[j] == "string") dcast[j] = sprintf("%s, a%d", anames[j], j - 1)
+    else dcast[j] = sprintf("%s, dcast(a%d, %s(null))", anames[j], j - 1, typ[j])
   }
   args = sprintf("<%s>", paste(anames, ":", typ, " null", collapse=","))
 
 # Obtain a session from the SciDB http service for the upload process
-  session = getSession()
-  on.exit(SGET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
+  session = getSession(db)
+  on.exit(SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
   ncolX = ncol(X)
+  nrowX = nrow(X)
   X = charToRaw(fwrite(X, file=return))
-  tmp = POST(X, list(id=session))
+  tmp = POST(db, X, list(id=session))
   tmp = gsub("\n", "", gsub("\r", "", tmp))
 
 # Generate a load_tools query
-  aio = length(grep("aio_input", .scidbenv$ops)) > 0
+  aio = length(grep("aio_input", names(db))) > 0
   atts = paste(dcast, collapse=",")
-  if(aio)
+  if (aio)
   {
-    LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d','chunk_size=%.0f'),%s),%s)", tmp,
+    if (missing(chunk_size))
+      LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d'),%s),%s)", tmp,
+                 ncolX, atts, paste(anames, collapse=","))
+    else
+      LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d','chunk_size=%.0f'),%s),%s)", tmp,
                  ncolX, chunk_size, atts, paste(anames, collapse=","))
   } else
   {
-    LOAD = sprintf("project(apply(parse(split('%s'),'num_attributes=%d'),%s), %s)", tmp,
-                 ncolX, atts, paste(anames, collapse=","))
+    if (missing(chunk_size))
+      LOAD = sprintf("input(%s, '%s', -2, 'tsv')", dfschema(anames, typ, nrowX), tmp)
+    else
+      LOAD = sprintf("input(%s, '%s', -2, 'tsv')", dfschema(anames, typ, nrowX, chunk_size), tmp)
   }
   query = sprintf("store(%s,%s)", LOAD, name)
-  scidbquery(query, release=1, session=session, stream=0L)
-  scidb(name, gc=gc)
+  scidbquery(db, query, release=1, session=session, stream=0L)
+  scidb(db, name, gc=gc)
 }
 
 #' Fast write.table/textConnection substitute
 #'
 #' Conversions are vectorized and the entire output is buffered in memory and written in
 #' one shot. Great option for replacing writing to a textConnection (much much faster).
-#' Not such a great option for writing to files, only 10% faster than write.table and
+#' Not such a great option for writing to files, marginal difference from write.table and
 #' obviously much greater memory use.
 #' @param x a data frame
 #' @param file a connection or \code{return} to return character output directly (fast)
@@ -896,58 +703,59 @@ df2scidb = function(X,
 #' @param format optional fprint-style column format specifyer
 #' @return Use for the side effect of writing to the connection returning \code{NULL}, or
 #' return a character value when \code{file=return}.
+#' @importFrom utils write.table
 #' @keywords internal
 fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), collapse=sep))
 {
-  if(!is.data.frame(x)) stop("x must be a data.frame")
-  if(is.null(file) || ncol(x) > 97) # use slow write.table method
+  foo = NULL
+  rm(list="foo") # avoid package R CMD check warnings of undeclared variable
+  if (!is.data.frame(x)) stop("x must be a data.frame")
+  if (is.null(file) || ncol(x) > 97) # use slow write.table method
   {
     tc = textConnection("foo", open="w")
     write.table(x, sep=sep, col.names=FALSE, row.names=FALSE, file=tc, quote=FALSE)
     close(tc)
     return(paste(foo, collapse="\n"))
   }
-  if(is.function(file)) return(paste(do.call("sprintf", args=c(format, as.list(x))), collapse="\n"))
+  if (is.function(file)) return(paste(do.call("sprintf", args=c(format, as.list(x))), collapse="\n"))
   write(paste(do.call("sprintf", args=c(format, as.list(x))), collapse="\n"), file=file)
   invisible()
 }
 
 
-matvec2scidb = function(X,
-                        name=tmpnam(),
+matvec2scidb = function(db, X,
+                        name=tmpnam(db),
                         start,
                         gc=TRUE, ...)
 {
 # Check for a bunch of optional hidden arguments
   args = list(...)
   attr_name = "val"
-  nullable = TRUE
-  if(!is.null(args$nullable)) nullable = as.logical(args$nullable) # control nullability
-  if(!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
+  if (!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
   do_reshape = TRUE
-  nd_reshape = NULL
   type = force_type = .Rtypes[[typeof(X)]]
-  if(is.null(type)) {
+  if (class(X) %in% "integer64") type = force_type = "int64"
+  if (is.null(type)) {
     stop(paste("Unupported data type. The package presently supports: ",
        paste(unique(names(.Rtypes)), collapse=" "), ".", sep=""))
   }
-  if(!is.null(args$reshape)) do_reshape = as.logical(args$reshape) # control reshape
-  if(!is.null(args$type)) force_type = as.character(args$type) # limited type conversion
+  if (!is.null(args$reshape)) do_reshape = as.logical(args$reshape) # control reshape
+  if (!is.null(args$type)) force_type = as.character(args$type) # limited type conversion
   chunkSize = c(min(1000L, nrow(X)), min(1000L, ncol(X)))
   chunkSize = as.numeric(chunkSize)
-  if(length(chunkSize) == 1) chunkSize = c(chunkSize, chunkSize)
-  overlap = c(0,0)
-  if(missing(start)) start = c(0,0)
+  if (length(chunkSize) == 1) chunkSize = c(chunkSize, chunkSize)
+  overlap = c(0, 0)
+  if (missing(start)) start = c(0, 0)
   start     = as.numeric(start)
-  if(length(start) ==1) start = c(start, start)
+  if (length(start) ==1) start = c(start, start)
   D = dim(X)
   start = as.integer(start)
   overlap = as.integer(overlap)
   dimname = make.unique_(attr_name, "i")
-  if(is.null(D))
+  if (is.null(D))
   {
 # X is a vector
-    if(!is.vector(X)) stop ("Unsupported object")
+    if (!is.vector(X) && !(type =="int64")) stop ("Unsupported object") # XXX bit64/integer64 bug?
     do_reshape = FALSE
     chunkSize = min(chunkSize[[1]], length(X))
     X = as.matrix(X)
@@ -955,15 +763,10 @@ matvec2scidb = function(X,
         "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
         nrow(X) - 1 + start[[1]], min(nrow(X), chunkSize), overlap[[1]])
     load_schema = schema
-  } else if(length(D) > 2)
+  } else if (length(D) > 2)
   {
-    nd_reshape = dim(X)
-    do_reshape = FALSE
-    X = as.matrix(as.vector(aperm(X)))
-    schema = sprintf(
-        "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
-        nrow(X) - 1 + start[[1]], min(nrow(X), chunkSize), overlap[[1]])
-    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type, length(X))
+# X is an n-d array
+    stop("not supported yet") # XXX WRITE ME
   } else {
 # X is a matrix
     schema = sprintf(
@@ -972,38 +775,31 @@ matvec2scidb = function(X,
       chunkSize[[2]], overlap[[2]])
     load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type,  length(X))
   }
-  if(!is.matrix(X)) stop ("X must be a matrix or a vector")
+  if (!is.matrix(X)) stop ("X must be a matrix or a vector")
 
-  DEBUG = FALSE
-  if(!is.null(options("scidb.debug")[[1]]) && TRUE == options("scidb.debug")[[1]]) DEBUG=TRUE
+  DEBUG = getOption("scidb.debug", FALSE)
   td1 = proc.time()
 # Obtain a session from shim for the upload process
-  session = getSession()
-  on.exit( SGET("/release_session", list(id=session), err=FALSE) ,add=TRUE)
+  session = getSession(db)
+  on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
 # Upload the data
   bytes = .Call("scidb_raw", as.vector(t(X)), PACKAGE="scidb")
-  ans = POST(bytes, list(id=session))
+  ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
-  if(DEBUG)
+  if (DEBUG)
   {
-    cat("Data upload time", (proc.time() - td1)[3], "\n")
+    message("Data upload time ", (proc.time() - td1)[3], "\n")
   }
 
 # Load query
-  if(!is.null(nd_reshape))
+  if (do_reshape)
   {
-    return(scidbeval(reshape_scidb(scidb(sprintf("input(%s,'%s', 0, '(%s null)')",load_schema, ans, type)), shape=nd_reshape),name=name))
-  }
-  if(do_reshape)
-  {
-    query = sprintf("store(reshape(input(%s,'%s', -2, '(%s null)'),%s),%s)",load_schema, ans, type, schema, name)
+    query = sprintf("store(reshape(input(%s,'%s', -2, '(%s null)'),%s),%s)", load_schema, ans, type, schema, name)
   } else
   {
-    query = sprintf("store(input(%s,'%s', -2, '(%s null)'),%s)",load_schema, ans, type, name)
+    query = sprintf("store(input(%s,'%s', -2, '(%s null)'),%s)", load_schema, ans, type, name)
   }
-  iquery(query)
-  ans = scidb(name, gc=gc)
-  if(!nullable) ans = replaceNA(ans)
-  ans
+  iquery(db, query)
+  scidb(db, name, gc=gc)
 }

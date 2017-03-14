@@ -4,9 +4,11 @@
 \alias{digest_auth}
 \title{Convenience function for digest authentication.}
 \usage{
-digest_auth(method, uri, realm = "", nonce = "123456")
+digest_auth(db, method, uri, realm = "", nonce = "123456")
 }
 \arguments{
+\item{db}{a scidb database connection object}
+
 \item{method}{digest method}
 
 \item{uri}{uri}

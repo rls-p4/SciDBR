@@ -4,9 +4,10 @@
 \alias{scidbconnect}
 \title{Connect to a SciDB database}
 \usage{
-scidbconnect(host = options("scidb.default_shim_host")[[1]],
-  port = options("scidb.default_shim_port")[[1]], username, password,
-  auth_type = c("scidb", "digest"), protocol = c("http", "https"))
+scidbconnect(host = getOption("scidb.default_shim_host", "127.0.0.1"),
+  port = getOption("scidb.default_shim_port", 8080L), username, password,
+  auth_type = c("scidb", "digest"), protocol = c("http", "https"),
+  int64 = FALSE, doc)
 }
 \arguments{
 \item{host}{optional host name or I.P. address of a SciDB shim service to connect to}
@@ -20,24 +21,23 @@ scidbconnect(host = options("scidb.default_shim_host")[[1]],
 \item{auth_type}{optional SciDB authentication type}
 
 \item{protocol}{optional shim protocol type}
+
+\item{int64}{logical value, if \code{TRUE} then preserve signed 64-bit SciDB integers
+as R integer64 values from the bit64 package. Otherwise, 64-bit integers from SciDB
+are converted to R double values, possibly losing precision.}
+
+\item{doc}{optional AFL operator/macro documentation (see notes)}
 }
 \value{
-\code{NULL} is returned invisibly; this function is used for its
-side effect.
+A scidb connection object. Use \code{$} to access AFL operators
+and macros, \code{ls()} on the returned object to list SciDB arrays,
+and \code{names()} on the returned object to list all available AFL operators
+and macros.
 }
 \description{
 Connect to a SciDB database
 }
 \note{
-The SciDB connection state is maintained internally to the \code{scidb}
-package. We internalize state to facilitate operations involving \code{scidb}
-objects.
-Thus, only one open SciDB connection is supported at
-a time.
-One may connect to and use multiple SciDB databases by sequentially calling
-\code{scidbconnect} between operations. Note that \code{scidb} objects are not
-valid across different SciDB databases.
-
 Use the optional \code{username} and \code{password} arguments with
 \code{auth_type} set to "digest" to use HTTP digest authentication (see the
 shim documentation to configure this).  Digest authentication may use either
@@ -45,16 +45,42 @@ shim documentation to configure this).  Digest authentication may use either
 Set \code{auth_type = "scidb"} to use SciDB authentication, which only
 works over "https".
 
-Disconnection is automatically handled by the package.
+Use the returned SciDB connection object (of class \code{afl}) with other
+package functions to interact with SciDB arrays. Apply R's \code{\link{ls}}
+function on the returned value to see a list of arrays. The returned value
+contains a list of available SciDB AFL language operators and macro names.
+Use the dollar-sign function to accesss those functions.
+
+The optional \code{doc} argument may be a three-column data frame with
+character-valued columns name, signature, and help containing AFL operator
+names, function signatures, and help strings, respectively. See
+`data("operators", package="scidb")` for an example.
 
 All arguments support partial matching.
 }
 \examples{
 \dontrun{
-scidbconnect()
+db <- scidbconnect()
 
 # SciDB 15.12 authentication example (using shim's default HTTPS port 8083)
-scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083)
+db <- scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083, protocol="https")
+
+# List available AFL operators
+names(db)
+
+# List arrays
+ls(db)
+
+# Explicitly upload an R matrix to SciDB:
+x <- as.scidb(db, matrix(rnorm(20), 5))
+# Implicitly do the same as part of an AFL expression
+y <- db$join(x,  as.scidb(matrix(1:20, 5)))
+print(y)
+
+as.R(y)   # Download a SciDB array to R.
 }
+}
+\seealso{
+\code{\link{scidb_prefix}}
 }
 

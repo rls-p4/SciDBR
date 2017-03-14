@@ -4,18 +4,36 @@
 \alias{iquery}
 \title{Run a SciDB query, optionally returning the result.}
 \usage{
-iquery(query, return = FALSE, binary = TRUE, ...)
+iquery(db, query, return = FALSE, binary = TRUE, ...)
 }
 \arguments{
-\item{query}{a single SciDB query string}
+\item{db}{a scidb database connection from \code{\link{scidbconnect}}}
+
+\item{query}{a single SciDB query string or scidb array object}
 
 \item{return}{if \code{TRUE}, return the result}
 
 \item{binary}{set to \code{FALSE} to read result from SciDB in text form}
 
-\item{...}{additional options passed to \code{read.table} when \code{binary=FALSE}}
+\item{...}{additional options passed to \code{read.table} when \code{binary=FALSE},
+or optional result schema when \code{binary=TRUE} (see note below).}
 }
 \description{
 Run a SciDB query, optionally returning the result.
+}
+\note{
+When \code{query} is an arbitrary AFL query string and \code{binary=TRUE},
+  optionally specify \code{schema} with a valid result array schema to skip
+  an extra metadata lookup query (see \code{\link{scidb}}).
+
+Setting \code{return=TRUE} wrapes the AFL \code{query} expression with a SciDB
+save operator, saving the data on the SciDB server in either binary or text
+format depending on the value of the \code{binary} parameter. Please note that
+some AFL expressions may not be "saved" using the AFL save operator, including
+for instance the AFL create_array operator. Trying to return the result of such
+a SciDB expression will result in a run-time error.
+}
+\seealso{
+\code{\link{scidb}} \code{\link{as.R}}
 }
 

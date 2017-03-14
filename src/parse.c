@@ -59,7 +59,6 @@ int scmp (const char *a, const char *b)
  * bool          logical
  * char          character
  * datetime      double (aka real, numeric)
- * datetimetz    double
  * float         double
  * double        double
  * int64         double
@@ -77,21 +76,21 @@ int scmp (const char *a, const char *b)
  */
 SEXP scidb_type_vector (const char *type, int len)
 {
-  if(scmp(type,"bool"))
+  if(scmp(type, "bool"))
   {
     return NEW_LOGICAL(len);
-  } else if(scmp(type,"datetime") || scmp(type,"datetimetz") || scmp(type,"float") ||
-            scmp(type,"double") || scmp(type,"int64") || scmp(type,"uint64") || scmp(type,"uint32"))
+  } else if(scmp(type, "datetime") || scmp(type, "float") ||
+            scmp(type, "double") || scmp(type, "int64") || scmp(type, "uint64") || scmp(type, "uint32"))
   {
     return NEW_NUMERIC(len);
-  } else if(scmp(type,"int8") || scmp(type,"uint8") || scmp(type,"int16") || scmp(type,"uint16") ||
-            scmp(type,"int32"))
+  } else if(scmp(type, "int8") || scmp(type, "uint8") || scmp(type, "int16") || scmp(type, "uint16") ||
+            scmp(type, "int32"))
   {
     return NEW_INTEGER(len);
-  } else if(scmp(type,"string") || scmp(type,"char"))
+  } else if(scmp(type, "string") || scmp(type, "char"))
   {
     return NEW_CHARACTER(len);
-  } else if(scmp(type,"binary"))
+  } else if(scmp(type, "binary"))
   {
     return NEW_LIST(len);
   }
@@ -105,8 +104,9 @@ SEXP scidb_type_vector (const char *type, int len)
  * nullable is an integer, 0 meaning not nullable 1 nullable.
  * vec is the output vector of appropriate R type from scidb_type_vector
  * i is the position in vec to place the converted value
+ * int64 if 0 then convert 64-bit integers to double, else use bit64/integer64
  */
-void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
+void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i, int int64)
 {
   unsigned int isnull = 0;
   if(nullable)
@@ -115,7 +115,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     isnull = isnull<127;
     (*p)++;
   }
-  if(scmp(type,"int64"))
+  if(scmp(type, "int64"))
   {
     long long ll;
     memcpy(&ll, (long long *)*p, 8);
@@ -125,10 +125,11 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
       REAL(vec)[i] = NA_REAL;
       return;
     }
-    REAL(vec)[i] = (double)ll; // XXX CHECK BOUNDS HERE XXX
+    if(int64) memcpy(&REAL(vec)[i], &ll, 8);
+    else REAL(vec)[i] = (double)ll;
     return;
   }
-  else if(scmp(type,"uint64"))
+  else if(scmp(type, "uint64"))
   {
     unsigned long long ll;
     memcpy(&ll, (unsigned long long *)*p, 8);
@@ -141,7 +142,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     REAL(vec)[i] = (double)ll; // XXX CHECK BOUNDS HERE XXX
     return;
   }
-  else if(scmp(type,"uint32"))
+  else if(scmp(type, "uint32"))
   {
     unsigned int ll;
     memcpy(&ll, (unsigned int *)*p, 4);
@@ -154,7 +155,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     REAL(vec)[i] = (double)ll;
     return;
   }
-  else if(scmp(type,"int32"))
+  else if(scmp(type, "int32"))
   {
     int ll;
     memcpy(&ll, (int *)*p, 4);
@@ -167,7 +168,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     INTEGER(vec)[i] = ll;
     return;
   }
-  else if(scmp(type,"int16"))
+  else if(scmp(type, "int16"))
   {
     short ll;
     memcpy(&ll, (short *)*p, 2);
@@ -180,7 +181,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     INTEGER(vec)[i] = (int)ll;
     return;
   }
-  else if(scmp(type,"uint16"))
+  else if(scmp(type, "uint16"))
   {
     unsigned short ll;
     memcpy(&ll, (unsigned short *)*p, 2);
@@ -193,7 +194,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     INTEGER(vec)[i] = (int)ll;
     return;
   }
-  else if(scmp(type,"int8"))
+  else if(scmp(type, "int8"))
   {
     char ll = (char)*((char *)*p);
     (*p)+=1;
@@ -205,7 +206,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     INTEGER(vec)[i] = (int)ll;
     return;
   }
-  else if(scmp(type,"uint8"))
+  else if(scmp(type, "uint8"))
   {
     unsigned char ll = (unsigned char)*((unsigned char *)*p);
     (*p)+=1;
@@ -217,7 +218,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     INTEGER(vec)[i] = (int)ll;
     return;
   }
-  else if(scmp(type,"bool"))
+  else if(scmp(type, "bool"))
   {
     unsigned char ll = (unsigned char)*((unsigned char *)*p);
     (*p)+=1;
@@ -229,7 +230,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     LOGICAL(vec)[i] = (int)ll;
     return;
   }
-  else if(scmp(type,"float"))
+  else if(scmp(type, "float"))
   {
     float d;
     memcpy(&d, (float *)*p, 4);
@@ -242,7 +243,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     REAL(vec)[i] = (double)d;
     return;
   }
-  else if(scmp(type,"double"))
+  else if(scmp(type, "double"))
   {
     double d;
     memcpy(&d, (double *)*p, 8);
@@ -255,7 +256,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     REAL(vec)[i] = d;
     return;
   }
-  else if(scmp(type,"datetime") || scmp(type,"datetimetz"))
+  else if(scmp(type, "datetime"))
   {
     double d;
     long long l;
@@ -270,11 +271,12 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     REAL(vec)[i] = d;
     return;
   }
-  else if(scmp(type,"char"))
+  else if(scmp(type, "char"))
   {
     if(isnull)
     {
       SET_STRING_ELT(vec,i,NA_STRING);
+      (*p)+=sizeof(char);
       return;
     }
     char *buf = (char *)calloc(2,1);
@@ -284,7 +286,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     free(buf);
     return;
   }
-  else if(scmp(type,"string"))
+  else if(scmp(type, "string"))
   {
     unsigned int len = (unsigned int)*((unsigned int*)*p);
     (*p)+=4;
@@ -303,7 +305,7 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
     free(buf);
     return;
   }
-  else if(scmp(type,"binary"))
+  else if(scmp(type, "binary"))
   {
     unsigned int len = (unsigned int)*((unsigned int*)*p);
     (*p)+=4;
@@ -331,13 +333,16 @@ void scidb_value (char **p, const char *type, int nullable, SEXP vec, int i)
  * NULLABLE: Logical vector of SciDB nullability, of length N
  * DATA: R RAW vector with the binary SciDB data
  * OFFSET: Offset byte to start reading from (REAL)
+ * INT64: Logical scalar, if TRUE then use fake integer64 types
+ * from the bit64 package, otherwise convert 64-bit integers to double
+ * (possibly losing data in the process).
  *
  * Output: An n+2-element list:
  * Elements 1,2,...,n are the parsed data vectors
  * Element n is the number of rows retrieved <= M
  * Element n+1 is the final byte offset into DATA
  */
-SEXP scidb_parse (SEXP M, SEXP TYPES, SEXP NULLABLE, SEXP DATA, SEXP OFFSET)
+SEXP scidb_parse (SEXP M, SEXP TYPES, SEXP NULLABLE, SEXP DATA, SEXP OFFSET, SEXP INT64)
 {
   int nullable, i = 0, j;
   SEXP col, val, ans;
@@ -345,6 +350,7 @@ SEXP scidb_parse (SEXP M, SEXP TYPES, SEXP NULLABLE, SEXP DATA, SEXP OFFSET)
   R_xlen_t n = XLENGTH(TYPES);
   double doffset = REAL(OFFSET)[0];
   size_t offset = (size_t)doffset;
+  int int64 = INTEGER(INT64)[0];
   R_xlen_t s = XLENGTH(DATA);
   char *p = (char *)RAW(DATA);
   char *q = p;
@@ -370,7 +376,7 @@ SEXP scidb_parse (SEXP M, SEXP TYPES, SEXP NULLABLE, SEXP DATA, SEXP OFFSET)
     {
       col = VECTOR_ELT(ans, j);
 // XXX Add max bytes allowed to read here ?...
-      scidb_value(&p, CHAR(STRING_ELT(TYPES,j)), INTEGER(NULLABLE)[j], col, i);
+      scidb_value(&p, CHAR(STRING_ELT(TYPES,j)), INTEGER(NULLABLE)[j], col, i, int64);
       if(p - q >= s)
       {
         i++;
