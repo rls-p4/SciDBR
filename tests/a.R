@@ -80,5 +80,7 @@ if (nchar(host) > 0)
  x = db$build("<v:int64>[i=1:2,2,0]", i)
  check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE))))
 
- 
+# Issue #157
+ x = as.R(scidb(db, "build(<v:float>[i=1:5], sin(i))"), binary = FALSE)
+
 }
