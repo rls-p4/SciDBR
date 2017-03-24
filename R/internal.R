@@ -38,7 +38,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   attributes = schema(query, "attributes")
   dimensions = schema(query, "dimensions")
   query = query@name
-  if(! args$binary) return(iquery(db, internal_query, binary=FALSE, `return`=TRUE))
+  if(! args$binary) return(iquery(db, query, binary=FALSE, `return`=TRUE))
   if (args$only_attributes)
   {
     internal_attributes = attributes
