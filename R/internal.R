@@ -82,9 +82,6 @@ scidb_unpack_to_dataframe = function(db, query, ...)
                               ssl_verifypeer=0))
   resp = curl_fetch_memory(uri, h)
   if (resp$status_code > 299) stop("HTTP error", resp$status_code)
-# Explicitly reap the handle to avoid short-term build up of socket descriptors
-  rm(h)
-  gc()
   if (DEBUG) message("Data transfer time ", (proc.time() - dt2)[3])
   dt1 = proc.time()
   len = length(resp$content)
@@ -159,7 +156,6 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     ans = ans[, c( (i+1):ncol(ans), 1:i)]
     colnames(ans) = make.names_(c(dimensions$name, attributes$name))
   }
-  gc()
   ans
 }
 
