@@ -273,11 +273,16 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
         result = gsub("null", "NA", result, perl=TRUE)
         result = gsub("@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", "DEFAULT null", result, perl=TRUE)
         val = textConnection(result)
+        on.exit(close(val), add=TRUE)
         ret = c()
         if (length(val) > 0)
-          ret = tryCatch(read.table(val, sep=",", stringsAsFactors=FALSE, header=TRUE, ...),
+        {
+          args = list(file=val, ..., sep=",", stringsAsFactors=FALSE, header=TRUE)
+          args$only_attributes = NULL
+          args = args[! duplicated(names(args))]
+          ret = tryCatch(do.call("read.table", args=args),
                 error = function(e) stop("Query result parsing error ", as.character(e)))
-        close(val)
+        }
         if (DEBUG) cat("R parsing time", (proc.time()-dt1)[3], "\n")
         ret
        }, error = function(e)

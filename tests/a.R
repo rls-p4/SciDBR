@@ -90,4 +90,6 @@ if (nchar(host) > 0)
 
  iquery(db, "build(<val:binary>[i=1:2,10,0], null)", return=TRUE)
 
+# Test for issue #161
+  iquery(db, "op_count(list())", return=TRUE, only_attributes=TRUE,  binary=FALSE)
 }
