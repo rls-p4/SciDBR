@@ -33,6 +33,26 @@ some AFL expressions may not be "saved" using the AFL save operator, including
 for instance the AFL create_array operator. Trying to return the result of such
 a SciDB expression will result in a run-time error.
 }
+\examples{
+\dontrun{
+db <- scidbconnect()
+iquery(db, "build(<v:double>[i=1:5], sin(i))", return=TRUE)
+## i          v
+## 1  0.8414710
+## 2  0.9092974
+## 3  0.1411200
+## 4 -0.7568025
+## 5 -0.9589243
+
+# Use binary=FALSE and additional options to read.table function:
+iquery(db, "build(<val:string>[i=1:3], '[(01),(02),(03)]', true)",xi
+       return=TRUE, binary=FALSE, colClasses=c("integer", "character"))
+##   i val
+## 1 1  01
+## 2 2  02
+## 3 3  03
+}
+}
 \seealso{
 \code{\link{scidb}} \code{\link{as.R}}
 }

@@ -214,6 +214,25 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 #' a SciDB expression will result in a run-time error.
 #' @seealso \code{\link{scidb}} \code{\link{as.R}}
 #' @importFrom utils read.table
+#' @examples
+#' \dontrun{
+#' db <- scidbconnect()
+#' iquery(db, "build(<v:double>[i=1:5], sin(i))", return=TRUE)
+#'## i          v
+#'## 1  0.8414710
+#'## 2  0.9092974
+#'## 3  0.1411200
+#'## 4 -0.7568025
+#'## 5 -0.9589243
+#'
+#' # Use binary=FALSE and additional options to read.table function:
+#' iquery(db, "build(<val:string>[i=1:3], '[(01),(02),(03)]', true)",xi
+#'        return=TRUE, binary=FALSE, colClasses=c("integer", "character"))
+#'##   i val
+#'## 1 1  01
+#'## 2 2  02
+#'## 3 3  03
+#' }
 #' @export
 iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
 {
@@ -254,11 +273,16 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
         result = gsub("null", "NA", result, perl=TRUE)
         result = gsub("@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", "DEFAULT null", result, perl=TRUE)
         val = textConnection(result)
+        on.exit(close(val), add=TRUE)
         ret = c()
         if (length(val) > 0)
-          ret = tryCatch(read.table(val, sep=",", stringsAsFactors=FALSE, header=TRUE, ...),
-                error = function(e) stop("SciDB query error"))
-        close(val)
+        {
+          args = list(file=val, ..., sep=",", stringsAsFactors=FALSE, header=TRUE)
+          args$only_attributes = NULL
+          args = args[! duplicated(names(args))]
+          ret = tryCatch(do.call("read.table", args=args),
+                error = function(e) stop("Query result parsing error ", as.character(e)))
+        }
         if (DEBUG) cat("R parsing time", (proc.time()-dt1)[3], "\n")
         ret
        }, error = function(e)
