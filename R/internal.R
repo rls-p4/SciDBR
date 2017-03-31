@@ -111,7 +111,9 @@ scidb_unpack_to_dataframe = function(db, query, ...)
       if ("binary" %in% internal_attributes$type)
       {
         if (DEBUG) message("  R rbind/df assembly time ", round( (proc.time() - dt2)[3], 4))
-        return(lapply(1:n, function(j) tmp[[j]][1:lines])) # XXX issue 33
+        ans = lapply(1:n, function(j) tmp[[j]][1:lines])
+        names(ans) = internal_attributes$name
+        return(ans)
       }
       len_out = length(tmp[[1]])
       if (lines < len_out) tmp = lapply(tmp[1:n], function(x) x[1:lines])
