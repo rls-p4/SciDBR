@@ -83,4 +83,11 @@ if (nchar(host) > 0)
 # Issue #157
  x = as.R(scidb(db, "build(<v:float>[i=1:5], sin(i))"), binary = FALSE)
 
+# Issue #163
+ x = as.scidb(db, serialize(1:5, NULL))
+ y = as.R(x)
+ check(y$val[[1]], serialize(1:5,NULL))
+
+ iquery(db, "build(<val:binary>[i=1:2,10,0], null)", return=TRUE)
+
 }
