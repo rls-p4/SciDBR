@@ -92,4 +92,9 @@ if (nchar(host) > 0)
 
 # Test for issue #161
   iquery(db, "op_count(list())", return=TRUE, only_attributes=TRUE,  binary=FALSE)
+
+# Test for issue #158
+  x = iquery(db, "join(op_count(build(<val:int32>[i=0:234,100,0],random())),op_count(build(<val:int32>[i=0:1234,100,0],random())))", 
+        schema = "<apples:uint64, oranges:uint64>[i=0:1,1,0]", return=TRUE)
+  check(names(x), c("i", "apples", "oranges"))
 }

@@ -30,7 +30,7 @@
       d[i] = lapply(d[i], function(x) x[-length(x)])
     }
     d = lapply(d, function(x) c(strsplit(x[1], ":")[[1]], x[-1]))
-    data.frame(name=n,
+    data.frame(name=gsub("^ *", "", n),
              start=vapply(d, function(x) x[1], ""),
              end=vapply(d, function(x) x[2], ""),
              chunk=vapply(d, function(x) x[chunk], ""),
@@ -53,7 +53,7 @@
            ! grepl("NOT NULL", s)
          else grepl(" NULL", s)
   type = gsub("default", "", gsub(" ", "", gsub("null", "", gsub("not null", "", gsub("compression '.*'", "", vapply(s, function(x) x[2], ""), ignore.case=TRUE), ignore.case=TRUE), ignore.case=TRUE)), ignore.case=TRUE)
-  data.frame(name=vapply(s, function(x) x[1], ""),
+  data.frame(name=gsub("^ *", "", vapply(s, function(x) x[1], "")),
              type=type,
              nullable=null, stringsAsFactors=FALSE)
 }
