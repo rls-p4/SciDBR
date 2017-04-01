@@ -29,7 +29,7 @@
       d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\3,\\4", x)), ",")[[1]])
       chunk = 4; overlap = 3
     }
-    n = gsub("^ *", "", c(d[[1]], vapply(d[-c(1, length(d))], function(x) x[length(x)], "")))
+    n = gsub("[ \\\t\\\n]", "", c(d[[1]], vapply(d[-c(1, length(d))], function(x) x[length(x)], "")))
     d = d[-1]
     if (length(d) > 1)
     {
@@ -63,7 +63,7 @@
            ! grepl("NOT NULL", s)
          else grepl(" NULL", s)
   type = gsub("default", "", gsub(" ", "", gsub("null", "", gsub("not null", "", gsub("compression '.*'", "", vapply(s, function(x) x[2], ""), ignore.case=TRUE), ignore.case=TRUE), ignore.case=TRUE)), ignore.case=TRUE)
-  data.frame(name=gsub("^ *", "", vapply(s, function(x) x[1], "")),
+  data.frame(name=gsub("[ \\\t\\\n]", "", vapply(s, function(x) x[1], "")),
              type=type,
              nullable=null, stringsAsFactors=FALSE)
 }
