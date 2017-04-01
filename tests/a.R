@@ -97,4 +97,8 @@ if (nchar(host) > 0)
   x = iquery(db, "join(op_count(build(<val:int32>[i=0:234,100,0],random())),op_count(build(<val:int32>[i=0:1234,100,0],random())))", 
         schema = "<apples:uint64, oranges:uint64>[i=0:1,1,0]", return=TRUE)
   check(names(x), c("i", "apples", "oranges"))
+
+# issue #160 deal with partial schema string
+  x = iquery(db, "project(list(), name)", schema="<name:string>[No]", return=TRUE)
+  check(names(x), c("No", "name"))
 }

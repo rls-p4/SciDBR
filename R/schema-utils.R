@@ -1,18 +1,25 @@
 # Functions for parsing and building SciDB schema strings.
-# A SciDB schema string looks like:
-# <attribute_1:type_1 NULL DEFAULT VALUE, attribute_2:type_2, ...>
+# A SciDB schema string up to version 15.12 looks like:
+# optional_array_name<attribute_1:type_1 NULL DEFAULT VALUE, attribute_2:type_2, ...>
 # [dimension_1=start:end,chunksize,overlap, dimension_2=start:end,chunksize,overlap, ...]
+#
+# Starting with SciDB version 16.9, schema strings changed a lot. They look like:
+# optional_array_name<v:double,j:int64 NOT NULL DEFAULT 5> [i=1:2:0:1000; j=1:3:0:1000]
+# in particular, the dimensions are now start:end:overlap:chunksize
+#
+# This code needs to work with both formats and transforms the new format into the old one.
 
 .dimsplitter = function(x)
 {
-  if (!(inherits(x, "scidb"))) return(NULL)
   if (is.character(x)) s = x
   else
   {
+    if (!(inherits(x, "scidb"))) return(NULL)
     s = schema(x)
   }
   ans = tryCatch(
   {
+    n = NA
     d = gsub("\\]", "", strsplit(s, "\\[")[[1]][[2]])
     d = strsplit(strsplit(d, "=")[[1]], ",")
     # SciDB schema syntax changed greatly in 16.9, convert it to old format.
@@ -22,7 +29,7 @@
       d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\3,\\4", x)), ",")[[1]])
       chunk = 4; overlap = 3
     }
-    n = c(d[[1]], vapply(d[-c(1, length(d))], function(x) x[length(x)], ""))
+    n = gsub("^ *", "", c(d[[1]], vapply(d[-c(1, length(d))], function(x) x[length(x)], "")))
     d = d[-1]
     if (length(d) > 1)
     {
@@ -30,12 +37,15 @@
       d[i] = lapply(d[i], function(x) x[-length(x)])
     }
     d = lapply(d, function(x) c(strsplit(x[1], ":")[[1]], x[-1]))
-    data.frame(name=gsub("^ *", "", n),
+    data.frame(name=n,
              start=vapply(d, function(x) x[1], ""),
              end=vapply(d, function(x) x[2], ""),
              chunk=vapply(d, function(x) x[chunk], ""),
              overlap=vapply(d, function(x) x[overlap], ""), stringsAsFactors=FALSE)
-  }, error=function(e) NULL)
+  }, error=function(e) {
+    if(is.na(n)) NULL
+    else data.frame(name=n, start=NA, end=NA, chunk=NA, overlap=NA, stringsAsFactors=FALSE)
+  })
   ans
 }
 
