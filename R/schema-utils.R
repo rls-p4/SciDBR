@@ -16,6 +16,7 @@
 {
   if (inherits(x, "scidb")) x = schema(x)
   x = gsub("\\t", " ", x)
+  x = gsub("\\n", " ", x)
   tokenize = function(s, token)
   {
     x = strsplit(s, token)[[1]]
@@ -91,6 +92,7 @@
     s = schema(x)
   }
   s = gsub("\\t", " ", s)
+  s = gsub("\\n", " ", s)
   s = gsub("default[^,]*", "", s, ignore.case=TRUE)
   s = strsplit(strsplit(strsplit(strsplit(s, ">")[[1]][1], "<")[[1]][2], ",")[[1]], ":")
   # SciDB schema syntax changed in 15.12
