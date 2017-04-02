@@ -375,7 +375,7 @@ as.scidb = function(db, x,
 #' @examples
 #' \dontrun{
 #' db <- scidbconnect()
-#' x <- scidb(s, "build(<v:double>[i=1:5], sin(i))")
+#' x <- scidb(db, "build(<v:double>[i=1:5], sin(i))")
 #' as.R(x)
 #'## i          v
 #'## 1  0.8414710
