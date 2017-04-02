@@ -110,4 +110,13 @@ if (nchar(host) > 0)
   iquery(db, "build(<val:double>[i=1:3;j=1:3], random())", return=T, schema="<val:double>[i=1:3;j=1:3]")
   iquery(db, "build(<val:double>[i=1:3;j=1:3], random())", return=T, schema="<val:double>[i,j]")
 
+# basic types from scalars
+  lapply(list(TRUE, "x", 420L, pi), function(x) check(x, as.R(as.scidb(db, x))$val))
+# trickier types
+  x = Sys.Date()
+  check(as.POSIXct(x, tz="UTC"), as.R(as.scidb(db, x))$val)
+  x = iris$Species
+  check(as.character(x), as.R(as.scidb(db, x))$val)
+# type conversion from data frames
+  x = data.frame(a=420L, b=pi, c=TRUE, d=factor("yellow"), e="SciDB", f=as.POSIXct(Sys.Date(), tz="UTC"), stringsAsFactors=FALSE)
 }
