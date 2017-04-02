@@ -15,6 +15,7 @@
 .dimsplitter = function(x)
 {
   if (inherits(x, "scidb")) x = schema(x)
+  x = gsub("\\t", " ", x)
   tokenize = function(s, token)
   {
     x = strsplit(s, token)[[1]]
@@ -89,12 +90,14 @@
     if (!(inherits(x, "scidb"))) return(NULL)
     s = schema(x)
   }
+  s = gsub("\\t", " ", s)
+  s = gsub("default[^,]*", "", s, ignore.case=TRUE)
   s = strsplit(strsplit(strsplit(strsplit(s, ">")[[1]][1], "<")[[1]][2], ",")[[1]], ":")
   # SciDB schema syntax changed in 15.12
   null = if (at_least(attr(x@meta$db, "connection")$scidb.version, "15.12"))
            ! grepl("NOT NULL", s)
          else grepl(" NULL", s)
-  type = gsub("default", "", gsub(" ", "", gsub("null", "", gsub("not null", "", gsub("compression '.*'", "", vapply(s, function(x) x[2], ""), ignore.case=TRUE), ignore.case=TRUE), ignore.case=TRUE)), ignore.case=TRUE)
+  type = gsub(" ", "", gsub("null", "", gsub("not null", "", gsub("compression '.*'", "", vapply(s, function(x) x[2], ""), ignore.case=TRUE), ignore.case=TRUE), ignore.case=TRUE))
   data.frame(name=gsub("[ \\\t\\\n]", "", vapply(s, function(x) x[1], "")),
              type=type,
              nullable=null, stringsAsFactors=FALSE)

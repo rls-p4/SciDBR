@@ -119,4 +119,10 @@ if (nchar(host) > 0)
   check(as.character(x), as.R(as.scidb(db, x))$val)
 # type conversion from data frames
   x = data.frame(a=420L, b=pi, c=TRUE, d=factor("yellow"), e="SciDB", f=as.POSIXct(Sys.Date(), tz="UTC"), stringsAsFactors=FALSE)
+
+# issue #164 improper default value parsing
+  tryCatch(iquery (db, "remove(x)"), error=invisible)
+  iquery(db, "create array x <x:double not null default 1>[i=1:10]")
+  as.R(scidb(db, "x"))
+  tryCatch(iquery (db, "remove(x)"), error=invisible)
 }
