@@ -62,7 +62,7 @@
   }
 
   s = tryCatch(gsub("]", "", strsplit(x, "\\[")[[1]][[2]]), error=function(e) NULL)
-  if(is.null(s)) return(NULL)
+  if(is.null(s) || nchar(s) == 0) return(NULL)
   tokens = Reduce(c, lapply(Reduce(c, lapply(Reduce(c, lapply(tokenize(s, "="), tokenize, ":")), tokenize, ";")), tokenize, ","))
   names(tokens) = diagram(tokens)
   tokens[!(names(tokens) %in% c("equals", "colon", "semicolon", "comma"))]

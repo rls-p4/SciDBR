@@ -125,4 +125,8 @@ if (nchar(host) > 0)
   iquery(db, "create array x <x:double not null default 1>[i=1:10]")
   as.R(scidb(db, "x"))
   tryCatch(iquery (db, "remove(x)"), error=invisible)
+
+# issue #158 support empty dimension spec []
+  iquery(db, "apply(build(<val:double>[i=1:3], random()), x, 'abc')", return=TRUE,
+         schema="<val:double,  x:string>[]", only_attributes=TRUE)
 }
