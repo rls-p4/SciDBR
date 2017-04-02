@@ -4,50 +4,75 @@
 # [dimension_1=start:end,chunksize,overlap, dimension_2=start:end,chunksize,overlap, ...]
 #
 # Starting with SciDB version 16.9, schema strings changed a lot. They look like:
-# optional_array_name<v:double,j:int64 NOT NULL DEFAULT 5> [i=1:2:0:1000; j=1:3:0:1000]
+# optional_array_name<v:double,a:int64 NOT NULL DEFAULT 5> [i=1:2:0:1000; j=1:3:0:1000]
 # in particular, the dimensions are now start:end:overlap:chunksize
 #
-# This code needs to work with both formats and transforms the new format into the old one.
 
 .dimsplitter = function(x)
 {
-  if (is.character(x)) s = x
-  else
+  if (inherits(x, "scidb")) x = schema(x)
+  tokenize = function(s, token)
   {
-    if (!(inherits(x, "scidb"))) return(NULL)
-    s = schema(x)
+    x = strsplit(s, token)[[1]]
+    x = as.vector(rbind(x, rep(token, length(x))))
+    x[- length(x)]
   }
-  ans = tryCatch(
+
+  diagram = function(tokens, labels=c())
   {
-    n = NA
-    d = gsub("\\]", "", strsplit(s, "\\[")[[1]][[2]])
-    d = strsplit(strsplit(d, "=")[[1]], ",")
-    # SciDB schema syntax changed greatly in 16.9, convert it to old format.
-    chunk = 3; overlap = 4
-    if (at_least(attr(x@meta$db, "connection")$scidb.version, "16.9"))
+    if(length(tokens) == 0) return(labels)
+    last = tail(labels, 1)
+    prev = tail(labels, 2)[1]
+    if(is.null(last))              labels = c(labels, "name")
+    else if(tokens[1] == "=")      labels = c(labels, "equals")
+    else if(tokens[1] == ";")      labels = c(labels, "semicolon")
+    else if(tokens[1] == ":")      labels = c(labels, "colon")
+    else if(tokens[1] == ",")      labels = c(labels, "comma")
+    else
     {
-      d = lapply(d, function(x)  strsplit(gsub(";[ ]", ",", gsub("(.*):(.*):(.*):(.*$)", "\\1:\\2,\\3,\\4", x)), ",")[[1]])
-      chunk = 4; overlap = 3
+      if(last == "semicolon")      labels = c(labels, "name")
+      else if(last == "equals")    labels = c(labels, "start")
+      else if(last == "colon")
+      {
+        if(is.null(prev))          stop("invalid : character")
+        else if(prev == "start")   labels = c(labels, "end")
+        else if(prev == "end")     labels = c(labels, "overlap")
+        else if(prev == "overlap") labels = c(labels, "chunk")
+      }
+      else if(last == "comma")
+      {
+        if(is.null(prev))          stop("invalid , character")
+        else if(prev == "name")    labels = c(labels, "name")
+        else if(prev == "start")   labels = c(labels, "end")
+        else if(prev == "end")     labels = c(labels, "chunk")
+        else if(prev == "chunk")   labels = c(labels, "overlap")
+        else if(prev == "overlap") labels = c(labels, "name")
+      }
     }
-    n = gsub("[ \\\t\\\n]", "", c(d[[1]], vapply(d[-c(1, length(d))], function(x) x[length(x)], "")))
-    d = d[-1]
-    if (length(d) > 1)
-    {
-      i = 1:(length(d) - 1)
-      d[i] = lapply(d[i], function(x) x[-length(x)])
-    }
-    d = lapply(d, function(x) c(strsplit(x[1], ":")[[1]], x[-1]))
-    data.frame(name=n,
-             start=vapply(d, function(x) x[1], ""),
-             end=vapply(d, function(x) x[2], ""),
-             chunk=vapply(d, function(x) x[chunk], ""),
-             overlap=vapply(d, function(x) x[overlap], ""), stringsAsFactors=FALSE)
-  }, error=function(e) {
-    if(is.na(n)) NULL
-    else data.frame(name=n, start=NA, end=NA, chunk=NA, overlap=NA, stringsAsFactors=FALSE)
-  })
+    diagram(tokens[-1], labels)
+  }
+  form = function(x)
+  {
+    c(name=x["name"], start=x["start"], end=x["end"], chunk=x["chunk"], overlap=x["overlap"])
+  }
+
+  s = gsub("]", "", strsplit(x, "\\[")[[1]][[2]])
+  tokens = Reduce(c, lapply(Reduce(c, lapply(Reduce(c, lapply(tokenize(s, "="), tokenize, ":")), tokenize, ";")), tokenize, ","))
+  names(tokens) = diagram(tokens)
+  tokens[!(names(tokens) %in% c("equals", "colon", "semicolon", "comma"))]
+  i = which(names(tokens) %in% "name")
+  j = c((i - 1)[-1], length(tokens))
+  ans = Reduce(rbind, lapply(1:length(i), function(k) form(tokens[i[k]:j[k]])))
+  if(length(i) == 1) {
+    ans = data.frame(as.list(ans), stringsAsFactors=FALSE, row.names=NULL)
+  } else ans = data.frame(ans, stringsAsFactors=FALSE, row.names=c())
+  names(ans) = c("name", "start", "end", "chunk", "overlap")
+  ans$name = gsub(" ", "", ans$name)
   ans
 }
+
+
+
 
 .attsplitter = function(x)
 {
