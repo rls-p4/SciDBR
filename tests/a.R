@@ -27,6 +27,8 @@ if (nchar(host) > 0)
 # only attributes and optional skipping of metadata query by supplying schema in full and abbreviated forms
   check(nrow(x), nrow(as.R(x)))
   check(nrow(x), nrow(as.R(x, only_attributes=TRUE)))
+  a = scidb(db, x@name, schema=schema(x))
+  check(nrow(x), nrow(as.R(a)))
   a = scidb(db, x@name, schema=gsub("\\[.*", "", schema(x)))
   check(nrow(x), nrow(as.R(a)))
 
@@ -101,4 +103,30 @@ if (nchar(host) > 0)
 # issue #160 deal with partial schema string
   x = iquery(db, "project(list(), name)", schema="<name:string>[No]", return=TRUE)
   check(names(x), c("No", "name"))
+  iquery(db, "build(<val:double>[i=1:3;j=1:3], random())", return=T, schema="<val:double>[i; j]")
+  iquery(db, "build(<val:double>[i=1:3;j=1:3], random())", return=T, schema="<val:double>[i=1:3:0:3;j=1:3:0:3]")
+  iquery(db, "build(<val:double>[i=1:3;j=1:3], random())", return=T, schema="<val:double>[i=1:3,1,0,j=1:3,1,0]")
+  iquery(db, "build(<val:double>[i=1:3;j=1:3], random())", return=T, schema="<val:double>[i=1:3,1,0;j=1:3,1,0]")
+  iquery(db, "build(<val:double>[i=1:3;j=1:3], random())", return=T, schema="<val:double>[i=1:3;j=1:3]")
+  iquery(db, "build(<val:double>[i=1:3;j=1:3], random())", return=T, schema="<val:double>[i,j]")
+
+# basic types from scalars
+  lapply(list(TRUE, "x", 420L, pi), function(x) check(x, as.R(as.scidb(db, x))$val))
+# trickier types
+  x = Sys.Date()
+  check(as.POSIXct(x, tz="UTC"), as.R(as.scidb(db, x))$val)
+  x = iris$Species
+  check(as.character(x), as.R(as.scidb(db, x))$val)
+# type conversion from data frames
+  x = data.frame(a=420L, b=pi, c=TRUE, d=factor("yellow"), e="SciDB", f=as.POSIXct(Sys.Date(), tz="UTC"), stringsAsFactors=FALSE)
+
+# issue #164 improper default value parsing
+  tryCatch(iquery (db, "remove(x)"), error=invisible)
+  iquery(db, "create array x <x:double not null default 1>[i=1:10]")
+  as.R(scidb(db, "x"))
+  tryCatch(iquery (db, "remove(x)"), error=invisible)
+
+# issue #158 support empty dimension spec []
+  iquery(db, "apply(build(<val:double>[i=1:3], random()), x, 'abc')", return=TRUE,
+         schema="<val:double,  x:string>[]", only_attributes=TRUE)
 }

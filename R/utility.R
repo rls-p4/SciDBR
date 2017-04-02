@@ -347,11 +347,14 @@ as.scidb = function(db, x,
 
 #' Download SciDB data to R
 #' @param x a \code{\link{scidb}} object (a SciDB array or expression)
-#' @param only_attributes optional logical argument, if \code{TRUE} do not download SciDB dimensions
+#' @param only_attributes optional logical argument, if \code{TRUE} do not download SciDB dimensions (see note)
 #' @param binary optional logical value, set to \code{FALSE} to download data using text format (useful for some unsupported SciDB types)
 #' @return An R \code{\link{data.frame}}
 #' @note This convenience function is equivalent to running \code{iquery(db, x, return=TRUE)} for
-#' a SciDB connection object \code{s}.
+#' a SciDB connection object \code{db}.
+#'
+#' The \code{only_attributes=TRUE} option only works with binary transfers, and if specified will set \code{binary=TRUE}.
+#' Beware of the \code{only_attributes=TRUE} setting--SciDB may return data in arbitrary order.
 #'
 #' SciDB values are always returned as R data frames. SciDB scalar types are converted to
 #' corresponding R types as follows:
@@ -375,7 +378,7 @@ as.scidb = function(db, x,
 #' @examples
 #' \dontrun{
 #' db <- scidbconnect()
-#' x <- scidb(s, "build(<v:double>[i=1:5], sin(i))")
+#' x <- scidb(db, "build(<v:double>[i=1:5], sin(i))")
 #' as.R(x)
 #'## i          v
 #'## 1  0.8414710
