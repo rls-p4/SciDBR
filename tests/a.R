@@ -27,6 +27,8 @@ if (nchar(host) > 0)
 # only attributes and optional skipping of metadata query by supplying schema in full and abbreviated forms
   check(nrow(x), nrow(as.R(x)))
   check(nrow(x), nrow(as.R(x, only_attributes=TRUE)))
+  a = scidb(db, x@name, schema=schema(x))
+  check(nrow(x), nrow(as.R(a)))
   a = scidb(db, x@name, schema=gsub("\\[.*", "", schema(x)))
   check(nrow(x), nrow(as.R(a)))
 

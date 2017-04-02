@@ -8,6 +8,10 @@
 # in particular, the dimensions are now start:end:overlap:chunksize
 #
 
+#' Internal function for processing SciDB dimension schema
+#' @param x a scidb object or schema string
+#' @return a data frame with parsed dimension data
+#' @importFrom utils tail
 .dimsplitter = function(x)
 {
   if (inherits(x, "scidb")) x = schema(x)
@@ -56,7 +60,8 @@
     c(name=x["name"], start=x["start"], end=x["end"], chunk=x["chunk"], overlap=x["overlap"])
   }
 
-  s = gsub("]", "", strsplit(x, "\\[")[[1]][[2]])
+  s = tryCatch(gsub("]", "", strsplit(x, "\\[")[[1]][[2]]), error=function(e) NULL)
+  if(is.null(s)) return(NULL)
   tokens = Reduce(c, lapply(Reduce(c, lapply(Reduce(c, lapply(tokenize(s, "="), tokenize, ":")), tokenize, ";")), tokenize, ","))
   names(tokens) = diagram(tokens)
   tokens[!(names(tokens) %in% c("equals", "colon", "semicolon", "comma"))]
@@ -73,7 +78,9 @@
 
 
 
-
+#' Internal function for processing SciDB attribute schema
+#' @param x a scidb object or schema string
+#' @return a data frame with parsed attribute data
 .attsplitter = function(x)
 {
   if (is.character(x)) s = x
