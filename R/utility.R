@@ -354,6 +354,7 @@ as.scidb = function(db, x,
 #' a SciDB connection object \code{db}.
 #'
 #' The \code{only_attributes=TRUE} option only works with binary transfers, and if specified will set \code{binary=TRUE}.
+#' Beware of the \code{only_attributes=TRUE} setting--SciDB may return data in arbitrary order.
 #'
 #' SciDB values are always returned as R data frames. SciDB scalar types are converted to
 #' corresponding R types as follows:
