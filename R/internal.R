@@ -639,9 +639,9 @@ df2scidb = function(db, X,
         X[, j] = sprintf("%s", X[, j])
         if (any(isna)) X[isna, j] = "null"
       }
-      else if ("POSIXct" %in% class(X[, j]))
+      else if ("Date" %in% class(X[, j]) || "POSIXct" %in% class(X[, j]))
       {
-        warning("Converting R POSIXct to SciDB datetime as UTC time. Subsecond times rounded to seconds.")
+        warning("Converting R Date/POSIXct to SciDB datetime as UTC time. Subsecond times rounded to seconds.")
         X[, j] = format(X[, j], tz="UTC")
         X[is.na(X[, j]), j] = "null"
         typ[j] = "datetime"
@@ -731,10 +731,16 @@ matvec2scidb = function(db, X,
   attr_name = "val"
   if (!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
   do_reshape = TRUE
+  if ("factor" %in% class(X)) X = as.character(X)
   type = force_type = .Rtypes[[typeof(X)]]
-  if (class(X) %in% "integer64") type = force_type = "int64"
+  if ("Date" %in% class(X))
+  {
+    X = as.double(as.POSIXct(X, tz="UTC")) # XXX warn UTC?
+    force_type = "datetime"
+  }
+  if ("integer64" %in% class(X)) type = force_type = "int64"
   if (is.null(type)) {
-    stop(paste("Unupported data type. The package presently supports: ",
+    stop(paste("Unupported data type. The package supports: ",
        paste(unique(names(.Rtypes)), collapse=" "), ".", sep=""))
   }
   if (!is.null(args$reshape)) do_reshape = as.logical(args$reshape) # control reshape
@@ -753,7 +759,6 @@ matvec2scidb = function(db, X,
   if (is.null(D))
   {
 # X is a vector
-    if (!is.vector(X) && !(type =="int64")) stop ("Unsupported object") # XXX bit64/integer64 bug?
     do_reshape = FALSE
     chunkSize = min(chunkSize[[1]], length(X))
     X = as.matrix(X)
