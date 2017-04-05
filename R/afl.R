@@ -69,6 +69,7 @@ rsub = function(x, env)
 #' @return a \code{\link{scidb}} object
 #' @keywords internal function
 #' @importFrom utils capture.output
+#' @importFrom stats runif
 afl = function(...)
 {
   call = eval(as.list(match.call())[[1]])
@@ -77,7 +78,12 @@ afl = function(...)
   .args = paste(
              lapply(as.list(match.call())[-1],
                function(.x) tryCatch({
-                   if (class(eval(.x, envir=pf))[1] %in% "scidb") eval(.x, envir=pf)@name
+                   if (class(eval(.x, envir=pf))[1] %in% "scidb")
+                   {
+                     assign(tail(make.names(c(ls(.env), paste("V", runif(1), sep="")), unique=TRUE), 1),
+                       eval(.x, envir=pf), envir=.env)
+                     eval(.x, envir=pf)@name
+                   }
                    else .x
                }, error=function(e) .x)),
          collapse=",")
@@ -93,7 +99,7 @@ afl = function(...)
   }
   if (getOption("scidb.debug", FALSE)) message("AFL EXPRESSION: ", expr)
   ans = scidb(attributes(call)$conn, expr)
-  ans@meta$depend = as.list(.env) # XXX XXX XXX NOT SET, no dependency chain
+  ans@meta$depend = as.list(.env)
   ans
 }
 

@@ -461,7 +461,7 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
     {
       SGET(db, "/cancel", list(id=sessionid), err=FALSE)
       SGET(db, "/release_session", list(id=sessionid), err=FALSE)
-      e$call = NULL # XXX see issue #166 ; investigation of this issue should continue.
+      e$call = NULL
       stop(e)
     }, interrupt=function(e)
     {

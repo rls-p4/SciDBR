@@ -129,4 +129,12 @@ if (nchar(host) > 0)
 # issue #158 support empty dimension spec []
   iquery(db, "apply(build(<val:double>[i=1:3], random()), x, 'abc')", return=TRUE,
          schema="<val:double,  x:string>[]", only_attributes=TRUE)
+
+# Test for references and garbage collection in AFL statements
+  x = store(db, db$build("<x:double>[i=1:1,1,0]", R(pi)))
+  y = db$apply(x, "y", 2)
+  rm(x)
+  gc()
+  as.R(y)
+  rm(y)
 }
