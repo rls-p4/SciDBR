@@ -133,7 +133,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 # Set up a db object
   db = list()
   class(db) = "afl"
-  attr(db, "connection") = list() # connection state
+  attr(db, "connection") = new.env()
   auth_type = match.arg(auth_type)
   protocol = match.arg(protocol)
   attr(db, "connection")$host = host
@@ -170,7 +170,6 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
       attr(db, "connection")$digest = paste(username, password, sep=":")
     }
   }
-
 
 # Use the query ID from a query as a unique ID for automated
 # array name generation.
@@ -426,11 +425,15 @@ as.R = function(x, only_attributes=FALSE, binary=TRUE)
 scidb_prefix = function(db, expression=NULL)
 {
   stopifnot(inherits(db, "afl"))
-  if (is.null(expression)) attributes(db)$connection$prefix = c()
-  else attributes(db)$connection$prefix = expression
-  if (is.null(db$connection$doc))
-    return(update.afl(db, attributes(db)$connection$ops))
-  update.afl(db, attributes(db)$connection$ops, attributes(db)$connection$doc)
+  e = as.list(attributes(db)$connection)
+  ans = list()
+  class(ans) = "afl"
+  attr(ans, "connection") = as.environment(e)
+  if (is.null(expression)) attributes(ans)$connection$prefix = c()
+  else attributes(ans)$connection$prefix = expression
+  if (is.null(ans$connection$doc))
+    return(update.afl(ans, attributes(ans)$connection$ops))
+  update.afl(ans, attributes(ans)$connection$ops, attributes(ans)$connection$doc)
 }
 
 

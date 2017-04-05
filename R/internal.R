@@ -456,13 +456,13 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
       args$prefix = c(getOption("scidb.prefix"), prefix)
       if (!is.null(args$prefix)) args$prefix = paste(args$prefix, collapse=";")
       args$save = save
-      args = list(db=db, resource="/execute_query", args=args)
-      do.call("SGET", args=args)
+      do.call("SGET", args=list(db=db, resource="/execute_query", args=args))
     }, error=function(e)
     {
       SGET(db, "/cancel", list(id=sessionid), err=FALSE)
       SGET(db, "/release_session", list(id=sessionid), err=FALSE)
-      stop(as.character(e))
+      e$call = NULL # XXX see issue #166 ; investigation of this issue should continue.
+      stop(e)
     }, interrupt=function(e)
     {
       SGET(db, "/cancel", list(id=sessionid), err=FALSE)

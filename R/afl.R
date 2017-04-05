@@ -93,7 +93,7 @@ afl = function(...)
   }
   if (getOption("scidb.debug", FALSE)) message("AFL EXPRESSION: ", expr)
   ans = scidb(attributes(call)$conn, expr)
-  ans@meta$depend = as.list(.env)
+  ans@meta$depend = as.list(.env) # XXX XXX XXX NOT SET, no dependency chain
   ans
 }
 
