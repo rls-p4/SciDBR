@@ -15,10 +15,13 @@
 to the operator names, signatures, and help files (from SciDB Doxygen documentation)}
 }
 \value{
-the updated database object
+an updated database \code{afl} object
 }
 \description{
 Update available AFL operators
+}
+\note{
+Every operator gets a shallow copy of the db argument; that is, \code{attributes(db[i])$conn} should be the same for every operator index i.
 }
 \keyword{internal}
 

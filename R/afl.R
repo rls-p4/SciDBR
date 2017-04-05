@@ -4,7 +4,8 @@
 #' @param new a character vector of operator names
 #' @param ops an optional three-variable data frame with variables name, signature, help, corresponding
 #' to the operator names, signatures, and help files (from SciDB Doxygen documentation)
-#' @return the updated database object
+#' @return an updated database \code{afl} object
+#' @note Every operator gets a shallow copy of the db argument; that is, \code{attributes(db[i])$conn} should be the same for every operator index i.
 #' @keywords internal
 #' @importFrom utils head
 update.afl = function(db, new, ops)
