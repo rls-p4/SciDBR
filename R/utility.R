@@ -445,9 +445,9 @@ getpwd = function(prompt="Password:")
 {
   if (grepl("mingw", R.version["os"])) return(readline(sprintf("%s ", prompt)))
   cat(prompt, " ")
-  system("stty -echo")
+  system("stty -echo", ignore.stdout=TRUE, ignore.stderr=TRUE)
   a = readline()
-  system("stty echo")
+  system("stty echo", ignore.stdout=TRUE, ignore.stderr=TRUE)
   cat("\n")
   a
 }
