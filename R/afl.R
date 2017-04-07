@@ -4,7 +4,8 @@
 #' @param new a character vector of operator names
 #' @param ops an optional three-variable data frame with variables name, signature, help, corresponding
 #' to the operator names, signatures, and help files (from SciDB Doxygen documentation)
-#' @return the updated database object
+#' @return an updated database \code{afl} object
+#' @note Every operator gets a shallow copy of the db argument; that is, \code{attributes(db[i])$conn} should be the same for every operator index i.
 #' @keywords internal
 #' @importFrom utils head
 update.afl = function(db, new, ops)
@@ -68,6 +69,7 @@ rsub = function(x, env)
 #' @return a \code{\link{scidb}} object
 #' @keywords internal function
 #' @importFrom utils capture.output
+#' @importFrom stats runif
 afl = function(...)
 {
   call = eval(as.list(match.call())[[1]])
@@ -76,7 +78,12 @@ afl = function(...)
   .args = paste(
              lapply(as.list(match.call())[-1],
                function(.x) tryCatch({
-                   if (class(eval(.x, envir=pf))[1] %in% "scidb") eval(.x, envir=pf)@name
+                   if (class(eval(.x, envir=pf))[1] %in% "scidb")
+                   {
+                     assign(tail(make.names(c(ls(.env), paste("V", runif(1), sep="")), unique=TRUE), 1),
+                       eval(.x, envir=pf), envir=.env)
+                     eval(.x, envir=pf)@name
+                   }
                    else .x
                }, error=function(e) .x)),
          collapse=",")
