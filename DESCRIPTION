@@ -2,7 +2,7 @@ Package: scidb
 Type: Package
 Title: An R Interface to SciDB
 Version: 2.0.0
-Date: 2016-4-8
+Date: 2017-4-8
 Authors@R: c(
     person("B. W.", "Lewis", role=c("cre","aut"), email="blewis@illposed.net"),
     person("Alex", "Poliakov", role=c("aut"), email="apoliakov@paradigm4.com")
