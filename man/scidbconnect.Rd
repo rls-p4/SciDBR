@@ -63,7 +63,8 @@ All arguments support partial matching.
 db <- scidbconnect()
 
 # SciDB 15.12 authentication example (using shim's default HTTPS port 8083)
-db <- scidbconnect(user="root", password="Paradigm4", auth_type="scidb", port=8083, protocol="https")
+db <- scidbconnect(user="root", password="Paradigm4",
+                   auth_type="scidb", port=8083, protocol="https")
 
 # List available AFL operators
 names(db)

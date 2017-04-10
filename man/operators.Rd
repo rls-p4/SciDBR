@@ -7,7 +7,7 @@
 \format{A data frame with 4 variables, name, signature, help.}
 \source{
 Paradigm4
-\url{https://paradigm4.com}
+\url{http://paradigm4.com}
 }
 \usage{
 data(operators)
