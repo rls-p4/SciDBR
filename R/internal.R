@@ -98,8 +98,8 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   while (p < len)
   {
     dt2 = proc.time()
-    tmp   = .Call("scidb_parse", as.integer(buffer), internal_attributes$type,
-                  internal_attributes$nullable, resp$content, as.double(p), as.integer(INT64), PACKAGE="scidb")
+    tmp   = .Call(C_scidb_parse, as.integer(buffer), internal_attributes$type,
+                  internal_attributes$nullable, resp$content, as.double(p), as.integer(INT64))
     names(tmp) = cnames
     lines = tmp[[n+1]]
     p_old = p
@@ -507,7 +507,7 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
   j  = rep(seq_along(dp), dp) - 1
 
 # Upload the data
-  bytes = .Call("scidb_raw", as.vector(t(matrix(c(X@i + start[[1]], j + start[[2]], X@x), length(X@x)))), PACKAGE="scidb")
+  bytes = .Call(C_scidb_raw, as.vector(t(matrix(c(X@i + start[[1]], j + start[[2]], X@x), length(X@x)))))
   ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
 
@@ -528,7 +528,7 @@ raw2scidb = function(db, X, name, gc=TRUE, ...)
   if (length(session)<1) stop("SciDB http session error")
   on.exit(SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
-  bytes = .Call("scidb_raw", X, PACKAGE="scidb")
+  bytes = .Call(C_scidb_raw, X)
   ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
 
@@ -785,7 +785,7 @@ matvec2scidb = function(db, X,
   on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
 # Upload the data
-  bytes = .Call("scidb_raw", as.vector(t(X)), PACKAGE="scidb")
+  bytes = .Call(C_scidb_raw, as.vector(t(X)))
   ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
   if (DEBUG)
