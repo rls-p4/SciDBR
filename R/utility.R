@@ -66,7 +66,7 @@ scidb = function(db, name, gc=FALSE, schema)
 #' Connect to a SciDB database
 #' @param host optional host name or I.P. address of a SciDB shim service to connect to
 #' @param port optional port number of a SciDB shim service to connect to. For connecting
-#' to Shim behind an SSL connection, use \code{port= NULL} (see detailed note below). 
+#' to Shim when the Shim port is forwarded, use \code{port= NULL} (see detailed note below). 
 #' @param username optional authentication username
 #' @param password optional authentication password
 #' @param auth_type optional SciDB authentication type
@@ -94,12 +94,13 @@ scidb = function(db, name, gc=FALSE, schema)
 #' names, function signatures, and help strings, respectively. See
 #' `data("operators", package="scidb")` for an example.
 #' 
-#' \strong{Shim behind SSL}: Shim usually runs on a selected port e.g. 8080 or 8083
+#' \strong{Forwarded Shim port}: Shim usually runs on a selected port e.g. 8080 or 8083
 #' (for secure communication) and those ports need to be opened up to clients. In 
 #' other situations, the admin might decide to not open the Shim port and
 #' instead forward the Shim port to a URL like https://hostname/shim/. 
 #' In this case, we do not need to supply the port
-#' number during \code{scidbconnect()}; instead one should use \code{port = NULL}. 
+#' number during \code{scidbconnect()}; instead one should use \code{port = NULL}
+#' and \code{host=HOSTNAME/FORWARDED-PATH/}. 
 #'
 #' All arguments support partial matching.
 #' @return A scidb connection object. Use \code{$} to access AFL operators
