@@ -98,9 +98,8 @@ scidb = function(db, name, gc=FALSE, schema)
 #' (for secure communication) and those ports need to be opened up to clients. In 
 #' other situations, the admin might decide to not open the Shim port and
 #' instead forward the Shim port to a URL like https://hostname/shim/. 
-#' In this cases, we do not need to supply the port
-#' number during \code{scidbconnect()}. Instead one should use \code{port = NULL}  in this 
-#' case. 
+#' In this case, we do not need to supply the port
+#' number during \code{scidbconnect()}; instead one should use \code{port = NULL}. 
 #'
 #' All arguments support partial matching.
 #' @return A scidb connection object. Use \code{$} to access AFL operators
