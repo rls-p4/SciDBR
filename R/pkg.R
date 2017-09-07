@@ -101,7 +101,7 @@ NULL
   uint32="double",
   int32="integer",
   int16="integer",
-  unit16="integer",
+  uint16="integer",
   int8="integer",
   uint8="integer",
   bool="logical",
