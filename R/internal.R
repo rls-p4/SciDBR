@@ -6,7 +6,7 @@
 #' @param ... optional extra arguments (see below)
 #' @note option extra arguments
 #' \itemize{
-#'   \item{binar}{ optional logical value, if \code{FALSE} use iquery text transfer, otherwise binary transfer, defaults \code{TRUE}}
+#'   \item{binary}{ optional logical value, if \code{FALSE} use iquery text transfer, otherwise binary transfer, defaults \code{TRUE}}
 #'   \item{buffer}{ integer initial parse buffer size in bytes, adaptively resized as needed: larger buffers can be faster but comsume more memory, default size is 100000L.}
 #'   \item{only_attributes}{ optional logical value, \code{TRUE} means don't retrieve dimension coordinates, only return attribute values; defaults to \code{FALSE}.}
 #"   \item{schema}{ optional result schema string, only applies when \code{query} is not a SciDB object. Supplying this avois one extra metadata query to determine result schema. Defaults to \code{schema(query)}.}
