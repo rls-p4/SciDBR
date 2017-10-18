@@ -404,6 +404,18 @@ as.R = function(x, only_attributes=FALSE, binary=TRUE)
   scidb_unpack_to_dataframe(x@meta$db, x, binary=binary)
 }
 
+#' @export
+as.R.array = function(x)
+{
+  stopifnot(inherits(x, "scidb"))
+  s = schema(x, "dimensions")
+  d = as.numeric(s$end) - as.numeric(s$start) + 1
+  d = d[seq(length(d), 1)]
+  v = as.R(x, only_attributes=TRUE, binary=TRUE)[, 1]
+  dim(v) = d
+  aperm(v)
+}
+
 #' Register an AFL prefix expression
 #'
 #' SciDB AFL statements are normally executed in a stateless query context.

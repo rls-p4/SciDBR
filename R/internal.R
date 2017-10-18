@@ -766,8 +766,14 @@ matvec2scidb = function(db, X,
     load_schema = schema
   } else if (length(D) > 2)
   {
-# X is an n-d array
-    stop("not supported yet") # XXX WRITE ME
+# X is a dense n-d array
+    ndim = length(D)
+    chunkSize = rep(floor(10e6 ^ (1 / ndim)), ndim)
+    start = rep(0, ndim)
+    end = D - 1
+    dimNames = make.unique_(attr_name, paste("i", 1:length(D), sep=""))
+    schema = sprintf("< %s : %s null >[%s]", attr_name, force_type, paste(sprintf( "%s=%.0f:%.0f,%.0f,0", dimNames, start, end, chunkSize), collapse=","))
+    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type,  length(X))
   } else {
 # X is a matrix
     schema = sprintf(
@@ -776,7 +782,7 @@ matvec2scidb = function(db, X,
       chunkSize[[2]], overlap[[2]])
     load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type,  length(X))
   }
-  if (!is.matrix(X)) stop ("X must be a matrix or a vector")
+  if (!is.array(X)) stop ("X must be an array or vector")
 
   DEBUG = getOption("scidb.debug", FALSE)
   td1 = proc.time()
@@ -785,7 +791,7 @@ matvec2scidb = function(db, X,
   on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
 # Upload the data
-  bytes = .Call(C_scidb_raw, as.vector(t(X)))
+  bytes = .Call(C_scidb_raw, as.vector(aperm(X)))
   ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
   if (DEBUG)
