@@ -1,9 +1,24 @@
+# blocklist
+branches:
+  except:
+  - discontinued_master 
+
 sudo: required
 
 language: r 
+cache: packages
+
+addons:
+  apt:
+    packages:
+      - pandoc
+      - libxml2-dev
 
 r:
   - release
+
+#r_packages:
+#  - knitr
 
 env: SCIDB_VER=16.9
 
@@ -22,12 +37,21 @@ before_install:
     rvernica/scidb:${SCIDB_VER}
   - while ! curl http://localhost:8080/version; do sleep 1; done
 
+# install:
+#   - R --slave -e "install.packages(c('knitr', 'bit64', 'curl', 'data.table', 'openssl'))"
+#   - cd ..
+#   - R CMD build SciDBR 
+
+# script:
+#   - SCIDB_TEST_HOST=127.0.0.1 R CMD check scidb_*.tar.gz
+
 install:
-  - git clone https://github.com/ksens/scidbr.git
-  - R CMD build scidbr 
+  - R -e "install.packages(c('knitr', 'bit64', 'curl', 'data.table', 'openssl', 'devtools'))"
+  - R -e 'devtools::install_deps(dep = T)'
 
 script:
-  - SCIDB_TEST_HOST=127.0.0.1 R CMD check scidb_2.0.0.tar.gz
+  - R CMD build .
+  - SCIDB_TEST_HOST=127.0.0.1 R CMD check *tar.gz
 
 after_failure:
   - docker logs scidb
