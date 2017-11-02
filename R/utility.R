@@ -184,13 +184,19 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 # Use the query ID from a query as a unique ID for automated
 # array name generation.
   x = tryCatch(
-        scidbquery(db, query="list('libraries')", release=1, resp=TRUE),
+        scidbquery(db, query="list('libraries')", release=0, resp=TRUE),
         error=function(e) stop("Connection error"), warning=invisible)
   if (is.null(attr(db, "connection")$id))
   {
     id = tryCatch(strsplit(x$response, split="\\r\\n")[[1]],
            error=function(e) stop("Connection error"), warning=invisible)
     attr(db, "connection")$id = id[[length(id)]]
+  }
+  if (is.null(attr(db, "connection")$session))
+  {
+    session = x$session
+    attr(db, "connection")$session = session
+    attr(db, "connection")$password = NULL # shuld not use password going forward (as session is stored)
   }
 
 # Update available operators and macros and return afl object
@@ -202,6 +208,18 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   update.afl(db, ops, doc)
 }
 
+#' @export
+scidbdisconnect <- function(db) {
+  if (!is.null(attr(db, "connection")$session)) { # if session already exists
+    sessionid = attr(db, "connection")$session
+    SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+    attr(db, "connection")$session = NULL
+    invisible(db)
+  } else { 
+    cat("No session information. Nothing to do here.")
+    invisible(db)
+  }
+}
 
 # binary=FALSE is needed by some queries, don't get rid of it.
 #' Run a SciDB query, optionally returning the result.
@@ -248,6 +266,13 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
   DEBUG = getOption("scidb.debug", FALSE)
   if (inherits(query, "scidb"))  query = query@name
   n = -1    # Indicate to shim that we want all the output
+  
+  session = NULL; release = 1; 
+  if (!is.null(attr(db, "connection")$session)) {
+    session = attr(db, "connection")$session
+    release = 0
+  }
+  
   if (`return`)
   {
     if (binary) return(scidb_unpack_to_dataframe(db, query, ...))
@@ -267,10 +292,10 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
           error=function(e)
           {
              SGET(db, "/cancel", list(id=sessionid))
-             SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+             if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
              stop(e)
           })
-        SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+        if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
         if (DEBUG) cat("Data transfer time", (proc.time() - dt1)[3], "\n")
         dt1 = proc.time()
 # Handle escaped quotes
