@@ -17,6 +17,7 @@
 #' @import bit64
 scidb_unpack_to_dataframe = function(db, query, ...)
 {
+  if (is.null(attr(db, "connection")$session)) stop("unexpected") # TODO: Remove DEBUG message eventually
   DEBUG = FALSE
   INT64 = attr(db, "connection")$int64
   DEBUG = getOption("scidb.debug", FALSE)
@@ -77,9 +78,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   } else { # need to get new session every time
     release = 1; 
   }
-  if (release) {
-    on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
-  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
 
   dt2 = proc.time()
   uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
@@ -453,6 +452,8 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
   if (!is.null(attr(db, "connection")$session)) {
     session = attr(db, "connection")$session
     release = 0
+  } else {
+    cat("DEBUG MESSAGE: created new session\n") # TODO: Remove DEBUG message eventually
   }
   sessionid = session
   if (is.null(session))
@@ -521,9 +522,7 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
     if (length(session)<1) stop("SciDB http session error")
     release = 1; 
   }
-  if (release) {
-    on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
-  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
 # Compute the indices and assemble message to SciDB in the form
 # double, double, double for indices i, j and data val.
@@ -556,9 +555,7 @@ raw2scidb = function(db, X, name, gc=TRUE, ...)
     if (length(session)<1) stop("SciDB http session error")
     release = 1; 
   }
-  if (release) {
-    on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
-  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
   bytes = .Call(C_scidb_raw, X)
   ans = POST(db, bytes, list(id=session))
@@ -621,7 +618,6 @@ df2scidb = function(db, X,
                     chunk_size,
                     gc)
 {
-  .scidbenv = attr(db, "connection")
   if (!is.data.frame(X)) stop("X must be a data frame")
   if (missing(gc)) gc = FALSE
   nullable = TRUE
@@ -695,9 +691,7 @@ df2scidb = function(db, X,
     if (length(session)<1) stop("SciDB http session error")
     release = 1; 
   }
-  if (release) {
-    on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
-  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
   ncolX = ncol(X)
   nrowX = nrow(X)
@@ -836,9 +830,7 @@ matvec2scidb = function(db, X,
     if (length(session)<1) stop("SciDB http session error")
     release = 1; 
   }
-  if (release) {
-    on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
-  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
 # Upload the data
   bytes = .Call(C_scidb_raw, as.vector(aperm(X)))
