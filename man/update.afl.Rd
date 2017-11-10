@@ -24,4 +24,3 @@ Update available AFL operators
 Every operator gets a shallow copy of the db argument; that is, \code{attributes(db[i])$conn} should be the same for every operator index i.
 }
 \keyword{internal}
-

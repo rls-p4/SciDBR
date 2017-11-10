@@ -26,4 +26,3 @@ a \code{\link{scidb}} object, or a character schema string if \code{schema_only=
 Internal function to upload an R data frame to SciDB
 }
 \keyword{internal}
-
