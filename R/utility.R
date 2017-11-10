@@ -202,21 +202,43 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 # Update available operators and macros and return afl object
   ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE)[, 2]
   attr(db, "connection")$ops = ops
+  reg.finalizer( attr(db, "connection"), function(e)
+  {
+    DEBUG = getOption("scidb.debug", FALSE)
+    if (DEBUG) cat("[Shim session] automatically cleaning up db session\n")
+    scidbdisconnect(db)
+  }, onexit = TRUE)
+  
   if (missing(doc)) return (update.afl(db, ops))
 
   attr(db, "connection")$doc = doc
   update.afl(db, ops, doc)
 }
 
+#' Disconnect from a SciDB database
+#' 
+#' This explicitly releases the shim session assigned at `scidbconnect()`.
+#' If not called, this is automatically called at garbage collection time
+#' for a db object. 
+#' 
+#' **KNOWN BUG**: If you have run `x = as.scidb()` using the db object, those 
+#' temporary scidb arrays should get automatically deleted by the garbage
+#' collector. But calling scidbdisconnect() explicitly will release the 
+#' scidb session, and those temporary arrays will remain. Also the order
+#' of garbage collection might leave some temporary arrays if db is 
+#' garbage collected before objects like `x`.
+#' 
 #' @export
 scidbdisconnect <- function(db) {
+  DEBUG = getOption("scidb.debug", FALSE)
+  
   if (!is.null(attr(db, "connection")$session)) { # if session already exists
     sessionid = attr(db, "connection")$session
     SGET(db, "/release_session", list(id=sessionid), err=FALSE)
     attr(db, "connection")$session = NULL
     invisible(db)
   } else { 
-    cat("No session information. Nothing to do here.")
+    if (DEBUG) cat("[Shim session] No session information. Nothing to do here.\n")
     invisible(db)
   }
 }

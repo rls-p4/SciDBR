@@ -17,10 +17,12 @@
 #' @import bit64
 scidb_unpack_to_dataframe = function(db, query, ...)
 {
-  if (is.null(attr(db, "connection")$session)) stop("unexpected") # TODO: Remove DEBUG message eventually
   DEBUG = FALSE
   INT64 = attr(db, "connection")$int64
   DEBUG = getOption("scidb.debug", FALSE)
+  if (DEBUG) { 
+    if (is.null(attr(db, "connection")$session)) stop("[Shim session] unexpected in long running shim session") 
+  }
   buffer = 100000L
   args = list(...)
   if (is.null(args$only_attributes)) args$only_attributes = FALSE
@@ -453,7 +455,7 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
     session = attr(db, "connection")$session
     release = 0
   } else {
-    cat("DEBUG MESSAGE: created new session\n") # TODO: Remove DEBUG message eventually
+    if (DEBUG) cat("[Shim session] created new session\n") 
   }
   sessionid = session
   if (is.null(session))
