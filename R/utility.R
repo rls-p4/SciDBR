@@ -55,7 +55,11 @@ scidb = function(db, name, gc=FALSE, schema)
         {
           if (e$remove && exists("name", envir=e))
             {
-              if (grepl(sprintf("%s$", getuid(e$db)), e$name)) scidbquery(db, sprintf("remove(%s)", e$name), release=1)
+              if (grepl(sprintf("%s$", getuid(e$db)), e$name)) {
+                try(
+                  scidbquery(db, sprintf("remove(%s)", e$name), release=1),
+                  silent = TRUE)
+              }
             }
         }, onexit = TRUE)
   }
@@ -202,6 +206,9 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 # Update available operators and macros and return afl object
   ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE)[, 2]
   attr(db, "connection")$ops = ops
+  
+  attr(db, "connection")$temp_arrays = NULL
+  
   reg.finalizer( attr(db, "connection"), function(e)
   {
     DEBUG = getOption("scidb.debug", FALSE)
@@ -234,6 +241,15 @@ scidbdisconnect <- function(db) {
   
   if (!is.null(attr(db, "connection")$session)) { # if session already exists
     sessionid = attr(db, "connection")$session
+    # Release any temporary arrays
+    if (!is.null(attr(db, "connection")$temp_arrays)) { # if session already exists
+      temp_arrays = attr(db, "connection")$temp_arrays
+      for (array in temp_arrays) {
+        query = paste0("remove(", array, ")")
+        try(iquery(db, query),
+            silent = TRUE)
+      }
+    }
     SGET(db, "/release_session", list(id=sessionid), err=FALSE)
     attr(db, "connection")$session = NULL
     invisible(db)
@@ -385,20 +401,34 @@ as.scidb = function(db, x,
   if (missing(name))
   {
     name = tmpnam(db)
+    temp_array = TRUE
+  } else {
+    temp_array = FALSE
+  } 
+  if (!gc) { # if user explicitly set gc = FALSE
+    temp_array = FALSE
   }
   if (inherits(x, "raw"))
   {
-    return(raw2scidb(db, x, name=name, gc=gc, ...))
-  }
-  if (inherits(x, "data.frame"))
+    X = (raw2scidb(db, x, name=name, gc=gc, ...))
+  } else if (inherits(x, "data.frame"))
   {
-    return(df2scidb(db, x, name=name, gc=gc, ...))
-  }
-  if (inherits(x, "dgCMatrix"))
+    X = (df2scidb(db, x, name=name, gc=gc, ...))
+  } else if (inherits(x, "dgCMatrix"))
   {
-    return(.Matrix2scidb(db, x, name=name, start=start, gc=gc, ...))
+    X = (.Matrix2scidb(db, x, name=name, start=start, gc=gc, ...))
+  } else {
+    X = (matvec2scidb(db, x, name=name, start=start, gc=gc, ...))
   }
-  return(matvec2scidb(db, x, name=name, start=start, gc=gc, ...))
+  
+  if (temp_array) {
+    attr(db, "connection")$temp_arrays = c(
+      attr(db, "connection")$temp_arrays, 
+      X@name
+    )
+  }
+  
+  X
 }
 
 #' Download SciDB data to R
