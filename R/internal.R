@@ -621,7 +621,7 @@ df2scidb = function(db, X,
                     gc)
 {
   if (!is.data.frame(X)) stop("X must be a data frame")
-  if (missing(gc)) gc = FALSE
+  if (missing(gc)) gc = TRUE
   nullable = TRUE
   anames = make.names(names(X), unique=TRUE)
   anames = gsub("\\.", "_", anames, perl=TRUE)
