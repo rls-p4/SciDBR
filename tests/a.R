@@ -6,9 +6,16 @@ check = function(a, b)
 
 library("scidb")
 host = Sys.getenv("SCIDB_TEST_HOST")
+test_with_security = ifelse(Sys.getenv("SCIDB_TEST_WITH_SECURITY") == 'true',
+                            TRUE, FALSE)
 if (nchar(host) > 0)
 {
-  db = scidbconnect(host)
+  if (!test_with_security) {
+    db = scidbconnect(host)
+  } else {
+    db = scidbconnect(username = 'root', password = 'Paradigm4', 
+                      protocol = 'https', port = 8083) 
+  }
 
 # 1 Data movement tests
 
@@ -75,10 +82,20 @@ if (nchar(host) > 0)
 # issue #156 type checks
 
 # int64 option
- db = scidbconnect(host, int64=TRUE)
+ if (!test_with_security) {
+   db = scidbconnect(host, int64=TRUE)
+ } else {
+   db = scidbconnect(username = 'root', password = 'Paradigm4', 
+                     protocol = 'https', port = 8083, int64=TRUE) 
+ }
  x = db$build("<v:int64>[i=1:2,2,0]", i)
  check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE))))
- db = scidbconnect(host, int64=FALSE)
+ if (!test_with_security) {
+   db = scidbconnect(host, int64=FALSE)
+ } else {
+   db = scidbconnect(username = 'root', password = 'Paradigm4', 
+                     protocol = 'https', port = 8083, int64=FALSE) 
+ }
  x = db$build("<v:int64>[i=1:2,2,0]", i)
  check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE))))
 
