@@ -11,11 +11,3 @@ This explicitly releases the shim session assigned at `scidbconnect()`.
 If not called, this is automatically called at garbage collection time
 for a db object.
 }
-\details{
-**KNOWN BUG**: If you have run `x = as.scidb()` using the db object, those 
-temporary scidb arrays should get automatically deleted by the garbage
-collector. But calling scidbdisconnect() explicitly will release the 
-scidb session, and those temporary arrays will remain. Also the order
-of garbage collection might leave some temporary arrays if db is 
-garbage collected before objects like `x`.
-}

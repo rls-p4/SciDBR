@@ -56,9 +56,13 @@ scidb = function(db, name, gc=FALSE, schema)
           if (e$remove && exists("name", envir=e))
             {
               if (grepl(sprintf("%s$", getuid(e$db)), e$name)) {
-                try(
-                  scidbquery(db, sprintf("remove(%s)", e$name), release=1),
-                  silent = TRUE)
+                DEBUG = getOption("scidb.debug", FALSE)
+                if (DEBUG) cat("*** Deleted by scidb() finalizer\n")
+                scidbquery(db, sprintf("remove(%s)", e$name), release=1)
+                temp_arrays = attr(db, "connection")$temp_arrays
+                if (e$name %in% temp_arrays) {
+                  attr(db, "connection")$temp_arrays = temp_arrays[temp_arrays != e$name] # mark as removed
+                }
               }
             }
         }, onexit = TRUE)
@@ -228,13 +232,6 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 #' If not called, this is automatically called at garbage collection time
 #' for a db object. 
 #' 
-#' **KNOWN BUG**: If you have run `x = as.scidb()` using the db object, those 
-#' temporary scidb arrays should get automatically deleted by the garbage
-#' collector. But calling scidbdisconnect() explicitly will release the 
-#' scidb session, and those temporary arrays will remain. Also the order
-#' of garbage collection might leave some temporary arrays if db is 
-#' garbage collected before objects like `x`.
-#' 
 #' @export
 scidbdisconnect <- function(db) {
   DEBUG = getOption("scidb.debug", FALSE)
@@ -245,10 +242,10 @@ scidbdisconnect <- function(db) {
     if (!is.null(attr(db, "connection")$temp_arrays)) { # if session already exists
       temp_arrays = attr(db, "connection")$temp_arrays
       for (array in temp_arrays) {
-        query = paste0("remove(", array, ")")
-        try(iquery(db, query),
-            silent = TRUE)
+        if (DEBUG) cat("--- Deleted by scidbdisconnect() finalizer\n")
+        scidbquery(db, sprintf("remove(%s)", array), release=1)
       }
+      attr(db, "connection")$temp_arrays = NULL # mark all temp arrays as removed
     }
     SGET(db, "/release_session", list(id=sessionid), err=FALSE)
     attr(db, "connection")$session = NULL
