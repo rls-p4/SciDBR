@@ -21,8 +21,7 @@ r:
 #  - knitr
 
 env:
-  - SCIDB_VER=16.9
-  - SHIM=session-auth
+  - SCIDB_VER=16.9 SHIM=session-auth
 
 services:
   - docker
