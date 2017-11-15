@@ -51,7 +51,7 @@ install:
     ln --symbolic /opt/scidb/${SCIDB_VER}/lib/libscidbclient.so /lib/;
     wget --no-verbose https://github.com/Paradigm4/shim/archive/${SHIM}.tar.gz;
     tar --extract --gzip --file /${SHIM}.tar.gz;
-    make --directory /${SHIM} service;
+    make --directory /shim-${SHIM} service;
     service shimsvc restart"
   - R -e "install.packages(c('knitr', 'bit64', 'curl', 'data.table', 'openssl', 'devtools'))"
   - R -e 'devtools::install_deps(dep = T)'
