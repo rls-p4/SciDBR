@@ -1,11 +1,11 @@
 # blocklist
 branches:
   except:
-  - discontinued_master 
+  - discontinued_master
 
 sudo: required
 
-language: r 
+language: r
 cache: packages
 
 addons:
@@ -40,7 +40,7 @@ before_install:
 # install:
 #   - R --slave -e "install.packages(c('knitr', 'bit64', 'curl', 'data.table', 'openssl'))"
 #   - cd ..
-#   - R CMD build SciDBR 
+#   - R CMD build SciDBR
 
 # script:
 #   - SCIDB_TEST_HOST=127.0.0.1 R CMD check scidb_*.tar.gz
