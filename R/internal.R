@@ -74,7 +74,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   format_string = sprintf("(%s)", format_string)
   if (DEBUG) message("Data query ", internal_query)
   if (DEBUG) message("Format ", format_string)
-  sessionid = scidbquery(db, internal_query, save=format_string, release=0)
+  sessionid = scidbquery(db, internal_query, save=format_string)
   if (!is.null(attr(db, "connection")$session)) { # if session already exists
     release = 0
   } else { # need to get new session every time
@@ -434,7 +434,6 @@ POST = function(db, data, args=list(), err=TRUE)
 # db: scidb database connection object
 # query: a character query string
 # save: Save format query string or NULL.
-# release: Set to zero preserve web session until manually calling release_session
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
 # resp(logical): return http response
 # stream: Set to 0L or 1L to control streaming (NOT USED)
@@ -442,7 +441,7 @@ POST = function(db, data, args=list(), err=TRUE)
 # Example values of save: "dcsv", "csv+", "(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=attributes(db)$connection$prefix)
+scidbquery = function(db, query, save=NULL, session=NULL, resp=FALSE, stream, prefix=attributes(db)$connection$prefix)
 {
   DEBUG = FALSE
   STREAM = 0L
@@ -451,9 +450,9 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
   {
     STREAM = 0L
   } else STREAM = as.integer(stream)
+  release = 0
   if (!is.null(attr(db, "connection")$session)) {
     session = attr(db, "connection")$session
-    release = 0
   } else {
     if (DEBUG) cat("[Shim session] created new session\n") 
   }
@@ -720,7 +719,7 @@ df2scidb = function(db, X,
       LOAD = sprintf("input(%s, '%s', -2, 'tsv')", dfschema(anames, typ, nrowX, chunk_size), tmp)
   }
   query = sprintf("store(%s,%s)", LOAD, name)
-  scidbquery(db, query, release=1, session=session, stream=0L)
+  scidbquery(db, query, session=session, stream=0L)
   scidb(db, name, gc=gc)
 }
 

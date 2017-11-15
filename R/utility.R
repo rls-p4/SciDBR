@@ -58,7 +58,7 @@ scidb = function(db, name, gc=FALSE, schema)
               if (grepl(sprintf("%s$", getuid(e$db)), e$name)) {
                 DEBUG = getOption("scidb.debug", FALSE)
                 if (DEBUG) cat("*** Deleted by scidb() finalizer\n")
-                scidbquery(db, sprintf("remove(%s)", e$name), release=1)
+                scidbquery(db, sprintf("remove(%s)", e$name))
                 temp_arrays = attr(db, "connection")$temp_arrays
                 if (e$name %in% temp_arrays) {
                   attr(db, "connection")$temp_arrays = temp_arrays[temp_arrays != e$name] # mark as removed
@@ -192,7 +192,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 # Use the query ID from a query as a unique ID for automated
 # array name generation.
   x = tryCatch(
-        scidbquery(db, query="list('libraries')", release=0, resp=TRUE),
+        scidbquery(db, query="list('libraries')", resp=TRUE),
         error=function(e) stop("Connection error"), warning=invisible)
   if (is.null(attr(db, "connection")$id))
   {
@@ -243,7 +243,7 @@ scidbdisconnect <- function(db) {
       temp_arrays = attr(db, "connection")$temp_arrays
       for (array in temp_arrays) {
         if (DEBUG) cat("--- Deleted by scidbdisconnect() finalizer\n")
-        scidbquery(db, sprintf("remove(%s)", array), release=1)
+        scidbquery(db, sprintf("remove(%s)", array))
       }
       attr(db, "connection")$temp_arrays = NULL # mark all temp arrays as removed
     }
@@ -317,8 +317,8 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
         # SciDB save syntax changed in 15.12
         if (at_least(attr(db, "connection")$scidb.version, 15.12))
         {
-          sessionid = scidbquery(db, query, save="csv+:l", release=0)
-        } else sessionid = scidbquery(db, query, save="csv+", release=0)
+          sessionid = scidbquery(db, query, save="csv+:l")
+        } else sessionid = scidbquery(db, query, save="csv+")
         dt1 = proc.time()
         result = tryCatch(
           {
@@ -361,7 +361,7 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
       return(ans)
   } else
   {
-    scidbquery(db, query, release=1, stream=0L)
+    scidbquery(db, query, stream=0L)
   }
   invisible()
 }
