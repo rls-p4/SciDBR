@@ -382,7 +382,7 @@ SGET = function(db, resource, args=list(), err=TRUE, binary=FALSE)
   if (ans$status_code > 299 && err)
   {
     msg = sprintf("HTTP error %s", ans$status_code)
-    if (ans$status_code >= 500) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
+    if (ans$status_code >= 400) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
     stop(msg)
   }
   if (binary) return(ans$content)
