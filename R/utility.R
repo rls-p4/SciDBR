@@ -238,15 +238,6 @@ scidbdisconnect <- function(db) {
   
   if (!is.null(attr(db, "connection")$session)) { # if session already exists
     sessionid = attr(db, "connection")$session
-    # Release any temporary arrays
-    if (!is.null(attr(db, "connection")$temp_arrays)) { # if session already exists
-      temp_arrays = attr(db, "connection")$temp_arrays
-      for (array in temp_arrays) {
-        if (DEBUG) cat("--- Deleted by scidbdisconnect() finalizer\n")
-        scidbquery(db, sprintf("remove(%s)", array))
-      }
-      attr(db, "connection")$temp_arrays = NULL # mark all temp arrays as removed
-    }
     SGET(db, "/release_session", list(id=sessionid), err=FALSE)
     attr(db, "connection")$session = NULL
     invisible(db)
