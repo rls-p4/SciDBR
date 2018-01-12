@@ -217,34 +217,18 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   {
     DEBUG = getOption("scidb.debug", FALSE)
     if (DEBUG) cat("[Shim session] automatically cleaning up db session\n")
-    scidbdisconnect(db)
+    if (!is.null(attr(db, "connection")$session)) { # if session already exists
+      sessionid = attr(db, "connection")$session
+      SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+    } else { 
+      if (DEBUG) cat("[Shim session] No session information. Nothing to do here.\n")
+    }
   }, onexit = TRUE)
   
   if (missing(doc)) return (update.afl(db, ops))
 
   attr(db, "connection")$doc = doc
   update.afl(db, ops, doc)
-}
-
-#' Disconnect from a SciDB database
-#' 
-#' This explicitly releases the shim session assigned at `scidbconnect()`.
-#' If not called, this is automatically called at garbage collection time
-#' for a db object. 
-#' 
-#' @export
-scidbdisconnect <- function(db) {
-  DEBUG = getOption("scidb.debug", FALSE)
-  
-  if (!is.null(attr(db, "connection")$session)) { # if session already exists
-    sessionid = attr(db, "connection")$session
-    SGET(db, "/release_session", list(id=sessionid), err=FALSE)
-    attr(db, "connection")$session = NULL
-    invisible(db)
-  } else { 
-    if (DEBUG) cat("[Shim session] No session information. Nothing to do here.\n")
-    invisible(db)
-  }
 }
 
 # binary=FALSE is needed by some queries, don't get rid of it.
