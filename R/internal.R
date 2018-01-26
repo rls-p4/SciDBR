@@ -616,6 +616,7 @@ lazyeval = function(db, name)
 df2scidb = function(db, X,
                     name=tmpnam(db),
                     types=NULL,
+                    use_aio_input=TRUE,
                     chunk_size,
                     gc)
 {
@@ -703,7 +704,7 @@ df2scidb = function(db, X,
 # Generate a load_tools query
   aio = length(grep("aio_input", names(db))) > 0
   atts = paste(dcast, collapse=",")
-  if (aio)
+  if (use_aio_input && aio)
   {
     if (missing(chunk_size))
       LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d'),%s),%s)", tmp,
