@@ -71,7 +71,7 @@ if (nchar(host) > 0)
  i = 4
  j = 6
  x = db$build("<v:double>[i=1:2,2,0, j=1:3,1,0]", i * j)
- check(as.R(x)$v, c(1, 2, 2, 4, 3, 6))
+ check(sort(as.R(x)$v), c(1, 2, 2, 3, 4, 6))
  x = db$apply(x, w, R(i) * R(j))
  # Need as.integer() for integer64 coversion below
  check(as.integer(as.R(x)$w), rep(24, 6))
