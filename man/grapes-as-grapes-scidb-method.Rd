@@ -29,4 +29,3 @@ x <- scidb(db, "build(<v:double>[i=1:2,1,0], i)")
 x \%as\% y
 }
 }
-

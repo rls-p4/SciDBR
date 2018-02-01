@@ -55,7 +55,15 @@ scidb = function(db, name, gc=FALSE, schema)
         {
           if (e$remove && exists("name", envir=e))
             {
-              if (grepl(sprintf("%s$", getuid(e$db)), e$name)) scidbquery(db, sprintf("remove(%s)", e$name), release=1)
+              if (grepl(sprintf("%s$", getuid(e$db)), e$name)) {
+                DEBUG = getOption("scidb.debug", FALSE)
+                if (DEBUG) cat("*** Deleted by scidb() finalizer\n")
+                scidbquery(db, sprintf("remove(%s)", e$name))
+                temp_arrays = attr(db, "connection")$temp_arrays
+                if (e$name %in% temp_arrays) {
+                  attr(db, "connection")$temp_arrays = temp_arrays[temp_arrays != e$name] # mark as removed
+                }
+              }
             }
         }, onexit = TRUE)
   }
@@ -184,7 +192,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 # Use the query ID from a query as a unique ID for automated
 # array name generation.
   x = tryCatch(
-        scidbquery(db, query="list('libraries')", release=1, resp=TRUE),
+        scidbquery(db, query="list('libraries')", resp=TRUE),
         error=function(e) stop("Connection error"), warning=invisible)
   if (is.null(attr(db, "connection")$id))
   {
@@ -192,16 +200,36 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
            error=function(e) stop("Connection error"), warning=invisible)
     attr(db, "connection")$id = id[[length(id)]]
   }
+  if (is.null(attr(db, "connection")$session))
+  {
+    session = x$session
+    attr(db, "connection")$session = session
+    attr(db, "connection")$password = NULL # shuld not use password going forward (as session is stored)
+  }
 
 # Update available operators and macros and return afl object
   ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE)[, 2]
   attr(db, "connection")$ops = ops
+  
+  attr(db, "connection")$temp_arrays = NULL
+  
+  reg.finalizer( attr(db, "connection"), function(e)
+  {
+    DEBUG = getOption("scidb.debug", FALSE)
+    if (DEBUG) cat("[Shim session] automatically cleaning up db session\n")
+    if (!is.null(attr(db, "connection")$session)) { # if session already exists
+      sessionid = attr(db, "connection")$session
+      SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+    } else { 
+      if (DEBUG) cat("[Shim session] No session information. Nothing to do here.\n")
+    }
+  }, onexit = TRUE)
+  
   if (missing(doc)) return (update.afl(db, ops))
 
   attr(db, "connection")$doc = doc
   update.afl(db, ops, doc)
 }
-
 
 # binary=FALSE is needed by some queries, don't get rid of it.
 #' Run a SciDB query, optionally returning the result.
@@ -248,6 +276,13 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
   DEBUG = getOption("scidb.debug", FALSE)
   if (inherits(query, "scidb"))  query = query@name
   n = -1    # Indicate to shim that we want all the output
+  
+  session = NULL; release = 1; 
+  if (!is.null(attr(db, "connection")$session)) {
+    session = attr(db, "connection")$session
+    release = 0
+  }
+  
   if (`return`)
   {
     if (binary) return(scidb_unpack_to_dataframe(db, query, ...))
@@ -257,8 +292,8 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
         # SciDB save syntax changed in 15.12
         if (at_least(attr(db, "connection")$scidb.version, 15.12))
         {
-          sessionid = scidbquery(db, query, save="csv+:l", release=0)
-        } else sessionid = scidbquery(db, query, save="csv+", release=0)
+          sessionid = scidbquery(db, query, save="csv+:l")
+        } else sessionid = scidbquery(db, query, save="csv+")
         dt1 = proc.time()
         result = tryCatch(
           {
@@ -267,10 +302,10 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
           error=function(e)
           {
              SGET(db, "/cancel", list(id=sessionid))
-             SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+             if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
              stop(e)
           })
-        SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+        if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
         if (DEBUG) cat("Data transfer time", (proc.time() - dt1)[3], "\n")
         dt1 = proc.time()
 # Handle escaped quotes
@@ -301,7 +336,7 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
       return(ans)
   } else
   {
-    scidbquery(db, query, release=1, stream=0L)
+    scidbquery(db, query, stream=0L)
   }
   invisible()
 }
@@ -338,20 +373,34 @@ as.scidb = function(db, x,
   if (missing(name))
   {
     name = tmpnam(db)
+    temp_array = TRUE
+  } else {
+    temp_array = FALSE
+  } 
+  if (!gc) { # if user explicitly set gc = FALSE
+    temp_array = FALSE
   }
   if (inherits(x, "raw"))
   {
-    return(raw2scidb(db, x, name=name, gc=gc, ...))
-  }
-  if (inherits(x, "data.frame"))
+    X = (raw2scidb(db, x, name=name, gc=gc, ...))
+  } else if (inherits(x, "data.frame"))
   {
-    return(df2scidb(db, x, name=name, gc=gc, ...))
-  }
-  if (inherits(x, "dgCMatrix"))
+    X = (df2scidb(db, x, name=name, gc=gc, ...))
+  } else if (inherits(x, "dgCMatrix"))
   {
-    return(.Matrix2scidb(db, x, name=name, start=start, gc=gc, ...))
+    X = (.Matrix2scidb(db, x, name=name, start=start, gc=gc, ...))
+  } else {
+    X = (matvec2scidb(db, x, name=name, start=start, gc=gc, ...))
   }
-  return(matvec2scidb(db, x, name=name, start=start, gc=gc, ...))
+  
+  if (temp_array) {
+    attr(db, "connection")$temp_arrays = c(
+      attr(db, "connection")$temp_arrays, 
+      X@name
+    )
+  }
+  
+  X
 }
 
 #' Download SciDB data to R

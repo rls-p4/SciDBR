@@ -16,4 +16,3 @@ help summary
 \description{
 AFL operator help
 }
-

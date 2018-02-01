@@ -4,7 +4,7 @@
 \alias{df2scidb}
 \title{Internal function to upload an R data frame to SciDB}
 \usage{
-df2scidb(db, X, name = tmpnam(db), types = NULL, chunk_size, gc)
+df2scidb(db, X, name = tmpnam(db), types = NULL, use_aio_input = FALSE, chunk_size, gc)
 }
 \arguments{
 \item{db}{scidb database connection}
@@ -14,6 +14,8 @@ df2scidb(db, X, name = tmpnam(db), types = NULL, chunk_size, gc)
 \item{name}{SciDB array name}
 
 \item{types}{SciDB attribute types}
+
+\item{use_aio_input}{if the \code{accelerated_io_tools} plugin is available, use \code{aio_input} operator to load data in SciDB}
 
 \item{chunk_size}{optional value passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools}
 
@@ -26,4 +28,3 @@ a \code{\link{scidb}} object, or a character schema string if \code{schema_only=
 Internal function to upload an R data frame to SciDB
 }
 \keyword{internal}
-

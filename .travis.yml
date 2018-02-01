@@ -1,11 +1,11 @@
 # blocklist
 branches:
   except:
-  - discontinued_master 
+  - discontinued_master
 
 sudo: required
 
-language: r 
+language: r
 cache: packages
 
 addons:
@@ -20,7 +20,11 @@ r:
 #r_packages:
 #  - knitr
 
-env: SCIDB_VER=16.9
+env:
+  - SCIDB_VER=16.9
+  - SCIDB_VER=16.9-ext
+  # - SCIDB_VER=16.9     SHIM=session-auth
+  # - SCIDB_VER=16.9-ext SHIM=session-auth
 
 services:
   - docker
@@ -40,12 +44,18 @@ before_install:
 # install:
 #   - R --slave -e "install.packages(c('knitr', 'bit64', 'curl', 'data.table', 'openssl'))"
 #   - cd ..
-#   - R CMD build SciDBR 
+#   - R CMD build SciDBR
 
 # script:
 #   - SCIDB_TEST_HOST=127.0.0.1 R CMD check scidb_*.tar.gz
 
 install:
+  # - docker exec scidb bash -c "
+  #   ln --symbolic /opt/scidb/${SCIDB_VER}/lib/libscidbclient.so /lib/;
+  #   wget --no-verbose https://github.com/Paradigm4/shim/archive/${SHIM}.tar.gz;
+  #   tar --extract --gzip --file /${SHIM}.tar.gz;
+  #   make --directory /shim-${SHIM} service;
+  #   service shimsvc restart"
   - R -e "install.packages(c('knitr', 'bit64', 'curl', 'data.table', 'openssl', 'devtools'))"
   - R -e 'devtools::install_deps(dep = T)'
 

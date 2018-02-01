@@ -16,4 +16,3 @@ a \code{data.frame} listing the contents of the database
 \description{
 List contents of a SciDB database
 }
-

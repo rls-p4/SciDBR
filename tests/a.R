@@ -6,9 +6,16 @@ check = function(a, b)
 
 library("scidb")
 host = Sys.getenv("SCIDB_TEST_HOST")
+test_with_security = ifelse(Sys.getenv("SCIDB_TEST_WITH_SECURITY") == 'true',
+                            TRUE, FALSE)
 if (nchar(host) > 0)
 {
-  db = scidbconnect(host)
+  if (!test_with_security) {
+    db = scidbconnect(host)
+  } else {
+    db = scidbconnect(username = 'root', password = 'Paradigm4', 
+                      protocol = 'https', port = 8083) 
+  }
 
 # 1 Data movement tests
 
@@ -25,12 +32,12 @@ if (nchar(host) > 0)
   check(iris[, 1],  as.R(x, only_attributes=TRUE)[, 1])
 
 # only attributes and optional skipping of metadata query by supplying schema in full and abbreviated forms
-  check(nrow(x), nrow(as.R(x)))
-  check(nrow(x), nrow(as.R(x, only_attributes=TRUE)))
+  check(as.R(db$op_count(x))$count, nrow(as.R(x)))
+  check(as.R(db$op_count(x))$count, nrow(as.R(x, only_attributes=TRUE)))
   a = scidb(db, x@name, schema=schema(x))
-  check(nrow(x), nrow(as.R(a)))
+  check(as.R(db$op_count(x))$count, nrow(as.R(a)))
   a = scidb(db, x@name, schema=gsub("\\[.*", "", schema(x)))
-  check(nrow(x), nrow(as.R(a)))
+  check(as.R(db$op_count(x))$count, nrow(as.R(a)))
 
 # upload vector
   check(1:5, as.R(as.scidb(db, 1:5))[, 2])
@@ -64,7 +71,7 @@ if (nchar(host) > 0)
  i = 4
  j = 6
  x = db$build("<v:double>[i=1:2,2,0, j=1:3,1,0]", i * j)
- check(as.R(x)$v, c(1, 2, 2, 4, 3, 6))
+ check(sort(as.R(x)$v), c(1, 2, 2, 3, 4, 6))
  x = db$apply(x, w, R(i) * R(j))
  # Need as.integer() for integer64 coversion below
  check(as.integer(as.R(x)$w), rep(24, 6))
@@ -75,10 +82,20 @@ if (nchar(host) > 0)
 # issue #156 type checks
 
 # int64 option
- db = scidbconnect(host, int64=TRUE)
+ if (!test_with_security) {
+   db = scidbconnect(host, int64=TRUE)
+ } else {
+   db = scidbconnect(username = 'root', password = 'Paradigm4', 
+                     protocol = 'https', port = 8083, int64=TRUE) 
+ }
  x = db$build("<v:int64>[i=1:2,2,0]", i)
  check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE))))
- db = scidbconnect(host, int64=FALSE)
+ if (!test_with_security) {
+   db = scidbconnect(host, int64=FALSE)
+ } else {
+   db = scidbconnect(username = 'root', password = 'Paradigm4', 
+                     protocol = 'https', port = 8083, int64=FALSE) 
+ }
  x = db$build("<v:int64>[i=1:2,2,0]", i)
  check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE))))
 

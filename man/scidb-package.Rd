@@ -26,7 +26,7 @@ SciDB/R Interface
 # List of special DDL operators
  options(scidb.ddl=c("create_array", "remove", "rename"))
 }
+
 \seealso{
 \code{\link{scidb}}, \code{\link{iquery}}
 }
-

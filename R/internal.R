@@ -20,6 +20,9 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   DEBUG = FALSE
   INT64 = attr(db, "connection")$int64
   DEBUG = getOption("scidb.debug", FALSE)
+  if (DEBUG) { 
+    if (is.null(attr(db, "connection")$session)) stop("[Shim session] unexpected in long running shim session") 
+  }
   buffer = 100000L
   args = list(...)
   if (is.null(args$only_attributes)) args$only_attributes = FALSE
@@ -71,8 +74,13 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   format_string = sprintf("(%s)", format_string)
   if (DEBUG) message("Data query ", internal_query)
   if (DEBUG) message("Format ", format_string)
-  sessionid = scidbquery(db, internal_query, save=format_string, release=0)
-  on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
+  sessionid = scidbquery(db, internal_query, save=format_string)
+  if (!is.null(attr(db, "connection")$session)) { # if session already exists
+    release = 0
+  } else { # need to get new session every time
+    release = 1; 
+  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
 
   dt2 = proc.time()
   uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
@@ -374,7 +382,7 @@ SGET = function(db, resource, args=list(), err=TRUE, binary=FALSE)
   if (ans$status_code > 299 && err)
   {
     msg = sprintf("HTTP error %s", ans$status_code)
-    if (ans$status_code >= 500) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
+    if (ans$status_code >= 400) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
     stop(msg)
   }
   if (binary) return(ans$content)
@@ -426,7 +434,6 @@ POST = function(db, data, args=list(), err=TRUE)
 # db: scidb database connection object
 # query: a character query string
 # save: Save format query string or NULL.
-# release: Set to zero preserve web session until manually calling release_session
 # session: if you already have a SciDB http session, set this to it, otherwise NULL
 # resp(logical): return http response
 # stream: Set to 0L or 1L to control streaming (NOT USED)
@@ -434,7 +441,7 @@ POST = function(db, data, args=list(), err=TRUE)
 # Example values of save: "dcsv", "csv+", "(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE, stream, prefix=attributes(db)$connection$prefix)
+scidbquery = function(db, query, save=NULL, session=NULL, resp=FALSE, stream, prefix=attributes(db)$connection$prefix)
 {
   DEBUG = FALSE
   STREAM = 0L
@@ -443,6 +450,12 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
   {
     STREAM = 0L
   } else STREAM = as.integer(stream)
+  release = 0
+  if (!is.null(attr(db, "connection")$session)) {
+    session = attr(db, "connection")$session
+  } else {
+    if (DEBUG) cat("[Shim session] created new session\n") 
+  }
   sessionid = session
   if (is.null(session))
   {
@@ -465,13 +478,13 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
     }, error=function(e)
     {
       SGET(db, "/cancel", list(id=sessionid), err=FALSE)
-      SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+      if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
       e$call = NULL
       stop(e)
     }, interrupt=function(e)
     {
       SGET(db, "/cancel", list(id=sessionid), err=FALSE)
-      SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+      if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
       stop("cancelled")
     }, warning=invisible)
   if (DEBUG) message("Query time ", round( (proc.time() - t1)[3], 4))
@@ -502,9 +515,15 @@ scidbquery = function(db, query, save=NULL, release=1, session=NULL, resp=FALSE,
   schema1d = sprintf("<i:int64 null, j:int64 null, val : %s null>[idx=0:*,100000,0]", type)
 
 # Obtain a session from shim for the upload process
-  session = getSession(db)
-  if (length(session)<1) stop("SciDB http session error")
-  on.exit(SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  if (!is.null(attr(db, "connection")$session)) { # if session already exists
+    session = attr(db, "connection")$session
+    release = 0
+  } else { # need to get new session every time
+    session = getSession(db)
+    if (length(session)<1) stop("SciDB http session error")
+    release = 1; 
+  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
 # Compute the indices and assemble message to SciDB in the form
 # double, double, double for indices i, j and data val.
@@ -529,9 +548,15 @@ raw2scidb = function(db, X, name, gc=TRUE, ...)
   if (!is.raw(X)) stop("X must be a raw value")
   args = list(...)
 # Obtain a session from shim for the upload process
-  session = getSession(db)
-  if (length(session)<1) stop("SciDB http session error")
-  on.exit(SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  if (!is.null(attr(db, "connection")$session)) { # if session already exists
+    session = attr(db, "connection")$session
+    release = 0
+  } else { # need to get new session every time
+    session = getSession(db)
+    if (length(session)<1) stop("SciDB http session error")
+    release = 1; 
+  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
   bytes = .Call(C_scidb_raw, X)
   ans = POST(db, bytes, list(id=session))
@@ -591,12 +616,12 @@ lazyeval = function(db, name)
 df2scidb = function(db, X,
                     name=tmpnam(db),
                     types=NULL,
+                    use_aio_input=FALSE,
                     chunk_size,
                     gc)
 {
-  .scidbenv = attr(db, "connection")
   if (!is.data.frame(X)) stop("X must be a data frame")
-  if (missing(gc)) gc = FALSE
+  if (missing(gc)) gc = TRUE
   nullable = TRUE
   anames = make.names(names(X), unique=TRUE)
   anames = gsub("\\.", "_", anames, perl=TRUE)
@@ -660,8 +685,15 @@ df2scidb = function(db, X,
   args = sprintf("<%s>", paste(anames, ":", typ, " null", collapse=","))
 
 # Obtain a session from the SciDB http service for the upload process
-  session = getSession(db)
-  on.exit(SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  if (!is.null(attr(db, "connection")$session)) { # if session already exists
+    session = attr(db, "connection")$session
+    release = 0
+  } else { # need to get new session every time
+    session = getSession(db)
+    if (length(session)<1) stop("SciDB http session error")
+    release = 1; 
+  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
   ncolX = ncol(X)
   nrowX = nrow(X)
@@ -672,7 +704,7 @@ df2scidb = function(db, X,
 # Generate a load_tools query
   aio = length(grep("aio_input", names(db))) > 0
   atts = paste(dcast, collapse=",")
-  if (aio)
+  if (use_aio_input && aio)
   {
     if (missing(chunk_size))
       LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d'),%s),%s)", tmp,
@@ -688,7 +720,7 @@ df2scidb = function(db, X,
       LOAD = sprintf("input(%s, '%s', -2, 'tsv')", dfschema(anames, typ, nrowX, chunk_size), tmp)
   }
   query = sprintf("store(%s,%s)", LOAD, name)
-  scidbquery(db, query, release=1, session=session, stream=0L)
+  scidbquery(db, query, session=session, stream=0L)
   scidb(db, name, gc=gc)
 }
 
@@ -792,8 +824,15 @@ matvec2scidb = function(db, X,
   DEBUG = getOption("scidb.debug", FALSE)
   td1 = proc.time()
 # Obtain a session from shim for the upload process
-  session = getSession(db)
-  on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  if (!is.null(attr(db, "connection")$session)) { # if session already exists
+    session = attr(db, "connection")$session
+    release = 0
+  } else { # need to get new session every time
+    session = getSession(db)
+    if (length(session)<1) stop("SciDB http session error")
+    release = 1; 
+  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
 # Upload the data
   bytes = .Call(C_scidb_raw, as.vector(aperm(X)))

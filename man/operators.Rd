@@ -16,4 +16,3 @@ data(operators)
 Base SciDB operators as of SciDB version 16.9
 }
 \keyword{datasets}
-
