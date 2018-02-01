@@ -616,7 +616,7 @@ lazyeval = function(db, name)
 df2scidb = function(db, X,
                     name=tmpnam(db),
                     types=NULL,
-                    use_aio_input=TRUE,
+                    use_aio_input=FALSE,
                     chunk_size,
                     gc)
 {

@@ -4,7 +4,7 @@
 \alias{df2scidb}
 \title{Internal function to upload an R data frame to SciDB}
 \usage{
-df2scidb(db, X, name = tmpnam(db), types = NULL, use_aio_input = TRUE, chunk_size, gc)
+df2scidb(db, X, name = tmpnam(db), types = NULL, use_aio_input = FALSE, chunk_size, gc)
 }
 \arguments{
 \item{db}{scidb database connection}

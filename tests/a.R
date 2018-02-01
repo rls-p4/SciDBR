@@ -51,11 +51,11 @@ if (nchar(host) > 0)
   check(x, Matrix::sparseMatrix(i=y$i + 1, j=y$j + 1, x=y$val))
 # issue #126
   df = as.data.frame(matrix(runif(10*100), 10, 100))
-  sdf = as.scidb(db, df, use_aio_input=FALSE)
+  sdf = as.scidb(db, df)
   check(df, as.R(sdf, only_attributes=TRUE))
 # issue #130
   df = data.frame(x1 = c("NA", NA), x2 = c(0.13, NA), x3 = c(TRUE, NA), stringsAsFactors=FALSE)
-  x = as.scidb(db, df, use_aio_input=FALSE)
+  x = as.scidb(db, df)
   check(df, as.R(x, only_attributes=TRUE))
 
 # upload n-d array
@@ -89,7 +89,7 @@ if (nchar(host) > 0)
                      protocol = 'https', port = 8083, int64=TRUE) 
  }
  x = db$build("<v:int64>[i=1:2,2,0]", i)
- check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE), use_aio_input=FALSE)))
+ check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE))))
  if (!test_with_security) {
    db = scidbconnect(host, int64=FALSE)
  } else {
@@ -97,7 +97,7 @@ if (nchar(host) > 0)
                      protocol = 'https', port = 8083, int64=FALSE) 
  }
  x = db$build("<v:int64>[i=1:2,2,0]", i)
- check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE), use_aio_input=FALSE)))
+ check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE))))
 
 # Issue #157
  x = as.R(scidb(db, "build(<v:float>[i=1:5], sin(i))"), binary = FALSE)
