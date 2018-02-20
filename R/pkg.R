@@ -67,6 +67,7 @@ NULL
                       "set_namespace",
                       "set_role",
                       "set_role_permissions",
+                      "store",
                       "verity_user",
                       "create_with_residency"))
 }
