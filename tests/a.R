@@ -157,4 +157,16 @@ if (nchar(host) > 0)
   gc()
   as.R(y)
   rm(y)
+
+# Issue 191 scoping issue example
+  a = db$build("<val:double>[x=1:10]", 'random()')
+  b = db$aggregate(a, "sum(val)")
+  as.R(b)
+  foo = function()
+  {
+     c = db$build("<val:double>[x=1:10]", 'random()')
+     d = db$aggregate(c, "sum(val)")
+     as.R(d)
+  }
+  foo()
 }

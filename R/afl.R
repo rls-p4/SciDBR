@@ -24,11 +24,12 @@ update.afl = function(.db, .new, .ops)
     .signature = paste(.signature)
     function(...)
     {
+      .pf = parent.frame()
       .depend = new.env()
       .args = paste(
                lapply(as.list(match.call())[-1],
                  function(.x) tryCatch({
-                   ex = eval(.x)
+                   ex = eval(.x, envir=.pf)
                    if (class(ex)[1] %in% "scidb")
                    {
                      assign(tail(make.names(c(ls(.depend), paste("V", runif(1), sep="")), unique=TRUE), 1), ex, envir=.depend)
