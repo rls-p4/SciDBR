@@ -633,47 +633,46 @@ df2scidb = function(db, X,
   dcast = anames
   if (!is.null(types)) {
     for (j in 1:ncol(X)) typ[j] = types[j]
-  } else {
-    for (j in 1:ncol(X)) {
-      if ("numeric" %in% class(X[, j]))
-      {
-        typ[j] = "double"
-        X[, j] = gsub("NA", "null", sprintf("%.16f", X[, j]))
-      }
-      else if ("integer" %in% class(X[, j]))
-      {
-        typ[j] = "int32"
-        X[, j] = gsub("NA", "null", sprintf("%d", X[, j]))
-      }
-      else if ("integer64" %in% class(X[, j]))
-      {
-        typ[j] = "int64"
-        X[, j] = gsub("NA", "null", as.character(X[, j]))
-      }
-      else if ("logical" %in% class(X[, j]))
-      {
-        typ[j] = "bool"
-        X[, j] = gsub("na", "null", tolower(sprintf("%s", X[, j])))
-      }
-      else if ("character" %in% class(X[, j]))
-      {
-        typ[j] = "string"
-        X[is.na(X[, j]), j] = "null"
-      }
-      else if ("factor" %in% class(X[, j]))
-      {
-        typ[j] = "string"
-        isna = is.na(X[, j])
-        X[, j] = sprintf("%s", X[, j])
-        if (any(isna)) X[isna, j] = "null"
-      }
-      else if ("Date" %in% class(X[, j]) || "POSIXct" %in% class(X[, j]))
-      {
-        warning("Converting R Date/POSIXct to SciDB datetime as UTC time. Subsecond times rounded to seconds.")
-        X[, j] = round(as.double(as.POSIXct(X[, j], tz="UTC")))
-        X[, j] = gsub("NA", "null", sprintf("%d", X[, j]))
-        typ[j] = "datetime"
-      }
+  }
+  for (j in 1:ncol(X)) {
+    if ((! grepl("^int", typ[j])) && "numeric" %in% class(X[, j]))
+    {
+      if(is.null(types)) typ[j] = "double"
+      X[, j] = gsub("NA", "null", sprintf("%.16f", X[, j]))
+    }
+    else if (grepl("^int", typ[j]) || "integer" %in% class(X[, j]))
+    {
+      if(is.null(types)) typ[j] = "int32"
+      X[, j] = gsub("NA", "null", sprintf("%d", X[, j]))
+    }
+    else if (grepl("^int", typ[j]) || "integer64" %in% class(X[, j]))
+    {
+      if(is.null(types)) typ[j] = "int64"
+      X[, j] = gsub("NA", "null", as.character(X[, j]))
+    }
+    else if ("logical" %in% class(X[, j]))
+    {
+      if(is.null(types)) typ[j] = "bool"
+      X[, j] = gsub("na", "null", tolower(sprintf("%s", X[, j])))
+    }
+    else if ("character" %in% class(X[, j]))
+    {
+      if(is.null(types)) typ[j] = "string"
+      X[is.na(X[, j]), j] = "null"
+    }
+    else if ("factor" %in% class(X[, j]))
+    {
+      if(is.null(types)) typ[j] = "string"
+      isna = is.na(X[, j])
+      X[, j] = sprintf("%s", X[, j])
+      if (any(isna)) X[isna, j] = "null"
+    }
+    else if ("Date" %in% class(X[, j]) || "POSIXct" %in% class(X[, j]))
+    {
+      warning("Converting R Date/POSIXct to SciDB datetime as UTC time. Subsecond times rounded to seconds.")
+      X[, j] = round(as.double(as.POSIXct(X[, j], tz="UTC")))
+      X[, j] = gsub("NA", "null", sprintf("%d", X[, j]))
+      if(is.null(types)) typ[j] = "datetime"
     }
   }
   for (j in 1:ncol(X))
@@ -697,13 +696,8 @@ df2scidb = function(db, X,
 
   ncolX = ncol(X)
   nrowX = nrow(X)
-  if(missing(format))
-    format = unlist(Map(function(x)
-    {
-      if(grepl("^int", x)) return("%d")
-      "%s"
-    }, typ))
-  X = charToRaw(fwrite(X, file=return, format=format))
+  if(missing(format)) X = charToRaw(fwrite(X, file=return))
+  else X = charToRaw(fwrite(X, file=return, format=format))
   tmp = POST(db, X, list(id=session))
   tmp = gsub("\n", "", gsub("\r", "", tmp))
 
