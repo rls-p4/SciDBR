@@ -618,7 +618,7 @@ df2scidb = function(db, X,
                     types=NULL,
                     use_aio_input=FALSE,
                     chunk_size,
-                    gc)
+                    gc, format)
 {
   if (!is.data.frame(X)) stop("X must be a data frame")
   if (missing(gc)) gc = TRUE
@@ -697,7 +697,13 @@ df2scidb = function(db, X,
 
   ncolX = ncol(X)
   nrowX = nrow(X)
-  X = charToRaw(fwrite(X, file=return))
+  if(missing(format))
+    format = unlist(Map(function(x)
+    {
+      if(grepl("^int", x)) return("%d")
+      "%s"
+    }, typ))
+  X = charToRaw(fwrite(X, file=return, format=format))
   tmp = POST(db, X, list(id=session))
   tmp = gsub("\n", "", gsub("\r", "", tmp))
 
@@ -740,6 +746,7 @@ df2scidb = function(db, X,
 #' @keywords internal
 fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), collapse=sep))
 {
+  if(length(format) > 1) format = paste(format, collapse=sep)
   foo = NULL
   rm(list="foo") # avoid package R CMD check warnings of undeclared variable
   if (!is.data.frame(x)) stop("x must be a data.frame")
