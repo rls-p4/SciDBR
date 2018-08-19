@@ -20,8 +20,8 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   DEBUG = FALSE
   INT64 = attr(db, "connection")$int64
   DEBUG = getOption("scidb.debug", FALSE)
-  if (DEBUG) { 
-    if (is.null(attr(db, "connection")$session)) stop("[Shim session] unexpected in long running shim session") 
+  if (DEBUG) {
+    if (is.null(attr(db, "connection")$session)) stop("[Shim session] unexpected in long running shim session")
   }
   buffer = 100000L
   args = list(...)
@@ -78,7 +78,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   if (!is.null(attr(db, "connection")$session)) { # if session already exists
     release = 0
   } else { # need to get new session every time
-    release = 1; 
+    release = 1;
   }
   if (release) on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
 
@@ -359,7 +359,7 @@ URI = function(db, resource="", args=list())
   if (!is.null(.scidbenv$port)) { # if port value is not NULL
     ans = paste(prot, .scidbenv$host, ":", .scidbenv$port, sep="")
   } else { # if port value is NULL, Shim port must have been forwarded to a URL
-           # and only having the URL is sufficient 
+           # and only having the URL is sufficient
     ans = paste(prot, .scidbenv$host, sep = "")
   }
   ans = paste(ans, resource, sep="/")
@@ -454,7 +454,7 @@ scidbquery = function(db, query, save=NULL, session=NULL, resp=FALSE, stream, pr
   if (!is.null(attr(db, "connection")$session)) {
     session = attr(db, "connection")$session
   } else {
-    if (DEBUG) cat("[Shim session] created new session\n") 
+    if (DEBUG) cat("[Shim session] created new session\n")
   }
   sessionid = session
   if (is.null(session))
@@ -521,7 +521,7 @@ scidbquery = function(db, query, save=NULL, session=NULL, resp=FALSE, stream, pr
   } else { # need to get new session every time
     session = getSession(db)
     if (length(session)<1) stop("SciDB http session error")
-    release = 1; 
+    release = 1;
   }
   if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
@@ -554,7 +554,7 @@ raw2scidb = function(db, X, name, gc=TRUE, ...)
   } else { # need to get new session every time
     session = getSession(db)
     if (length(session)<1) stop("SciDB http session error")
-    release = 1; 
+    release = 1;
   }
   if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
@@ -690,7 +690,7 @@ df2scidb = function(db, X,
   } else { # need to get new session every time
     session = getSession(db)
     if (length(session)<1) stop("SciDB http session error")
-    release = 1; 
+    release = 1;
   }
   if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
@@ -831,7 +831,7 @@ matvec2scidb = function(db, X,
   } else { # need to get new session every time
     session = getSession(db)
     if (length(session)<1) stop("SciDB http session error")
-    release = 1; 
+    release = 1;
   }
   if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
 
