@@ -20,6 +20,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   DEBUG = FALSE
   INT64 = attr(db, "connection")$int64
   DEBUG = getOption("scidb.debug", FALSE)
+  AIO = getOption("scidb.aio", FALSE)
   if (DEBUG) {
     if (is.null(attr(db, "connection")$session)) stop("[Shim session] unexpected in long running shim session")
   }
@@ -65,8 +66,11 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     # Apply dimensions as attributes, using unique names. Manually construct the list of resulting attributes:
     dimensional_attributes = data.frame(name=dimensions$name, type="int64", nullable=FALSE) # original dimension names (used below)
     internal_attributes = rbind(attributes, dimensional_attributes)
-    dim_apply = paste(dim_names, dim_names, sep=",", collapse=",")
-    internal_query = sprintf("apply(%s, %s)", internal_query, dim_apply)
+    if (AIO == FALSE)
+    {
+      dim_apply = paste(dim_names, dim_names, sep=",", collapse=",")
+      internal_query = sprintf("apply(%s, %s)", internal_query, dim_apply)
+    }
   }
   ns = rep("", length(internal_attributes$nullable))
   ns[internal_attributes$nullable] = "null"
@@ -74,7 +78,11 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   format_string = sprintf("(%s)", format_string)
   if (DEBUG) message("Data query ", internal_query)
   if (DEBUG) message("Format ", format_string)
-  sessionid = scidbquery(db, internal_query, save=format_string)
+  sessionid = scidbquery(
+    db,
+    internal_query,
+    save=format_string,
+    atts_only=ifelse(args$only_attributes, TRUE, ifelse(AIO, FALSE, TRUE)))
   if (!is.null(attr(db, "connection")$session)) { # if session already exists
     release = 0
   } else { # need to get new session every time
@@ -441,7 +449,7 @@ POST = function(db, data, args=list(), err=TRUE)
 # Example values of save: "dcsv", "csv+", "(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(db, query, save=NULL, session=NULL, resp=FALSE, stream, prefix=attributes(db)$connection$prefix)
+scidbquery = function(db, query, save=NULL, session=NULL, resp=FALSE, stream, prefix=attributes(db)$connection$prefix, atts_only=TRUE)
 {
   DEBUG = FALSE
   STREAM = 0L
@@ -474,6 +482,7 @@ scidbquery = function(db, query, save=NULL, session=NULL, resp=FALSE, stream, pr
       args$prefix = c(getOption("scidb.prefix"), prefix)
       if (!is.null(args$prefix)) args$prefix = paste(args$prefix, collapse=";")
       args$save = save
+      if (!is.null(args$save)) args$atts_only=ifelse(atts_only, 1L, 0L)
       do.call("SGET", args=list(db=db, resource="/execute_query", args=args))
     }, error=function(e)
     {
