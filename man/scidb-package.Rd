@@ -25,6 +25,13 @@ SciDB/R Interface
  options(scidb.verifyhost=FALSE)
 # List of special DDL operators
  options(scidb.ddl=c("create_array", "remove", "rename"))
+# Set to \code{TRUE) in order to use the \code{atts_only=0} argument of
+# the \code{aio_save} operator from the \code{accelerated_io_tools}
+# plugin when downloading coordinates for array values. This avoids the
+# use of \code{apply} to obtain coordinate and can result in performance
+# improvements. This requires that the \code{accelerated_io_tools}
+# plugin is loaded in SciDB and enabled in Shim.
+ options(scidb.aio=FALSE)
 }
 
 \seealso{
