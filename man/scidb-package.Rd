@@ -32,6 +32,8 @@ SciDB/R Interface
 # improvements. This requires that the \code{accelerated_io_tools}
 # plugin is loaded in SciDB and enabled in Shim.
  options(scidb.aio=FALSE)
+# Set the absolute limit of the output file in Megabytes.
+ options(scidb.tmp_sz_limit=256)
 }
 
 \seealso{
