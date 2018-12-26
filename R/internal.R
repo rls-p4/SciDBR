@@ -21,7 +21,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   INT64 = attr(db, "connection")$int64
   DEBUG = getOption("scidb.debug", FALSE)
   AIO = getOption("scidb.aio", FALSE)
-  TMP_SZ_LIMIT = getOption("scidb.tmp_sz_limit", 256)
+  RESULT_SIZE_LIMIT = getOption("scidb.result_size_limit", 256)
   if (DEBUG) {
     if (is.null(attr(db, "connection")$session)) stop("[Shim session] unexpected in long running shim session")
   }
@@ -83,7 +83,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     db,
     internal_query,
     save=format_string,
-    limit=TMP_SZ_LIMIT,
+    result_size_limit=RESULT_SIZE_LIMIT,
     atts_only=ifelse(args$only_attributes, TRUE, ifelse(AIO, FALSE, TRUE)))
   if (!is.null(attr(db, "connection")$session)) { # if session already exists
     release = 0
@@ -451,7 +451,7 @@ POST = function(db, data, args=list(), err=TRUE)
 # Example values of save: "dcsv", "csv+", "(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(db, query, save=NULL, limit=NULL, session=NULL, resp=FALSE, stream, prefix=attributes(db)$connection$prefix, atts_only=TRUE)
+scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL, resp=FALSE, stream, prefix=attributes(db)$connection$prefix, atts_only=TRUE)
 {
   DEBUG = FALSE
   STREAM = 0L
@@ -472,7 +472,7 @@ scidbquery = function(db, query, save=NULL, limit=NULL, session=NULL, resp=FALSE
     sessionid = getSession(db) # Obtain a session from shim
   }
   if (is.null(save)) save=""
-  if (is.null(limit)) limit=""
+  if (is.null(result_size_limit)) result_size_limit=""
   if (DEBUG)
   {
     message(query, "\n")
@@ -485,7 +485,7 @@ scidbquery = function(db, query, save=NULL, limit=NULL, session=NULL, resp=FALSE
       args$prefix = c(getOption("scidb.prefix"), prefix)
       if (!is.null(args$prefix)) args$prefix = paste(args$prefix, collapse=";")
       args$save = save
-      args$limit = limit
+      args$result_size_limit = result_size_limit
       if (!is.null(args$save)) args$atts_only=ifelse(atts_only, 1L, 0L)
       do.call("SGET", args=list(db=db, resource="/execute_query", args=args))
     }, error=function(e)

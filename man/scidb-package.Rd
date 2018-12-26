@@ -33,7 +33,7 @@ SciDB/R Interface
 # plugin is loaded in SciDB and enabled in Shim.
  options(scidb.aio=FALSE)
 # Set the absolute limit of the output file in Megabytes.
- options(scidb.tmp_sz_limit=256)
+ options(scidb.result_size_limit=256)
 }
 
 \seealso{
