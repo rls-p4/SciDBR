@@ -25,7 +25,7 @@ SciDB/R Interface
  options(scidb.verifyhost=FALSE)
 # List of special DDL operators
  options(scidb.ddl=c("create_array", "remove", "rename"))
-# Set to \code{TRUE) in order to use the \code{atts_only=0} argument of
+# Set to \code{TRUE} in order to use the \code{atts_only=0} argument of
 # the \code{aio_save} operator from the \code{accelerated_io_tools}
 # plugin when downloading coordinates for array values. This avoids the
 # use of \code{apply} to obtain coordinate and can result in performance
@@ -34,8 +34,4 @@ SciDB/R Interface
  options(scidb.aio=FALSE)
 # Set the absolute limit of the output file in Megabytes.
  options(scidb.result_size_limit=256)
-}
-
-\seealso{
-\code{\link{scidb}}, \code{\link{iquery}}
 }

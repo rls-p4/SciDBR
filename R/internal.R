@@ -139,8 +139,9 @@ scidb_unpack_to_dataframe = function(db, query, ...)
       avg_bytes_per_line = ceiling( (p - p_old) / lines)
       buffer = min(getOption("scidb.buffer_size"), ceiling(1.3 * (len - p) / avg_bytes_per_line)) # Engineering factors
 # Assemble the data frame
-      if (is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE))
-      else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE)))
+      ans = data.table::rbindlist(list(ans, tmp[1:n]))
+#      if (is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE))
+#      else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE)))
     }
     if (DEBUG) message("  R rbind/df assembly time ", round( (proc.time() - dt2)[3], 4))
   }
