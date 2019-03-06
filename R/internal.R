@@ -652,7 +652,7 @@ df2scidb = function(db, X,
     if ((! grepl("^int", typ[j])) && "numeric" %in% class(X[, j]))
     {
       if(is.null(types)) typ[j] = "double"
-      X[, j] = gsub("NA", "null", sprintf("%.16f", X[, j]))
+      X[, j] = gsub("NA", "null", sprintf("%e", X[, j]))
     }
     else if (grepl("^int", typ[j]) || "integer" %in% class(X[, j]))
     {
