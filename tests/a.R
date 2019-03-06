@@ -169,4 +169,10 @@ if (nchar(host) > 0)
      as.R(d)
   }
   foo()
+
+# Issue 193 Extreme numeric values get truncated on upload
+  upload_data <- data.frame(a = 1.23456e-50)
+  upload_ref <- as.scidb(db, upload_data)
+  download_data <- as.R(upload_ref, only_attributes = TRUE)
+  stopifnot(upload_data$a == download_data$a)
 }
