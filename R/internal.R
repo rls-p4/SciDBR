@@ -365,6 +365,7 @@ URI = function(db, resource="", args=list())
     args = c(args, list(auth=.scidbenv$auth))
   if (!is.null(.scidbenv$password)) args = c(args, list(password=.scidbenv$password))
   if (!is.null(.scidbenv$username)) args = c(args, list(user=.scidbenv$username))
+  if (!is.null(.scidbenv$admin) && .scidbenv$admin) args = c(args, list(admin=1))
   prot = paste(.scidbenv$protocol, "//", sep=":")
   if ("password" %in% names(args) || "auth" %in% names(args)) prot = "https://"
   if (!is.null(.scidbenv$port)) { # if port value is not NULL
