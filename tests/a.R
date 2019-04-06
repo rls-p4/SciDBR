@@ -1,7 +1,7 @@
 check = function(a, b)
 {
   print(match.call())
-  stopifnot(all.equal(a, b, check.attributes=FALSE, check.names=FALSE, tolerance=1.5e-7))
+  stopifnot(all.equal(a, b, check.attributes=FALSE, check.names=FALSE))
 }
 
 library("scidb")
