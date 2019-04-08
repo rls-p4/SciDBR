@@ -148,14 +148,34 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   if (is.null(ans))
   {
     xa = attributes$name
+    classes = c()
     if (args$only_attributes) # permute cols, see issue #125
       xd = c()
-    else
+    else {
       xd = dimensions$name
+      classes = c(classes, rep("numeric", length(xd)))
+    }
+    for(i in 1:nrow(attributes)) {
+      t = attributes$type[i]
+      if(t == 'bool') {
+        classes = c(classes, 'logical')
+      } else if(t == 'binary') {
+        classes = c(classes, 'list')
+      } else if(t == 'string' || t == 'char') {
+        classes = c(classes, 'character')
+      } else if(t %in% c('int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32')) {
+        classes = c(classes, 'integer')
+      } else {
+        classes = c(classes, 'numeric')
+      }
+    }
     n = length(xd) + length(xa)
     ans = vector(mode="list", length=n)
     names(ans) = make.names_(c(xd, xa))
     class(ans) = "data.frame"
+    for(i in 1:ncol(ans)) {
+      class(ans[,i]) = classes[i]
+    }
     return(ans)
   }
   if (DEBUG) message("Total R parsing time ", round( (proc.time() - dt1)[3], 4))
