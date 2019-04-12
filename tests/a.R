@@ -175,4 +175,17 @@ if (nchar(host) > 0)
   upload_ref <- as.scidb(db, upload_data)
   download_data <- as.R(upload_ref, only_attributes = TRUE)
   stopifnot(upload_data$a == download_data$a)
+
+# Issue 195 Coerce very small floating point values to 0
+  small_df <- data.frame(a = .Machine$double.xmin,
+                         b = .Machine$double.xmin / 10,   # Will be coerced to 0
+                         c = -.Machine$double.xmin,
+                         d = -.Machine$double.xmin / 10)  # Will be coerced to 0
+  small_df_db <- as.R(as.scidb(db, small_df), only_attributes = TRUE)
+  small_df_fix <- small_df
+  small_df_fix$b <- 0
+  small_df_fix$d <- 0
+  print(small_df_fix)
+  print(small_df_db)
+  check(small_df_db, small_df_fix)
 }
