@@ -176,6 +176,20 @@ if (nchar(host) > 0)
   download_data <- as.R(upload_ref, only_attributes = TRUE)
   stopifnot(upload_data$a == download_data$a)
 
+# Issue 195 Empty data.frame(s)
+  for (scidb_type in names(scidb:::.scidbtypes)) {
+    one_df <- iquery(db, paste("build(<x:", scidb_type, ">[i=0:0], null)"), return = TRUE)
+    empty_df <- iquery(db, paste("filter(build(<x:", scidb_type, ">[i=0:0], null), false)"), return = TRUE)
+    if (class(one_df) == "data.frame") {
+      stopifnot(class(one_df[,1]) == class(empty_df[,1]))
+      merge(one_df, empty_df)
+    }
+    else {
+      stopifnot(class(one_df[[1]]) == class(empty_df[[1]]))
+      mapply(c, one_df, empty_df)
+    }
+  }
+
 # Issue 195 Coerce very small floating point values to 0
   small_df <- data.frame(a = .Machine$double.xmin,
                          b = .Machine$double.xmin / 10,   # Will be coerced to 0

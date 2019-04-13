@@ -149,18 +149,20 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   {
     xa = attributes$name
     classes = c()
-    if (args$only_attributes) # permute cols, see issue #125
+    if (args$only_attributes)
       xd = c()
     else {
       xd = dimensions$name
-      classes = c(classes, rep("numeric", length(xd)))
+      classes_dimensions = rep("numeric", length(xd))
     }
+    has_binary = FALSE
     for(i in 1:nrow(attributes)) {
       t = attributes$type[i]
       if(t == 'bool') {
         classes = c(classes, 'logical')
       } else if(t == 'binary') {
         classes = c(classes, 'list')
+        has_binary = TRUE
       } else if(t == 'string' || t == 'char') {
         classes = c(classes, 'character')
       } else if(t %in% c('int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32')) {
@@ -171,10 +173,20 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     }
     n = length(xd) + length(xa)
     ans = vector(mode="list", length=n)
-    names(ans) = make.names_(c(xd, xa))
-    class(ans) = "data.frame"
-    for(i in 1:ncol(ans)) {
-      class(ans[,i]) = classes[i]
+    if (has_binary) {
+      # C_scidb_parse leaves dimensions at the end,
+      # for "binary" leave dimensions as they are
+      classes = c(classes, classes_dimensions)
+      names(ans) = make.names_(c(xa, xd))
+      for(i in 1:length(ans))
+        class(ans[[i]]) = classes[i]
+    }
+    else {
+      classes = c(classes_dimensions, classes)
+      names(ans) = make.names_(c(xd, xa))
+      class(ans) = "data.frame"
+      for(i in 1:ncol(ans))
+        class(ans[,i]) = classes[i]
     }
     return(ans)
   }
