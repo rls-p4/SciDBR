@@ -177,18 +177,28 @@ if (nchar(host) > 0)
   stopifnot(upload_data$a == download_data$a)
 
 # Issue 195 Empty data.frame(s)
-  for (scidb_type in names(scidb:::.scidbtypes)) {
-    one_df <- iquery(db, paste("build(<x:", scidb_type, ">[i=0:0], null)"), return = TRUE)
-    empty_df <- iquery(db, paste("filter(build(<x:", scidb_type, ">[i=0:0], null), false)"), return = TRUE)
-    if (class(one_df) == "data.frame") {
-      stopifnot(class(one_df[,1]) == class(empty_df[,1]))
-      merge(one_df, empty_df)
+  for (scidb_type in names(scidb:::.scidbtypes))
+    for (only_attributes in c(FALSE, TRUE)) {
+      one_df <- iquery(
+        db,
+        paste("build(<x:", scidb_type, ">[i=0:0], null)"),
+        only_attributes = only_attributes,
+        return = TRUE)
+      empty_df <- iquery(
+        db,
+        paste("filter(build(<x:", scidb_type, ">[i=0:0], null), false)"),
+        only_attributes = only_attributes,
+        return = TRUE)
+      index <- 1 + ifelse(only_attributes, 0, 1)
+      if (class(one_df) == "data.frame") {
+        stopifnot(class(one_df[, index]) == class(empty_df[, index]))
+        merge(one_df, empty_df)
+      }
+      else {
+        stopifnot(class(one_df[[index]]) == class(empty_df[[index]]))
+        mapply(c, one_df, empty_df)
+      }
     }
-    else {
-      stopifnot(class(one_df[[1]]) == class(empty_df[[1]]))
-      mapply(c, one_df, empty_df)
-    }
-  }
 
 # Issue 195 Coerce very small floating point values to 0
   small_df <- data.frame(a = .Machine$double.xmin,

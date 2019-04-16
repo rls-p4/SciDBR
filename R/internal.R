@@ -148,10 +148,10 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   if (is.null(ans))
   {
     xa = attributes$name
-    classes = c()
-    if (args$only_attributes)
-      xd = c()
-    else {
+    xd = NULL
+    classes = list()
+    classes_dimensions = NULL
+    if (!args$only_attributes) {
       xd = dimensions$name
       classes_dimensions = rep("numeric", length(xd))
     }
@@ -163,9 +163,11 @@ scidb_unpack_to_dataframe = function(db, query, ...)
       } else if(t == 'binary') {
         classes = c(classes, 'list')
         has_binary = TRUE
+      } else if(t == 'datetime') {
+        classes[[length(classes) + 1]] = as.character(c('POSIXct', 'POSIXt'))
       } else if(t == 'string' || t == 'char') {
         classes = c(classes, 'character')
-      } else if(t %in% c('int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32')) {
+      } else if(t %in% c('int8', 'uint8', 'int16', 'uint16', 'int32')) {
         classes = c(classes, 'integer')
       } else {
         classes = c(classes, 'numeric')
@@ -179,14 +181,19 @@ scidb_unpack_to_dataframe = function(db, query, ...)
       classes = c(classes, classes_dimensions)
       names(ans) = make.names_(c(xa, xd))
       for(i in 1:length(ans))
-        class(ans[[i]]) = classes[i]
+        class(ans[[i]]) = classes[[i]]
     }
     else {
       classes = c(classes_dimensions, classes)
       names(ans) = make.names_(c(xd, xa))
       class(ans) = "data.frame"
-      for(i in 1:ncol(ans))
-        class(ans[,i]) = classes[i]
+      for(i in 1:ncol(ans)) {
+        # Workaround for POSIXct class
+        if (length(classes[[i]]) == 2
+            && all.equal(classes[[i]], as.character(c("POSIXct", "POSIXt"))))
+          class(ans[, i]) = 'numeric'
+        class(ans[, i]) = classes[[i]]
+      }
     }
     return(ans)
   }
