@@ -295,7 +295,7 @@ create_temp_array = function(db, name, schema)
 }
 
 # Internal function
-get_setting_items_str = function(settings, sep=',') {
+get_setting_items_str = function(db, settings, sep=',') {
   
   convert_single_item_v19 = function(key, value) {
     if(is.character(value))
@@ -788,7 +788,7 @@ df2scidb = function(db, X,
     if(!missing(chunk_size))
       aioSettings[['chunk_size']] = chunk_size
     LOAD = sprintf("project(apply(aio_input('%s', %s),%s),%s)", tmp,
-                   get_setting_items_str(aioSettings), atts, paste(anames, collapse=","))
+                   get_setting_items_str(db, aioSettings), atts, paste(anames, collapse=","))
   } else
   {
     if (missing(chunk_size))
