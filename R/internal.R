@@ -294,6 +294,27 @@ create_temp_array = function(db, name, schema)
   iquery(db, query, `return`=FALSE)
 }
 
+# Internal function
+get_setting_items_str = function(settings, sep=',') {
+  
+  convert_single_item_v19 = function(key, value) {
+    if(is.character(value))
+      value = sprintf("'%s'", value)  # Quote string value(s)
+    valueStr = if(length(value) > 1) sprintf("(%s)", paste(value, collapse = ',')) else value
+    
+    sprintf("%s:%s", key, valueStr)
+  } 
+  convert_single_item_pre_v19 = function(key, value) {
+    valueStr = if(length(value) > 1) paste(value, collapse = ',') else value
+    sprintf("'%s=%s'", key, valueStr)
+  } 
+  
+  convert_single_item = if (at_least(attr(db, "connection")$scidb.version, "19.0")) 
+    convert_single_item_v19 else convert_single_item_pre_v19
+  
+  items = mapply(convert_single_item, names(settings), settings)
+  paste(items, collapse = sep)
+}
 
 #' An important internal convenience function that returns a scidb object.  If
 #' eval=TRUE, a new SciDB array is created the returned scidb object refers to
@@ -763,12 +784,11 @@ df2scidb = function(db, X,
   atts = paste(dcast, collapse=",")
   if (use_aio_input && aio)
   {
-    if (missing(chunk_size))
-      LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d'),%s),%s)", tmp,
-                 ncolX, atts, paste(anames, collapse=","))
-    else
-      LOAD = sprintf("project(apply(aio_input('%s','num_attributes=%d','chunk_size=%.0f'),%s),%s)", tmp,
-                 ncolX, chunk_size, atts, paste(anames, collapse=","))
+    aioSettings = list(num_attributes = ncolX)
+    if(!missing(chunk_size))
+      aioSettings[['chunk_size']] = chunk_size
+    LOAD = sprintf("project(apply(aio_input('%s', %s),%s),%s)", tmp,
+               get_seeting_items_str(aioSettings), atts, paste(anames, collapse=","))
   } else
   {
     if (missing(chunk_size))
