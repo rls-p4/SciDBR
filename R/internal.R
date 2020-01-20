@@ -788,7 +788,7 @@ df2scidb = function(db, X,
     if(!missing(chunk_size))
       aioSettings[['chunk_size']] = chunk_size
     LOAD = sprintf("project(apply(aio_input('%s', %s),%s),%s)", tmp,
-               get_seeting_items_str(aioSettings), atts, paste(anames, collapse=","))
+                   get_setting_items_str(aioSettings), atts, paste(anames, collapse=","))
   } else
   {
     if (missing(chunk_size))
