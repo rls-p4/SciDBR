@@ -693,7 +693,7 @@ df2scidb = function(db, X,
                     types=NULL,
                     use_aio_input=FALSE,
                     chunk_size,
-                    gc, format)
+                    gc, format, temp=FALSE)
 {
   if (!is.data.frame(X)) stop("X must be a data frame")
   if (missing(gc)) gc = TRUE
@@ -796,6 +796,12 @@ df2scidb = function(db, X,
     else
       LOAD = sprintf("input(%s, '%s', -2, 'tsv')", dfschema(anames, typ, nrowX, chunk_size), tmp)
   }
+  ## Create a temporary array 'name'
+  if(temp){ # Use scidb temporary array instead of regular versioned array
+    targetArraySchema = lazyeval(db, LOAD)$schema
+    create_temp_array(db, name, schema = targetArraySchema)
+  }
+  ##
   query = sprintf("store(%s,%s)", LOAD, name)
   scidbquery(db, query, session=session, stream=0L)
   scidb(db, name, gc=gc)
