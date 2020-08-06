@@ -70,7 +70,7 @@ update.afl = function(.db, .new, .ops)
       .help = .def[3]
       .signature = .def[2]
     }
-    .db[[.x]] = afl(db, .x, .help, .signature)
+    .db[[.x]] = afl(.db, .x, .help, .signature)
     if(!is.null(.formals))
       formals(.db[[.x]]) = eval(parse(text=sprintf("alist(%s, ...=)", paste(paste(.formals, "="), collapse=", "))))
     class(.db[[.x]]) = "operator"
