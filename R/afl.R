@@ -104,7 +104,7 @@ rsub = function(x, env)
 }
 
 #' Display SciDB AFL operator documentation
-#' @param topic an \code{\link{afl}} object from a SciDB database connection, or optionally a character string name
+#' @param topic an afl object from a SciDB database connection, or optionally a character string name
 #' @param db optional database connection from \code{\link{scidbconnect}} (only needed when \code{topic} is a character string)
 #' @return displays help
 #' @examples

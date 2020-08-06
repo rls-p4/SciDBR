@@ -7,7 +7,7 @@
 aflhelp(topic, db)
 }
 \arguments{
-\item{topic}{an \code{\link{afl}} object from a SciDB database connection, or optionally a character string name}
+\item{topic}{an afl object from a SciDB database connection, or optionally a character string name}
 
 \item{db}{optional database connection from \code{\link{scidbconnect}} (only needed when \code{topic} is a character string)}
 }
