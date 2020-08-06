@@ -467,7 +467,6 @@ as.R = function(x, only_attributes=FALSE, binary=TRUE)
   scidb_unpack_to_dataframe(x@meta$db, x, binary=binary)
 }
 
-#' @export
 as.R.array = function(x)
 {
   stopifnot(inherits(x, "scidb"))
