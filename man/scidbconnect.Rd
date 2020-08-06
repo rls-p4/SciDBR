@@ -4,10 +4,17 @@
 \alias{scidbconnect}
 \title{Connect to a SciDB database}
 \usage{
-scidbconnect(host = getOption("scidb.default_shim_host", "127.0.0.1"),
-  port = getOption("scidb.default_shim_port", 8080L), username, password,
-  auth_type = c("scidb", "digest"), protocol = c("http", "https"),
-  int64 = FALSE, doc)
+scidbconnect(
+  host = getOption("scidb.default_shim_host", "127.0.0.1"),
+  port = getOption("scidb.default_shim_port", 8080L),
+  username,
+  password,
+  auth_type = c("scidb", "digest"),
+  protocol = c("http", "https"),
+  admin = FALSE,
+  int64 = FALSE,
+  doc
+)
 }
 \arguments{
 \item{host}{optional host name or I.P. address of a SciDB shim service to connect to}
@@ -22,6 +29,10 @@ to Shim when the Shim port is forwarded, use \code{port= NULL} (see detailed not
 \item{auth_type}{optional SciDB authentication type}
 
 \item{protocol}{optional shim protocol type}
+
+\item{admin}{Set to \code{TRUE} to open a higher-priority session. This is
+identical with the \code{--admin} flag for the \code{iquery} SciDB client
+(default \code{FALSE})}
 
 \item{int64}{logical value, if \code{TRUE} then preserve signed 64-bit SciDB integers
 as R integer64 values from the bit64 package. Otherwise, 64-bit integers from SciDB

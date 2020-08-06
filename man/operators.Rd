@@ -4,7 +4,9 @@
 \name{operators}
 \alias{operators}
 \title{Base SciDB operators}
-\format{A data frame with 4 variables, name, signature, help.}
+\format{
+A data frame with 4 variables, name, signature, help.
+}
 \source{
 Paradigm4
 \url{http://paradigm4.com}

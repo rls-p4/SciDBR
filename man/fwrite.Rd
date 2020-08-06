@@ -4,8 +4,12 @@
 \alias{fwrite}
 \title{Fast write.table/textConnection substitute}
 \usage{
-fwrite(x, file = stdout(), sep = "\\t", format = paste(rep("\%s",
-  ncol(x)), collapse = sep))
+fwrite(
+  x,
+  file = stdout(),
+  sep = "\\t",
+  format = paste(rep("\%s", ncol(x)), collapse = sep)
+)
 }
 \arguments{
 \item{x}{a data frame}
