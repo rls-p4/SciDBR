@@ -11,9 +11,9 @@ Authors@R: c(
     person("Wenwei", "Xiong", role=c("aut"), email="wxiong@paradigm4.com")
     )
 Copyright: Paradigm4, Inc.
-Description: An R interface to the 'SciDB' array database <http://scidb.org>.
+Description: An R interface to the 'SciDB' array database <https://www.paradigm4.com>.
 BugReports: https://github.com/Paradigm4/SciDBR/issues
-URL: http://paradigm4.github.io/SciDBR
+URL: https://paradigm4.github.io/SciDBR/
 VignetteBuilder: knitr
 Depends:
     R (>= 3.0.0), bit64
@@ -25,6 +25,7 @@ Imports:
     openssl
 Suggests:
     Matrix,
+    rmarkdown,
     knitr (>= 1.8)
 License: AGPL-3
 LazyLoad: yes
