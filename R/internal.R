@@ -774,8 +774,8 @@ df2scidb = function(db, X,
 
   ncolX = ncol(X)
   nrowX = nrow(X)
-  if(missing(format)) X = charToRaw(fwrite(X, file=return))
-  else X = charToRaw(fwrite(X, file=return, format=format))
+  if(missing(format)) X = charToRaw(fwrite(X, file=.Primitive("return")))
+  else X = charToRaw(fwrite(X, file=.Primitive("return"), format=format))
   tmp = POST(db, X, list(id=session))
   tmp = gsub("\n", "", gsub("\r", "", tmp))
 
@@ -814,7 +814,7 @@ df2scidb = function(db, X,
 #' Not such a great option for writing to files, marginal difference from write.table and
 #' obviously much greater memory use.
 #' @param x a data frame
-#' @param file a connection or \code{return} to return character output directly (fast)
+#' @param file a connection or \code{.Primitive("return")} to return character output directly (fast)
 #' @param sep column separator
 #' @param format optional fprint-style column format specifyer
 #' @return Use for the side effect of writing to the connection returning \code{NULL}, or
