@@ -718,15 +718,15 @@ df2scidb = function(db, X,
                             ifelse(X[, j] > 0 & X[, j] < .Machine$double.xmin, 0,
                                    ifelse(X[, j] < 0 & X[, j] > -.Machine$double.xmin, 0, X[, j]))))
     }
+    else if (grepl("^int64", typ[j]) || "integer64" %in% class(X[, j]))
+    {
+      if(is.null(types)) typ[j] = "int64"
+      X[, j] = gsub("NA", "null",  sprintf("%s", X[, j]))
+    }
     else if (grepl("^int", typ[j]) || "integer" %in% class(X[, j]))
     {
       if(is.null(types)) typ[j] = "int32"
       X[, j] = gsub("NA", "null", sprintf("%d", X[, j]))
-    }
-    else if (grepl("^int", typ[j]) || "integer64" %in% class(X[, j]))
-    {
-      if(is.null(types)) typ[j] = "int64"
-      X[, j] = gsub("NA", "null",  sprintf("%s", X[, j]))
     }
     else if ("logical" %in% class(X[, j]))
     {
