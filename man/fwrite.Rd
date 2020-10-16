@@ -14,7 +14,7 @@ fwrite(
 \arguments{
 \item{x}{a data frame}
 
-\item{file}{a connection or \code{return} to return character output directly (fast)}
+\item{file}{a connection or \code{.Primitive("return")} to return character output directly (fast)}
 
 \item{sep}{column separator}
 
