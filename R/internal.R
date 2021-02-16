@@ -721,7 +721,7 @@ df2scidb = function(db, X,
     else if (grepl("^int64", typ[j]) || "integer64" %in% class(X[, j]))
     {
       if(is.null(types)) typ[j] = "int64"
-      X[, j] = gsub("NA", "null",  sprintf("%s", X[, j]))
+      X[, j] = gsub("NA", "null",  sprintf("%s", bit64::as.integer64(X[, j])))
     }
     else if (grepl("^int", typ[j]) || "integer" %in% class(X[, j]))
     {
