@@ -257,15 +257,13 @@ warnonce = (function() {
     nonum="Note: The R sparse Matrix package does not support certain value types like\ncharacter strings"
   )
   function(warn) {
-    if (!is.null(state[warn][[1]])) {
-      message(state[warn])
-      s <<- state
-      s[warn] = c()
-      state <<- s
+    if (!is.null(state[[warn]])) {
+      message(state[[warn]])
+      state[warn] <- c()
+      state <<- state
     }
   }
 }) ()
-
 
 # Some versions of RCurl seem to contain a broken URLencode function.
 oldURLencode = function (URL, reserved = FALSE)
