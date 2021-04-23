@@ -3,30 +3,12 @@ Type: Package
 Title: An R Interface to SciDB
 Version: 3.0.2
 Date: 2021-02-02
-Authors@R: c(
-    person(given = "Kriti", 
-           family = "Sen Sharma",
-           role=c("cre", "aut"),
-           email="ksen@paradigm4.com"),
-    person(given = "B. W.",
-           family = "Lewis",
-           role=c("aut"),
-           email="blewis@illposed.net"),
-    person(given = "Alex",
-           family = "Poliakov",
-           role=c("aut"),
-           email="apoliakov@paradigm4.com"),
-    person(given = "Rares",
-           family = "Vernica",
-           role=c("aut"),
-           email="rvernica@paradigm4.com"),
-    person(given = "Wenwei", 
-           family = "Xiong",
-           role=c("aut"),
-           email="wxiong@paradigm4.com")
-    person(given = "Paradigm4 Inc.",
-           role = c("cph"))
-)
+Authors@R: c(person(given = "Kriti",     family = "Sen Sharma",  role=c("cre", "aut"),   email="ksen@paradigm4.com"),
+             person(given = "B. W.",     family = "Lewis",       role = "aut",           email = "blewis@illposed.net"),
+             person(given = "Alex",      family = "Poliakov",    role = "aut",           email = "apoliakov@paradigm4.com"),
+             person(given = "Rares",     family = "Vernica",     role = "aut",           email = "rvernica@paradigm4.com"),
+             person(given = "Wenwei",    family = "Xiong",       role = "aut",           email = "wxiong@paradigm4.com"),
+             person(given = "Paradigm4 Inc.",                    role = "cph"))
 Description: A package to interact with SciDB by directly running SciDB queries using native array
     functional language (AFL) and optionally returning results as data frames. SciDB is a free 
     open-source database that organizes data in n-dimensional arrays. SciDB features include ACID
