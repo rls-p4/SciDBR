@@ -2,17 +2,22 @@
 {
   name = substr(object@name, 1, 35)
   if (nchar(object@name) > 35) name = paste(name, "...", sep="")
-  cat("SciDB expression ", name)
-  cat("\nSciDB schema ", schema(object), "\n")
+  message("SciDB expression ", name)
+  message("\nSciDB schema ", schema(object), "\n")
   dims = schema(object, "dimensions")
   atts = schema(object, "attributes")
-  d = tryCatch(data.frame(variable=dims$name, dimension=TRUE, type="int64", nullable=FALSE, start=dims$start, end=dims$end, chunk=dims$chunk, row.names=NULL, stringsAsFactors=FALSE), error=function(e) NULL)
-  d = rbind(d, data.frame(variable=atts$name,
-                          dimension=FALSE,
-                          type=atts$type, nullable=atts$nullable, start="", end="", chunk=""))
-  cat(paste(utils::capture.output(print(d)), collapse="\n"))
-  cat("\n")
+  d = tryCatch(data.frame(variable=dims$name, dimension=TRUE, type="int64", nullable=FALSE, 
+                          start=dims$start, end=dims$end, chunk=dims$chunk, row.names=NULL, 
+                          stringsAsFactors=FALSE), 
+               error=function(e) NULL)
+  d = rbind(d, 
+            data.frame(variable=atts$name,
+                       dimension=FALSE, type=atts$type, nullable=atts$nullable, start="", end="",
+                       chunk=""))
+  message(paste(utils::capture.output(d), collapse="\n"))
+  message("\n")
 }
+
 
 .aflstr = function(object)
 {
