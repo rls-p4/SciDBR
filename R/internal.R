@@ -841,7 +841,8 @@ fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), c
 matvec2scidb = function(db, X,
                         name=tmpnam(db),
                         start,
-                        gc=TRUE, ...)
+                        gc=TRUE,
+                        temp=FALSE, ...)
 {
 # Check for a bunch of optional hidden arguments
   args = list(...)
@@ -924,7 +925,13 @@ matvec2scidb = function(db, X,
   {
     message("Data upload time ", (proc.time() - td1)[3], "\n")
   }
-
+  
+# Create a temporary array 'name'
+  if(temp){ # Use scidb temporary array instead of regular versioned array
+    targetArraySchema = schema
+    create_temp_array(db, name, schema = targetArraySchema)
+  }
+  
 # Load query
   if (do_reshape)
   {
