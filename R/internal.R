@@ -565,7 +565,7 @@ scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL
   sessionid
 }
 
-.Matrix2scidb = function(db, X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0, 0), gc=TRUE, ...)
+.Matrix2scidb = function(db, X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0, 0), temp=FALSE, gc=TRUE, ...)
 {
   D = dim(X)
   rowOverlap = 0L
@@ -607,6 +607,12 @@ scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL
   bytes = .Call(C_scidb_raw, as.vector(t(matrix(c(X@i + start[[1]], j + start[[2]], X@x), length(X@x)))))
   ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
+  
+# Create a temporary array 'name'
+  if(temp){ # Use scidb temporary array instead of regular versioned array
+    targetArraySchema = schema
+    create_temp_array(db, name, schema = targetArraySchema)
+  }
 
 # redimension into a matrix
   query = sprintf("store(redimension(input(%s,'%s',-2,'(double null,double null,double null)'),%s),%s)", schema1d, ans, schema, name)
