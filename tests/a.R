@@ -1,3 +1,5 @@
+library('Matrix')
+
 check = function(a, b)
 {
   print(match.call())
@@ -212,4 +214,23 @@ if (nchar(host) > 0)
   print(small_df_fix)
   print(small_df_db)
   check(small_df_db, small_df_fix)
+  
+# Issue 217 Upload vectors, matrices as temp arrays via as.scidb
+  iris_mod = iris
+  colnames(iris_mod) = gsub(pattern = '[.]', replacement = '_', x = colnames(iris_mod))
+  DF = as.scidb(db, iris_mod, temp = T)
+  VEC = as.scidb(db, 1:10, temp = T)
+  MAT = as.scidb(db, as.matrix(iris_mod[1:3]), temp = T)
+  dgc_mat = Matrix(c(0, 0,  0, 2,
+                     6, 0, -1, 5,
+                     0, 4,  3, 0,
+                     0, 0,  5, 0),
+                   byrow = TRUE, nrow = 4, sparse = TRUE)
+  rownames(dgc_mat) = paste0('r', 1:4)
+  colnames(dgc_mat) = paste0('c', 1:4)
+  DGCMAT = as.scidb(db, dgc_mat, temp = T)
+  check(all(c(DF@name, VEC@name, MAT@name, DGCMAT@name) %in% 
+              iquery(db, "filter(list(), temporary=TRUE)", return = T)$name),
+        TRUE)
+  
 }
