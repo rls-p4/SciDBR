@@ -72,7 +72,7 @@ dimnames.scidb = function(x)
   l = prod(j - i + 1)
   n = length(i) + length(schema(x, "attributes")$name)
   ans = c(l, n)
-  warnonce("count")
+  warning("Use the AFL op_count macro operator for an exact count of data rows.")
   ans
 }
 

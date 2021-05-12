@@ -250,21 +250,6 @@ digest_auth = function(db, method, uri, realm="", nonce="123456")
   sprintf('Digest username="%s", realm=%s, nonce="%s", uri="%s", cnonce="%s", nc=%s, qop=%s, response="%s"', user, realm, nonce, uri, cnonce, nc, qop, response)
 }
 
-# Internal warning function
-warnonce = (function() {
-  state = list(
-    count="Use the AFL op_count macro operator for an exact count of data rows.",
-    nonum="Note: The R sparse Matrix package does not support certain value types like\ncharacter strings"
-  )
-  function(warn) {
-    if (!is.null(state[[warn]])) {
-      message(state[[warn]])
-      state[warn] <- c()
-      state <<- state
-    }
-  }
-}) ()
-
 # Some versions of RCurl seem to contain a broken URLencode function.
 oldURLencode = function (URL, reserved = FALSE)
 {
