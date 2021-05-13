@@ -1,9 +1,10 @@
 .scidbstr = function(object)
 {
+  DEBUG = getOption("scidb.debug", FALSE)
   name = substr(object@name, 1, 35)
   if (nchar(object@name) > 35) name = paste(name, "...", sep="")
-  message("SciDB expression ", name)
-  message("\nSciDB schema ", schema(object), "\n")
+  if (DEBUG) message("SciDB expression ", name)
+  if (DEBUG) message("\nSciDB schema ", schema(object), "\n")
   dims = schema(object, "dimensions")
   atts = schema(object, "attributes")
   d = tryCatch(data.frame(variable=dims$name, dimension=TRUE, type="int64", nullable=FALSE, 
@@ -14,8 +15,8 @@
             data.frame(variable=atts$name,
                        dimension=FALSE, type=atts$type, nullable=atts$nullable, start="", end="",
                        chunk=""))
-  message(paste(utils::capture.output(d), collapse="\n"))
-  message("\n")
+  if (DEBUG) message(paste(utils::capture.output(d), collapse="\n"))
+  if (DEBUG) message("\n")
 }
 
 
