@@ -39,7 +39,7 @@ before_install:
     --volume /tmp:/tmp
     rvernica/scidb:${SCIDB_VER}${SCIDB_IMG}
   - if [ ${SCIDB_VER} == "19.11" ] ; then docker exec scidb /opt/scidb/$SCIDB_VER/bin/scidbctl.py start scidb; fi
-  - docker exec scidb systemctl start shimsvc ;
+  - if [ ${SCIDB_VER} == "19.11" ] ; then docker exec scidb systemctl start shimsvc ; fi
   - while ! curl http://localhost:8080/version; do sleep 1; done
 
 # install:
