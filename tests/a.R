@@ -1,5 +1,7 @@
 library('Matrix')
 
+message("Starting tests"); t1 = proc.time()
+
 check = function(a, b) {
   print(match.call())
   stopifnot(all.equal(a, b, check.attributes=FALSE, check.names=FALSE))
@@ -231,3 +233,5 @@ if (nchar(host) > 0) {
         TRUE)
   
 }
+
+message("Ran tests in: ", (proc.time()-t1)[[3]], " seconds")
