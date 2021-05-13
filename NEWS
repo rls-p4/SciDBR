@@ -1,76 +1,80 @@
-CHANGES IN scidb 2.0.0:
+## Version 3.0.3
 
-   o Big change: all SciDB arrays are presented as data frames
+- Date: 2021-05-13
+- Support for uploading vectors, dense and sparse matrices as temp arrays via `as.scidb`
+- Partial fix for CRAN reviewer comments (https://github.com/Paradigm4/SciDBR/issues/213)
 
-   o Greatly simplified the package, improved data transfer performance
+## Version 2.0.0
 
-   o Support for SciDB 16.9 and older versions at least back to 15.7
+- Big change: all SciDB arrays are presented as data frames
+- Greatly simplified the package, improved data transfer performance
+- Support for SciDB 16.9 and older versions at least back to 15.7
 
-CHANGES IN scidb 1.1-3:
+## Version 1.1-3
 
-   o Support for upcoming SciDB 14.12, untested backwards support for
+- Support for upcoming SciDB 14.12, untested backwards support for
      older releases
 
-   o Improved type parsing support, new binary transfer option for data frame
+- Improved type parsing support, new binary transfer option for data frame
      objecs. This is much faster than UTF-8 transfer from SciDB.
 
-   o Support for streaming data from SciDB.
+- Support for streaming data from SciDB.
 
-   o Option to disable interrupt handling for faster large data transfers.
+- Option to disable interrupt handling for faster large data transfers.
 
-   o Added functions include order, more flexible dist, peek.
+- Added functions include order, more flexible dist, peek.
 
-CHANGES IN scidb 1.1-2:
+## Version 1.1-2
 
   SCIDB SUPPORT
 
-    o Support for SciDB 14.3, untested support for older SciDB releases
+ - Support for SciDB 14.3, untested support for older SciDB releases
 
-    o Dropping arrays from other R sessions requires a non-default option
+ - Dropping arrays from other R sessions requires a non-default option
       facilitating multiple-user settings.
 
-    o Queries can be canceled with R user interrupts now (for example with
+ - Queries can be canceled with R user interrupts now (for example with
       CTRL + C or ESC).
 
   IMPROVEMENTS
 
-    o Many improvements to merge and aggregate functions
+ - Many improvements to merge and aggregate functions
 
-    o N-d arrays with multiple attributes can now index with `$`
+ - N-d arrays with multiple attributes can now index with `$`
 
-    o Improved R save/load of R data files containing SciDB objects
+ - Improved R save/load of R data files containing SciDB objects
 
   NEW FEATURES
 
-    o Support for Paradigm4 glm and a simple glm model matrix builder
+ - Support for Paradigm4 glm and a simple glm model matrix builder
 
-    o Support for Paradigm4 truncated SVD routine
+ - Support for Paradigm4 truncated SVD routine
 
-    o Added hist, quantile, all.equal, antijoin, a `c` (SciDB concat-like)
+ - Added hist, quantile, all.equal, antijoin, a `c` (SciDB concat-like)
       function and many others
 
-CHANGES IN scidb 1.1-1:
+## Version 1.1-1
 
   WINDOWED AGGREGATES
 
-    o The aggregate function now supports moving and fixed window aggregates.
+ - The aggregate function now supports moving and fixed window aggregates.
 
   TLS/SSL ENCRYPTION AND AUTHENTICATION
 
-    o The package now supports TLS/SSL encrypted communication with the
+ - The package now supports TLS/SSL encrypted communication with the
       shim network service and authentication. The only function affected
       by this is `scidbconnect` -- simply supply an SSL port number and
       username and password arguments.
 
   LAZY EVALUATION
 
-    o Most scidb and scidbdf object can now represent array promises,
+ - Most scidb and scidbdf object can now represent array promises,
       un-evaluated SciDB queries equipped with a result schema and a
       context environment.
 
   NEW COMPOSABLE OPERATORS
 
-    o Many new functions were introduced that closely follow underlying SciDB
+ - Many new functions were introduced that closely follow underlying SciDB
       AFL operators. All of the new functions are composable with lazy
       evaluation of the underlying query using the new `scidbexpr` class.
       Results are only computed and stored by SciDB when required or explicitly
@@ -78,19 +82,19 @@ CHANGES IN scidb 1.1-1:
 
   R SPARSE MATRIX SUPPORT
 
-    o The package now maps sparse SciDB arrays to sparse R matrices. Only
+ - The package now maps sparse SciDB arrays to sparse R matrices. Only
       matrices (2-d arrays) with double-precision attributes are supported.
       Sparse array arithmetic uses the new P4 sparse matrix multiply operator
       when available.
 
   USING RCurl NOW
 
-    o We introduced a dependency on RCurl in order to support SSL and
+ - We introduced a dependency on RCurl in order to support SSL and
       authentication with the SciDB shim service.
 
   NO MORE SciDB NID
 
-    o The package no longer tries to support SciDB arrays with NID dimensions,
+ - The package no longer tries to support SciDB arrays with NID dimensions,
       which never really worked anyway. Instead, many functions now take
       advantage of the new SciDB `uniq` and `index_lookup` operators if
       available (>=SciDB 13.6).
@@ -99,35 +103,35 @@ CHANGES IN scidb 1.1-1:
 
   MANY NEW DATABASE-LIKE FEATURES
 
-    o Aggregate was improved, merge sort, unique, index_lookup, and other new
+ - Aggregate was improved, merge sort, unique, index_lookup, and other new
       functions were added. See the vignette for more information.
 
-CHANGES IN scidb 1.1-0:
+## Version 1.1-0
 
   SIGNIFICANT BUG FIX:
 
-    o Materializing subsetting operations could return inconsistently ordered data when
+ - Materializing subsetting operations could return inconsistently ordered data when
       results spanned SciDB array chunks across multiple SciDB instances. Data are now
       returned correctly in such cases.
 
   OTHER BUG FIXES:
 
-    o Fixed a bug in the processing of the start argument in the as.scidb function.
+ - Fixed a bug in the processing of the start argument in the as.scidb function.
 
-    o Fixed several bugs in the image function.
+ - Fixed several bugs in the image function.
 
   NEW FEATURES:
 
-    o The iquery function now accepts n=Inf to efficiently download all output
+ - The iquery function now accepts n=Inf to efficiently download all output
       from query at once. The iterative=TRUE option should still be used with
       smaller n values to iterate over large results.
 
-    o The crossprod and tcrossprod functions are now available for SciDB arrays
+ - The crossprod and tcrossprod functions are now available for SciDB arrays
       and mixed SciDB/R objects.
       
-    o A diag function is now available for SciDB matrices, returning result as a new
+ - A diag function is now available for SciDB matrices, returning result as a new
       SciDB 1-D array (vector).
 
-    o Element-wise exponentiation was implemented for scidb array objects.
+ - Element-wise exponentiation was implemented for scidb array objects.
 
-    o Implemented a sum function for scidb array objects.
+ - Implemented a sum function for scidb array objects.
