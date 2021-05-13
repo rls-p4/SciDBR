@@ -1,7 +1,6 @@
 library('Matrix')
 
-check = function(a, b)
-{
+check = function(a, b) {
   print(match.call())
   stopifnot(all.equal(a, b, check.attributes=FALSE, check.names=FALSE))
 }
@@ -10,8 +9,7 @@ library("scidb")
 host = Sys.getenv("SCIDB_TEST_HOST")
 test_with_security = ifelse(Sys.getenv("SCIDB_TEST_WITH_SECURITY") == 'true',
                             TRUE, FALSE)
-if (nchar(host) > 0)
-{
+if (nchar(host) > 0) {
   if (!test_with_security) {
     db = scidbconnect(host)
   } else {
@@ -164,8 +162,7 @@ if (nchar(host) > 0)
   a = db$build("<val:double>[x=1:10]", 'random()')
   b = db$aggregate(a, "sum(val)")
   as.R(b)
-  foo = function()
-  {
+  foo = function() {
      c = db$build("<val:double>[x=1:10]", 'random()')
      d = db$aggregate(c, "sum(val)")
      as.R(d)
