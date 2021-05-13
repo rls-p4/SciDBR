@@ -21,9 +21,9 @@ r:
 #  - knitr
 
 env:
-  - SCIDB_VER=19.11      SCIDB_IMG=-centos-7-ext   SCIDB_TEST_HOST='localhost'
+  - SCIDB_VER=19.11      SCIDB_IMG=-centos-7-ext
   # - SCIDB_VER=18.1
-  - SCIDB_VER=18.1       SCIDB_IMG=-ext            SCIDB_TEST_HOST='localhost'
+  - SCIDB_VER=18.1       SCIDB_IMG=-ext
 
 services:
   - docker
