@@ -1,18 +1,24 @@
 .scidbstr = function(object)
 {
+  DEBUG = getOption("scidb.debug", FALSE)
   name = substr(object@name, 1, 35)
   if (nchar(object@name) > 35) name = paste(name, "...", sep="")
-  cat("SciDB expression ", name)
-  cat("\nSciDB schema ", schema(object), "\n")
+  if (DEBUG) message("SciDB expression ", name)
+  if (DEBUG) message("\nSciDB schema ", schema(object), "\n")
   dims = schema(object, "dimensions")
   atts = schema(object, "attributes")
-  d = tryCatch(data.frame(variable=dims$name, dimension=TRUE, type="int64", nullable=FALSE, start=dims$start, end=dims$end, chunk=dims$chunk, row.names=NULL, stringsAsFactors=FALSE), error=function(e) NULL)
-  d = rbind(d, data.frame(variable=atts$name,
-                          dimension=FALSE,
-                          type=atts$type, nullable=atts$nullable, start="", end="", chunk=""))
-  cat(paste(utils::capture.output(print(d)), collapse="\n"))
-  cat("\n")
+  d = tryCatch(data.frame(variable=dims$name, dimension=TRUE, type="int64", nullable=FALSE, 
+                          start=dims$start, end=dims$end, chunk=dims$chunk, row.names=NULL, 
+                          stringsAsFactors=FALSE), 
+               error=function(e) NULL)
+  d = rbind(d, 
+            data.frame(variable=atts$name,
+                       dimension=FALSE, type=atts$type, nullable=atts$nullable, start="", end="",
+                       chunk=""))
+  if (DEBUG) message(paste(utils::capture.output(d), collapse="\n"))
+  if (DEBUG) message("\n")
 }
+
 
 .aflstr = function(object)
 {
@@ -67,7 +73,7 @@ dimnames.scidb = function(x)
   l = prod(j - i + 1)
   n = length(i) + length(schema(x, "attributes")$name)
   ans = c(l, n)
-  warnonce("count")
+  warning("Use the AFL op_count macro operator for an exact count of data rows.")
   ans
 }
 

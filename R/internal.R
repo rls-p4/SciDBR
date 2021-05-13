@@ -250,23 +250,6 @@ digest_auth = function(db, method, uri, realm="", nonce="123456")
   sprintf('Digest username="%s", realm=%s, nonce="%s", uri="%s", cnonce="%s", nc=%s, qop=%s, response="%s"', user, realm, nonce, uri, cnonce, nc, qop, response)
 }
 
-# Internal warning function
-warnonce = (function() {
-  state = list(
-    count="Use the AFL op_count macro operator for an exact count of data rows.",
-    nonum="Note: The R sparse Matrix package does not support certain value types like\ncharacter strings"
-  )
-  function(warn) {
-    if (!is.null(state[warn][[1]])) {
-      message(state[warn])
-      s <<- state
-      s[warn] = c()
-      state <<- s
-    }
-  }
-}) ()
-
-
 # Some versions of RCurl seem to contain a broken URLencode function.
 oldURLencode = function (URL, reserved = FALSE)
 {
@@ -567,7 +550,7 @@ scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL
   sessionid
 }
 
-.Matrix2scidb = function(db, X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0, 0), gc=TRUE, ...)
+.Matrix2scidb = function(db, X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0, 0), temp=FALSE, gc=TRUE, ...)
 {
   D = dim(X)
   rowOverlap = 0L
@@ -609,6 +592,12 @@ scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL
   bytes = .Call(C_scidb_raw, as.vector(t(matrix(c(X@i + start[[1]], j + start[[2]], X@x), length(X@x)))))
   ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
+  
+# Create a temporary array 'name'
+  if(temp){ # Use scidb temporary array instead of regular versioned array
+    targetArraySchema = schema
+    create_temp_array(db, name, schema = targetArraySchema)
+  }
 
 # redimension into a matrix
   query = sprintf("store(redimension(input(%s,'%s',-2,'(double null,double null,double null)'),%s),%s)", schema1d, ans, schema, name)
@@ -843,7 +832,8 @@ fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), c
 matvec2scidb = function(db, X,
                         name=tmpnam(db),
                         start,
-                        gc=TRUE, ...)
+                        gc=TRUE,
+                        temp=FALSE, ...)
 {
 # Check for a bunch of optional hidden arguments
   args = list(...)
@@ -926,7 +916,13 @@ matvec2scidb = function(db, X,
   {
     message("Data upload time ", (proc.time() - td1)[3], "\n")
   }
-
+  
+# Create a temporary array 'name'
+  if(temp){ # Use scidb temporary array instead of regular versioned array
+    targetArraySchema = schema
+    create_temp_array(db, name, schema = targetArraySchema)
+  }
+  
 # Load query
   if (do_reshape)
   {

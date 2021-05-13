@@ -17,45 +17,29 @@ addons:
 r:
   - release
 
-#r_packages:
-#  - knitr
-
 env:
-  - SCIDB_VER=18.1
-  - SCIDB_VER=18.1-ext
-  # - SCIDB_VER=16.9     SHIM=session-auth
-  # - SCIDB_VER=16.9-ext SHIM=session-auth
+  - SCIDB_VER=19.11      SCIDB_IMG=-centos-7-ext
+  # - SCIDB_VER=18.1
+  - SCIDB_VER=18.1       SCIDB_IMG=-ext
 
 services:
   - docker
 
 before_install:
-  - docker pull rvernica/scidb:${SCIDB_VER}
+  - docker pull rvernica/scidb:${SCIDB_VER}${SCIDB_IMG}
   - docker run
-    --name scidb
     --detach
-    --volume /dev/shm
-    --tmpfs /dev/shm:exec
+    --name scidb
     --publish 8080:8080
-    --publish 8083:8083
-    rvernica/scidb:${SCIDB_VER}
+    --volume /sys/fs/cgroup:/sys/fs/cgroup:ro
+    --volume /tmp/$(mktemp --directory):/run
+    --volume /tmp:/tmp
+    rvernica/scidb:${SCIDB_VER}${SCIDB_IMG}
+  - if [ ${SCIDB_VER} == "19.11" ] ; then docker exec scidb /opt/scidb/$SCIDB_VER/bin/scidbctl.py start scidb; fi
+  - if [ ${SCIDB_VER} == "19.11" ] ; then docker exec scidb systemctl start shimsvc ; fi
   - while ! curl http://localhost:8080/version; do sleep 1; done
 
-# install:
-#   - R --slave -e "install.packages(c('knitr', 'bit64', 'curl', 'data.table', 'openssl'))"
-#   - cd ..
-#   - R CMD build SciDBR
-
-# script:
-#   - SCIDB_TEST_HOST=127.0.0.1 R CMD check scidb_*.tar.gz
-
 install:
-  # - docker exec scidb bash -c "
-  #   ln --symbolic /opt/scidb/${SCIDB_VER}/lib/libscidbclient.so /lib/;
-  #   wget --no-verbose https://github.com/Paradigm4/shim/archive/${SHIM}.tar.gz;
-  #   tar --extract --gzip --file /${SHIM}.tar.gz;
-  #   make --directory /shim-${SHIM} service;
-  #   service shimsvc restart"
   - R -e "install.packages(c('knitr', 'bit64', 'curl', 'data.table', 'openssl', 'devtools'))"
   - R -e 'devtools::install_deps(dep = T)'
 

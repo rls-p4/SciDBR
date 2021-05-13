@@ -2,15 +2,16 @@
 title: "An R Interface to SciDB"
 date: "`r Sys.Date()`"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
   html_document:
-    fig_caption: false
-    toc: true
+    fig_caption: no
+    toc: yes
     toc_depth: 3
     css: style.css
-vignette: >
-  %\VignetteIndexEntry{scidb}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+vignette: |
+  %\VignetteIndexEntry{scidb} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
 ---
 
 
@@ -75,11 +76,11 @@ db <- scidbconnect()
 
 *Connect to shim on an encrypted port 8083 with example SciDB authentication*
 ```{r, eval=FALSE}
-db <- scidbconnect(port=8083, username="root", password="Paradigm4")
+db <- scidbconnect(port=8083, username="root", password="Paradigm4", protocol = 'https')
 ```
 *Connect to shim on an encrypted port 8083 with example SciDB authentication, interactively entering password*
 ```{r, eval=FALSE}
-db <- scidbconnect(port=8083, username="root", password=getpwd())
+db <- scidbconnect(port=8083, username="root", password=getpwd(), protocol = 'https')
 ```
 Use encrypted sessions when communicating with SciDB over public networks.
 SciDB user authentication is only supported by SciDB versions 15.7 and greater and

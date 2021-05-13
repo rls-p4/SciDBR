@@ -1,5 +1,8 @@
-check = function(a, b)
-{
+library('Matrix')
+
+message("Starting tests"); t1 = proc.time()
+
+check = function(a, b) {
   print(match.call())
   stopifnot(all.equal(a, b, check.attributes=FALSE, check.names=FALSE))
 }
@@ -8,8 +11,7 @@ library("scidb")
 host = Sys.getenv("SCIDB_TEST_HOST")
 test_with_security = ifelse(Sys.getenv("SCIDB_TEST_WITH_SECURITY") == 'true',
                             TRUE, FALSE)
-if (nchar(host) > 0)
-{
+if (nchar(host) > 0) {
   if (!test_with_security) {
     db = scidbconnect(host)
   } else {
@@ -162,8 +164,7 @@ if (nchar(host) > 0)
   a = db$build("<val:double>[x=1:10]", 'random()')
   b = db$aggregate(a, "sum(val)")
   as.R(b)
-  foo = function()
-  {
+  foo = function() {
      c = db$build("<val:double>[x=1:10]", 'random()')
      d = db$aggregate(c, "sum(val)")
      as.R(d)
@@ -212,4 +213,25 @@ if (nchar(host) > 0)
   print(small_df_fix)
   print(small_df_db)
   check(small_df_db, small_df_fix)
+  
+# Issue 217 Upload vectors, matrices as temp arrays via as.scidb
+  iris_mod = iris
+  colnames(iris_mod) = gsub(pattern = '[.]', replacement = '_', x = colnames(iris_mod))
+  DF = as.scidb(db, iris_mod, temp = T)
+  VEC = as.scidb(db, 1:10, temp = T)
+  MAT = as.scidb(db, as.matrix(iris_mod[1:3]), temp = T)
+  dgc_mat = Matrix(c(0, 0,  0, 2,
+                     6, 0, -1, 5,
+                     0, 4,  3, 0,
+                     0, 0,  5, 0),
+                   byrow = TRUE, nrow = 4, sparse = TRUE)
+  rownames(dgc_mat) = paste0('r', 1:4)
+  colnames(dgc_mat) = paste0('c', 1:4)
+  DGCMAT = as.scidb(db, dgc_mat, temp = T)
+  check(all(c(DF@name, VEC@name, MAT@name, DGCMAT@name) %in% 
+              iquery(db, "filter(list(), temporary=TRUE)", return = T)$name),
+        TRUE)
+  
 }
+
+message("Ran tests in: ", (proc.time()-t1)[[3]], " seconds")

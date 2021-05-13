@@ -1,17 +1,21 @@
 Package: scidb
 Type: Package
 Title: An R Interface to SciDB
-Version: 3.0.2
-Date: 2021-02-02
-Authors@R: c(
-    person("Kriti", "Sen Sharma", role=c("cre", "aut"), email="ksen@paradigm4.com"),
-    person("B. W.", "Lewis", role=c("aut"), email="blewis@illposed.net"),
-    person("Alex", "Poliakov", role=c("aut"), email="apoliakov@paradigm4.com"),
-    person("Rares", "Vernica", role=c("aut"), email="rvernica@paradigm4.com"),
-    person("Wenwei", "Xiong", role=c("aut"), email="wxiong@paradigm4.com")
-    )
-Copyright: Paradigm4, Inc.
-Description: An R interface to the 'SciDB' array database <https://www.paradigm4.com>.
+Version: 3.0.3
+Date: 2021-05-13
+Authors@R: c(person(given = "Kriti",     family = "Sen Sharma",  role=c("cre", "aut"),   email="ksen@paradigm4.com"),
+             person(given = "B. W.",     family = "Lewis",       role = "aut",           email = "blewis@illposed.net"),
+             person(given = "Alex",      family = "Poliakov",    role = "aut",           email = "apoliakov@paradigm4.com"),
+             person(given = "Rares",     family = "Vernica",     role = "aut",           email = "rvernica@paradigm4.com"),
+             person(given = "Wenwei",    family = "Xiong",       role = "aut",           email = "wxiong@paradigm4.com"),
+             person(given = "Paradigm4 Inc.",                    role = "cph"))
+Description: A package to interact with SciDB, a database that organizes data in n-dimensional arrays. 
+    SciDB arrays consist of a coordinate system whose coordinates are called dimensions, and one or
+    more values at each coordinate called attributes.
+    SciDB database features include ACID transactions, parallel processing, distributed storage, and 
+    efficient sparse array storage. 
+    This R package enables running of SciDB queries using native array
+    functional language (AFL) and optionally returning results as data frames. 
 BugReports: https://github.com/Paradigm4/SciDBR/issues
 URL: https://paradigm4.github.io/SciDBR/
 VignetteBuilder: knitr
