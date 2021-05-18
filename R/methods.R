@@ -4,7 +4,7 @@
   name = substr(object@name, 1, 35)
   if (nchar(object@name) > 35) name = paste(name, "...", sep="")
   if (DEBUG) message("SciDB expression ", name)
-  if (DEBUG) message("\nSciDB schema ", schema(object), "\n")
+  if (DEBUG) message("SciDB schema ", schema(object))
   dims = schema(object, "dimensions")
   atts = schema(object, "attributes")
   d = tryCatch(data.frame(variable=dims$name, dimension=TRUE, type="int64", nullable=FALSE, 
@@ -16,7 +16,6 @@
                        dimension=FALSE, type=atts$type, nullable=atts$nullable, start="", end="",
                        chunk=""))
   if (DEBUG) message(paste(utils::capture.output(d), collapse="\n"))
-  if (DEBUG) message("\n")
 }
 
 
