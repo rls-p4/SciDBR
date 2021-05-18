@@ -100,7 +100,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
                               ssl_verifypeer=0))
   resp = curl_fetch_memory(uri, h)
   if (resp$status_code > 299) stop("HTTP error", resp$status_code)
-  if (DEBUG) message("Data transfer time ", round((proc.time() - dt2)[3]), 4)
+  if (DEBUG) message("Data transfer time ", round((proc.time() - dt2)[3], 4))
   dt1 = proc.time()
   len = length(resp$content)
   p = 0
