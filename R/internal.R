@@ -100,7 +100,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
                               ssl_verifypeer=0))
   resp = curl_fetch_memory(uri, h)
   if (resp$status_code > 299) stop("HTTP error", resp$status_code)
-  if (DEBUG) message("Data transfer time ", (proc.time() - dt2)[3])
+  if (DEBUG) message("Data transfer time ", round((proc.time() - dt2)[3], 4))
   dt1 = proc.time()
   len = length(resp$content)
   p = 0
@@ -509,7 +509,7 @@ scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL
   if (!is.null(attr(db, "connection")$session)) {
     session = attr(db, "connection")$session
   } else {
-    if (DEBUG) cat("[Shim session] created new session\n")
+    if (DEBUG) message("[Shim session] created new session")
   }
   sessionid = session
   if (is.null(session))
@@ -520,7 +520,7 @@ scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL
   if (is.null(result_size_limit)) result_size_limit=""
   if (DEBUG)
   {
-    message(query, "\n")
+    message(query)
     t1 = proc.time()
   }
   ans = tryCatch(
@@ -914,7 +914,7 @@ matvec2scidb = function(db, X,
   ans = gsub("\n", "", gsub("\r", "", ans))
   if (DEBUG)
   {
-    message("Data upload time ", (proc.time() - td1)[3], "\n")
+    message("Data upload time ", round((proc.time() - td1)[3], 4))
   }
   
 # Create a temporary array 'name'

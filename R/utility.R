@@ -57,7 +57,7 @@ scidb = function(db, name, gc=FALSE, schema)
             {
               if (grepl(sprintf("%s$", getuid(e$db)), e$name)) {
                 DEBUG = getOption("scidb.debug", FALSE)
-                if (DEBUG) cat("*** Deleted by scidb() finalizer\n")
+                if (DEBUG) message("*** Deleted by scidb() finalizer")
                 scidbquery(db, sprintf("remove(%s)", e$name))
                 temp_arrays = attr(db, "connection")$temp_arrays
                 if (e$name %in% temp_arrays) {
@@ -221,12 +221,12 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   reg.finalizer( attr(db, "connection"), function(e)
   {
     DEBUG = getOption("scidb.debug", FALSE)
-    if (DEBUG) cat("[Shim session] automatically cleaning up db session\n")
+    if (DEBUG) message("[Shim session] automatically cleaning up db session")
     if (!is.null(attr(db, "connection")$session)) { # if session already exists
       sessionid = attr(db, "connection")$session
       SGET(db, "/release_session", list(id=sessionid), err=FALSE)
     } else { 
-      if (DEBUG) cat("[Shim session] No session information. Nothing to do here.\n")
+      if (DEBUG) message("[Shim session] No session information. Nothing to do here.")
     }
   }, onexit = TRUE)
   
@@ -311,7 +311,7 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
              stop(e)
           })
         if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
-        if (DEBUG) cat("Data transfer time", (proc.time() - dt1)[3], "\n")
+        if (DEBUG) message("Data transfer time ", round((proc.time() - dt1)[3], 4))
         dt1 = proc.time()
 # Handle escaped quotes
         result = gsub("\\\\'", "''", result, perl=TRUE)
@@ -332,7 +332,7 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
           ret = tryCatch(do.call("read.table", args=args),
                 error = function(e) stop("Query result parsing error ", as.character(e)))
         }
-        if (DEBUG) cat("R parsing time", (proc.time()-dt1)[3], "\n")
+        if (DEBUG) message("R parsing time ", round((proc.time()-dt1)[3], 4))
         ret
        }, error = function(e)
            {
