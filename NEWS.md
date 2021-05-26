@@ -1,3 +1,8 @@
+## Version 3.0.4
+
+- Date: 2021-05-26
+- Fix for uploading character vectors containing NA values
+
 ## Version 3.0.3
 
 - Date: 2021-05-13
