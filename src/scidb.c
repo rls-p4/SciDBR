@@ -102,6 +102,7 @@ scidb_raw (SEXP A)
   unsigned int slen, l;
   const unsigned char not_missing = NOT_MISSING;
   const char missing = IS_MISSING;
+  const char na_string[] = {0,0,0,0,0};
   switch (TYPEOF (A))
     {
     case REALSXP:
@@ -178,9 +179,9 @@ scidb_raw (SEXP A)
       for (j = 0; j < len; ++j)
         {
           if (STRING_ELT (A, j) == NA_STRING)
-            slen = slen + 4 + 1 + 1;
+            slen = slen + 1 + 4;
           else
-            slen = slen + 4 + 1 + 1 + strlen (CHAR (STRING_ELT (A, j)));
+            slen = slen + 1 + 4 + strlen (CHAR (STRING_ELT (A, j))) + 1;
         }
       PROTECT (ans = allocVector (RAWSXP, slen));
       buf = (char *) RAW (ans);
@@ -200,8 +201,8 @@ scidb_raw (SEXP A)
             }
           else
             {
-              memcpy (buf, &missing, 1);
-              buf += 6;
+              memcpy (buf, &na_string, 5);
+              buf += 5;
             }
         }
       break;
