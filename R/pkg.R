@@ -81,10 +81,10 @@ NULL
                       "store",
                       "verity_user",
                       "create_with_residency"))
-# Numeric vectors will be broken into batches of the following length while 
-# being posted/uploaded via as.scidb(). This will enable loading numeric vectors 
-# of long length.
-  options(scidb.numeric_vector_upload_length=10^7)
+# Maximum vector size while being posted/uploaded via as.scidb(). 
+# This will enable loading vectors of long length.
+  options(scidb.max_byte_size=500*(10^6)) # 500 MB
+  
 }
 
 # Reset the various package options

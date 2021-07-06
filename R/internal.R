@@ -865,17 +865,14 @@ matvec2scidb = function(db, X,
   start = as.integer(start)
   overlap = as.integer(overlap)
   dimname = make.unique_(attr_name, "i")
+  DEBUG = getOption("scidb.debug", FALSE)
   if (is.null(D))
   {
 # X is a vector
     do_reshape = FALSE
     chunkSize = min(chunkSize[[1]], length(X))
     X = as.matrix(X)
-    if(typeof(X) %in% c('integer', 'double')) {
-      block_size = getOption('scidb.numeric_vector_upload_length')
-    } else {
-      block_size = length(data)
-    }
+    block_size = get_multipart_post_load_block_size(data = X, debug = DEBUG)
     # Define schema for an initial SciDB upload and provide a template to
     # load subsequent blocks of the vector
     schema = sprintf(
@@ -907,7 +904,6 @@ matvec2scidb = function(db, X,
   }
   if (!is.array(X)) stop ("X must be an array or vector")
 
-  DEBUG = getOption("scidb.debug", FALSE)
   td1 = proc.time()
 # Obtain a session from shim for the upload process
   if (!is.null(attr(db, "connection")$session)) { # if session already exists
@@ -924,7 +920,8 @@ matvec2scidb = function(db, X,
   if(is.null(D)) {
     multipart_post_load(db, session, 
                         X, name, 
-                        load_schema, schema, temp_schema, type, 
+                        load_schema, schema, type,
+                        temp_schema, block_size,
                         temp, DEBUG, shimcon_time)
   } else {
     td2 = proc.time()
@@ -957,28 +954,42 @@ matvec2scidb = function(db, X,
   scidb(db, name, gc=gc)
 }
 
+get_multipart_post_load_block_size <- function(data, debug) {
+  max_byte_size = getOption('scidb.max_byte_size')
+  total_length = as.numeric(length(data))
+  
+  if(typeof(data) %in% c('integer', 'double')) {
+    block_size = floor(max_byte_size / 8)
+    if(debug) message("Using ", block_size, " for numeric vector block_size")
+  } else {
+    est_col_byte_size = max(c(1,nchar(data)), na.rm = T) * as.numeric(total_length) * 2
+    split_ratio = est_col_byte_size / max_byte_size
+    block_size = ceiling(as.numeric(total_length)/split_ratio)
+    if(debug) message("Using ", block_size, " for character vector block_size")
+  }
+  return(block_size)
+}
+
 multipart_post_load <- function(db, session, 
                                 data, name,
-                                load_schema, schema, temp_schema, type,
+                                load_schema, schema, type,
+                                temp_schema, block_size,
                                 temp, debug, shimcon_time) {
-  if(typeof(data) %in% c('integer', 'double')) {
-    block_size = getOption('scidb.numeric_vector_upload_length')
-  } else {
-    block_size = length(data)
-  }
   
+  total_length = as.numeric(length(data))
+
   # Create a temporary array 'name'
   if(temp){ # Use scidb temporary array instead of regular versioned array
     targetArraySchema = schema
     create_temp_array(db, name, schema = targetArraySchema)
   }
   
-  # Declare a num for storing post time
+  # Declare a numeric variable for storing post time
   post_time = 0
   
-  for(begin in seq(1, length(data), block_size)) {
+  for(begin in seq(1, total_length, block_size)) {
     
-    end = min((begin + block_size -1), length(data))
+    end = min((begin + block_size -1), total_length)
     
     # convert data to raw
     td = proc.time()
