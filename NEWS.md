@@ -1,3 +1,8 @@
+## Version 3.0.5
+
+- Date: 2021-07-09
+- Fix for uploading long vectors via as.scidb()
+
 ## Version 3.0.4
 
 - Date: 2021-05-26
