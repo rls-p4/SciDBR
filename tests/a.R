@@ -232,6 +232,48 @@ if (nchar(host) > 0) {
               iquery(db, "filter(list(), temporary=TRUE)", return = T)$name),
         TRUE)
   
+# Issue 220 Upload long vectors via as.scidb
+  options(scidb.result_size_limit = 1024*100)
+  
+  check_long_vector_upload_as.scidb <- function(db, data, verbose = FALSE) {
+    if(verbose) message('Vector length: ', length(data))
+    if(verbose) message('Object size: ', format(object.size(data), units = 'Mb'))
+    
+    if(verbose) message('Loading vector to SciDB...')
+    data_scidb = as.scidb(db, data)
+    data_name = data_scidb@name
+    if(verbose) message('Loaded to SciDB. Object name: ', data_name)
+    
+    if(verbose) message('Retrieving from SciDB...')
+    data_r = as.R(data_scidb)
+    if(verbose) message('Retrieved object size: ', format(object.size(data_r), units = 'Mb'))
+    data_r = data_r[order(data_r$i),]
+    
+    if(verbose) message('Testing uploaded vector with provided vector for equality - ')
+    if(class(data) %in% c('numeric', 'integer', 'double')) {
+      is_equal = if(all(unique(data - data_r$val) == 0)) TRUE else FALSE
+    } else if(class(data) == 'character') {
+      is_equal = if(all(data == data_r$val)) TRUE else FALSE
+    }
+    if(is_equal) {
+      message('Uploaded vector is equal to provided vector.') 
+    } else {
+      stop('Uploaded vector is not equal to provided vector.')
+    }
+    rm(data, data_scidb, data_r); gc()
+    
+    if(verbose) message('Deleting from SciDB...')
+    if(data_name %in% iquery(db, 'list()', return = TRUE)$name) iquery(db, paste0('remove(', data_name, ')'))
+    if(verbose) message('Vector deleted from SciDB.')
+  }
+  
+  options(scidb.max_byte_size = 400*(10^6))
+  # integer - block size (4*(10^8))/8=5*10^7
+  check_long_vector_upload_as.scidb(db, data = sample(x=1:10, size = 10^8.1, replace=TRUE))
+  # float - block size (4*(10^8))/8=5*10^7
+  check_long_vector_upload_as.scidb(db, data = sample(x=c(1:100/10), size = 10^8.1, replace=TRUE))
+  # character - block size (4*(10^8))/2=2*10^8
+  check_long_vector_upload_as.scidb(db, data = sample(x=letters, size = 10^8.1, replace=TRUE))
 }
 
 message("Ran tests in: ", (proc.time()-t1)[[3]], " seconds")
