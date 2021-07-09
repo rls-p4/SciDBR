@@ -962,7 +962,7 @@ get_multipart_post_load_block_size <- function(data, debug) {
     block_size = floor(max_byte_size / 8)
     if(debug) message("Using ", block_size, " for numeric vector block_size")
   } else {
-    est_col_byte_size = max(c(1,nchar(data)), na.rm = T) * as.numeric(total_length) * 2
+    est_col_byte_size = max(c(1,nchar(data, type="bytes")), na.rm = T) * as.numeric(total_length)
     split_ratio = est_col_byte_size / max_byte_size
     block_size = ceiling(as.numeric(total_length)/split_ratio)
     if(debug) message("Using ", block_size, " for character vector block_size")
