@@ -267,13 +267,16 @@ if (nchar(host) > 0) {
     if(verbose) message('Vector deleted from SciDB.')
   }
   
-  options(scidb.max_byte_size = 400*(10^6))
-  # integer - block size (4*(10^8))/8=5*10^7
-  check_long_vector_upload_as.scidb(db, data = sample(x=1:10, size = 10^8.1, replace=TRUE))
-  # float - block size (4*(10^8))/8=5*10^7
-  check_long_vector_upload_as.scidb(db, data = sample(x=c(1:100/10), size = 10^8.1, replace=TRUE))
-  # character - block size (4*(10^8))/2=2*10^8
-  check_long_vector_upload_as.scidb(db, data = sample(x=letters, size = 10^8.1, replace=TRUE))
+  # Setting 'scidb.max_byte_size' to 40Mb as this will allow testing multi-part uploading of long vectors via
+  # as.scidb() on reasonably sized vectors and not cause problems with R memory allocation.
+  options(scidb.max_byte_size = 40*(10^6))
+  # integer - block size is  4*(10^7)/8 = 5*(10^6)
+  check_long_vector_upload_as.scidb(db, data = sample(x=1:10, size = 10^7, replace=TRUE), verbose=T)
+  # float - block size (4*(10^7))/8=5*(10^6)
+  check_long_vector_upload_as.scidb(db, data = sample(x=c(1:100/10), size = 10^7, replace=TRUE), verbose=T)
+  # character - block size (4*(10^7))/2=2*10^7
+  check_long_vector_upload_as.scidb(db, data = sample(x=letters, size = 10^7.5, replace=TRUE), verbose=T)
+  
 }
 
 message("Ran tests in: ", (proc.time()-t1)[[3]], " seconds")
