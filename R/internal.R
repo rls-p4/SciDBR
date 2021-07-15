@@ -241,8 +241,8 @@ digest_auth = function(db, method, uri, realm="", nonce="123456")
   user = up[1]
   pwd  = up[2]
   if (is.na(pwd)) pwd=""
-  ha1=digest(sprintf("%s:%s:%s", user, realm, pwd, algo="md5"), serialize=FALSE)
-  ha2=digest(sprintf("%s:%s", method,  uri, algo="md5"), serialize=FALSE)
+  ha1=digest(sprintf("%s:%s:%s", user, realm, pwd), algo="md5", serialize=FALSE)
+  ha2=digest(sprintf("%s:%s", method,  uri), algo="md5", serialize=FALSE)
   cnonce="MDc1YmFhOWFkY2M0YWY2MDAwMDBlY2JhMDAwMmYxNTI="
   nc="00000001"
   qop="auth"
