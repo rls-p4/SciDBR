@@ -233,8 +233,6 @@ if (nchar(host) > 0) {
         TRUE)
   
 # Issue 220 Upload long vectors via as.scidb
-  options(scidb.result_size_limit = 1024*100)
-  
   check_long_vector_upload_as.scidb <- function(db, data, verbose = FALSE) {
     if(verbose) message('Vector length: ', length(data))
     if(verbose) message('Object size: ', format(object.size(data), units = 'Mb'))
@@ -267,9 +265,14 @@ if (nchar(host) > 0) {
     if(verbose) message('Vector deleted from SciDB.')
   }
   
+  # Recording global options to revert back to original values after executing the tests
+  initial.max_byte_size = getOption('scidb.max_byte_size')
+  initial.result_size_limit = 256
+  
   # Setting 'scidb.max_byte_size' to 40Mb as this will allow testing multi-part uploading of long vectors via
   # as.scidb() on reasonably sized vectors and not cause problems with R memory allocation.
   options(scidb.max_byte_size = 40*(10^6))
+  options(scidb.result_size_limit = 1000)
   # integer - block size is  4*(10^7)/8 = 5*(10^6)
   check_long_vector_upload_as.scidb(db, data = sample(x=1:10, size = 10^7, replace=TRUE), verbose=T)
   # float - block size (4*(10^7))/8=5*(10^6)
@@ -277,6 +280,9 @@ if (nchar(host) > 0) {
   # character - block size (4*(10^7))/2=2*10^7
   check_long_vector_upload_as.scidb(db, data = sample(x=letters, size = 10^7.5, replace=TRUE), verbose=T)
   
+  # Restoring global options
+  options(scidb.max_byte_size = initial.max_byte_size)
+  options(scidb.result_size_limit = initial.result_size_limit)
 }
 
 message("Ran tests in: ", (proc.time()-t1)[[3]], " seconds")
