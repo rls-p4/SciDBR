@@ -248,16 +248,8 @@ if (nchar(host) > 0) {
     data_r = data_r[order(data_r$i),]
     
     if(verbose) message('Testing uploaded vector with provided vector for equality - ')
-    if(class(data) %in% c('numeric', 'integer', 'double')) {
-      is_equal = if(all(unique(data - data_r$val) == 0)) TRUE else FALSE
-    } else if(class(data) == 'character') {
-      is_equal = if(all(data == data_r$val)) TRUE else FALSE
-    }
-    if(is_equal) {
-      message('Uploaded vector is equal to provided vector.') 
-    } else {
-      stop('Uploaded vector is not equal to provided vector.')
-    }
+    check(data, data_r$val)
+    if(verbose)  message('Uploaded vector is equal to provided vector.') 
     rm(data, data_scidb, data_r); gc()
     
     if(verbose) message('Deleting from SciDB...')
@@ -274,11 +266,11 @@ if (nchar(host) > 0) {
   options(scidb.max_byte_size = 40*(10^6))
   options(scidb.result_size_limit = 1000)
   # integer - block size is  4*(10^7)/8 = 5*(10^6)
-  check_long_vector_upload_as.scidb(db, data = sample(x=1:10, size = 10^7, replace=TRUE), verbose=T)
+  check_long_vector_upload_as.scidb(db, data = sample(x=1:10, size = 10^7, replace=TRUE), verbose=F)
   # float - block size (4*(10^7))/8=5*(10^6)
-  check_long_vector_upload_as.scidb(db, data = sample(x=c(1:100/10), size = 10^7, replace=TRUE), verbose=T)
+  check_long_vector_upload_as.scidb(db, data = sample(x=c(1:100/10), size = 10^7, replace=TRUE), verbose=F)
   # character - block size (4*(10^7))/2=2*10^7
-  check_long_vector_upload_as.scidb(db, data = sample(x=letters, size = 10^7.5, replace=TRUE), verbose=T)
+  check_long_vector_upload_as.scidb(db, data = sample(x=letters, size = 10^7.5, replace=TRUE), verbose=F)
   
   # Restoring global options
   options(scidb.max_byte_size = initial.max_byte_size)
