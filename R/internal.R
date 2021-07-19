@@ -1001,6 +1001,7 @@ multipart_post_load <- function(db, session,
     ans = POST(db, bytes, list(id=session))
     ans = gsub("\n", "", gsub("\r", "", ans))
 
+    if(debug) message("Uploading block ", ceiling(begin/block_size), " of ", ceiling(total_length/block_size))
     # load query
     if(begin == 1) {
       query = sprintf("store(input(%s,'%s', -2, '(%s null)'), %s)", load_schema, ans, type, name)
