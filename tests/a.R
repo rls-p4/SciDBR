@@ -259,7 +259,7 @@ if (nchar(host) > 0) {
   
   # Recording global options to revert back to original values after executing the tests
   initial.max_byte_size = getOption('scidb.max_byte_size')
-  initial.result_size_limit = 256
+  initial.result_size_limit = getOption('scidb.result_size_limit')
   
   # Setting 'scidb.max_byte_size' to 40Mb as this will allow testing multi-part uploading of long vectors via
   # as.scidb() on reasonably sized vectors and not cause problems with R memory allocation.
@@ -270,7 +270,7 @@ if (nchar(host) > 0) {
   # float - block size (4*(10^7))/8=5*(10^6)
   check_long_vector_upload_as.scidb(db, data = sample(x=c(1:100/10), size = 10^7, replace=TRUE), verbose=F)
   # character - block size (4*(10^7))/2=2*10^7
-  check_long_vector_upload_as.scidb(db, data = sample(x=letters, size = 10^7.5, replace=TRUE), verbose=F)
+  check_long_vector_upload_as.scidb(db, data = sample(x=letters, size = 10^7.8, replace=TRUE), verbose=F)
   
   # Restoring global options
   options(scidb.max_byte_size = initial.max_byte_size)
