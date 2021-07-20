@@ -849,7 +849,7 @@ matvec2scidb = function(db, X,
   }
   if ("integer64" %in% class(X)) type = force_type = "int64"
   if (is.null(type)) {
-    stop(paste("Unupported data type. The package supports: ",
+    stop(paste("Unsupported data type. The package supports: ",
        paste(unique(names(.Rtypes)), collapse=" "), ".", sep=""))
   }
   if (!is.null(args$reshape)) do_reshape = as.logical(args$reshape) # control reshape
@@ -865,16 +865,25 @@ matvec2scidb = function(db, X,
   start = as.integer(start)
   overlap = as.integer(overlap)
   dimname = make.unique_(attr_name, "i")
+  DEBUG = getOption("scidb.debug", FALSE)
   if (is.null(D))
   {
 # X is a vector
     do_reshape = FALSE
     chunkSize = min(chunkSize[[1]], length(X))
     X = as.matrix(X)
+    block_size = get_multipart_post_load_block_size(data = X, debug = DEBUG)
+    # Define schema for an initial SciDB upload and provide a template to
+    # load subsequent blocks of the vector
     schema = sprintf(
         "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
         nrow(X) - 1 + start[[1]], min(nrow(X), chunkSize), overlap[[1]])
     load_schema = schema
+    # Define a temporary schema for multi-part loading of blocks of the vector
+    temp_schema = sprintf(
+      "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
+      min((nrow(X) - 1 + start[[1]]), (block_size - 1 + start[[1]])), 
+      min(nrow(X), chunkSize), overlap[[1]])
   } else if (length(D) > 2)
   {
 # X is a dense n-d array
@@ -895,7 +904,6 @@ matvec2scidb = function(db, X,
   }
   if (!is.array(X)) stop ("X must be an array or vector")
 
-  DEBUG = getOption("scidb.debug", FALSE)
   td1 = proc.time()
 # Obtain a session from shim for the upload process
   if (!is.null(attr(db, "connection")$session)) { # if session already exists
@@ -907,30 +915,104 @@ matvec2scidb = function(db, X,
     release = 1;
   }
   if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  shimcon_time = round((proc.time() - td1)[3], 4)
 
-# Upload the data
-  bytes = .Call(C_scidb_raw, as.vector(aperm(X)))
-  ans = POST(db, bytes, list(id=session))
-  ans = gsub("\n", "", gsub("\r", "", ans))
-  if (DEBUG)
-  {
-    message("Data upload time ", round((proc.time() - td1)[3], 4))
-  }
+  if(is.null(D)) {
+    multipart_post_load(db, session, 
+                        X, name, 
+                        load_schema, schema, type,
+                        temp_schema, block_size,
+                        temp, DEBUG, shimcon_time)
+  } else {
+    td2 = proc.time()
+    bytes = .Call(C_scidb_raw, as.vector(aperm(X)))
+    ans = POST(db, bytes, list(id=session))
+    ans = gsub("\n", "", gsub("\r", "", ans))
+    post_time = round((proc.time() - td2)[3], 4)
   
-# Create a temporary array 'name'
+    if (DEBUG)
+    {
+      message("Data upload time ", (shimcon_time + post_time))
+    }
+    
+    # Create a temporary array 'name'
+    if(temp){ # Use scidb temporary array instead of regular versioned array
+      targetArraySchema = schema
+      create_temp_array(db, name, schema = targetArraySchema)
+    }
+    
+    # Load query
+    if (do_reshape)
+    {
+      query = sprintf("store(reshape(input(%s,'%s', -2, '(%s null)'),%s),%s)", load_schema, ans, type, schema, name)
+    } else
+    {
+      query = sprintf("store(input(%s,'%s', -2, '(%s null)'),%s)", load_schema, ans, type, name)
+    }
+    iquery(db, query)
+  }
+  scidb(db, name, gc=gc)
+}
+
+get_multipart_post_load_block_size <- function(data, debug) {
+  max_byte_size = getOption('scidb.max_byte_size')
+  total_length = as.numeric(length(data))
+  
+  if(typeof(data) %in% c('integer', 'double')) {
+    block_size = floor(max_byte_size / 8)
+    if(debug) message("Using ", block_size, " for numeric vector block_size")
+  } else {
+    est_col_byte_size = max(c(1,nchar(data, type="bytes")), na.rm = T) * as.numeric(total_length)
+    split_ratio = est_col_byte_size / max_byte_size
+    block_size = ceiling(as.numeric(total_length)/split_ratio)
+    if(debug) message("Using ", block_size, " for character vector block_size")
+  }
+  return(block_size)
+}
+
+multipart_post_load <- function(db, session, 
+                                data, name,
+                                load_schema, schema, type,
+                                temp_schema, block_size,
+                                temp, debug, shimcon_time) {
+  
+  total_length = as.numeric(length(data))
+
+  # Create a temporary array 'name'
   if(temp){ # Use scidb temporary array instead of regular versioned array
     targetArraySchema = schema
     create_temp_array(db, name, schema = targetArraySchema)
   }
   
-# Load query
-  if (do_reshape)
-  {
-    query = sprintf("store(reshape(input(%s,'%s', -2, '(%s null)'),%s),%s)", load_schema, ans, type, schema, name)
-  } else
-  {
-    query = sprintf("store(input(%s,'%s', -2, '(%s null)'),%s)", load_schema, ans, type, name)
+  # Declare a numeric variable for storing post time
+  post_time = 0
+  
+  for(begin in seq(1, total_length, block_size)) {
+    
+    end = min((begin + block_size -1), total_length)
+    
+    # convert data to raw
+    td = proc.time()
+    data_part = as.matrix(data[begin:end])
+    bytes = .Call(C_scidb_raw, as.vector(aperm(data_part)))
+    post_time = post_time + round((proc.time() - td)[3], 4)
+    
+    # upload data
+    ans = POST(db, bytes, list(id=session))
+    ans = gsub("\n", "", gsub("\r", "", ans))
+
+    if(debug) message("Uploading block ", ceiling(begin/block_size), " of ", ceiling(total_length/block_size))
+    # load query
+    if(begin == 1) {
+      query = sprintf("store(input(%s,'%s', -2, '(%s null)'), %s)", load_schema, ans, type, name)
+      iquery(db, query)
+    } else {
+      query = sprintf("input(%s,'%s', -2, '(%s null)')", temp_schema, ans, type)
+      iquery(db, sprintf("append(%s, %s, i)", query, name))
+    }
   }
-  iquery(db, query)
-  scidb(db, name, gc=gc)
+  
+  if(debug) message("Data upload time ", shimcon_time + post_time)
+  
+  return(NULL)
 }

@@ -1,3 +1,8 @@
+## Version 3.0.5
+
+- Date: 2021-07-20
+- Fix for uploading long vectors via `as.scidb()` https://github.com/Paradigm4/SciDBR/issues/220
+
 ## Version 3.0.4
 
 - Date: 2021-05-26
