@@ -69,8 +69,3 @@ jobs:
           options(crayon.enabled = TRUE)
           rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
         shell: Rscript {0}
-
-      - name: Run tests
-        run: |
-          R CMD build .
-          SCIDB_TEST_HOST=127.0.0.1 R CMD check scidb_*.tar.gz
