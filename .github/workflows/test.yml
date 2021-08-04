@@ -1,0 +1,69 @@
+name: Test Suite
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        SCIDB_VER: [19.11]
+        OS: [xenial, centos-7]
+        R: [ '3.5.3', '3.6.1' ]
+
+    services:
+      scidb:
+        image: ghcr.io/rvernica/scidb:${{ matrix.SCIDB_VER }}-${{ matrix.OS }}
+        volumes:
+          - /dev/shm
+          - /sys/fs/cgroup:/sys/fs/cgroup
+          - /tmp/$(mktemp --directory):/run
+        ports:
+          - 8080:8080
+          - 8083:8083
+        options: --name scidb
+
+    steps:
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v1
+        with:
+          r-version: ${{ matrix.R }}
+
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Start SciDB in CentOS-7
+        run: >-
+          docker exec scidb
+          /opt/scidb/${{ matrix.SCIDB_VER }}/bin/scidbctl.py start scidb
+        if: ${{ matrix.OS == 'centos-7' }}
+
+      - name: Start Shim in CentOS-7
+        run: docker exec scidb systemctl start shimsvc
+        if: ${{ matrix.OS == 'centos-7' }}
+
+      - name: Wait for SciDB to start
+        run: while ! curl http://localhost:8080/version; do sleep 5; done
+
+      - name: Install Basic dependencies
+        run: install.packages(c("remotes", "rcmdcheck"))
+        shell: Rscript {0}
+
+      - name: Install OS dependencies
+        run: |
+          while read -r cmd
+          do
+            eval sudo $cmd
+          done < <( Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04"))')
+
+      - name: Install SciDB-R dependencies
+        run: remotes::install_deps(dependencies = TRUE)
+        shell: Rscript {0}
+
+      - name: Build and check
+        run: |
+          options(crayon.enabled = TRUE)
+          rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
+        shell: Rscript {0}
