@@ -63,6 +63,8 @@ jobs:
         shell: Rscript {0}
 
       - name: Build and check
+        env:
+          SCIDB_TEST_HOST=127.0.0.1
         run: |
           options(crayon.enabled = TRUE)
           rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
