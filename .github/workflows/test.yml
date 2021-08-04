@@ -73,4 +73,4 @@ jobs:
       - name: Run tests
         run: |
           R CMD build .
-          SCIDB_TEST_HOST=127.0.0.1 R CMD check scidb_.*tar.gz
+          SCIDB_TEST_HOST=127.0.0.1 R CMD check scidb_*.tar.gz
