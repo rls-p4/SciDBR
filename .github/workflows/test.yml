@@ -69,4 +69,6 @@ jobs:
         shell: Rscript {0}
 
       - name: Run tests
-        run: SCIDB_TEST_HOST=127.0.0.1 R CMD check *tar.gz
+        run: >
+          SCIDB_TEST_HOST=127.0.0.1
+          R CMD check /home/runner/work/_temp/Library/scidb_.*tar.gz
