@@ -295,6 +295,10 @@ if (nchar(host) > 0) {
   check(scidb_df, scidb_ret)
   # Delete SciDB dataframe
   iquery(db, sprintf('remove(%s)', scidb_df_name))
+  # Check an SciDB dataframe created from an array with a single dimension
+  scidb_ret <- iquery(db, 'flatten(build(<value:double>[i=1:5:0:1], iif(i%2=0, 1, 0)))', return=T)
+  scidb_ret <- scidb_ret[order(scidb_ret$i),]
+  check(scidb_ret, data.frame(i = 1:5, value = abs(floor(1:5%%2) -1), stringsAsFactors = FALSE))
 }
 
 message("Ran tests in: ", (proc.time()-t1)[[3]], " seconds")
