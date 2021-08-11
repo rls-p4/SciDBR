@@ -1,6 +1,7 @@
 [![CRAN version](http://www.r-pkg.org/badges/version/scidb)](https://cran.r-project.org/package=scidb)
 ![](http://cranlogs.r-pkg.org/badges/scidb)
 [![codecov.io](https://codecov.io/github/Paradigm4/SciDBR/coverage.svg?branch=master)](https://codecov.io/github/Paradigm4/SciDBR?branch=master)
+[![Test Suite](https://github.com/Paradigm4/SciDBR/actions/workflows/test.yml/badge.svg)](https://github.com/Paradigm4/SciDBR/actions/workflows/test.yml)
 
 Install the package from CRAN with
 ```
