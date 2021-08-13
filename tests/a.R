@@ -280,6 +280,30 @@ if (nchar(host) > 0) {
     options(scidb.max_byte_size = initial.max_byte_size)
     options(scidb.result_size_limit = initial.result_size_limit)
   }
+ 
+# Issue 224 Support for SciDB dataframe
+  scidb_df_name = 'scidb_df_flat_test'
+  scidb_df = data.frame(i=c(rep(1,3), rep(2,3), rep(3,3)), j=rep(1:3, 3), stringsAsFactors = FALSE)
+  scidb_df$value = as.numeric(scidb_df$i == scidb_df$j)
+  # create a SciDB dataframe 
+  iquery(db, 
+         sprintf("store(flatten(build(<value:double>[i=1:3:0:1, j=1:3:0:1], iif(i=j, 1, 0))), %s)", 
+                 scidb_df_name)
+         )
+  # check iquery
+  scidb_ret <- iquery(db, sprintf('scan(%s)', scidb_df_name), return = TRUE)
+  scidb_ret <- scidb_ret[order(scidb_ret$i, scidb_ret$j),]
+  check(scidb_df, scidb_ret)
+  # check as.R
+  scidb_ret <- as.R(scidb(db, scidb_df_name))
+  scidb_ret <- scidb_ret[order(scidb_ret$i, scidb_ret$j),]
+  check(scidb_df, scidb_ret)
+  # Delete SciDB dataframe
+  iquery(db, sprintf('remove(%s)', scidb_df_name))
+  # Check an SciDB dataframe created from an array with a single dimension
+  scidb_ret <- iquery(db, 'flatten(build(<value:double>[i=1:5:0:1], iif(i%2=0, 1, 0)))', return=T)
+  scidb_ret <- scidb_ret[order(scidb_ret$i),]
+  check(scidb_ret, data.frame(i = 1:5, value = abs(floor(1:5%%2) -1), stringsAsFactors = FALSE))
 }
 
 message("Ran tests in: ", (proc.time()-t1)[[3]], " seconds")
