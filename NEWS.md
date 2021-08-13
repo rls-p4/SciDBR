@@ -1,3 +1,8 @@
+## Version 3.0.6
+
+- Date: 2021-08-13
+- In `as.R`, SciDB data frames are downloaded without the artificial dimensions 
+
 ## Version 3.0.5
 
 - Date: 2021-07-20
