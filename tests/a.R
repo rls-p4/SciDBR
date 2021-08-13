@@ -233,8 +233,10 @@ if (nchar(host) > 0) {
         TRUE)
   
 # Issue 220 Upload long vectors via as.scidb
-  if (test_with_security) { # These tests for long vector upload do not run OK on small docker SciDB setups
-                            # Disabling for SciDB CE Docker setup used on Github Actions
+  if (test_with_security) { # The following tests for long vector upload do not run OK on Docker SciDB setups 
+                            # that have low system RAM. 
+                            # Disabling the tests for SciDB CE Docker setup (that is used on 
+                            # Github Actions infrastructure)
     check_long_vector_upload_as.scidb <- function(db, data, verbose = FALSE) {
       if(verbose) message('Vector length: ', length(data))
       if(verbose) message('Object size: ', format(object.size(data), units = 'Mb'))
