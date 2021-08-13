@@ -233,49 +233,54 @@ if (nchar(host) > 0) {
         TRUE)
   
 # Issue 220 Upload long vectors via as.scidb
-  check_long_vector_upload_as.scidb <- function(db, data, verbose = FALSE) {
-    if(verbose) message('Vector length: ', length(data))
-    if(verbose) message('Object size: ', format(object.size(data), units = 'Mb'))
+  if (test_with_security) { # The following tests for long vector upload do not run OK on Docker SciDB setups 
+                            # that have low system RAM. 
+                            # Disabling the tests for SciDB CE Docker setup (that is used on 
+                            # Github Actions infrastructure)
+    check_long_vector_upload_as.scidb <- function(db, data, verbose = FALSE) {
+      if(verbose) message('Vector length: ', length(data))
+      if(verbose) message('Object size: ', format(object.size(data), units = 'Mb'))
+      
+      if(verbose) message('Loading vector to SciDB...')
+      data_scidb = as.scidb(db, data)
+      data_name = data_scidb@name
+      if(verbose) message('Loaded to SciDB. Object name: ', data_name)
+      
+      if(verbose) message('Retrieving from SciDB...')
+      data_r = as.R(data_scidb)
+      if(verbose) message('Retrieved object size: ', format(object.size(data_r), units = 'Mb'))
+      data_r = data_r[order(data_r$i),]
+      
+      if(verbose) message('Testing uploaded vector with provided vector for equality - ')
+      check(data, data_r$val)
+      if(verbose)  message('Uploaded vector is equal to provided vector.') 
+      rm(data, data_scidb, data_r); gc()
+      
+      if(verbose) message('Deleting from SciDB...')
+      if(data_name %in% iquery(db, 'list()', return = TRUE)$name) iquery(db, paste0('remove(', data_name, ')'))
+      if(verbose) message('Vector deleted from SciDB.')
+    }
     
-    if(verbose) message('Loading vector to SciDB...')
-    data_scidb = as.scidb(db, data)
-    data_name = data_scidb@name
-    if(verbose) message('Loaded to SciDB. Object name: ', data_name)
+    # Recording global options to revert back to original values after executing the tests
+    initial.max_byte_size = getOption('scidb.max_byte_size')
+    initial.result_size_limit = getOption('scidb.result_size_limit')
     
-    if(verbose) message('Retrieving from SciDB...')
-    data_r = as.R(data_scidb)
-    if(verbose) message('Retrieved object size: ', format(object.size(data_r), units = 'Mb'))
-    data_r = data_r[order(data_r$i),]
+    # Setting 'scidb.max_byte_size' to 40Mb as this will allow testing multi-part uploading of long vectors via
+    # as.scidb() on reasonably sized vectors and not cause problems with R memory allocation.
+    options(scidb.max_byte_size = 40*(10^6))
+    options(scidb.result_size_limit = 1000)
+    # integer - block size is  4*(10^7)/8 = 5*(10^6)
+    check_long_vector_upload_as.scidb(db, data = sample(x=1:10, size = 10^7, replace=TRUE), verbose=F)
+    # float - block size (4*(10^7))/8=5*(10^6)
+    check_long_vector_upload_as.scidb(db, data = sample(x=c(1:100/10), size = 10^7, replace=TRUE), verbose=F)
+    # character - block size (4*(10^7))/2=2*10^7
+    check_long_vector_upload_as.scidb(db, data = sample(x=letters, size = 10^7.8, replace=TRUE), verbose=F)
     
-    if(verbose) message('Testing uploaded vector with provided vector for equality - ')
-    check(data, data_r$val)
-    if(verbose)  message('Uploaded vector is equal to provided vector.') 
-    rm(data, data_scidb, data_r); gc()
-    
-    if(verbose) message('Deleting from SciDB...')
-    if(data_name %in% iquery(db, 'list()', return = TRUE)$name) iquery(db, paste0('remove(', data_name, ')'))
-    if(verbose) message('Vector deleted from SciDB.')
+    # Restoring global options
+    options(scidb.max_byte_size = initial.max_byte_size)
+    options(scidb.result_size_limit = initial.result_size_limit)
   }
-  
-  # Recording global options to revert back to original values after executing the tests
-  initial.max_byte_size = getOption('scidb.max_byte_size')
-  initial.result_size_limit = getOption('scidb.result_size_limit')
-  
-  # Setting 'scidb.max_byte_size' to 40Mb as this will allow testing multi-part uploading of long vectors via
-  # as.scidb() on reasonably sized vectors and not cause problems with R memory allocation.
-  options(scidb.max_byte_size = 40*(10^6))
-  options(scidb.result_size_limit = 1000)
-  # integer - block size is  4*(10^7)/8 = 5*(10^6)
-  check_long_vector_upload_as.scidb(db, data = sample(x=1:10, size = 10^7, replace=TRUE), verbose=F)
-  # float - block size (4*(10^7))/8=5*(10^6)
-  check_long_vector_upload_as.scidb(db, data = sample(x=c(1:100/10), size = 10^7, replace=TRUE), verbose=F)
-  # character - block size (4*(10^7))/2=2*10^7
-  check_long_vector_upload_as.scidb(db, data = sample(x=letters, size = 10^7.8, replace=TRUE), verbose=F)
-  
-  # Restoring global options
-  options(scidb.max_byte_size = initial.max_byte_size)
-  options(scidb.result_size_limit = initial.result_size_limit)
-  
+ 
 # Issue 224 Support for SciDB dataframe
   scidb_df_name = 'scidb_df_flat_test'
   scidb_df = data.frame(i=c(rep(1,3), rep(2,3), rep(3,3)), j=rep(1:3, 3), stringsAsFactors = FALSE)
