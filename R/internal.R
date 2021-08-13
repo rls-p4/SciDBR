@@ -27,7 +27,13 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   }
   buffer = 100000L
   args = list(...)
-  if (is.null(args$only_attributes)) args$only_attributes = FALSE
+  lazyeval_ret = lazyeval(db, query)
+  args$only_attributes = if (is.null(args$only_attributes)) {
+    dist = lazyeval_ret$distribution
+    if(is.na(dist)) FALSE else if(dist == 'dataframe') TRUE else FALSE
+  } else {
+    args$only_attributes
+  }
   if (is.null(args$binary)) args$binary = TRUE
   if (!is.null(args$buffer))
   {
@@ -37,8 +43,15 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   if (!inherits(query, "scidb"))
   {
 # make a scidb object out of the query, optionally using a supplied schema to skip metadata query
-    if (is.null(args$schema)) query = scidb(db, query)
-    else query = scidb(db, query, schema=args$schema)
+    if (is.null(args$schema)) {
+      query = if(is.na(lazyeval_ret$schema)) {
+        scidb(db, query)
+      } else {
+        scidb(db, query, schema=lazyeval_ret$schema)
+      }
+    } else {
+      query = scidb(db, query, schema=args$schema)
+    }
   }
   attributes = schema(query, "attributes")
   dimensions = schema(query, "dimensions")
@@ -56,7 +69,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     internal_query = query
     if (length(all_names) != length(unique(all_names)))
     {
-      # Cast to completeley unique names to be safe:
+      # Cast to completely unique names to be safe:
       cast_dim_names = make.names_(dim_names)
       cast_attr_names = make.unique_(cast_dim_names, make.names_(attributes$name))
       cast_schema = sprintf("<%s>[%s]", paste(paste(cast_attr_names, attributes$type, sep=":"), collapse=","), paste(cast_dim_names, collapse=","))
@@ -91,7 +104,6 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     release = 1;
   }
   if (release) on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
-
   dt2 = proc.time()
   uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
   h = new_handle()
@@ -496,7 +508,8 @@ POST = function(db, data, args=list(), err=TRUE)
 # Example values of save: "dcsv", "csv+", "(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL, resp=FALSE, stream, prefix=attributes(db)$connection$prefix, atts_only=TRUE)
+scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL, resp=FALSE, stream, 
+                      prefix=attributes(db)$connection$prefix, atts_only=TRUE)
 {
   DEBUG = FALSE
   STREAM = 0L
@@ -662,10 +675,12 @@ at_least = function(x, y)
 # Used in delayed assignment of scidb object schema
 lazyeval = function(db, name)
 {
+  if(inherits(name, 'scidb')) name = name@name
   escape = gsub("'", "\\\\'", name, perl=TRUE)
   query = iquery(db, sprintf("show('filter(%s, true)', 'afl')", escape), `return`=TRUE, binary=FALSE)
   # NOTE that we need binary=FALSE here to avoid a terrible recursion
-  list(schema = gsub("^.*<", "<", query$schema, perl=TRUE))
+  list(schema = gsub("^.*<", "<", query$schema, perl=TRUE),
+       distribution = query$distribution)
 }
 
 #' Internal function to upload an R data frame to SciDB
