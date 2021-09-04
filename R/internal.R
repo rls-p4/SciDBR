@@ -843,7 +843,6 @@ fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), c
   invisible()
 }
 
-
 matvec2scidb = function(db, X,
                         name=tmpnam(db),
                         start,
@@ -970,7 +969,7 @@ matvec2scidb = function(db, X,
 }
 
 get_multipart_post_load_block_size <- function(data, debug) {
-  max_byte_size = getOption('scidb.max_byte_size')
+  max_byte_size = getOption('scidb.max_byte_size', 500*(10^6))
   total_length = as.numeric(length(data))
   
   if(typeof(data) %in% c('integer', 'double')) {
