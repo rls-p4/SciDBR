@@ -843,6 +843,18 @@ fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), c
   invisible()
 }
 
+# Internal function to upload R vectors, dense n-d arrays and matrices to SciDB
+# Arguments:
+# db: scidb database connection
+# X: a vector, dense n-d array or matrix
+# name: (character) SciDB array name
+# start: (int) dimension start value
+# gc: (boolean) set to TRUE to connect SciDB array to R's garbage collector
+# ... optional extra arguments
+#   attr: attribute name
+#   reshape: (boolean) to control reshape
+#   type: (character) desired data type - however, limited type conversion available
+#   max_byte_size: (numeric) maximum size of each block while uploading vectors in a multi-part fashion
 matvec2scidb = function(db, X,
                         name=tmpnam(db),
                         start,
@@ -886,7 +898,10 @@ matvec2scidb = function(db, X,
     do_reshape = FALSE
     chunkSize = min(chunkSize[[1]], length(X))
     X = as.matrix(X)
-    block_size = get_multipart_post_load_block_size(data = X, debug = DEBUG)
+    block_size = get_multipart_post_load_block_size(
+      data = X, 
+      debug = DEBUG,
+      max_byte_size = if(is.null(args$max_byte_size)) getOption('scidb.max_byte_size', 500*(10^6)) else args$max_byte_size)
     # Define schema for an initial SciDB upload and provide a template to
     # load subsequent blocks of the vector
     schema = sprintf(
@@ -968,8 +983,7 @@ matvec2scidb = function(db, X,
   scidb(db, name, gc=gc)
 }
 
-get_multipart_post_load_block_size <- function(data, debug) {
-  max_byte_size = getOption('scidb.max_byte_size', 500*(10^6))
+get_multipart_post_load_block_size <- function(data, debug, max_byte_size) {
   total_length = as.numeric(length(data))
   
   if(typeof(data) %in% c('integer', 'double')) {
