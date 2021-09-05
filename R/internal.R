@@ -854,7 +854,8 @@ fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), c
 #   attr: attribute name
 #   reshape: (boolean) to control reshape
 #   type: (character) desired data type - however, limited type conversion available
-#   max_byte_size: (numeric) maximum size of each block while uploading vectors in a multi-part fashion
+#   max_byte_size: (numeric) maximum size of each block (in bytes) while uploading vectors in a multi-part fashion.
+#                  Minimum block size is 8 bytes.
 matvec2scidb = function(db, X,
                         name=tmpnam(db),
                         start,
@@ -985,6 +986,11 @@ matvec2scidb = function(db, X,
 
 get_multipart_post_load_block_size <- function(data, debug, max_byte_size) {
   total_length = as.numeric(length(data))
+  
+  if(max_byte_size < 8) {
+    warning('Supplied max_byte_size is less than 8 bytes. Restoring it to default value of 500MB.')
+    max_byte_size=500*(10^6)
+  }
   
   if(typeof(data) %in% c('integer', 'double')) {
     block_size = floor(max_byte_size / 8)
