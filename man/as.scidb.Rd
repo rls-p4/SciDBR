@@ -17,7 +17,13 @@ as.scidb(db, x, name, start, gc = TRUE, ...)
 
 \item{gc}{set to FALSE to disconnect the SciDB array from R's garbage collector}
 
-\item{...}{other options, see \code{\link{df2scidb}}}
+\item{...}{other options, see 
+\itemize{
+\item{\code{\link{df2scidb}}:}{ for uploading R data frame}
+\item{\code{\link{.Matrix2scidb}}:}{ for uploading sparse matrices}
+\item{\code{\link{matvec2scidb}}:}{ for uploading dense R vectors, arrays or matrices}
+\item{\code{\link{raw2scidb}}:}{ for uploading raw values}
+}}
 }
 \value{
 A \code{scidb} object

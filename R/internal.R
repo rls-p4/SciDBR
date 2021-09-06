@@ -563,6 +563,16 @@ scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL
   sessionid
 }
 
+#' Internal function to upload an R sparse matrix into SciDB
+#' @param db scidb database connection
+#' @param X a sparse matrix
+#' @param name (character) SciDB array name
+#' @param rowChuckSize,colChunkSize (int) optional value passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools
+#' @param start (int) dimension start values
+#' @param temp (boolean) create a temporary SciDB array
+#' @param gc (boolean) set to \code{TRUE} to connect SciDB array to R's garbage collector
+#' @return a \code{\link{scidb}} object
+#' @keywords internal
 .Matrix2scidb = function(db, X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0, 0), temp=FALSE, gc=TRUE, ...)
 {
   D = dim(X)
@@ -618,8 +628,17 @@ scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL
   scidb(db, name, gc=gc)
 }
 
-
-# raw value to special 1-element SciDB array
+#' Internal function to upload an R raw value to special 1-element SciDB array
+#' @param db scidb database connection
+#' @param X a raw value
+#' @param name (character) SciDB array name
+#' @param gc (boolean) set to \code{TRUE} to connect SciDB array to R's garbage collector
+#' @param ... optional extra arguments
+#' \itemize {
+#' \item {temp:} {(boolean) create a temporary SciDB array}
+#' }
+#' @return a \code{\link{scidb}} object
+#' @keywords internal
 raw2scidb = function(db, X, name, gc=TRUE, ...)
 {
   if (!is.raw(X)) stop("X must be a raw value")
@@ -843,19 +862,23 @@ fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), c
   invisible()
 }
 
-# Internal function to upload R vectors, dense n-d arrays and matrices to SciDB
-# Arguments:
-# db: scidb database connection
-# X: a vector, dense n-d array or matrix
-# name: (character) SciDB array name
-# start: (int) dimension start value
-# gc: (boolean) set to TRUE to connect SciDB array to R's garbage collector
-# ... optional extra arguments
-#   attr: attribute name
-#   reshape: (boolean) to control reshape
-#   type: (character) desired data type - however, limited type conversion available
-#   max_byte_size: (numeric) maximum size of each block (in bytes) while uploading vectors in a multi-part fashion.
-#                  Minimum block size is 8 bytes.
+#' Internal function to upload an R vector, dense n-d array or matrix to SciDB
+#' @param db scidb database connection
+#' @param X a vector, dense n-d array or matrix
+#' @param name (character) SciDB array name
+#' @param start (int) dimension start value
+#' @param gc (boolean) set to TRUE to connect SciDB array to R's garbage collector
+#' @param temp (boolean) create a temporary SciDB array
+#' @param ... optional extra arguments.
+#' \itemize{
+#' \item {attr: } {attribute name}
+#' \item {reshape: } {(boolean) to control reshape}
+#' \item {type: } {(character) desired data type - however, limited type conversion available}
+#' \item {max_byte_size: } {(int) maximum size of each block (in bytes) while uploading vectors in
+#' a multi-part fashion. Minimum block size is 8 bytes. }
+#' }
+#' @return a \code{\link{scidb}} object
+#' @keywords internal
 matvec2scidb = function(db, X,
                         name=tmpnam(db),
                         start,
