@@ -353,7 +353,13 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
 #' @param name a SciDB array name to use
 #' @param start starting SciDB integer coordinate index (does not apply to data frames)
 #' @param gc set to FALSE to disconnect the SciDB array from R's garbage collector
-#' @param ... other options, see \code{\link{df2scidb}}
+#' @param ... other options, see 
+#' \itemize{
+#' \item{\code{\link{df2scidb}}:}{ for uploading R data frame}
+#' \item{\code{\link{.Matrix2scidb}}:}{ for uploading sparse matrices}
+#' \item{\code{\link{matvec2scidb}}:}{ for uploading dense R vectors, arrays or matrices}
+#' \item{\code{\link{raw2scidb}}:}{ for uploading raw values}
+#' }
 #' @note Supported R objects include data frames, scalars, vectors, dense matrices,
 #' and double-precision sparse matrices of class CsparseMatrix. Supported R scalar
 #' types and their resulting SciDB types are:

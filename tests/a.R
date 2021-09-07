@@ -237,12 +237,16 @@ if (nchar(host) > 0) {
                             # that have low system RAM. 
                             # Disabling the tests for SciDB CE Docker setup (that is used on 
                             # Github Actions infrastructure)
-    check_long_vector_upload_as.scidb <- function(db, data, verbose = FALSE) {
+    check_long_vector_upload_as.scidb <- function(db, data, verbose = FALSE, max_byte_size) {
       if(verbose) message('Vector length: ', length(data))
       if(verbose) message('Object size: ', format(object.size(data), units = 'Mb'))
       
       if(verbose) message('Loading vector to SciDB...')
-      data_scidb = as.scidb(db, data)
+      if(missing(max_byte_size)) {
+        data_scidb = as.scidb(db, data)
+      } else {
+        data_scidb = as.scidb(db, data, max_byte_size=max_byte_size)
+      }
       data_name = data_scidb@name
       if(verbose) message('Loaded to SciDB. Object name: ', data_name)
       
@@ -273,6 +277,9 @@ if (nchar(host) > 0) {
     check_long_vector_upload_as.scidb(db, data = sample(x=1:10, size = 10^7, replace=TRUE), verbose=F)
     # float - block size (4*(10^7))/8=5*(10^6)
     check_long_vector_upload_as.scidb(db, data = sample(x=c(1:100/10), size = 10^7, replace=TRUE), verbose=F)
+    # float - with a specified max_byte_size
+    check_long_vector_upload_as.scidb(db, data = sample(x=c(1:100/10), size = 10^7, replace=TRUE), verbose=F,
+                                      max_byte_size = 10*10^6)
     # character - block size (4*(10^7))/2=2*10^7
     check_long_vector_upload_as.scidb(db, data = sample(x=letters, size = 10^7.8, replace=TRUE), verbose=F)
     
