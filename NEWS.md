@@ -1,11 +1,12 @@
 ## Version 3.0.7
 
 - Date: 2021-09-06
-- In `as.scidb`, added a new optional parameter - `max_byte_size` - with default value set as 500MB
-  for uploading R vectors in a multi-part fashion into SciDB without attaching package `scidb`.
-  Example: 
-  `scidb::as.scidb(db, x = c(1:10), gc = TRUE)`
-  `scidb::as.scidb(db, x = c(1:10)/10, max_byte_size = 8, gc = TRUE)`
+- In `as.scidb`, added a new optional parameter - `max_byte_size` (default value: 500MB) for uploading 
+R vectors in a multi-part fashion into SciDB. Example: 
+```R
+scidb::as.scidb(db, x = c(1:10), gc = TRUE)
+scidb::as.scidb(db, x = c(1:10)/10, max_byte_size = 8, gc = TRUE)
+```
 
 ## Version 3.0.6
 
