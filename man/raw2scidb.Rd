@@ -16,7 +16,7 @@ raw2scidb(db, X, name, gc = TRUE, ...)
 \item{gc}{(boolean) set to \code{TRUE} to connect SciDB array to R's garbage collector}
 
 \item{...}{optional extra arguments
-\itemize {
+\itemize{
 \item {temp:} {(boolean) create a temporary SciDB array}
 }}
 }

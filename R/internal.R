@@ -634,7 +634,7 @@ scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL
 #' @param name (character) SciDB array name
 #' @param gc (boolean) set to \code{TRUE} to connect SciDB array to R's garbage collector
 #' @param ... optional extra arguments
-#' \itemize {
+#' \itemize{
 #' \item {temp:} {(boolean) create a temporary SciDB array}
 #' }
 #' @return a \code{\link{scidb}} object
