@@ -58,7 +58,7 @@ scidb = function(db, name, gc=FALSE, schema)
               if (grepl(sprintf("%s$", getuid(e$db)), e$name)) {
                 DEBUG = getOption("scidb.debug", FALSE)
                 if (DEBUG) message("*** Deleted by scidb() finalizer")
-                scidbquery(db, sprintf("remove(%s)", e$name))
+                scidbquery(db, paste0("remove(",e$name,")"))   # potential fix for sprintf GC bug
                 temp_arrays = attr(db, "connection")$temp_arrays
                 if (e$name %in% temp_arrays) {
                   attr(db, "connection")$temp_arrays = temp_arrays[temp_arrays != e$name] # mark as removed
