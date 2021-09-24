@@ -40,6 +40,9 @@ scidb = function(db, name, gc=FALSE, schema)
   obj = new("scidb", name=name)
   obj@meta = new.env()
   obj@meta$db = db
+  # can't call sprintf or paste in finalizer
+  obj@meta$query = sprintf("remove(%s)", name)
+  obj@meta$regex = sprintf("%s$", getuid(db))
   if (missing(schema)) delayedAssign("state", lazyeval(db, name), assign.env=obj@meta)
   else assign("state", list(schema=schema), envir=obj@meta)
   delayedAssign("schema", get("state")$schema, eval.env=obj@meta, assign.env=obj@meta)
@@ -55,13 +58,13 @@ scidb = function(db, name, gc=FALSE, schema)
         {
           if (e$remove && exists("name", envir=e))
             {
-              if (grepl(sprintf("%s$", getuid(e$db)), e$name)) {
+              if (grepl(e$regex, e$name)) {
                 DEBUG = getOption("scidb.debug", FALSE)
                 if (DEBUG) message("*** Deleted by scidb() finalizer")
-                scidbquery(db, sprintf("remove(%s)", e$name))
-                temp_arrays = attr(db, "connection")$temp_arrays
+                scidbquery(e$db, e$query)
+                temp_arrays = attr(e$db, "connection")$temp_arrays
                 if (e$name %in% temp_arrays) {
-                  attr(db, "connection")$temp_arrays = temp_arrays[temp_arrays != e$name] # mark as removed
+                  attr(e$db, "connection")$temp_arrays = temp_arrays[temp_arrays != e$name] # mark as removed
                 }
               }
             }
