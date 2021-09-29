@@ -1,3 +1,8 @@
+## Version 3.0.8
+
+- Date: 2021-09-29
+- Fixed issue of munged queries (https://github.com/Paradigm4/SciDBR/issues/234) arising from potential `sprintf` bug
+
 ## Version 3.0.7
 
 - Date: 2021-09-06
