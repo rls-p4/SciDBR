@@ -40,13 +40,8 @@ jobs:
           /opt/scidb/${{ matrix.SCIDB_VER }}/bin/scidbctl.py start scidb
         if: ${{ matrix.OS == 'centos-7' }}
 
-      - name: Install ssl lib (xenial)
+      - name: Install ssl lib
         run: sudo apt-get install libcurl4-openssl-dev
-        if: ${{ matrix.OS == 'xenial' }}
-        
-      - name: Install ssl lib (centos-7)
-        run: sudo yum install libcurl-devel
-        if: ${{ matrix.OS == 'centos-7' }}
         
       - name: Start Shim in CentOS-7
         run: docker exec scidb systemctl start shimsvc
