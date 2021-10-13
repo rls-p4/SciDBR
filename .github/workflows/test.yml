@@ -45,7 +45,7 @@ jobs:
         if: ${{ matrix.OS == 'xenial' }}
         
       - name: Install ssl lib (centos-7)
-        run: sudo apt-get install libcurl-devel
+        run: sudo yum install libcurl-devel
         if: ${{ matrix.OS == 'centos-7' }}
         
       - name: Start Shim in CentOS-7
