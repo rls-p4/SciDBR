@@ -40,6 +40,17 @@ jobs:
           /opt/scidb/${{ matrix.SCIDB_VER }}/bin/scidbctl.py start scidb
         if: ${{ matrix.OS == 'centos-7' }}
 
+      - name: Install remotes
+        run: install.packages("remotes")
+        shell: Rscript {0}
+
+      - name: Install OS dependencies for rcmdcheck
+        run: |
+          while read -r cmd
+          do
+            eval sudo $cmd
+          done < <( Rscript -e 'writeLines(remotes::system_requirements(os = "ubuntu", os_release = "20.04", package = "rcmdcheck"))')
+          
       - name: Start Shim in CentOS-7
         run: docker exec scidb systemctl start shimsvc
         if: ${{ matrix.OS == 'centos-7' }}
@@ -48,7 +59,7 @@ jobs:
         run: while ! curl http://localhost:8080/version; do sleep 5; done
 
       - name: Install Basic dependencies
-        run: install.packages(c("remotes", "rcmdcheck"))
+        run: install.packages(c("rcmdcheck"))
         shell: Rscript {0}
 
       - name: Install OS dependencies
