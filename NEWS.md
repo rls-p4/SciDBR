@@ -1,3 +1,8 @@
+## Version 3.0.9
+
+- Date: 2021-10-18
+- Fix for #236 (scidbr objects are not printing to console)
+
 ## Version 3.0.8
 
 - Date: 2021-09-29
