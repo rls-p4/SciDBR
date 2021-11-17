@@ -1,3 +1,8 @@
+## Version 3.0.10
+
+- Date: 2021-11-17
+- Fix for datetimes returned in situations where the client and server are not in the same time zone
+
 ## Version 3.0.9
 
 - Date: 2021-10-18
