@@ -7,7 +7,8 @@ Authors@R: c(person(given = "Kriti",     family = "Sen Sharma",  role=c("cre", "
              person(given = "B. W.",     family = "Lewis",       role = "aut",           email = "blewis@illposed.net"),
              person(given = "Alex",      family = "Poliakov",    role = "aut",           email = "apoliakov@paradigm4.com"),
              person(given = "Rares",     family = "Vernica",     role = "aut",           email = "rvernica@paradigm4.com"),
-             person(given = "Wenwei",    family = "Xiong",       role = "aut",           email = "wxiong@paradigm4.com"),
+             person(given = "Marc",      family = "Colosimo",    role = "aut",           email = "mcolosimo@paradigm4.com"),
+             person(given = "Matt",      family = "Peterson",    role = "aut",           email = "mpeterson@paradigm4.com"),
              person(given = "Paradigm4 Inc.",                    role = "cph"))
 Description: A package to interact with SciDB, a database that organizes data in n-dimensional arrays. 
     SciDB arrays consist of a coordinate system whose coordinates are called dimensions, and one or
