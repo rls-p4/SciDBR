@@ -216,7 +216,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
     for (i64 in which(internal_attributes$type %in% "int64")) oldClass(ans[, i64]) = "integer64"
   }
   # Handle datetime (integer POSIX time)
-  for (idx in which(internal_attributes$type %in% "datetime")) ans[, idx] = as.POSIXct(ans[, idx], origin="1970-1-1")
+  for (idx in which(internal_attributes$type %in% "datetime")) ans[, idx] = as.POSIXct(ans[, idx], origin="1970-1-1", tz = "GMT")
   if (args$only_attributes) # permute cols, see issue #125
   {
     colnames(ans) = make.names_(attributes$name)
