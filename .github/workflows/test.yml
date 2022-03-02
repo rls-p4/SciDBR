@@ -37,13 +37,13 @@ jobs:
       - name: Start SciDB in CentOS-7
         run: >-
           docker exec scidb
-          /opt/scidb/${{ matrix.SCIDB_VER }}/bin/scidbctl.py start scidb
+            /opt/scidb/${{ matrix.SCIDB_VER }}/bin/scidbctl.py start scidb
         if: ${{ matrix.OS == 'centos-7' }}
 
       - name: Install extra-scidb-libs
         run: >-
-          docker exec scidb  sh -c
-            "wget -O- https://raw.githubusercontent.com/Paradigm4/extra-scidb-libs/v${{ matrix.SCIDB_VER }}/install.sh | sh"
+          docker exec scidb
+            sh -c "wget -O- https://raw.githubusercontent.com/Paradigm4/extra-scidb-libs/v${{ matrix.SCIDB_VER }}/install.sh | sh"
 
       - name: Load accelerated_io_tools plugin
         run: docker exec scidb iquery --afl --query "load_library('accelerated_io_tools')"
