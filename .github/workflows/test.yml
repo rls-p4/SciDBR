@@ -49,8 +49,13 @@ jobs:
       - name: Enable AIO in Shim
         run: docker exec scidb bash -c "echo aio=1 >> /var/lib/shim/conf"
 
-      - name: Re-Start Shim
-        run: docker exec scidb systemctl restart shimsvc
+      - name: Start Shim in CentOS-7
+        run: docker exec scidb systemctl start shimsvc
+        if: ${{ matrix.OS == 'centos-7' }}
+
+      - name: Re-Start Shim in Ubuntu Xenial
+        run: docker exec scidb service shimsvc restart
+        if: ${{ matrix.OS == 'xenial' }}
 
       - name: Wait for SciDB to start
         run: while ! curl http://localhost:8080/version; do sleep 5; done
