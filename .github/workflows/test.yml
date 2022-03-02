@@ -40,6 +40,23 @@ jobs:
           /opt/scidb/${{ matrix.SCIDB_VER }}/bin/scidbctl.py start scidb
         if: ${{ matrix.OS == 'centos-7' }}
 
+      - name: Install extra-scidb-libs
+        run: >-
+          docker exec scidb  sh -c
+            "wget -O- https://raw.githubusercontent.com/Paradigm4/extra-scidb-libs/v${{ matrix.SCIDB_VER }}/install.sh | sh"
+
+      - name: Load accelerated_io_tools plugin
+        run: docker exec scidb iquery --afl --query "load_library('accelerated_io_tools')"
+
+      - name: Enable AIO in Shim
+        run: docker exec scidb bash -c "echo aio=1 >> /var/lib/shim/conf"
+
+      - name: Re-Start Shim
+        run: docker exec scidb systemctl restart shimsvc
+
+      - name: Wait for SciDB to start
+        run: while ! curl http://localhost:8080/version; do sleep 5; done
+
       - name: Install remotes
         run: install.packages("remotes")
         shell: Rscript {0}
@@ -50,13 +67,6 @@ jobs:
           do
             eval sudo $cmd
           done < <( Rscript -e 'writeLines(remotes::system_requirements(os = "ubuntu", os_release = "20.04", package = "rcmdcheck"))')
-          
-      - name: Start Shim in CentOS-7
-        run: docker exec scidb systemctl start shimsvc
-        if: ${{ matrix.OS == 'centos-7' }}
-
-      - name: Wait for SciDB to start
-        run: while ! curl http://localhost:8080/version; do sleep 5; done
 
       - name: Install Basic dependencies
         run: install.packages(c("rcmdcheck"))
