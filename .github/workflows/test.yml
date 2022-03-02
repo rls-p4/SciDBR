@@ -23,6 +23,8 @@ jobs:
         ports:
           - 8080:8080
           - 8083:8083
+        env:
+          EXTRA_SCIDB_LIBS_SYSTEMCTL_FAIL_OK: true
         options: --name scidb
 
     steps:
