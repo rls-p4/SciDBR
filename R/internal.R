@@ -1,5 +1,96 @@
 # Non-exported utility functions
 
+#' Return a SciDB query expression as a data frame
+#' @param db scidb database connection object
+#' @param query A SciDB query expression or scidb object
+#' @param ... optional extra arguments (see below)
+#' @note option extra arguments
+#' \itemize{
+#'   \item{only_attributes}{ optional logical value, TRUE if only attributes should be returned}
+#'   \item{schema}{ optional result schema string }
+#' }
+#' @keywords internal
+scidb_arrow_to_dataframe = function(db, query, ...) {
+  INT64 = attr(db, "connection")$int64
+  DEBUG = getOption("scidb.debug", FALSE)
+  RESULT_SIZE_LIMIT = getOption("scidb.result_size_limit", 256)
+  AIO = getOption("scidb.aio", TRUE)
+  
+  if (!AIO) {
+    stop("AIO Must be TRUE for Arrow")
+  }
+  
+  args = list(...)
+  
+  # TODO: Look into this, but guarantees we have only_atts
+  lazyeval_ret = lazyeval(db, query)
+  args$only_attributes = if (is.null(args$only_attributes)) {
+    dist = lazyeval_ret$distribution
+    if(is.na(dist)) FALSE else if(dist == 'dataframe') TRUE else FALSE
+  } else {
+    args$only_attributes
+  }
+  
+  # Get the atts and dims so we can filter the results
+  if (!inherits(query, "scidb"))
+  {
+    # make a scidb object out of the query, optionally using a supplied schema to skip metadata query
+    if (is.null(args$schema)) {
+      query = if(is.na(lazyeval_ret$schema)) {
+        scidb(db, query)
+      } else {
+        scidb(db, query, schema=lazyeval_ret$schema)
+      }
+    } else {
+      query = scidb(db, query, schema=args$schema)
+    }
+  }
+  
+  attributes = schema(query, "attributes")
+  dimensions = schema(query, "dimensions")
+  query = query@name
+  
+  # Make the scidbquery 
+  if (DEBUG) message("Data query ", query)
+  # if (DEBUG) message("Format ", format_string)
+  sessionid = scidbquery(
+    db,
+    query,
+    save="arrow",
+    result_size_limit=RESULT_SIZE_LIMIT,
+    atts_only=ifelse(args$only_attributes, TRUE, ifelse(AIO, FALSE, TRUE)))
+  if (!is.null(attr(db, "connection")$session)) { # if session already exists
+    release = 0
+  } else { # need to get new session every time
+    release = 1;
+  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
+  
+  dt2 = proc.time()
+  uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
+  h = new_handle()
+  handle_setheaders(h, .list=list(`Authorization`=digest_auth(db, "GET", uri)))
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
+                              ssl_verifypeer=0))
+  resp = curl_fetch_memory(uri, h)
+  
+  if (resp$status_code > 299) stop("HTTP error", resp$status_code)
+  if (DEBUG) message("Data transfer time ", round((proc.time() - dt2)[3], 4))
+  if (DEBUG) message("Data size ", length(resp$content))
+  dt1 = proc.time()
+  
+  res <- arrow::read_ipc_stream(resp$content, as_data_frame = T)
+  if (DEBUG) message("Total R parsing time ", round( (proc.time() - dt1)[3], 4))
+  
+  # Reorganize 
+  if (!args$only_attributes) {
+    res <- res[, c(dimensions$name, attributes$name)]
+  }
+  
+  return(res)
+  
+}
+
 #' Unpack and return a SciDB query expression as a data frame
 #' @param db scidb database connection object
 #' @param query A SciDB query expression or scidb object
@@ -56,7 +147,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   attributes = schema(query, "attributes")
   dimensions = schema(query, "dimensions")
   query = query@name
-  if(! args$binary) return(iquery(db, query, binary=FALSE, `return`=TRUE))
+  if(! args$binary) return(iquery(db, query, binary=FALSE, `return`=TRUE, arrow=FALSE))
   if (args$only_attributes)
   {
     internal_attributes = attributes
@@ -696,7 +787,7 @@ lazyeval = function(db, name)
 {
   if(inherits(name, 'scidb')) name = name@name
   escape = gsub("'", "\\\\'", name, perl=TRUE)
-  query = iquery(db, sprintf("show('filter(%s, true)', 'afl')", escape), `return`=TRUE, binary=FALSE)
+  query = iquery(db, sprintf("show('filter(%s, true)', 'afl')", escape), `return`=TRUE, binary=FALSE, arrow=FALSE)
   # NOTE that we need binary=FALSE here to avoid a terrible recursion
   list(schema = gsub("^.*<", "<", query$schema, perl=TRUE),
        distribution = query$distribution)

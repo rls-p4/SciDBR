@@ -30,6 +30,8 @@ if (nchar(host) > 0) {
   check(iris[, 1:4], iquery(db, x, return=TRUE)[, a][, 1:4])
 # iquery CSV download
   check(iris[, 1:4], iquery(db, x, return=TRUE, binary=FALSE)[, a][, 1:4])
+# iquery Arrow download
+  check(iris[, 1:4], iquery(db, x, return=TRUE, arrow=TRUE, binary = FALSE)[, a][, 1:4])
 # as.R only attributes
   check(iris[, 1],  as.R(x, only_attributes=TRUE)[, 1])
 

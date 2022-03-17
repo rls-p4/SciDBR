@@ -4,7 +4,7 @@
 \alias{iquery}
 \title{Run a SciDB query, optionally returning the result.}
 \usage{
-iquery(db, query, return = FALSE, binary = TRUE, ...)
+iquery(db, query, return = FALSE, binary = TRUE, arrow = FALSE, ...)
 }
 \arguments{
 \item{db}{a scidb database connection from \code{\link{scidbconnect}}}
@@ -14,6 +14,8 @@ iquery(db, query, return = FALSE, binary = TRUE, ...)
 \item{return}{if \code{TRUE}, return the result}
 
 \item{binary}{set to \code{FALSE} to read result from SciDB in text form}
+
+\item{arrow}{set to \code{TRUE} to read result from SciDB in arrow form}
 
 \item{...}{additional options passed to \code{read.table} when \code{binary=FALSE},
 or optional result schema when \code{binary=TRUE} (see note below).}

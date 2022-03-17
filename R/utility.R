@@ -216,7 +216,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   }
 
 # Update available operators and macros and return afl object
-  ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE)[, 2]
+  ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE, arrow=FALSE)[, 2]
   attr(db, "connection")$ops = ops
   
   attr(db, "connection")$temp_arrays = NULL
@@ -245,6 +245,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 #' @param query a single SciDB query string or scidb array object
 #' @param return if \code{TRUE}, return the result
 #' @param binary set to \code{FALSE} to read result from SciDB in text form
+#' @param arrow set to \code{TRUE} to read result from SciDB in arrow form
 #' @param ... additional options passed to \code{read.table} when \code{binary=FALSE},
 #' or optional result schema when \code{binary=TRUE} (see note below).
 #' @note When \code{query} is an arbitrary AFL query string and \code{binary=TRUE},
@@ -279,11 +280,15 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 #'## 3 3  03
 #' }
 #' @export
-iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
+iquery = function(db, query, `return`=FALSE, binary=TRUE, arrow = FALSE,...)
 {
   DEBUG = getOption("scidb.debug", FALSE)
   if (inherits(query, "scidb"))  query = query@name
   n = -1    # Indicate to shim that we want all the output
+  
+  if(binary && arrow) {
+    stop("Only one of `binary` and `arrow` can be true")
+  }
   
   session = NULL; release = 1; 
   if (!is.null(attr(db, "connection")$session)) {
@@ -293,6 +298,7 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, ...)
   
   if (`return`)
   {
+    if (arrow) return(scidb_arrow_to_dataframe(db, query, ...))
     if (binary) return(scidb_unpack_to_dataframe(db, query, ...))
 
     ans = tryCatch(

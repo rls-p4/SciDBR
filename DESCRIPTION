@@ -31,7 +31,8 @@ Imports:
 Suggests:
     Matrix,
     rmarkdown,
-    knitr (>= 1.8)
+    knitr (>= 1.8),
+    arrow (>= 6.0.1)
 License: AGPL-3
 LazyLoad: yes
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2

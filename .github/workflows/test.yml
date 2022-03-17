@@ -64,6 +64,10 @@ jobs:
         run: install.packages("remotes")
         shell: Rscript {0}
 
+      - name: Install R arrow package
+        run: install.packages("arrow")
+        shell: Rscript {0}
+
       - name: Install OS dependencies for rcmdcheck
         run: |
           while read -r cmd
