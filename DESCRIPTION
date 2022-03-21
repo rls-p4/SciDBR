@@ -1,8 +1,8 @@
 Package: scidb
 Type: Package
 Title: An R Interface to SciDB
-Version: 3.0.10
-Date: 2021-11-17
+Version: 3.1.0
+Date: 2022-03-18
 Authors@R: c(person(given = "Kriti",     family = "Sen Sharma",  role=c("cre", "aut"),   email="ksen@paradigm4.com"),
              person(given = "B. W.",     family = "Lewis",       role = "aut",           email = "blewis@illposed.net"),
              person(given = "Alex",      family = "Poliakov",    role = "aut",           email = "apoliakov@paradigm4.com"),
