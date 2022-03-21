@@ -1,3 +1,8 @@
+## Version 3.1.0
+
+- Date: 2022-03-18
+- Initial support for Arrow format (https://github.com/Paradigm4/SciDBR/pull/243)
+
 ## Version 3.0.10
 
 - Date: 2021-11-17
