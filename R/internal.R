@@ -15,13 +15,13 @@ scidb_arrow_to_dataframe = function(db, query, ...) {
   DEBUG = getOption("scidb.debug", FALSE)
   RESULT_SIZE_LIMIT = getOption("scidb.result_size_limit", 256)
   AIO = getOption("scidb.aio", TRUE)
-  
+
   if (!AIO) {
     stop("AIO Must be TRUE for Arrow")
   }
-  
+
   args = list(...)
-  
+
   # TODO: Look into this, but guarantees we have only_atts
   lazyeval_ret = lazyeval(db, query)
   args$only_attributes = if (is.null(args$only_attributes)) {
@@ -30,7 +30,7 @@ scidb_arrow_to_dataframe = function(db, query, ...) {
   } else {
     args$only_attributes
   }
-  
+
   # Get the atts and dims so we can filter the results
   if (!inherits(query, "scidb"))
   {
@@ -45,12 +45,12 @@ scidb_arrow_to_dataframe = function(db, query, ...) {
       query = scidb(db, query, schema=args$schema)
     }
   }
-  
+
   attributes = schema(query, "attributes")
   dimensions = schema(query, "dimensions")
   query = query@name
-  
-  # Make the scidbquery 
+
+  # Make the scidbquery
   if (DEBUG) message("Data query ", query)
   # if (DEBUG) message("Format ", format_string)
   sessionid = scidbquery(
@@ -65,30 +65,30 @@ scidb_arrow_to_dataframe = function(db, query, ...) {
     release = 1;
   }
   if (release) on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
-  
+
   dt2 = proc.time()
   uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
   h = new_handle()
   handle_setheaders(h, .list=list(`Authorization`=digest_auth(db, "GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
-                              ssl_verifypeer=0))
+                              ssl_verifypeer=0, http_version=2))
   resp = curl_fetch_memory(uri, h)
-  
+
   if (resp$status_code > 299) stop("HTTP error", resp$status_code)
   if (DEBUG) message("Data transfer time ", round((proc.time() - dt2)[3], 4))
   if (DEBUG) message("Data size ", length(resp$content))
   dt1 = proc.time()
-  
+
   res <- arrow::read_ipc_stream(resp$content, as_data_frame = T)
   if (DEBUG) message("Total R parsing time ", round( (proc.time() - dt1)[3], 4))
-  
-  # Reorganize 
+
+  # Reorganize
   if (!args$only_attributes) {
     res <- res[, c(dimensions$name, attributes$name)]
   }
-  
+
   return(res)
-  
+
 }
 
 #' Unpack and return a SciDB query expression as a data frame
@@ -200,7 +200,7 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   h = new_handle()
   handle_setheaders(h, .list=list(`Authorization`=digest_auth(db, "GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
-                              ssl_verifypeer=0))
+                              ssl_verifypeer=0, http_version=2))
   resp = curl_fetch_memory(uri, h)
   if (resp$status_code > 299) stop("HTTP error", resp$status_code)
   if (DEBUG) message("Data transfer time ", round((proc.time() - dt2)[3], 4))
@@ -382,22 +382,22 @@ create_temp_array = function(db, name, schema)
 
 # Internal function
 get_setting_items_str = function(db, settings, sep=',') {
-  
+
   convert_single_item_v19 = function(key, value) {
     if(is.character(value))
       value = sprintf("'%s'", value)  # Quote string value(s)
     valueStr = if(length(value) > 1) sprintf("(%s)", paste(value, collapse = ',')) else value
-    
+
     sprintf("%s:%s", key, valueStr)
-  } 
+  }
   convert_single_item_pre_v19 = function(key, value) {
     valueStr = if(length(value) > 1) paste(value, collapse = ',') else value
     sprintf("'%s=%s'", key, valueStr)
-  } 
-  
-  convert_single_item = if (at_least(attr(db, "connection")$scidb.version, "19.0")) 
+  }
+
+  convert_single_item = if (at_least(attr(db, "connection")$scidb.version, "19.0"))
     convert_single_item_v19 else convert_single_item_pre_v19
-  
+
   items = mapply(convert_single_item, names(settings), settings)
   paste(items, collapse = sep)
 }
@@ -535,7 +535,7 @@ SGET = function(db, resource, args=list(), err=TRUE, binary=FALSE)
   h = new_handle()
   handle_setheaders(h, .list=list(Authorization=digest_auth(db, "GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
-                              ssl_verifypeer=0))
+                              ssl_verifypeer=0, http_version=2))
   ans = curl_fetch_memory(uri, h)
   if (ans$status_code > 299 && err)
   {
@@ -566,7 +566,8 @@ POST = function(db, data, args=list(), err=TRUE)
     h = new_handle()
     handle_setheaders(h, .list=list(Authorization=digest_auth(db, "POST", uri)))
     handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
-                                ssl_verifypeer=0, post=TRUE, postfieldsize=length(data), postfields=data))
+                                ssl_verifypeer=0, post=TRUE, http_version=2, postfieldsize=length(data),
+                                postfields=data))
     ans = curl_fetch_memory(uri, h)
     if (ans$status_code > 299 && err) stop("HTTP error ", ans$status_code)
     return(rawToChar(ans$content))
@@ -577,7 +578,7 @@ POST = function(db, data, args=list(), err=TRUE)
   h = new_handle()
   handle_setheaders(h, .list=list(Authorization=digest_auth(db, "POST", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
-                              ssl_verifypeer=0))
+                              ssl_verifypeer=0, http_version=2))
   tmpf = tempfile()
   if (is.character(data)) data = charToRaw(data)
   writeBin(data, tmpf)
@@ -599,7 +600,7 @@ POST = function(db, data, args=list(), err=TRUE)
 # Example values of save: "dcsv", "csv+", "(double NULL, int32)"
 #
 # Returns the HTTP session in each case
-scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL, resp=FALSE, stream, 
+scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL, resp=FALSE, stream,
                       prefix=attributes(db)$connection$prefix, atts_only=TRUE)
 {
   DEBUG = FALSE
@@ -706,7 +707,7 @@ scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL
   bytes = .Call(C_scidb_raw, as.vector(t(matrix(c(X@i + start[[1]], j + start[[2]], X@x), length(X@x)))))
   ans = POST(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
-  
+
 # Create a temporary array 'name'
   if(temp){ # Use scidb temporary array instead of regular versioned array
     targetArraySchema = schema
@@ -1014,7 +1015,7 @@ matvec2scidb = function(db, X,
     chunkSize = min(chunkSize[[1]], length(X))
     X = as.matrix(X)
     block_size = get_multipart_post_load_block_size(
-      data = X, 
+      data = X,
       debug = DEBUG,
       max_byte_size = if(is.null(args$max_byte_size)) getOption('scidb.max_byte_size', 500*(10^6)) else args$max_byte_size)
     # Define schema for an initial SciDB upload and provide a template to
@@ -1026,7 +1027,7 @@ matvec2scidb = function(db, X,
     # Define a temporary schema for multi-part loading of blocks of the vector
     temp_schema = sprintf(
       "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
-      min((nrow(X) - 1 + start[[1]]), (block_size - 1 + start[[1]])), 
+      min((nrow(X) - 1 + start[[1]]), (block_size - 1 + start[[1]])),
       min(nrow(X), chunkSize), overlap[[1]])
   } else if (length(D) > 2)
   {
@@ -1062,8 +1063,8 @@ matvec2scidb = function(db, X,
   shimcon_time = round((proc.time() - td1)[3], 4)
 
   if(is.null(D)) {
-    multipart_post_load(db, session, 
-                        X, name, 
+    multipart_post_load(db, session,
+                        X, name,
                         load_schema, schema, type,
                         temp_schema, block_size,
                         temp, DEBUG, shimcon_time)
@@ -1073,18 +1074,18 @@ matvec2scidb = function(db, X,
     ans = POST(db, bytes, list(id=session))
     ans = gsub("\n", "", gsub("\r", "", ans))
     post_time = round((proc.time() - td2)[3], 4)
-  
+
     if (DEBUG)
     {
       message("Data upload time ", (shimcon_time + post_time))
     }
-    
+
     # Create a temporary array 'name'
     if(temp){ # Use scidb temporary array instead of regular versioned array
       targetArraySchema = schema
       create_temp_array(db, name, schema = targetArraySchema)
     }
-    
+
     # Load query
     if (do_reshape)
     {
@@ -1100,12 +1101,12 @@ matvec2scidb = function(db, X,
 
 get_multipart_post_load_block_size <- function(data, debug, max_byte_size) {
   total_length = as.numeric(length(data))
-  
+
   if(max_byte_size < 8) {
     warning('Supplied max_byte_size is less than 8 bytes. Restoring it to default value of 500MB.')
     max_byte_size=500*(10^6)
   }
-  
+
   if(typeof(data) %in% c('integer', 'double')) {
     block_size = floor(max_byte_size / 8)
     if(debug) message("Using ", block_size, " for numeric vector block_size")
@@ -1118,12 +1119,12 @@ get_multipart_post_load_block_size <- function(data, debug, max_byte_size) {
   return(block_size)
 }
 
-multipart_post_load <- function(db, session, 
+multipart_post_load <- function(db, session,
                                 data, name,
                                 load_schema, schema, type,
                                 temp_schema, block_size,
                                 temp, debug, shimcon_time) {
-  
+
   total_length = as.numeric(length(data))
 
   # Create a temporary array 'name'
@@ -1131,20 +1132,20 @@ multipart_post_load <- function(db, session,
     targetArraySchema = schema
     create_temp_array(db, name, schema = targetArraySchema)
   }
-  
+
   # Declare a numeric variable for storing post time
   post_time = 0
-  
+
   for(begin in seq(1, total_length, block_size)) {
-    
+
     end = min((begin + block_size -1), total_length)
-    
+
     # convert data to raw
     td = proc.time()
     data_part = as.matrix(data[begin:end])
     bytes = .Call(C_scidb_raw, as.vector(aperm(data_part)))
     post_time = post_time + round((proc.time() - td)[3], 4)
-    
+
     # upload data
     ans = POST(db, bytes, list(id=session))
     ans = gsub("\n", "", gsub("\r", "", ans))
@@ -1159,8 +1160,8 @@ multipart_post_load <- function(db, session,
       iquery(db, sprintf("append(%s, %s, i)", query, name))
     }
   }
-  
+
   if(debug) message("Data upload time ", shimcon_time + post_time)
-  
+
   return(NULL)
 }

@@ -1,3 +1,8 @@
+## Version 3.1.1
+
+- Date: 2022-07-06
+- Avoid protocol issue with libcurl and HTTP/2 (https://github.com/Paradigm4/SciDBR/pull/251)
+
 ## Version 3.1.0
 
 - Date: 2022-03-18
