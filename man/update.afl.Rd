@@ -4,7 +4,7 @@
 \alias{update.afl}
 \title{Update available AFL operators}
 \usage{
-update.afl(.db, .new, .ops)
+\method{update}{afl}(.db, .new, .ops)
 }
 \arguments{
 \item{.db}{an \code{afl} object (a SciDB database connection returned from \code{\link{scidbconnect}})}

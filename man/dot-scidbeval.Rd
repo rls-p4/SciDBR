@@ -6,7 +6,7 @@
 eval=TRUE, a new SciDB array is created the returned scidb object refers to
 that.  Otherwise, the returned scidb object represents a SciDB array promise.}
 \usage{
-.scidbeval(db, expr, eval = FALSE, name, gc = TRUE, depend, schema, temp)
+.scidbeval(db, expr, eval = FALSE, name, gc, depend, schema, temp)
 }
 \arguments{
 \item{db}{scidb connection object}

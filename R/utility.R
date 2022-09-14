@@ -9,7 +9,7 @@
 #' @param gc (logical) optional, when TRUE tie result to R garbage collector
 #' @param temp (logical, optional), when TRUE store as a SciDB temp array
 #' @export
-store = function(db, expr, name, eval=TRUE, gc=TRUE, temp=FALSE)
+store = function(db, expr, name, eval=TRUE, gc, temp=FALSE)
 {
   ans = eval(expr)
   if (!(inherits(ans, "scidb"))) return(ans)
@@ -42,7 +42,6 @@ scidb = function(db, name, gc=FALSE, schema)
   obj@meta$db = db
   # can't call sprintf or paste in finalizer
   obj@meta$query = sprintf("remove(%s)", name)
-  obj@meta$regex = sprintf("%s$", getuid(db))
   if (missing(schema)) delayedAssign("state", lazyeval(db, name), assign.env=obj@meta)
   else assign("state", list(schema=schema), envir=obj@meta)
   delayedAssign("schema", get("state")$schema, eval.env=obj@meta, assign.env=obj@meta)
@@ -58,14 +57,12 @@ scidb = function(db, name, gc=FALSE, schema)
         {
           if (e$remove && exists("name", envir=e))
             {
-              if (grepl(e$regex, e$name)) {
-                DEBUG = getOption("scidb.debug", FALSE)
-                if (DEBUG) message("*** Deleted by scidb() finalizer")
-                scidbquery(e$db, e$query)
-                temp_arrays = attr(e$db, "connection")$temp_arrays
-                if (e$name %in% temp_arrays) {
-                  attr(e$db, "connection")$temp_arrays = temp_arrays[temp_arrays != e$name] # mark as removed
-                }
+              DEBUG = getOption("scidb.debug", FALSE)
+              if (DEBUG) message("*** Deleted by scidb() finalizer")
+              scidbquery(e$db, e$query)
+              temp_arrays = attr(e$db, "connection")$temp_arrays
+              if (e$name %in% temp_arrays) {
+                attr(e$db, "connection")$temp_arrays = temp_arrays[temp_arrays != e$name] # mark as removed
               }
             }
         }, onexit = TRUE)
@@ -388,18 +385,26 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, arrow = FALSE,...)
 as.scidb = function(db, x,
                     name,
                     start,
-                    gc=TRUE, ...)
+                    gc, ...)
 {
   if (missing(name))
   {
     name = tmpnam(db)
     temp_array = TRUE
   } else {
-    temp_array = FALSE
-  } 
-  if (!gc) { # if user explicitly set gc = FALSE
-    temp_array = FALSE
+    # Default gc to False if name is provided
+    if (missing(gc)) {
+      temp_array = FALSE
+    } else {
+      temp_array = gc
+    }
   }
+  
+  # Make 'gc' parameter match temp_array now that we know what to do.
+  if (missing(gc)) {
+    gc = temp_array
+  }
+
   if (inherits(x, "raw"))
   {
     X = (raw2scidb(db, x, name=name, gc=gc, ...))
@@ -412,14 +417,14 @@ as.scidb = function(db, x,
   } else {
     X = (matvec2scidb(db, x, name=name, start=start, gc=gc, ...))
   }
-  
+
   if (temp_array) {
     attr(db, "connection")$temp_arrays = c(
-      attr(db, "connection")$temp_arrays, 
+      attr(db, "connection")$temp_arrays,
       X@name
     )
   }
-  
+
   X
 }
 

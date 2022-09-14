@@ -421,7 +421,7 @@ get_setting_items_str = function(db, settings, sep=',') {
 #'               (requires scidb >= 14.8)
 #' @return A \code{scidb} array object
 #' @note Only AFL supported.
-`.scidbeval` = function(db, expr, eval=FALSE, name, gc=TRUE, depend, schema, temp)
+`.scidbeval` = function(db, expr, eval=FALSE, name, gc, depend, schema, temp)
 {
   ans = c()
   if (missing(depend)) depend = c()
@@ -437,14 +437,21 @@ get_setting_items_str = function(db, settings, sep=',') {
     {
       newarray = tmpnam(db)
       if (temp) create_temp_array(db, newarray, schema)
+      # No name means we're dealing with a temporary situation so set gc to TRUE
+      gc = TRUE
+    } else {
+      newarray = name
+      # If a name is provided, default to no gc
+      if (missing(gc)) {
+        gc = FALSE
+      }
     }
-    else newarray = name
+
     query = sprintf("store(%s,%s)", expr, newarray)
     scidbquery(db, query, stream=0L)
     ans = scidb(db, newarray, gc=gc)
     if (temp) ans@meta$temp = TRUE
-  } else
-  {
+  } else {
     ans = scidb(db, expr, gc=gc)
 # Assign dependencies
     if (length(depend) > 0)

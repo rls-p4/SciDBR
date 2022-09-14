@@ -4,7 +4,7 @@
 \alias{as.scidb}
 \title{Upload R data to SciDB}
 \usage{
-as.scidb(db, x, name, start, gc = TRUE, ...)
+as.scidb(db, x, name, start, gc, ...)
 }
 \arguments{
 \item{db}{a scidb database connection returned from \code{\link{scidbconnect}}}

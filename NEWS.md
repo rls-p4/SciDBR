@@ -1,3 +1,9 @@
+## Version 3.1.2
+
+ - Date: 2022-09-07
+ - Changes how as.scidb() and store() handle 'gc' when not specified (https://github.com/Paradigm4/SciDBR/pull/252)
+ - Allows 'gc' to clean up named arrays, and not just 'Rarray_...' arrays
+
 ## Version 3.1.1
 
 - Date: 2022-07-06

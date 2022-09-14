@@ -4,7 +4,7 @@
 \alias{store}
 \title{Evaluate an expression to \code{scidb} or \code{scidb} objects}
 \usage{
-store(db, expr, name, eval = TRUE, gc = TRUE, temp = FALSE)
+store(db, expr, name, eval = TRUE, gc, temp = FALSE)
 }
 \arguments{
 \item{db}{scidb connection object from \code{\link{scidbconnect}}}
