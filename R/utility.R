@@ -70,6 +70,47 @@ scidb = function(db, name, gc=FALSE, schema)
   obj
 }
 
+#' Make a "handshake" connection to the server to figure out what API
+#' to use when talking to the server. When this function returns value "rv":
+#'   - attr(rv, "connection")$scidb.version will be the server version
+#'   - class(rv) will be the correct class to handle API calls
+#'   - Other fields on rv and attr(rv, "connection") will contain necessary
+#'     information for the subclass to talk to the server
+#'   - All other fields are inherited from the input argument "db".
+#' @param db a scidb database connection from \code{\link{scidbconnect}}
+#' @return db with modifications reflecting information from the handshake
+.Handshake = function(db)
+{
+  ## First assume the connection is for the HTTP API. Attempt to get 
+  ## the server's SciDB version.
+  httpapi_result <- tryCatch(
+    list(db=GetServerVersion.httpapi(db)),
+    error=function(err) { list(error=err) }
+  )
+  if (!is.null(httpapi_result[["db"]])) {
+    ## Return the copy of db with modifications made in GetServerVersion.httpapi
+    return(httpapi_result[["db"]])
+  }
+  
+  ## That didn't work, so assume the connection is for the Shim.
+  ## Attempt to get the server's SciDB version.
+  shim_result <- tryCatch(
+    list(db=GetServerVersion.shim(db)),
+    error=function(err) { list(error=err) }
+  )
+  if (!is.null(shim_result[["db"]])) {
+    ## Return the copy of db with modifications made in GetServerVersion.shim
+    return(shim_result[["db"]])
+  }
+  
+  ## Neither worked, so throw an error with both error messages.
+  conn <- attr(db, "connection")
+  stop("Could not connect to either httpapi or shim on ", 
+       conn$host, ":", conn$port, ".\n",
+       "  httpapi connection error: ", httpapi_result[["error"]], "\n",
+       "  shim connection error: ", shim_result[["error"]])
+}
+
 
 #' Connect to a SciDB database
 #' @param host optional host name or I.P. address of a SciDB shim service to connect to
@@ -140,6 +181,7 @@ scidb = function(db, name, gc=FALSE, schema)
 #'
 #' as.R(y)   # Download a SciDB array to R.
 #' }
+#' @importFrom jsonlite fromJSON
 #' @importFrom digest digest
 #' @importFrom openssl base64_encode
 #' @seealso \code{\link{scidb_prefix}}
@@ -147,14 +189,14 @@ scidb = function(db, name, gc=FALSE, schema)
 scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
                         port=getOption("scidb.default_shim_port", 8080L),
                         username, password,
-                        auth_type=c("scidb", "digest"), protocol=c("http", "https"),
+                        auth_type=c("scidb", "digest"), 
+                        protocol=c("http", "https"),
                         admin=FALSE,
                         int64=FALSE,
                         doc)
 {
 # Set up a db object
   db = list()
-  class(db) = "afl"
   attr(db, "connection") = new.env()
   auth_type = match.arg(auth_type)
   protocol = match.arg(protocol)
@@ -163,18 +205,22 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   attr(db, "connection")$protocol = protocol
   attr(db, "connection")$admin = admin
   attr(db, "connection")$int64 = int64
+  
+  ## class(db) needs to be set before .Handshake(db) (notably: before URI()), 
+  ## but .Handshake(db) will change it to the proper subclass
+  ## for handling API calls to the server.
+  class(db) <- "afl"
 
-# Update the scidb.version in the db connection environment
-  shim.version = SGET(db, "/version")
-  v = strsplit(gsub("[A-z\\-]", "", gsub("-.*", "", shim.version)), "\\.")[[1]]
-  if (length(v) < 2) v = c(v, "1")
-  attr(db, "connection")$scidb.version = sprintf("%s.%s", v[1], v[2])
+  ## Make a handshake connection to determine which API to use.
+  ## After this, class(db) is set to the correct subclass for communicating
+  ## with the server.
+  db <- .Handshake(db)
 
 # set this to TRUE if connecting to an older SciDB version than 16.9
   password_digest = ! at_least(attr(db, "connection")$scidb.version, "16.9")
 
-  if (missing(username)) username = c()
-  if (missing(password)) password = c()
+  if (missing(username)) { username = c() }
+  if (missing(password)) { password = c() }
 # Check for login using either scidb or HTTP digest authentication
   if (!is.null(username))
   {
@@ -184,36 +230,41 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
     {
       attr(db, "connection")$protocol = "https"
       attr(db, "connection")$username = username
-      if (password_digest)
-        attr(db, "connection")$password = base64_encode(digest(charToRaw(password), serialize=FALSE, raw=TRUE, algo="sha512"))
-      else #16.9 no longer hashes the password
+      if (password_digest) {
+        attr(db, "connection")$password = base64_encode(
+                                  digest(charToRaw(password),
+                                         serialize=FALSE,
+                                         raw=TRUE,
+                                         algo="sha512"))
+      } else { # 16.9 no longer hashes the password
         attr(db, "connection")$password = password
-    } else # HTTP basic digest auth
-    {
+      }
+    } else { # HTTP basic digest auth
       attr(db, "connection")$digest = paste(username, password, sep=":")
     }
   }
 
-# Use the query ID from a query as a unique ID for automated
-# array name generation.
-  x = tryCatch(
-        scidbquery(db, query="list('libraries')", resp=TRUE),
-        error=function(e) stop("Connection error"), warning=invisible)
-  if (is.null(attr(db, "connection")$id))
-  {
-    id = tryCatch(strsplit(x$response, split="\\r\\n")[[1]],
-           error=function(e) stop("Connection error"), warning=invisible)
-    attr(db, "connection")$id = id[[length(id)]]
-  }
-  if (is.null(attr(db, "connection")$session))
-  {
-    session = x$session
-    attr(db, "connection")$session = session
-    attr(db, "connection")$password = NULL # shuld not use password going forward (as session is stored)
-  }
+  ## Dispatch to subclass to start a session
+  db = Connect(db)
 
+  if (inherits(db, "httpapi")) {
+    message("connected to http api,",
+            " version = ", attr(db, "connection")$scidb.version,
+            " connection = ", attr(db, "connection")$id)
+    return(db)
+  }
+  
 # Update available operators and macros and return afl object
-  ops = iquery(db, "merge(redimension(project(list('operators'), name), <name:string>[i=0:*,1000000,0]), redimension(apply(project(list('macros'), name), i, No + 1000000), <name:string>[i=0:*,1000000,0]))", `return`=TRUE, binary=FALSE, arrow=FALSE)[, 2]
+  ops = iquery(
+    db, 
+    paste0("merge(redimension(project(list('operators'), name), ",
+           "                  <name:string>[i=0:*,1000000,0]), ",
+           "      redimension(apply(project(list('macros'), name), ",
+           "                        i, No + 1000000), ",
+           "                  <name:string>[i=0:*,1000000,0]))"),
+    `return`=TRUE, 
+    binary=FALSE, 
+    arrow=FALSE)[, 2]
   attr(db, "connection")$ops = ops
   
   attr(db, "connection")$temp_arrays = NULL
