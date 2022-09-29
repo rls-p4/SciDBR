@@ -358,8 +358,8 @@ SEXP
 scidb_parse (SEXP M, SEXP TYPES, SEXP NULLABLE, SEXP DATA, SEXP OFFSET,
              SEXP INT64)
 {
-  int nullable, i = 0, j;
-  SEXP col, val, ans;
+  int i = 0, j;
+  SEXP col, ans;
   int m = INTEGER (M)[0];
   R_xlen_t n = XLENGTH (TYPES);
   double doffset = REAL (OFFSET)[0];

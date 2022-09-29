@@ -322,17 +322,35 @@ scidb_unpack_to_dataframe = function(db, query, ...)
   ans
 }
 
+#' Given _either_ a scidb database connection object _or_ 
+#' its attr(, "connection") env, return the connection env.
+#' @param db_or_conn a scidb database connection object,
+#'    _or_ a connection env 
+#' @return a connection env
+.GetConnectionEnv = function(db_or_conn)
+{
+  if (inherits(db_or_conn, "afl")) {
+    ## Argument is the scidb connection object; return its connection env
+    return(attr(db_or_conn, "connection"))
+  } else {
+    ## Argument is the connection env
+    return(db_or_conn)
+  }
+}
+
 #' Convenience function for digest authentication.
-#' @param db a scidb database connection object
+#' @param db_or_conn a scidb database connection object,
+#'    _or_ its "connection" attribute
 #' @param method digest method
 #' @param uri uri
 #' @param realm realm
 #' @param nonce nonce
 #' @keywords internal
 #' @importFrom digest digest
-digest_auth = function(db, method, uri, realm="", nonce="123456")
+digest_auth = function(db_or_conn, method, uri, realm="", nonce="123456")
 {
-  .scidbenv = attr(db, "connection")
+  .scidbenv = .GetConnectionEnv(db_or_conn)
+  
   if (!is.null(.scidbenv$authtype))
   {
    if (.scidbenv$authtype != "digest") return("")
@@ -477,7 +495,7 @@ make.unique_ = function(x, y)
 }
 
 
-# Make a name from a prefix and a unique SciDB identifier.
+#' @return the unique ID of the connection
 getuid = function(db)
 {
   .scidbenv = attributes(db)$connection
@@ -507,15 +525,17 @@ getSession = function(db)
 # Every function that needs to talk to the shim interface should use
 # this function to supply the URI.
 # Arguments:
-# db scidb database connection object
+# db_or_conn: scidb database connection object _or_ its "connection" attribute
 # resource (string): A URI identifying the requested service
 # args (list): A list of named query parameters
-URI = function(db, resource="", args=list())
+URI = function(db_or_conn, resource="", args=list())
 {
-  .scidbenv = attr(db, "connection")
+  .scidbenv = .GetConnectionEnv(db_or_conn)
+  
   if (is.null(.scidbenv$host)) stop("Not connected...try scidbconnect")
-  if (!is.null(.scidbenv$auth))
+  if (!is.null(.scidbenv$auth)) {
     args = c(args, list(auth=.scidbenv$auth))
+  }
   if (!is.null(.scidbenv$password)) args = c(args, list(password=.scidbenv$password))
   if (!is.null(.scidbenv$username)) args = c(args, list(user=.scidbenv$username))
   if (!is.null(.scidbenv$admin) && .scidbenv$admin) args = c(args, list(admin=1))
@@ -527,20 +547,30 @@ URI = function(db, resource="", args=list())
            # and only having the URL is sufficient
     ans = paste(prot, .scidbenv$host, sep = "")
   }
-  ans = paste(ans, resource, sep="/")
-  if (length(args)>0)
+  ans = paste(ans, resource, sep=if (substr(resource, 1, 1)!="/") "/" else "")
+  if (length(args)>0) {
     ans = paste(ans, paste(paste(names(args), args, sep="="), collapse="&"), sep="?")
+  }
+  
+  ## Mark this string as a URI
+  class(ans) <- c("URI", class(ans))
   ans
 }
 
-SGET = function(db, resource, args=list(), err=TRUE, binary=FALSE)
+# Issue an HTTP GET request.
+# db_or_conn: scidb database connection object _or_ its "connection" attribute
+# resource (string): A URI identifying the requested service
+# args (list): A list of named query parameters
+# err (boolean): If true, stop if the server returned an error code
+# binary (boolean): If true, return binary data, else convert to character data
+SGET = function(db_or_conn, resource, args=list(), err=TRUE, binary=FALSE)
 {
   if (!(substr(resource, 1, 1)=="/")) resource = paste("/", resource, sep="")
-  uri = URI(db, resource, args)
+  uri = URI(db_or_conn, resource, args)
   uri = oldURLencode(uri)
   uri = gsub("\\+", "%2B", uri, perl=TRUE)
   h = new_handle()
-  handle_setheaders(h, .list=list(Authorization=digest_auth(db, "GET", uri)))
+  handle_setheaders(h, .list=list(Authorization=digest_auth(db_or_conn, "GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0, http_version=2))
   ans = curl_fetch_memory(uri, h)
@@ -660,6 +690,101 @@ scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL
   if (DEBUG) message("Query time ", round( (proc.time() - t1)[3], 4))
   if (resp) return(list(session=sessionid, response=ans))
   sessionid
+}
+
+#' Parse a version string, returning only the major and minor versions
+#' @param version a version string
+#' @return the version string with alphabetic characters removed, and
+#'   the string trimmed to just the major and minor version
+ParseVersion <- function(version)
+{
+  v <- strsplit(gsub("[A-z\\-]", "", gsub("-.*", "", version)), "\\.")[[1]]
+  if (length(v) < 2) {
+    v <- c(v, "1")
+  }
+  return(sprintf("%s.%s", v[1], v[2]))
+}
+
+#' @see GetServerVersion()
+GetServerVersion.shim <- function(db)
+{
+  version = SGET(db, "/version")
+  attr(db, "connection")$scidb.version <- ParseVersion(version)
+  
+  ## If we got this far, the request succeeded - so the connected host and port
+  ## is for the Shim.
+  class(db) <- c("shim", "afl")
+  
+  return(db)
+}
+
+#' @see Connect()
+Connect.shim <- function(db)
+{
+  ## Run an arbitrary query via scidbquery().
+  ## scidbquery() creates a new session, executes the query, and returns 
+  ## a list(response=, session=) where session is the Shim session ID, and
+  ## response is the query ID (because that's what the Shim outputs in its
+  ## HTTP response to any query).
+  ## We don't care about the query result. (TODO: Is it leaked?)
+  x <- tryCatch(scidbquery(db, query="list('libraries')", resp=TRUE),
+                error=function(e) stop("Connection error ", e),
+                warning=invisible)
+
+  ## Register the session to be closed when db's "connection" env
+  ## gets garbage-collected.
+  reg.finalizer(attr(db, "connection"), 
+                .CloseShimSession, 
+                onexit=TRUE)
+  
+  ## Get the id of the query we just ran.
+  query_id <- tryCatch(strsplit(x$response, split="\\r\\n")[[1]],
+                       error=function(e) stop("Connection error ", e),
+                       warning=invisible)
+
+  ## Give the connection the session ID.
+  attr(db, "connection")$session <- x$session
+  ## Give the connection a unique ID - in this case just use the query ID.
+  attr(db, "connection")$id <- query_id[[length(query_id)]]
+  ## Should not use password going forward (session is stored)
+  attr(db, "connection")$password <- NULL
+  
+  ## Return the modified db object
+  return(db)
+}
+
+#' Close the Shim session.
+#' This is registered as a finalizer on attr(db, "connection") so it closes 
+#' the session when the connection gets garbage-collected; it can also be called
+#' from Close.shim().
+#' @param conn the connection environment, usually obtained from 
+#'    attr(db, "connection")
+.CloseShimSession <- function(conn) 
+{
+  is_debug = getOption("scidb.debug", TRUE)  # rsamuels TODO: change to FALSE
+  if (is.null(conn$session)) {
+    if (is_debug) {
+      message("[Shim session] Session already closed. Nothing to do here.")
+    }
+    return();
+  }
+
+  if (is_debug) {
+    message("[Shim session] automatically cleaning up db session ", 
+            conn$session)
+  }
+  SGET(conn, "/release_session", list(id=conn$session), err=FALSE)
+  
+  ## Set the session to NULL so we don't double-release the session.
+  ## Because conn is an env, this side effect should persist
+  ## outside of the current function call.
+  conn$session <- NULL
+}
+
+#' @see Close()
+Close.shim <- function(db)
+{
+  .CloseShimSession(attr(db, "connection"))
 }
 
 #' Internal function to upload an R sparse matrix into SciDB
