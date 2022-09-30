@@ -43,3 +43,11 @@ Close = function(db)
   ## Dispatch to Close.shim or Close.httpapi.
   UseMethod("Close")
 }
+
+#' Run a query. Uses same interface as the iquery() function.
+#' @see iquery()
+Query = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
+{
+  ## Dispatch to Query.shim or Query.httpapi.
+  UseMethod("Query")
+}

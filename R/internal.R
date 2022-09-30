@@ -584,114 +584,6 @@ SGET = function(db_or_conn, resource, args=list(), err=TRUE, binary=FALSE)
   rawToChar(ans$content)
 }
 
-# Normally called with raw data and args=list(id=whatever)
-POST = function(db, data, args=list(), err=TRUE)
-{
-# check for new shim simple post option (/upload), otherwise use
-# multipart/file upload (/upload_file)
-  shimspl = strsplit(attr(db, "connection")$scidb.version, "\\.")[[1]]
-  shim_yr = tryCatch(as.integer(gsub("[A-z]", "", shimspl[1])), error=function(e) 16, warning=function(e) 8)
-  shim_mo = tryCatch(as.integer(gsub("[A-z]", "", shimspl[2])), error=function(e) 16, warning=function(e) 8)
-  if (is.na(shim_yr)) shim_yr = 16
-  if (is.na(shim_mo)) shim_mo = 8
-  simple = (shim_yr >= 15 && shim_mo >= 7) || shim_yr >= 16
-  if (simple)
-  {
-    uri = URI(db, "/upload", args)
-    uri = oldURLencode(uri)
-    uri = gsub("\\+", "%2B", uri, perl=TRUE)
-    h = new_handle()
-    handle_setheaders(h, .list=list(Authorization=digest_auth(db, "POST", uri)))
-    handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
-                                ssl_verifypeer=0, post=TRUE, http_version=2, postfieldsize=length(data),
-                                postfields=data))
-    ans = curl_fetch_memory(uri, h)
-    if (ans$status_code > 299 && err) stop("HTTP error ", ans$status_code)
-    return(rawToChar(ans$content))
-  }
-  uri = URI(db, "/upload_file", args)
-  uri = oldURLencode(uri)
-  uri = gsub("\\+", "%2B", uri, perl=TRUE)
-  h = new_handle()
-  handle_setheaders(h, .list=list(Authorization=digest_auth(db, "POST", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
-                              ssl_verifypeer=0, http_version=2))
-  tmpf = tempfile()
-  if (is.character(data)) data = charToRaw(data)
-  writeBin(data, tmpf)
-  handle_setform(h, file=form_file(tmpf))
-  ans = curl_fetch_memory(uri, h)
-  unlink(tmpf)
-  if (ans$status_code > 299 && err) stop("HTTP error", ans$status_code)
-  return(rawToChar(ans$content))
-}
-
-# Basic low-level query. Returns query id. This is an internal function.
-# db: scidb database connection object
-# query: a character query string
-# save: Save format query string or NULL.
-# session: if you already have a SciDB http session, set this to it, otherwise NULL
-# resp(logical): return http response
-# stream: Set to 0L or 1L to control streaming (NOT USED)
-# prefix: optional AFL statement to prefix query in the same connection context.
-# Example values of save: "dcsv", "csv+", "(double NULL, int32)"
-#
-# Returns the HTTP session in each case
-scidbquery = function(db, query, save=NULL, result_size_limit=NULL, session=NULL, resp=FALSE, stream,
-                      prefix=attributes(db)$connection$prefix, atts_only=TRUE)
-{
-  DEBUG = FALSE
-  STREAM = 0L
-  DEBUG = getOption("scidb.debug", FALSE)
-  if (missing(stream))
-  {
-    STREAM = 0L
-  } else STREAM = as.integer(stream)
-  release = 0
-  if (!is.null(attr(db, "connection")$session)) {
-    session = attr(db, "connection")$session
-  } else {
-    if (DEBUG) message("[Shim session] created new session")
-  }
-  sessionid = session
-  if (is.null(session))
-  {
-    sessionid = getSession(db) # Obtain a session from shim
-  }
-  if (is.null(save)) save=""
-  if (is.null(result_size_limit)) result_size_limit=""
-  if (DEBUG)
-  {
-    message(query)
-    t1 = proc.time()
-  }
-  ans = tryCatch(
-    {
-      args = list(id=sessionid, afl=0L, query=query, stream=0L)
-      args$release = release
-      args$prefix = c(getOption("scidb.prefix"), prefix)
-      if (!is.null(args$prefix)) args$prefix = paste(args$prefix, collapse=";")
-      args$save = save
-      args$result_size_limit = result_size_limit
-      if (!is.null(args$save)) args$atts_only=ifelse(atts_only, 1L, 0L)
-      do.call("SGET", args=list(db=db, resource="/execute_query", args=args))
-    }, error=function(e)
-    {
-      SGET(db, "/cancel", list(id=sessionid), err=FALSE)
-      if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
-      e$call = NULL
-      stop(e)
-    }, interrupt=function(e)
-    {
-      SGET(db, "/cancel", list(id=sessionid), err=FALSE)
-      if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
-      stop("cancelled")
-    }, warning=invisible)
-  if (DEBUG) message("Query time ", round( (proc.time() - t1)[3], 4))
-  if (resp) return(list(session=sessionid, response=ans))
-  sessionid
-}
-
 #' Parse a version string, returning only the major and minor versions
 #' @param version a version string
 #' @return the version string with alphabetic characters removed, and
@@ -705,86 +597,28 @@ ParseVersion <- function(version)
   return(sprintf("%s.%s", v[1], v[2]))
 }
 
-#' @see GetServerVersion()
-GetServerVersion.shim <- function(db)
+.Csv2df <- function(csvdata, ...)
 {
-  version = SGET(db, "/version")
-  attr(db, "connection")$scidb.version <- ParseVersion(version)
-  
-  ## If we got this far, the request succeeded - so the connected host and port
-  ## is for the Shim.
-  class(db) <- c("shim", "afl")
-  
-  return(db)
-}
-
-#' @see Connect()
-Connect.shim <- function(db)
-{
-  ## Run an arbitrary query via scidbquery().
-  ## scidbquery() creates a new session, executes the query, and returns 
-  ## a list(response=, session=) where session is the Shim session ID, and
-  ## response is the query ID (because that's what the Shim outputs in its
-  ## HTTP response to any query).
-  ## We don't care about the query result. (TODO: Is it leaked?)
-  x <- tryCatch(scidbquery(db, query="list('libraries')", resp=TRUE),
-                error=function(e) stop("Connection error ", e),
-                warning=invisible)
-
-  ## Register the session to be closed when db's "connection" env
-  ## gets garbage-collected.
-  reg.finalizer(attr(db, "connection"), 
-                .CloseShimSession, 
-                onexit=TRUE)
-  
-  ## Get the id of the query we just ran.
-  query_id <- tryCatch(strsplit(x$response, split="\\r\\n")[[1]],
-                       error=function(e) stop("Connection error ", e),
-                       warning=invisible)
-
-  ## Give the connection the session ID.
-  attr(db, "connection")$session <- x$session
-  ## Give the connection a unique ID - in this case just use the query ID.
-  attr(db, "connection")$id <- query_id[[length(query_id)]]
-  ## Should not use password going forward (session is stored)
-  attr(db, "connection")$password <- NULL
-  
-  ## Return the modified db object
-  return(db)
-}
-
-#' Close the Shim session.
-#' This is registered as a finalizer on attr(db, "connection") so it closes 
-#' the session when the connection gets garbage-collected; it can also be called
-#' from Close.shim().
-#' @param conn the connection environment, usually obtained from 
-#'    attr(db, "connection")
-.CloseShimSession <- function(conn) 
-{
-  is_debug = getOption("scidb.debug", TRUE)  # rsamuels TODO: change to FALSE
-  if (is.null(conn$session)) {
-    if (is_debug) {
-      message("[Shim session] Session already closed. Nothing to do here.")
-    }
-    return();
+  # Handle escaped quotes
+  csvdata = gsub("\\\\'", "''", csvdata, perl=TRUE)
+  csvdata = gsub("\\\\\"", "''", csvdata, perl=TRUE)
+  # Map SciDB missing (aka null) to NA, but preserve DEFAULT null.
+  # This sucky parsing is not a problem for binary transfers.
+  csvdata = gsub("DEFAULT null", "@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", csvdata, perl=TRUE)
+  csvdata = gsub("null", "NA", csvdata, perl=TRUE)
+  csvdata = gsub("@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", "DEFAULT null", csvdata, perl=TRUE)
+  val = textConnection(csvdata)
+  on.exit(close(val), add=TRUE)
+  ret = c()
+  if (length(val) > 0)
+  {
+    args = list(file=val, ..., sep=",", stringsAsFactors=FALSE, header=TRUE)
+    args$only_attributes = NULL
+    args = args[! duplicated(names(args))]
+    ret = tryCatch(do.call("read.table", args=args),
+                   error = function(e) stop("Query result parsing error ", as.character(e)))
   }
-
-  if (is_debug) {
-    message("[Shim session] automatically cleaning up db session ", 
-            conn$session)
-  }
-  SGET(conn, "/release_session", list(id=conn$session), err=FALSE)
-  
-  ## Set the session to NULL so we don't double-release the session.
-  ## Because conn is an env, this side effect should persist
-  ## outside of the current function call.
-  conn$session <- NULL
-}
-
-#' @see Close()
-Close.shim <- function(db)
-{
-  .CloseShimSession(attr(db, "connection"))
+  return(ret)
 }
 
 #' Internal function to upload an R sparse matrix into SciDB
