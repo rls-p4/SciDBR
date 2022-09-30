@@ -70,48 +70,6 @@ scidb = function(db, name, gc=FALSE, schema)
   obj
 }
 
-#' Make a "handshake" connection to the server to figure out what API
-#' to use when talking to the server. When this function returns value "rv":
-#'   - attr(rv, "connection")$scidb.version will be the server version
-#'   - class(rv) will be the correct class to handle API calls
-#'   - Other fields on rv and attr(rv, "connection") will contain necessary
-#'     information for the subclass to talk to the server
-#'   - All other fields are inherited from the input argument "db".
-#' @param db a scidb database connection from \code{\link{scidbconnect}}
-#' @return db with modifications reflecting information from the handshake
-.Handshake = function(db)
-{
-  ## First assume the connection is for the HTTP API. Attempt to get 
-  ## the server's SciDB version.
-  httpapi_result <- tryCatch(
-    list(db=GetServerVersion.httpapi(db)),
-    error=function(err) { list(error=err) }
-  )
-  if (!is.null(httpapi_result[["db"]])) {
-    ## Return the copy of db with modifications made in GetServerVersion.httpapi
-    return(httpapi_result[["db"]])
-  }
-  
-  ## That didn't work, so assume the connection is for the Shim.
-  ## Attempt to get the server's SciDB version.
-  shim_result <- tryCatch(
-    list(db=GetServerVersion.shim(db)),
-    error=function(err) { list(error=err) }
-  )
-  if (!is.null(shim_result[["db"]])) {
-    ## Return the copy of db with modifications made in GetServerVersion.shim
-    return(shim_result[["db"]])
-  }
-  
-  ## Neither worked, so throw an error with both error messages.
-  conn <- attr(db, "connection")
-  stop("Could not connect to either httpapi or shim on ", 
-       conn$host, ":", conn$port, ".\n",
-       "  httpapi connection error: ", httpapi_result[["error"]], "\n",
-       "  shim connection error: ", shim_result[["error"]])
-}
-
-
 #' Connect to a SciDB database
 #' @param host optional host name or I.P. address of a SciDB shim service to connect to
 #' @param port optional port number of a SciDB shim service to connect to. For connecting
@@ -268,19 +226,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   attr(db, "connection")$ops = ops
   
   attr(db, "connection")$temp_arrays = NULL
-  
-  reg.finalizer( attr(db, "connection"), function(e)
-  {
-    DEBUG = getOption("scidb.debug", FALSE)
-    if (DEBUG) message("[Shim session] automatically cleaning up db session")
-    if (!is.null(attr(db, "connection")$session)) { # if session already exists
-      sessionid = attr(db, "connection")$session
-      SGET(db, "/release_session", list(id=sessionid), err=FALSE)
-    } else { 
-      if (DEBUG) message("[Shim session] No session information. Nothing to do here.")
-    }
-  }, onexit = TRUE)
-  
+
   if (missing(doc)) return (update.afl(db, ops))
 
   attr(db, "connection")$doc = doc
@@ -300,7 +246,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 #'   optionally specify \code{schema} with a valid result array schema to skip
 #'   an extra metadata lookup query (see \code{\link{scidb}}).
 #'
-#' Setting \code{return=TRUE} wrapes the AFL \code{query} expression with a SciDB
+#' Setting \code{return=TRUE} wraps the AFL \code{query} expression with a SciDB
 #' save operator, saving the data on the SciDB server in either binary or text
 #' format depending on the value of the \code{binary} parameter. Please note that
 #' some AFL expressions may not be "saved" using the AFL save operator, including
@@ -328,79 +274,10 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 #'## 3 3  03
 #' }
 #' @export
-iquery = function(db, query, `return`=FALSE, binary=TRUE, arrow = FALSE,...)
+iquery = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
 {
-  DEBUG = getOption("scidb.debug", FALSE)
-  if (inherits(query, "scidb"))  query = query@name
-  n = -1    # Indicate to shim that we want all the output
-  
-  if(binary && arrow) {
-    stop("Only one of `binary` and `arrow` can be true")
-  }
-  
-  session = NULL; release = 1; 
-  if (!is.null(attr(db, "connection")$session)) {
-    session = attr(db, "connection")$session
-    release = 0
-  }
-  
-  if (`return`)
-  {
-    if (arrow) return(scidb_arrow_to_dataframe(db, query, ...))
-    if (binary) return(scidb_unpack_to_dataframe(db, query, ...))
-
-    ans = tryCatch(
-       {
-        # SciDB save syntax changed in 15.12
-        if (at_least(attr(db, "connection")$scidb.version, 15.12))
-        {
-          sessionid = scidbquery(db, query, save="csv+:l")
-        } else sessionid = scidbquery(db, query, save="csv+")
-        dt1 = proc.time()
-        result = tryCatch(
-          {
-            SGET(db, "/read_lines", list(id=sessionid, n=as.integer(n + 1)))
-          },
-          error=function(e)
-          {
-             SGET(db, "/cancel", list(id=sessionid))
-             if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
-             stop(e)
-          })
-        if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
-        if (DEBUG) message("Data transfer time ", round((proc.time() - dt1)[3], 4))
-        dt1 = proc.time()
-# Handle escaped quotes
-        result = gsub("\\\\'", "''", result, perl=TRUE)
-        result = gsub("\\\\\"", "''", result, perl=TRUE)
-# Map SciDB missing (aka null) to NA, but preserve DEFAULT null.
-# This sucky parsing is not a problem for binary transfers.
-        result = gsub("DEFAULT null", "@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", result, perl=TRUE)
-        result = gsub("null", "NA", result, perl=TRUE)
-        result = gsub("@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", "DEFAULT null", result, perl=TRUE)
-        val = textConnection(result)
-        on.exit(close(val), add=TRUE)
-        ret = c()
-        if (length(val) > 0)
-        {
-          args = list(file=val, ..., sep=",", stringsAsFactors=FALSE, header=TRUE)
-          args$only_attributes = NULL
-          args = args[! duplicated(names(args))]
-          ret = tryCatch(do.call("read.table", args=args),
-                error = function(e) stop("Query result parsing error ", as.character(e)))
-        }
-        if (DEBUG) message("R parsing time ", round((proc.time()-dt1)[3], 4))
-        ret
-       }, error = function(e)
-           {
-             stop(e)
-           }, warning=invisible)
-      return(ans)
-  } else
-  {
-    scidbquery(db, query, stream=0L)
-  }
-  invisible()
+  ## dispatch to Query.shim or Query.httpapi
+  Query(db, query, `return`, binary, arrow, ...)
 }
 
 
@@ -596,4 +473,46 @@ getpwd = function(prompt="Password:")
   system("stty echo", ignore.stdout=TRUE, ignore.stderr=TRUE)
   cat("\n")
   a
+}
+
+#' Make a "handshake" connection to the server to figure out what API
+#' to use when talking to the server. When this function returns value "rv":
+#'   - attr(rv, "connection")$scidb.version will be the server version
+#'   - class(rv) will be the correct class to handle API calls
+#'   - Other fields on rv and attr(rv, "connection") will contain necessary
+#'     information for the subclass to talk to the server
+#'   - All other fields are inherited from the input argument "db".
+#' @param db a scidb database connection from \code{\link{scidbconnect}}
+#' @return db with modifications reflecting information from the handshake
+#' @noRd
+.Handshake = function(db)
+{
+  ## First assume the connection is for the HTTP API. Attempt to get 
+  ## the server's SciDB version.
+  httpapi_result <- tryCatch(
+    list(db=GetServerVersion.httpapi(db)),
+    error=function(err) { list(error=err) }
+  )
+  if (!is.null(httpapi_result[["db"]])) {
+    ## Return the copy of db with modifications made in GetServerVersion.httpapi
+    return(httpapi_result[["db"]])
+  }
+  
+  ## That didn't work, so assume the connection is for the Shim.
+  ## Attempt to get the server's SciDB version.
+  shim_result <- tryCatch(
+    list(db=GetServerVersion.shim(db)),
+    error=function(err) { list(error=err) }
+  )
+  if (!is.null(shim_result[["db"]])) {
+    ## Return the copy of db with modifications made in GetServerVersion.shim
+    return(shim_result[["db"]])
+  }
+  
+  ## Neither worked, so throw an error with both error messages.
+  conn <- attr(db, "connection")
+  stop("Could not connect to either httpapi or shim on ", 
+       conn$host, ":", conn$port, ".\n",
+       "  httpapi connection error: ", httpapi_result[["error"]], "\n",
+       "  shim connection error: ", shim_result[["error"]])
 }
