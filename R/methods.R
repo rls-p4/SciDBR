@@ -90,6 +90,9 @@ str.afl = function(object, ...)
   str(unclass(object))
 }
 setOldClass("afl")
+setOldClass(c("shim", "afl"))
+setOldClass(c("httpapi", "afl"))
+
 #' Print a summary of a \code{afl} object
 #' @param object \code{afl} object
 #' @return printed object summary
