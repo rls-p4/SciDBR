@@ -53,9 +53,9 @@ Connect.shim <- function(db)
   attr(db, "connection")$id <- query_id[[length(query_id)]]
   ## Should not use password going forward (session is stored)
   attr(db, "connection")$password <- NULL
-  
-  ## Return the modified db object
-  return(db)
+
+  ## We don't need to return db because the only object we have modified
+  ## is attr(db, "connection") which is an env (pass-by-reference).
 }
 
 #' @see Close()
@@ -125,6 +125,131 @@ Query.shim = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
     scidbquery(db, query, stream=0L)
   }
   invisible()
+}
+
+#' See BinaryQuery()
+BinaryQuery.shim = function(db, query_or_scidb, 
+                            binary=NULL, buffer_size=NULL,
+                            only_attributes=NULL, schema=NULL, ...)
+{
+  DEBUG = FALSE
+  INT64 = attr(db, "connection")$int64
+  DEBUG = getOption("scidb.debug", FALSE)
+  AIO = getOption("scidb.aio", FALSE)
+  RESULT_SIZE_LIMIT = getOption("scidb.result_size_limit", 256)
+  if (DEBUG) {
+    if (is.null(attr(db, "connection")$session)) {
+      stop("[Shim session] unexpected in long running shim session")
+    }
+  }
+  query = query_or_scidb
+  lazyeval_ret = lazyeval(db, query)
+  only_attributes = if (is.null(only_attributes)) {
+    dist = lazyeval_ret$distribution
+    if(is.na(dist)) FALSE else if(dist == 'dataframe') TRUE else FALSE
+  } else {
+    only_attributes
+  }
+  if (is.null(binary)) binary = TRUE
+  if (!inherits(query, "scidb"))
+  {
+    # make a scidb object out of the query, optionally using a supplied schema to skip metadata query
+    if (is.null(schema)) {
+      query = if(is.na(lazyeval_ret$schema)) {
+        scidb(db, query)
+      } else {
+        scidb(db, query, schema=lazyeval_ret$schema)
+      }
+    } else {
+      query = scidb(db, query, schema=schema)
+    }
+  }
+  attributes = schema(query, "attributes")
+  dimensions = schema(query, "dimensions")
+  query = query@name
+  if(! binary) return(iquery(db, query, binary=FALSE, `return`=TRUE, arrow=FALSE))
+  if (only_attributes)
+  {
+    internal_attributes = attributes
+    internal_query = query
+  } else {
+    dim_names = dimensions$name
+    attr_names = attributes$name
+    all_names = c(dim_names, attr_names)
+    internal_query = query
+    if (length(all_names) != length(unique(all_names)))
+    {
+      # Cast to completely unique names to be safe:
+      cast_dim_names = make.names_(dim_names)
+      cast_attr_names = make.unique_(cast_dim_names, make.names_(attributes$name))
+      cast_schema = sprintf("<%s>[%s]", paste(paste(cast_attr_names, attributes$type, sep=":"), collapse=","), paste(cast_dim_names, collapse=","))
+      internal_query = sprintf("cast(%s, %s)", internal_query, cast_schema)
+      all_names = c(cast_dim_names, cast_attr_names)
+      dim_names = cast_dim_names
+    }
+    # Apply dimensions as attributes, using unique names. Manually construct the list of resulting attributes:
+    dimensional_attributes = data.frame(name=dimensions$name, type="int64", nullable=FALSE) # original dimension names (used below)
+    internal_attributes = rbind(attributes, dimensional_attributes)
+    if (AIO == FALSE)
+    {
+      dim_apply = paste(dim_names, dim_names, sep=",", collapse=",")
+      internal_query = sprintf("apply(%s, %s)", internal_query, dim_apply)
+    }
+  }
+  ns = rep("", length(internal_attributes$nullable))
+  ns[internal_attributes$nullable] = "null"
+  format_string = paste(paste(internal_attributes$type, ns), collapse=",")
+  format_string = sprintf("(%s)", format_string)
+  
+  ## Start running the query
+  if (DEBUG) message("Data query ", internal_query)
+  if (DEBUG) message("Format ", format_string)
+  sessionid = scidbquery(
+    db,
+    internal_query,
+    save=format_string,
+    result_size_limit=RESULT_SIZE_LIMIT,
+    atts_only=ifelse(only_attributes, TRUE, ifelse(AIO, FALSE, TRUE)))
+  if (!is.null(attr(db, "connection")$session)) { # if session already exists
+    release = 0
+  } else { # need to get new session every time
+    release = 1;
+  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
+
+  ## Fetch the query output data in binary format  
+  dt2 = proc.time()
+  uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
+  h = new_handle()
+  handle_setheaders(h, .list=list(`Authorization`=digest_auth(db, "GET", uri)))
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
+                              ssl_verifypeer=0, http_version=2))
+  resp = curl_fetch_memory(uri, h)
+  if (resp$status_code > 299) stop("HTTP error", resp$status_code)
+  if (DEBUG) message("Data transfer time ", round((proc.time() - dt2)[3], 4))
+
+  ## Unpack the binary data into a data.table
+  dt1 = proc.time()
+  ans = .Binary2df(resp$content, internal_attributes, buffer_size, INT64)
+  if (DEBUG) message("Total R parsing time ", round( (proc.time() - dt1)[3], 4))
+  
+  ## If there was no data, return an empty dataframe with the query's schema
+  if (is.null(ans)) {
+    return(.Schema2EmptyDf(attributes,
+                           if (only_attributes) NULL else dimensions))
+  }
+  
+  ## Permute dimension cols, see issue #125
+  if (only_attributes) {
+    colnames(ans) = make.names_(attributes$name)
+  } else {
+    nd = length(dimensions$name)
+    i = ncol(ans) - nd
+    ans = ans[, c( (i+1):ncol(ans), 1:i)]
+    colnames(ans) = make.names_(c(dimensions$name, attributes$name))
+  }
+  
+  return(ans)
 }
 
 #' Basic low-level query. Returns query id. This is an internal function.

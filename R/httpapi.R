@@ -15,15 +15,17 @@ httpapi_supported_versions <- c(1)
 #' @noRd
 GetServerVersion.httpapi <- function(db)
 {
-  if (is.null(attr(db, "connection")$handle)) {
-    attr(db, "connection")$handle <- curl::new_handle()
+  conn <- attr(db, "connection")
+  if (is.null(conn)) stop("No connection environment")
+  if (is.null(conn$handle)) {
+    conn$handle <- curl::new_handle()
   }
   
   resp <- .HttpRequest(db, "GET", .EndpointUri(db, "version"))
   stopifnot(resp$status_code == 200)  # 200 OK
   json <- jsonlite::fromJSON(rawToChar(resp$content))
   
-  attr(db, "connection")$scidb.version <- ParseVersion(json[["scidbVersion"]])
+  conn$scidb.version <- ParseVersion(json[["scidbVersion"]])
 
   ## The API versions that the server supports
   server_api_versions <- json[["apiMinVersion"]]:json[["apiVersion"]]
@@ -36,30 +38,46 @@ GetServerVersion.httpapi <- function(db)
          " and I support versions ", httpapi_supported_versions)
   }
   ## The newest API version that both the client and server support
-  attr(db, "connection")$httpapi_version <- max(compatible_versions)
+  conn$httpapi_version <- max(compatible_versions)
   
   ## If we got this far, the request succeeded - so the connected host and port
   ## supports the SciDB httpapi (no Shim).
   class(db) <- c("httpapi", "afl")
   
+  ## We need to return db because we have modified its class,
+  ## and db is pass-by-value (it isn't an env)
   return(db)
 }
 
 #' @see Connect()
+#' @param db_or_conn a database connection object, or a connection env
+#' @param reconnect If TRUE, make a new session regardless of whether one
+#'   already exists. If FALSE and a session already exists, returns without
+#'   changing anything.
 #' @noRd
-Connect.httpapi <- function(db)
+Connect.httpapi <- function(db_or_conn, reconnect=FALSE)
 {
+  conn <- .GetConnectionEnv(db_or_conn)
+  if (is.null(conn)) stop("no connection environment")
+  
   ## Create a new connection handle.
   ## Because we reuse one connection handle for all queries in a session,
   ## curl automatically deals with authorization cookies sent from the server -
   ## sending them back to the server in each request, and keeping them 
   ## up to date when the server sends new cookies.
-  if (is.null(attr(db, "connection")$handle)) {
-    attr(db, "connection")$handle <- curl::new_handle()
+  if (is.null(conn$handle)) {
+    conn$handle <- curl::new_handle()
   }
 
+  connected <- (!is.null(conn$session)
+                && !is.null(conn$location) 
+                && !is.null(conn$links))
+  if (connected && !reconnect) {
+    return()
+  }
+  
   ## Post to /api/sessions to create a new session  
-  resp <- .HttpRequest(db, "POST", .EndpointUri(db, "sessions"))
+  resp <- .HttpRequest(conn, "POST", .EndpointUri(conn, "sessions"))
   stopifnot(resp$status_code == 201)  # 201 Created
   json <- jsonlite::fromJSON(rawToChar(resp$content))
   
@@ -68,24 +86,24 @@ Connect.httpapi <- function(db)
 
   ## Parse the Location and Link headers and store them
   headers_list <- curl::parse_headers_list(resp$headers)
-  attr(db, "connection")$location <- headers_list[["location"]]
-  attr(db, "connection")$links <- .ParseLinkHeaders(headers_list)
+  conn$location <- headers_list[["location"]]
+  conn$links <- .ParseLinkHeaders(headers_list)
   
   ## Give the connection the session ID.
-  attr(db, "connection")$session <- sid
+  conn$session <- sid
   ## Give the connection a unique ID - in this case just reuse the session ID.
-  attr(db, "connection")$id <- sid
+  conn$id <- sid
   ## Should not use password going forward: use the authorization cookies
   ## that were returned by the server and which curl automatically saves
   ## on the connection handle.
-  attr(db, "connection")$password <- NULL
+  conn$password <- NULL
 
-  ## Register the session to be closed when db's "connection" env
+  ## Register the session to be closed when the connection env
   ## gets garbage-collected.
-  reg.finalizer(attr(db, "connection"), .CloseHttpApiSession, onexit=TRUE)
+  reg.finalizer(conn, .CloseHttpApiSession, onexit=TRUE)
   
-  ## Return the modified db object
-  return(db)
+  ## We don't need to return db or conn because the only object we have modified
+  ## is the connection env which is pass-by-reference.
 }
 
 #' @see Close()
@@ -97,45 +115,40 @@ Close.httpapi <- function(db)
 
 #' @see iquery()
 #' @noRd
-Query.httpapi <- function(db, query, 
-                          `return`=FALSE, 
-                          binary=TRUE, 
-                          arrow=FALSE, 
+Query.httpapi <- function(db, query_or_scidb, 
+                          `return`=FALSE,
+                          binary=TRUE,
+                          arrow=FALSE,
+                          format="csv+:l",
                           ...)
 {
+  ## TODO: Currently ignoring `arrow`, waiting for SDB-7821
   is_debug = getOption("scidb.debug", TRUE)  # rsamuels TODO change to FALSE
-  
-  conn <- attr(db, "connection")
-  if (is.null(conn)) { stop("no connection") }
-  if (is.null(query) || is.na(query)) { stop("no query") }
 
-  if (inherits(query, "scidb")) {
-    query <- query@name
-  }
-  
+  ## For backward compatibility: defer to BinaryQuery if binary==TRUE
   if (binary) {
-    stop("binary==TRUE not supported yet")
-  }
-  if (arrow) {
-    stop("arrow==TRUE not supported yet")
+    return(scidb_unpack_to_dataframe(db, query_or_scidb, ...))
   }
   
-  if (is.null(conn$session) || is.null(conn$location) || is.null(conn$links)) {
-    db <- Connect.httpapi(db)
-  }
-
+  Connect.httpapi(db, reconnect=FALSE)
+  conn <- attr(db, "connection")
+  query <- .GetQueryString(query_or_scidb)
+  
   ## Start a new query
+  if (is_debug) {
+    message("[SciDBR] text query (", format, "): ", query)
+  }
   timings <- c(start=proc.time()[["elapsed"]])
-  query <- New.httpquery(conn, query, options=list(format="csv+:l"))
+  http_query <- New.httpquery(conn, query, options=list(format=format))
   timings <- c(timings, prepare=proc.time()[["elapsed"]])
   
   ## Since this function currently fetches all of its results in one page,
   ## we can close the query as soon as this function exits.
   on.exit(
     suspendInterrupts(
-      tryCatch(Close.httpquery(query),
+      tryCatch(Close.httpquery(http_query),
                error=function (err) {
-                 warning("[SciDBR] Error while closing query ", query$id, 
+                 warning("[SciDBR] Error while closing query ", http_query$id, 
                          "(ignored): ", err)
                })))
   
@@ -143,10 +156,10 @@ Query.httpapi <- function(db, query,
   ## `return` in the expected way (i.e. nobody sets return=FALSE to ignore data 
   ## from a selective query), we can deprecate the `return` argument, ignore it,
   ## and just use is_selective instead.
-  if (`return` == FALSE && query$is_selective) {
+  if (`return` == FALSE && http_query$is_selective) {
     stop("`return` argument must be TRUE for a selective query")
   }
-  if (`return` == TRUE && !query$is_selective) {
+  if (`return` == TRUE && !http_query$is_selective) {
     stop("`return` argument must be FALSE for a DDL or update query")
   }
   
@@ -155,30 +168,175 @@ Query.httpapi <- function(db, query,
   ## gets committed if the query is fetched to completion.
   ## If there is an error, the on.exit() above will close the query,
   ## and the error will be propagated to the caller.
-  raw_page <- Next.httpquery(query)
+  raw_page <- Next.httpquery(http_query)
   timings <- c(timings, fetch=proc.time()[["elapsed"]])
   
   df <- NULL
-  if (`return` && query$is_selective && !is.null(page)) {
+  if (`return` && http_query$is_selective && !is.null(raw_page)) {
     ## Convert the CSV data to an R dataframe
     df <- .Csv2df(rawToChar(raw_page))
     timings <- c(timings, parse_csv=proc.time()[["elapsed"]])
   }
   
-  ## Report on timings
   if (is_debug) {
-    msg <- paste0("[SciDBR] timings for query ", query$id, ":")
-    for (ii in seq(2, length(timings))) {
-      if (ii > 2) { 
-        msg <- paste0(msg, ",") 
-      }
-      msg <- paste(msg, names(timings)[[ii]], 
-                   timings[[ii]] - timings[[ii-1]])
-    }
-    message(msg)
+    .ReportTimings(paste0("[SciDBR] timings for query ", http_query$id, ":"), 
+                   timings)
   }
   
   return(if (is.null(df)) invisible(NULL) else df)
+}
+
+## rsamuels TODO: set default page_size once binary output supports paging
+BinaryQuery.httpapi <- function(db,
+                                query_or_scidb, 
+                                binary=TRUE, 
+                                buffer_size=NULL,
+                                only_attributes=NULL, 
+                                schema=NULL,
+                                page_size=NULL, 
+                                npages=NULL, 
+                                ...)
+{
+  ## In SciDBR <=3.1.0, the semantics of binary=TRUE queries are different from 
+  ## those of binary=FALSE queries. To remain interchangeable with that version
+  ## and keep the code as simple as possible, Query and BinaryQuery are
+  ## implemented using separate functions rather than trying to combine the
+  ## different behaviors into a single function.
+  
+  ## For backward compatibility: defer to Query.httpapi if binary==FALSE
+  binary <- if (is.null(binary)) TRUE else binary
+  if (!binary) {
+    return(Query.httpapi(db, query_or_scidb, 
+                        binary=FALSE, `return`=TRUE, arrow=FALSE))
+  }
+  
+  only_attributes <- if (is.null(only_attributes)) FALSE else only_attributes
+  
+  Connect.httpapi(db, reconnect=FALSE)
+  conn <- attr(db, "connection")
+  query <- .GetQueryString(query_or_scidb)
+  
+  is_debug <- getOption("scidb.debug", TRUE)  # rsamuels TODO change to FALSE
+  use_int64 <- conn$int64
+  result_size_limit_mb <- getOption("scidb.result_size_limit", 256)
+  result_size_limit_bytes <- result_size_limit_mb * 1000000
+  format <- if (only_attributes) "binary" else "binary+"
+
+  ## Start a new query
+  if (is_debug) {
+    message("[SciDBR] ", format, " data query: ", query)
+  }
+  timings <- c(start=proc.time()[["elapsed"]])
+  http_query <- New.httpquery(conn, query, 
+                              options=list(format=format, 
+                                           pageSize=page_size))
+  schema <- http_query$schema
+  dimensions <- .dimsplitter(schema)
+  attributes <- .attsplitter(schema)
+  timings <- c(timings, prepare=proc.time()[["elapsed"]])
+  
+  ## Since this function fetches all the pages it's interested in
+  ## before returning, we can close the query as soon as this function exits.
+  on.exit(
+    suspendInterrupts(
+      tryCatch(Close.httpquery(http_query),
+               error=function (err) {
+                 warning("[SciDBR] Error while closing query ", http_query$id, 
+                         "(ignored): ", err)
+               })))
+  
+  ## These are the columns we expect to be encoded in the response:
+  ## dimensions (if requested), followed by attributes
+  cols <- NULL
+  if (! only_attributes) {
+    ## Use stringsAsFactors=FALSE because we want the dataframe to contain
+    ## actual strings (instead of dictionary-encoding them, which would turn
+    ## every column of the dataframe into an integer vector)
+    cols <- data.frame(name=dimensions$name, type="int64", nullable=FALSE, 
+                       stringsAsFactors=FALSE)
+  }
+  cols <- rbind(cols, attributes)
+  
+  ## a %<?% b: return a<b, or TRUE if either is NULL or NA
+  `%<?%` <- function(a, b) {
+    if (is.null(a) || is.na(a) || is.null(b) || is.na(b)) TRUE else a < b
+  }
+  
+  ## Fetch one page at a time
+  page_number <- 0
+  total_nbytes <- 0
+  ans <- NULL
+  while (page_number %<?% npages 
+         && total_nbytes %<?% result_size_limit_bytes) {
+    ## Fetch the next page
+    page_number <- page_number + 1
+    raw_page <- Next.httpquery(http_query)
+    timings[[paste0("fetch_page_", page_number)]] <- proc.time()[["elapsed"]]
+
+    page_nbytes <- length(raw_page)
+    total_nbytes <- total_nbytes + page_nbytes
+
+    if (is.null(raw_page) || !http_query$is_selective) {
+      ## We already got the last page, or the result is empty.
+      message("[SciDBR] Query page ", page_number, " returned empty result",
+              "(page_bytes=", page_bytes, ")")
+      break
+    }
+
+    ## Convert the binary data to a dataframe, and add it to the answer
+    page_df <- .Binary2df(raw_page, cols, buffer_size, use_int64)
+    ans <- rbind(ans, page_df)
+    timings[[paste0("parse_page_", page_number)]] <- proc.time()[["elapsed"]]
+
+    page_ncols <- length(page_df)
+    page_nrows <- if (page_ncols > 0) length(page_df[[1]]) else 0
+    total_ncols <- length(ans)
+    total_nrows <- if (total_ncols > 0) length(ans[[1]]) else 0
+
+    if (is_debug) {
+      message("[SciDBR] Query page ", page_number, " returned ",
+              page_nbytes, " bytes, ", 
+              page_ncols, " columns, ",
+              page_nrows, " rows;",
+              " total so far: ", 
+              total_nbytes, " bytes, ",
+              total_ncols, " columns, ",
+              total_nrows, " rows")
+    }
+    
+    ## If the number of results we received is less than the page size, 
+    ## or if we didn't set a page size (which returns all results in one page),
+    ## we know this is the last page. We can skip the final call to Next, since
+    ## it will only return an empty page.
+    if (is.null(page_size) || page_nrows < page_size) {
+      if (is_debug) {
+        message("[SciDBR] Query page ", page_number, " returned ", 
+                page_nrows, " rows ",
+                "(page_size=", if (is.null(page_size)) "NULL" else page_size,
+                "); assuming this is the last page")
+      }
+      break
+    }
+  }
+  if (is_debug) {
+    .ReportTimings(paste0("[SciDBR] timings for query ", http_query$id, ":"), 
+                   timings)
+  }
+  
+  if (is.null(ans)) {
+    ## The response had no data. Create an empty dataframe
+    ## with the correct column types.
+    if (is_debug) {
+      message("[SciDBR] Query returned no data; constructing empty dataframe")
+    }
+    return(.Schema2EmptyDf(attributes, 
+                           if (only_attributes) NULL else dimensions))
+  }
+
+  ## TODO: Uniqueify attribute names if !only_attributes
+  ## TODO: do we need to permute dimension columns? Compare results to Shim
+  
+  return(ans)
 }
 
 #' Close the session.
@@ -296,13 +454,28 @@ Query.httpapi <- function(db, query,
     message("[SciDBR] received headers: ", 
             paste(curl::parse_headers(resp$headers), collapse=" | "))
     if (length(resp$content) > 0) {
-      message("[SciDBR] received body:\n>>>>>\n  ",
-              rawToChar(resp$content),
+      is_text <- .HttpResponseIsText(resp)
+      message("[SciDBR] received body", 
+              if (!is_text) " (binary)", 
+              ":\n>>>>>\n  ",
+              if (is_text) rawToChar(resp$content) else resp$content,
               "\n<<<<<")
     }
   }
   
   return(resp)
+}
+
+#' Given an HTTP response, return TRUE if the content is text.
+#' @param resp the result of a call to curl_fetch_memory
+#' @return TRUE iff the resp$content is text-formatted, i.e. if we can use 
+#'  rawToChar(resp$content) without an error.
+.HttpResponseIsText <- function(resp)
+{
+  ## The slow way: look for non-printing characters
+  return(length(grepRaw("[^[:print:][:space:]]", resp$content)) == 0)
+  
+  ## TODO: Check the Content-Type header instead.
 }
 
 #' Given a list of HTTP response headers parsed by curl::parse_headers_list,
@@ -375,13 +548,33 @@ Query.httpapi <- function(db, query,
   return(uri)
 }
 
-New.httpquery <- function(conn, afl, page_size=NULL, options=list())
+#' Given a list of actions and when they happened, e.g. 
+#' (start=time1, firstAction=time2, secondAction=time3, ...),
+#' this function will output a message indicating that
+#' firstAction took (time2-time1) seconds, secondAction took
+#' (time3-time2) seconds, etc.
+#' @param msg a message to print before the timings
+#' @param timings a list of the form (start=time1, firstAction=time2, ...)
+#'   where all timings were obtained from proc.time()[["elapsed"]].
+.ReportTimings <- function(msg, timings)
 {
-  ## Prepare the POST content
-  query_and_options <- append(list(query=afl), options)
-  if (!is.null(page_size)) {
-    query_and_options <- append(query_and_options, list(pageSize=page_size))
+  for (ii in seq(2, length(timings))) {
+    if (ii > 2) { 
+      msg <- paste0(msg, ",") 
+    }
+    msg <- paste(msg, names(timings)[[ii]], 
+                 timings[[ii]] - timings[[ii-1]])
   }
+  message(msg)
+}
+
+New.httpquery <- function(conn, afl, options=list())
+{
+  ## Remove options whose values are NULL
+  options <- Filter(Negate(is.null), options)
+  
+  ## Prepare the JSON for posting
+  query_and_options <- append(list(query=afl), options)
   query_json <- jsonlite::toJSON(query_and_options, auto_unbox=TRUE)
   
   ## Execute the POST
@@ -399,7 +592,7 @@ New.httpquery <- function(conn, afl, page_size=NULL, options=list())
   query <- new.env()
   class(query) <- "httpquery"
   query$connection <- conn
-  query$page_size <- page_size
+  query$options <- options
   query$location <- headers_list[["location"]]
   query$next_page_number <- 1
   query$next_page_url <- links[["first"]]

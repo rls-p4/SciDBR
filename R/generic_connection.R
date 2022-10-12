@@ -51,3 +51,34 @@ Query = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
   ## Dispatch to Query.shim or Query.httpapi.
   UseMethod("Query")
 }
+
+#' Unpack and return a SciDB query expression as a data frame
+#' @param db scidb database connection object
+#' @param query_or_scidb A SciDB query expression or scidb object
+#' @param binary optional logical value. If \code{FALSE} use text transfer, 
+#'    otherwise binary transfer. Defaults to \code{TRUE}.
+#' @param buffer_size optional integer. Initial parse buffer size in bytes, 
+#'    adaptively resized as needed. Larger buffers can be faster but consume
+#'    more memory. Default size is determined by the connection implementation.
+#' @param only_attributes optional logical value. \code{TRUE} means
+#'    don't retrieve dimension coordinates, only return attribute values.
+#'    Logically defaults to \code{FALSE} (but the default is actually NULL
+#'      because shim needs to set it to TRUE when the query result is a 
+#'      SciDB dataframe)
+#' @param schema optional result schema string, only applies when \code{query} 
+#'    is not a SciDB object. Supplying this avoids one extra metadata query to
+#'    determine result schema. Defaults to \code{schema(query)}.
+#' @importFrom curl new_handle handle_setheaders handle_setopt 
+#'    curl_fetch_memory handle_setform form_file
+#' @importFrom data.table  data.table
+#' @import bit64
+BinaryQuery = function(db, query_or_scidb, 
+                       binary=TRUE,
+                       buffer_size=NULL,     # implementation should decide
+                       only_attributes=NULL, # shim implementation needs to see
+                                             #    if query result is a dataframe
+                       schema=NULL, 
+                       ...)
+{
+  UseMethod("BinaryQuery")
+}

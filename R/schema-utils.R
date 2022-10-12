@@ -96,9 +96,11 @@
   s = gsub("default[^,]*", "", s, ignore.case=TRUE)
   s = strsplit(strsplit(strsplit(strsplit(s, ">")[[1]][1], "<")[[1]][2], ",")[[1]], ":")
   # SciDB schema syntax changed in 15.12
-  null = if (at_least(attr(x@meta$db, "connection")$scidb.version, "15.12"))
-           ! grepl("NOT NULL", s)
-         else grepl(" NULL", s)
+  null = if (is.character(x) || at_least(attr(x@meta$db, "connection")$scidb.version, "15.12")) {
+           ! grepl("NOT NULL", s, ignore.case=TRUE)
+         } else {
+           grepl(" NULL", s, ignore.case=TRUE)
+         }
   type = gsub(" ", "", gsub("null", "", gsub("not null", "", gsub("compression '.*'", "", vapply(s, function(x) x[2], ""), ignore.case=TRUE), ignore.case=TRUE), ignore.case=TRUE))
   data.frame(name=gsub("[ \\\t\\\n]", "", vapply(s, function(x) x[1], "")),
              type=type,
