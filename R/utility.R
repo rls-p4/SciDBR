@@ -203,16 +203,9 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   }
 
   ## Dispatch to subclass to start a session
-  db = Connect(db)
-
-  if (inherits(db, "httpapi")) {
-    message("connected to http api,",
-            " version = ", attr(db, "connection")$scidb.version,
-            " connection = ", attr(db, "connection")$id)
-    return(db)
-  }
+  Connect(db)
   
-# Update available operators and macros and return afl object
+  ## Update available operators and macros and return afl object
   ops = iquery(
     db, 
     paste0("merge(redimension(project(list('operators'), name), ",

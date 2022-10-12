@@ -94,232 +94,35 @@ scidb_arrow_to_dataframe = function(db, query, ...) {
 #' Unpack and return a SciDB query expression as a data frame
 #' @param db scidb database connection object
 #' @param query A SciDB query expression or scidb object
-#' @param ... optional extra arguments (see below)
-#' @note option extra arguments
-#' \itemize{
-#'   \item{binary}{ optional logical value, if \code{FALSE} use iquery text transfer, otherwise binary transfer, defaults \code{TRUE}}
-#'   \item{buffer}{ integer initial parse buffer size in bytes, adaptively resized as needed: larger buffers can be faster but comsume more memory, default size is 100000L.}
-#'   \item{only_attributes}{ optional logical value, \code{TRUE} means don't retrieve dimension coordinates, only return attribute values; defaults to \code{FALSE}.}
-#"   \item{schema}{ optional result schema string, only applies when \code{query} is not a SciDB object. Supplying this avois one extra metadata query to determine result schema. Defaults to \code{schema(query)}.}
-#' }
+#' @param binary optional logical value. If \code{FALSE} use text transfer, 
+#'    otherwise binary transfer. Defaults to \code{TRUE}.
+#' @param buffer_size optional integer. Initial parse buffer size in bytes, 
+#'    adaptively resized as needed. Larger buffers can be faster but consume
+#'    more memory. Default size is 100000L. (Previously called "buffer";
+#'    that parameter name is accepted too but it is deprecated.)
+#' @param only_attributes optional logical value. \code{TRUE} means
+#'    don't retrieve dimension coordinates, only return attribute values.
+#'    Defaults to \code{FALSE}.
+#' @param schema optional result schema string, only applies when \code{query} 
+#'    is not a SciDB object. Supplying this avoids one extra metadata query to
+#'    determine result schema. Defaults to \code{schema(query)}.
 #' @keywords internal
-#' @importFrom curl new_handle handle_setheaders handle_setopt curl_fetch_memory handle_setform form_file
+#' @importFrom curl new_handle handle_setheaders handle_setopt curl_fetch_memory
+#'    handle_setform form_file
 #' @importFrom data.table  data.table
 #' @import bit64
-scidb_unpack_to_dataframe = function(db, query, ...)
+scidb_unpack_to_dataframe = function(db, query, binary=TRUE, buffer=NULL, 
+                                     only_attributes=FALSE, schema=NULL, 
+                                     buffer_size=NULL, ...)
 {
-  DEBUG = FALSE
-  INT64 = attr(db, "connection")$int64
-  DEBUG = getOption("scidb.debug", FALSE)
-  AIO = getOption("scidb.aio", FALSE)
-  RESULT_SIZE_LIMIT = getOption("scidb.result_size_limit", 256)
-  if (DEBUG) {
-    if (is.null(attr(db, "connection")$session)) stop("[Shim session] unexpected in long running shim session")
-  }
-  buffer = 100000L
-  args = list(...)
-  lazyeval_ret = lazyeval(db, query)
-  args$only_attributes = if (is.null(args$only_attributes)) {
-    dist = lazyeval_ret$distribution
-    if(is.na(dist)) FALSE else if(dist == 'dataframe') TRUE else FALSE
-  } else {
-    args$only_attributes
-  }
-  if (is.null(args$binary)) args$binary = TRUE
-  if (!is.null(args$buffer))
-  {
-    argsbuf = tryCatch(as.integer(args$buffer), warning=function(e) NA)
-    if (!is.na(argsbuf) && argsbuf <= 1e9) buffer = as.integer(argsbuf)
-  }
-  if (!inherits(query, "scidb"))
-  {
-# make a scidb object out of the query, optionally using a supplied schema to skip metadata query
-    if (is.null(args$schema)) {
-      query = if(is.na(lazyeval_ret$schema)) {
-        scidb(db, query)
-      } else {
-        scidb(db, query, schema=lazyeval_ret$schema)
-      }
-    } else {
-      query = scidb(db, query, schema=args$schema)
-    }
-  }
-  attributes = schema(query, "attributes")
-  dimensions = schema(query, "dimensions")
-  query = query@name
-  if(! args$binary) return(iquery(db, query, binary=FALSE, `return`=TRUE, arrow=FALSE))
-  if (args$only_attributes)
-  {
-    internal_attributes = attributes
-    internal_query = query
-  } else
-  {
-    dim_names = dimensions$name
-    attr_names = attributes$name
-    all_names = c(dim_names, attr_names)
-    internal_query = query
-    if (length(all_names) != length(unique(all_names)))
-    {
-      # Cast to completely unique names to be safe:
-      cast_dim_names = make.names_(dim_names)
-      cast_attr_names = make.unique_(cast_dim_names, make.names_(attributes$name))
-      cast_schema = sprintf("<%s>[%s]", paste(paste(cast_attr_names, attributes$type, sep=":"), collapse=","), paste(cast_dim_names, collapse=","))
-      internal_query = sprintf("cast(%s, %s)", internal_query, cast_schema)
-      all_names = c(cast_dim_names, cast_attr_names)
-      dim_names = cast_dim_names
-    }
-    # Apply dimensions as attributes, using unique names. Manually construct the list of resulting attributes:
-    dimensional_attributes = data.frame(name=dimensions$name, type="int64", nullable=FALSE) # original dimension names (used below)
-    internal_attributes = rbind(attributes, dimensional_attributes)
-    if (AIO == FALSE)
-    {
-      dim_apply = paste(dim_names, dim_names, sep=",", collapse=",")
-      internal_query = sprintf("apply(%s, %s)", internal_query, dim_apply)
-    }
-  }
-  ns = rep("", length(internal_attributes$nullable))
-  ns[internal_attributes$nullable] = "null"
-  format_string = paste(paste(internal_attributes$type, ns), collapse=",")
-  format_string = sprintf("(%s)", format_string)
-  if (DEBUG) message("Data query ", internal_query)
-  if (DEBUG) message("Format ", format_string)
-  sessionid = scidbquery(
-    db,
-    internal_query,
-    save=format_string,
-    result_size_limit=RESULT_SIZE_LIMIT,
-    atts_only=ifelse(args$only_attributes, TRUE, ifelse(AIO, FALSE, TRUE)))
-  if (!is.null(attr(db, "connection")$session)) { # if session already exists
-    release = 0
-  } else { # need to get new session every time
-    release = 1;
-  }
-  if (release) on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
-  dt2 = proc.time()
-  uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
-  h = new_handle()
-  handle_setheaders(h, .list=list(`Authorization`=digest_auth(db, "GET", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
-                              ssl_verifypeer=0, http_version=2))
-  resp = curl_fetch_memory(uri, h)
-  if (resp$status_code > 299) stop("HTTP error", resp$status_code)
-  if (DEBUG) message("Data transfer time ", round((proc.time() - dt2)[3], 4))
-  dt1 = proc.time()
-  len = length(resp$content)
-  p = 0
-  ans = c()
-  cnames = c(internal_attributes$name, "lines", "p")  # we are unpacking to a SciDB array, ignore dims
-  n = nrow(internal_attributes)
-  rnames = c()
-  typediff = setdiff(internal_attributes$type, names(.scidbtypes))
-  if(length(typediff) > 0)
-  {
-    stop(typediff, " SciDB type not supported. Try converting to string in SciDB or use a binary=FALSE data transfer")
-  }
-  while (p < len)
-  {
-    dt2 = proc.time()
-    tmp   = .Call(C_scidb_parse, as.integer(buffer), internal_attributes$type,
-                  internal_attributes$nullable, resp$content, as.double(p), as.integer(INT64))
-    names(tmp) = cnames
-    lines = tmp[[n+1]]
-    p_old = p
-    p     = tmp[[n+2]]
-    if (DEBUG) message("  R buffer ", p, "/", len, " bytes parsing time ", round( (proc.time() - dt2)[3], 4))
-    dt2 = proc.time()
-    if (lines > 0)
-    {
-      if ("binary" %in% internal_attributes$type)
-      {
-        if (DEBUG) message("  R rbind/df assembly time ", round( (proc.time() - dt2)[3], 4))
-        ans = lapply(1:n, function(j) tmp[[j]][1:lines])
-        names(ans) = internal_attributes$name
-        return(ans)
-      }
-      len_out = length(tmp[[1]])
-      if (lines < len_out) tmp = lapply(tmp[1:n], function(x) x[1:lines])
-# adaptively re-estimate a buffer size
-      avg_bytes_per_line = ceiling( (p - p_old) / lines)
-      buffer = min(getOption("scidb.buffer_size"), ceiling(1.3 * (len - p) / avg_bytes_per_line)) # Engineering factors
-# Assemble the data frame
-      ans = data.table::rbindlist(list(ans, tmp[1:n]))
-#      if (is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE))
-#      else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE)))
-    }
-    if (DEBUG) message("  R rbind/df assembly time ", round( (proc.time() - dt2)[3], 4))
-  }
-  if (is.null(ans))
-  {
-    xa = attributes$name
-    xd = NULL
-    classes = list()
-    classes_dimensions = NULL
-    if (!args$only_attributes) {
-      xd = dimensions$name
-      classes_dimensions = rep("numeric", length(xd))
-    }
-    has_binary = FALSE
-    for(i in 1:nrow(attributes)) {
-      t = attributes$type[i]
-      if(t == 'bool') {
-        classes = c(classes, 'logical')
-      } else if(t == 'binary') {
-        classes = c(classes, 'list')
-        has_binary = TRUE
-      } else if(t == 'datetime') {
-        classes[[length(classes) + 1]] = as.character(c('POSIXct', 'POSIXt'))
-      } else if(t == 'string' || t == 'char') {
-        classes = c(classes, 'character')
-      } else if(t %in% c('int8', 'uint8', 'int16', 'uint16', 'int32')) {
-        classes = c(classes, 'integer')
-      } else {
-        classes = c(classes, 'numeric')
-      }
-    }
-    n = length(xd) + length(xa)
-    ans = vector(mode="list", length=n)
-    if (has_binary) {
-      # C_scidb_parse leaves dimensions at the end,
-      # for "binary" leave dimensions as they are
-      classes = c(classes, classes_dimensions)
-      names(ans) = make.names_(c(xa, xd))
-      for(i in 1:length(ans))
-        class(ans[[i]]) = classes[[i]]
-    }
-    else {
-      classes = c(classes_dimensions, classes)
-      names(ans) = make.names_(c(xd, xa))
-      class(ans) = "data.frame"
-      for(i in 1:ncol(ans)) {
-        # Workaround for POSIXct class
-        if (length(classes[[i]]) == 2
-            && all.equal(classes[[i]], as.character(c("POSIXct", "POSIXt"))))
-          class(ans[, i]) = 'numeric'
-        class(ans[, i]) = classes[[i]]
-      }
-    }
-    return(ans)
-  }
-  if (DEBUG) message("Total R parsing time ", round( (proc.time() - dt1)[3], 4))
-  ans = as.data.frame(ans, check.names=FALSE)
-  if (INT64)
-  {
-    for (i64 in which(internal_attributes$type %in% "int64")) oldClass(ans[, i64]) = "integer64"
-  }
-  # Handle datetime (integer POSIX time)
-  for (idx in which(internal_attributes$type %in% "datetime")) ans[, idx] = as.POSIXct(ans[, idx], origin="1970-1-1", tz = "GMT")
-  if (args$only_attributes) # permute cols, see issue #125
-  {
-    colnames(ans) = make.names_(attributes$name)
-  }
-  else
-  {
-    nd = length(dimensions$name)
-    i = ncol(ans) - nd
-    ans = ans[, c( (i+1):ncol(ans), 1:i)]
-    colnames(ans) = make.names_(c(dimensions$name, attributes$name))
-  }
-  ans
+  return(
+    BinaryQuery(db, 
+                query,
+                binary=binary, 
+                buffer_size=if (is.null(buffer_size)) buffer else buffer_size, 
+                only_attributes=only_attributes, 
+                schema=schema,
+                ...))
 }
 
 #' Given _either_ a scidb database connection object _or_ 
@@ -330,12 +133,27 @@ scidb_unpack_to_dataframe = function(db, query, ...)
 .GetConnectionEnv = function(db_or_conn)
 {
   if (inherits(db_or_conn, "afl")) {
-    ## Argument is the scidb connection object; return its connection env
     return(attr(db_or_conn, "connection"))
-  } else {
-    ## Argument is the connection env
+  }
+  if (is.environment(db_or_conn)) {
     return(db_or_conn)
   }
+  stop("Not a connection or connection env: {", db_or_conn, "}")
+}
+
+#' Given _either_ a query string _or_ an object of class "scidb",
+#' return the query string.
+#' @param query_or_scidb a query string, _or_ an object of class "scidb"
+#' @return a query string
+.GetQueryString = function(query_or_scidb)
+{
+  if (inherits(query_or_scidb, "scidb")) {
+    return(query_or_scidb@name)
+  }
+  if (is.character(query_or_scidb) && ! is.na(query_or_scidb)) {
+    return(query_or_scidb)
+  }
+  stop("Not a scidb object or query string: {", query_or_scidb, "}")
 }
 
 #' Convenience function for digest authentication.
@@ -597,6 +415,97 @@ ParseVersion <- function(version)
   return(sprintf("%s.%s", v[1], v[2]))
 }
 
+#' Unpack SciDB binary-encoded data into a data frame
+#' @param data the binary-encoded data
+#' @param cols a data.frame containing `names`, `type`, and `nullable` for each
+#'    attribute or dimension in the binary-encoded data
+#' @param buffer_size the size of the buffer to use for parsing
+#' @param use_int64 if true, use the `integer64` package for large numbers; 
+#'    if false, estimate large numbers with a float (loses precision) 
+#' @return a data frame
+.Binary2df = function(data, cols, buffer_size=NULL, use_int64=TRUE)
+{
+  DEBUG = getOption("scidb.debug", FALSE)
+  
+  buffer_size = tryCatch(as.integer(buffer_size), warning=function(e) NULL)
+  if (length(buffer_size) == 0 || buffer_size > 1e9) {
+    buffer_size = 100000L
+  }
+  
+  len = length(data)
+  p = 0
+  ans = c()
+  cnames = c(cols$name, "lines", "p")  # we are unpacking to a SciDB array, ignore dims
+  n = nrow(cols)
+  rnames = c()
+  typediff = setdiff(cols$type, names(.scidbtypes))
+  if(length(typediff) > 0)
+  {
+    stop(typediff, " SciDB type not supported. Try converting to string in SciDB or use a binary=FALSE data transfer")
+  }
+  while (p < len)
+  {
+    dt2 = proc.time()
+    tmp   = .Call(C_scidb_parse, as.integer(buffer_size), cols$type,
+                  cols$nullable, data, as.double(p), as.integer(use_int64))
+    names(tmp) = cnames
+    lines = tmp[[n+1]]
+    p_old = p
+    p     = tmp[[n+2]]
+    if (DEBUG) message("  R buffer_size ", p, "/", len, " bytes parsing time ", round( (proc.time() - dt2)[3], 4))
+    dt2 = proc.time()
+    if (lines > 0)
+    {
+      if ("binary" %in% cols$type)
+      {
+        if (DEBUG) message("  R rbind/df assembly time ", round( (proc.time() - dt2)[3], 4))
+        ans = lapply(1:n, function(j) tmp[[j]][1:lines])
+        names(ans) = cols$name
+        return(ans)
+      }
+      len_out = length(tmp[[1]])
+      if (lines < len_out) tmp = lapply(tmp[1:n], function(x) x[1:lines])
+      # adaptively re-estimate a buffer size
+      avg_bytes_per_line = ceiling( (p - p_old) / lines)
+      buffer_size = min(getOption("scidb.buffer_size"), ceiling(1.3 * (len - p) / avg_bytes_per_line)) # Engineering factors
+      # Assemble the data frame
+      ans = data.table::rbindlist(list(ans, tmp[1:n]))
+      #      if (is.null(ans)) ans = data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE))
+      #      else ans = rbind(ans, data.table::data.table(data.frame(tmp[1:n], stringsAsFactors=FALSE, check.names=FALSE)))
+    }
+    if (DEBUG) message("  R rbind/df assembly time ", round( (proc.time() - dt2)[3], 4))
+  }
+  
+  if (is.null(ans)) {
+    return(ans)
+  }
+  
+  ## Clean up the data frame:
+  ## 1. If there were int64 attributes, set their class to `integer64`
+  ans = as.data.frame(ans, check.names=FALSE)
+  if (use_int64)
+  {
+    for (i64 in which(cols$type %in% "int64")) {
+      ## From https://advanced-r-solutions.rbind.io/s3.html :
+      ## "oldClass() is basically the same as class(), except that it 
+      ##  doesn’t return implicit classes, i.e. it’s basically 
+      ##  attr(x, "class")". Unclear why it's used here instead of class().
+      oldClass(ans[, i64]) = "integer64"
+    }
+  }
+  ## 2. Handle datetime attributes (integer POSIX time)
+  for (idx in which(cols$type %in% "datetime")) {
+    ans[, idx] = as.POSIXct(ans[, idx], origin="1970-1-1", tz = "GMT")
+  } 
+  
+  return(ans)
+}
+
+#' Parse CSV-formatted data into a data frame
+#' @param csvdata the CSV-formatted string
+#' @param ... remaining arguments are passed to read.table()
+#' @return a data frame
+#' @seealso read.table()
 .Csv2df <- function(csvdata, ...)
 {
   # Handle escaped quotes
@@ -619,6 +528,64 @@ ParseVersion <- function(version)
                    error = function(e) stop("Query result parsing error ", as.character(e)))
   }
   return(ret)
+}
+
+#' Given a schema, return an empty dataframe for that schema.
+#' @param attributes the schema's attributes (a dataframe with `name`, `type`)
+#' @param dimensions the schema's dimensions (a dataframe with `name`)
+#' @return an empty data frame with columns for the dimensions and attributes
+.Schema2EmptyDf <- function(attributes, dimensions=NULL)
+{
+  xa = attributes$name
+  xd = NULL
+  classes = list()
+  classes_dimensions = NULL
+  if (!is.null(dimensions)) {
+    xd = dimensions$name
+    classes_dimensions = rep("numeric", length(xd))
+  }
+  has_binary = FALSE
+  for (i in 1:nrow(attributes)) {
+    t = attributes$type[i]
+    if(t == 'bool') {
+      classes = c(classes, 'logical')
+    } else if(t == 'binary') {
+      classes = c(classes, 'list')
+      has_binary = TRUE
+    } else if(t == 'datetime') {
+      classes[[length(classes) + 1]] = as.character(c('POSIXct', 'POSIXt'))
+    } else if(t == 'string' || t == 'char') {
+      classes = c(classes, 'character')
+    } else if(t %in% c('int8', 'uint8', 'int16', 'uint16', 'int32')) {
+      classes = c(classes, 'integer')
+    } else {
+      classes = c(classes, 'numeric')
+    }
+  }
+  n = length(xd) + length(xa)
+  ans = vector(mode="list", length=n)
+  if (has_binary) {
+    # C_scidb_parse leaves dimensions at the end,
+    # for "binary" leave dimensions as they are
+    classes = c(classes, classes_dimensions)
+    names(ans) = make.names_(c(xa, xd))
+    for(i in 1:length(ans)) {
+      class(ans[[i]]) = classes[[i]]
+    }
+  } else {
+    classes = c(classes_dimensions, classes)
+    names(ans) = make.names_(c(xd, xa))
+    class(ans) = "data.frame"
+    for(i in 1:ncol(ans)) {
+      # Workaround for POSIXct class
+      if (length(classes[[i]]) == 2
+          && all.equal(classes[[i]], as.character(c("POSIXct", "POSIXt")))) {
+        class(ans[, i]) = 'numeric'
+      }
+      class(ans[, i]) = classes[[i]]
+    }
+  }
+  return(ans)  
 }
 
 #' Internal function to upload an R sparse matrix into SciDB
