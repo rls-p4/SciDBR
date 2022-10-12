@@ -192,7 +192,6 @@ BinaryQuery.httpapi <- function(db,
                                 binary=TRUE, 
                                 buffer_size=NULL,
                                 only_attributes=NULL, 
-                                schema=NULL,
                                 page_size=NULL, 
                                 npages=NULL, 
                                 ...)
@@ -276,10 +275,10 @@ BinaryQuery.httpapi <- function(db,
     page_nbytes <- length(raw_page)
     total_nbytes <- total_nbytes + page_nbytes
 
-    if (is.null(raw_page) || !http_query$is_selective) {
+    if (is.null(raw_page) || !http_query$is_selective || page_nbytes == 0) {
       ## We already got the last page, or the result is empty.
       message("[SciDBR] Query page ", page_number, " returned empty result",
-              "(page_bytes=", page_bytes, ")")
+              "(page_bytes=", page_nbytes, ")")
       break
     }
 
@@ -390,10 +389,7 @@ BinaryQuery.httpapi <- function(db,
 {
   is_debug = getOption("scidb.debug", TRUE) # rsamuels TODO: change to FALSE
   conn <- .GetConnectionEnv(db_or_conn)
-  h <- conn$handle
-  if (is.null(h)) {
-    stop("no connection handle")
-  }
+
   ## data must be NULL or a 1-element vector containing a character element
   stopifnot(length(data) <= 1)
   
@@ -405,7 +401,10 @@ BinaryQuery.httpapi <- function(db,
   
   ## Reset the connection handle so we can reuse it for the new request.
   ## Cookies are preserved (they don't get erased by handle_reset()).
-  curl::handle_reset(h)
+  ## If there is no handle or if it is dead, create a new handle.
+  tryCatch(curl::handle_reset(conn$handle), 
+           error=function(err) {conn$handle <- curl::new_handle()})
+  h <- conn$handle
   
   options <- switch(method, 
                     GET = list(httpget=TRUE),
@@ -672,7 +671,7 @@ Next.httpquery <- function(query)
     ## 204 No Content means the last page has already been fetched
     query$next_page_url <- NULL
     return(NULL)
-  }
+  } 
   if (resp$status_code != 200) {
     stop("[SciDBR] GET request ", uri, 
          " responded with unexpected status ", resp$status_code,
