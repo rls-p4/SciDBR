@@ -26,13 +26,13 @@ GetServerVersion.shim <- function(db)
 #' @noRd
 Connect.shim <- function(db)
 {
-  ## Run an arbitrary query via scidbquery().
-  ## scidbquery() creates a new session, executes the query, and returns 
+  ## Run an arbitrary query via scidbquery.shim().
+  ## scidbquery.shim() creates a new session, executes the query, and returns 
   ## a list(response=, session=) where session is the Shim session ID, and
   ## response is the query ID (because that's what the Shim outputs in its
   ## HTTP response to any query).
   ## We don't care about the query result. (TODO: Is it leaked?)
-  x <- tryCatch(scidbquery(db, query="list('libraries')", resp=TRUE),
+  x <- tryCatch(scidbquery.shim(db, query="list('libraries')", resp=TRUE),
                 error=function(e) stop("Connection error ", e),
                 warning=invisible)
   
@@ -65,12 +65,22 @@ Close.shim <- function(db)
   .CloseShimSession(attr(db, "connection"))
 }
 
+#' @see Execute()
+#' @see scidbquery.shim()
+#' @noRd
+Execute.shim <- function(db, query_or_scidb, ...)
+{
+  scidbquery.shim(db, .GetQueryString(query_or_scidb), ...)
+  invisible()
+}
+
 #' @see iquery(), Query()
 #' @noRd
-Query.shim = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
+Query.shim = function(db, query_or_scidb,
+                      `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
 {
-  DEBUG = getOption("scidb.debug", TRUE)  # rsamuels TODO change to FALSE
-  if (inherits(query, "scidb"))  query = query@name
+  DEBUG = getOption("scidb.debug", FALSE)
+  query = .GetQueryString(query_or_scidb)
   n = -1    # Indicate to shim that we want all the output
   
   if(binary && arrow) {
@@ -91,9 +101,9 @@ Query.shim = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
       {
         # SciDB save syntax changed in 15.12
         if (at_least(attr(db, "connection")$scidb.version, 15.12)) {
-          sessionid = scidbquery(db, query, save="csv+:l")
+          sessionid = scidbquery.shim(db, query, save="csv+:l")
         } else {
-          sessionid = scidbquery(db, query, save="csv+")
+          sessionid = scidbquery.shim(db, query, save="csv+")
         }
         dt1 = proc.time()
         result = tryCatch(
@@ -122,7 +132,7 @@ Query.shim = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
       warning=invisible)
     return(ans)
   } else {
-    scidbquery(db, query, stream=0L)
+    scidbquery.shim(db, query, stream=0L)
   }
   invisible()
 }
@@ -204,7 +214,7 @@ BinaryQuery.shim = function(db, query_or_scidb,
   ## Start running the query
   if (DEBUG) message("Data query ", internal_query)
   if (DEBUG) message("Format ", format_string)
-  sessionid = scidbquery(
+  sessionid = scidbquery.shim(
     db,
     internal_query,
     save=format_string,
@@ -252,6 +262,26 @@ BinaryQuery.shim = function(db, query_or_scidb,
   return(ans)
 }
 
+#' @see Upload()
+Upload.shim = function(db, payload, name=NULL, 
+                       start=NULL, gc=TRUE, temp=FALSE, ...)
+{
+  if (is.null(name)) {
+    name <- tmpnam(db)
+  }
+
+  if (inherits(payload, "raw")) {
+    X = (.raw2scidb.shim(db, payload, name=name, start=start, gc=gc, ...))
+  } else if (inherits(payload, "data.frame")) {
+    X = (.df2scidb.shim(db, payload, name=name, start=start, gc=gc, ...))
+  } else if (inherits(payload, "dgCMatrix")) {
+    X = (.matrix2scidb.shim(db, payload, name=name, start=start, gc=gc, ...))
+  } else {
+    X = (.matvec2scidb.shim(db, payload, name=name, start=start, gc=gc, ...))
+  }
+  return(X)
+}
+
 #' Basic low-level query. Returns query id. This is an internal function.
 #' @param db scidb database connection object
 #' @param query a character query string
@@ -265,14 +295,14 @@ BinaryQuery.shim = function(db, query_or_scidb,
 #'    context
 #' @return list(sessionid, response) if resp==TRUE, otherwise just sessionid
 #' @noRd
-scidbquery = function(db, query, 
-                      save=NULL, 
-                      result_size_limit=NULL, 
-                      session=NULL, 
-                      resp=FALSE, 
-                      stream,
-                      prefix=attributes(db)$connection$prefix, 
-                      atts_only=TRUE)
+scidbquery.shim = function(db, query, 
+                           save=NULL, 
+                           result_size_limit=NULL, 
+                           session=NULL, 
+                           resp=FALSE, 
+                           stream,
+                           prefix=attributes(db)$connection$prefix, 
+                           atts_only=TRUE)
 {
   DEBUG = FALSE
   STREAM = 0L
@@ -326,8 +356,413 @@ scidbquery = function(db, query,
   sessionid
 }
 
+#' Internal function to upload an R raw value to special 1-element SciDB array
+#' @param db scidb database connection
+#' @param X a raw value
+#' @param name (character) SciDB array name
+#' @param gc (boolean) set to \code{TRUE} to connect SciDB array to R's garbage collector
+#' @param ... optional extra arguments
+#' \itemize{
+#' \item {temp:} {(boolean) create a temporary SciDB array}
+#' }
+#' @return a \code{\link{scidb}} object
+#' @keywords internal
+.raw2scidb.shim = function(db, X, name, gc=TRUE, ...)
+{
+  if (!is.raw(X)) stop("X must be a raw value")
+  args = list(...)
+  # Obtain a session from shim for the upload process
+  if (!is.null(attr(db, "connection")$session)) { # if session already exists
+    session = attr(db, "connection")$session
+    release = 0
+  } else { # need to get new session every time
+    session = getSession(db)
+    if (length(session)<1) stop("SciDB http session error")
+    release = 1;
+  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  
+  bytes = .Call(C_scidb_raw, X)
+  ans = .Post.shim(db, bytes, list(id=session))
+  ans = gsub("\n", "", gsub("\r", "", ans))
+  
+  schema = "<val:binary null>[i=0:0:0:1]"
+  if (!is.null(args$temp))
+  {
+    if (args$temp) create_temp_array(db, name, schema)
+  }
+  
+  query = sprintf("store(input(%s,'%s',-2,'(binary null)'),%s)", schema, ans, name)
+  iquery(db, query)
+  return(scidb(db, name, gc=gc))
+}
+
+#' Internal function to upload an R data frame to SciDB
+#' @param db scidb database connection
+#' @param X a data frame
+#' @param name SciDB array name
+#' @param chunk_size optional value passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools
+#' @param types SciDB attribute types
+#' @param gc set to \code{TRUE} to connect SciDB array to R's garbage collector
+#' @return a \code{\link{scidb}} object, or a character schema string if \code{schema_only=TRUE}.
+#' @keywords internal
+.df2scidb.shim = function(db, X,
+                          name=tmpnam(db),
+                          types=NULL,
+                          use_aio_input=FALSE,
+                          chunk_size=NULL,
+                          gc=TRUE,
+                          temp=FALSE,
+                          start=NULL,
+                          ...)
+{
+  if (!is.data.frame(X)) stop("X must be a data frame")
+
+  ## Preprocess the dataframe to prepare it for upload
+  processed = .PreprocessDfTypes(X, types, use_aio_input)
+  X = processed$df
+  ncolX = ncol(X)
+  nrowX = nrow(X)
+  anames = names(X)
+  typ = processed$attr_types
+  aio_apply_args = processed$aio_apply_args
+
+  ## Serialize the dataframe to TSV format
+  data = charToRaw(.TsvWrite(X, file=.Primitive("return")))
+
+  ## Obtain a session from the SciDB http service for the upload process
+  if (!is.null(attr(db, "connection")$session)) { 
+    ## session already exists
+    session = attr(db, "connection")$session
+  } else { 
+    ## need to get new session
+    session = getSession(db)
+    if (length(session)<1) stop("SciDB http session error")
+    on.exit(SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  }
+
+  tmp = .Post.shim(db, data, list(id=session))
+  tmp = gsub("\n", "", gsub("\r", "", tmp))
+  
+  ## Generate a load_tools query
+  aio = length(grep("aio_input", names(db))) > 0
+  if (use_aio_input && aio) {
+    aioSettings = list(num_attributes = ncolX)
+    if (!is.null(chunk_size)) {
+      aioSettings[['chunk_size']] = chunk_size
+    }
+    LOAD = sprintf("project(apply(aio_input('%s', %s),%s),%s)", 
+                   tmp,
+                   get_setting_items_str(db, aioSettings), 
+                   aio_apply_args,
+                   paste(anames, collapse=","))
+  } else {
+    LOAD = sprintf("input(%s, '%s', -2, 'tsv')",
+                   dfschema(anames, typ, nrowX, chunk=chunk_size, start=start), 
+                   tmp)
+  }
+  
+  if (temp) { 
+    ## Use scidb temporary array instead of regular versioned array
+    targetArraySchema = lazyeval(db, LOAD)$schema
+    create_temp_array(db, name, schema = targetArraySchema)
+  }
+  
+  query = sprintf("store(%s,%s)", LOAD, name)
+  Execute(db, query, session=session)
+  return(scidb(db, name, gc=gc))
+}
+
+#' Internal function to upload an R sparse matrix into SciDB
+#' @param db scidb database connection
+#' @param X a sparse matrix
+#' @param name (character) SciDB array name
+#' @param rowChuckSize,colChunkSize (int) optional value passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools
+#' @param start (int) dimension start values
+#' @param temp (boolean) create a temporary SciDB array
+#' @param gc (boolean) set to \code{TRUE} to connect SciDB array to R's garbage collector
+#' @return a \code{\link{scidb}} object
+#' @keywords internal
+.matrix2scidb.shim = function(db, X, name, 
+                              rowChunkSize=1000, 
+                              colChunkSize=1000,
+                              start=c(0, 0), 
+                              temp=FALSE, 
+                              gc=TRUE, 
+                              ...)
+{
+  D = dim(X)
+  rowOverlap = 0L
+  colOverlap = 0L
+  if (missing(start)) start=c(0, 0)
+  if (length(start) < 1) stop ("Invalid starting coordinates")
+  if (length(start) > 2) start = start[1:2]
+  if (length(start) < 2) start = c(start, 0)
+  start = as.integer(start)
+  type = .scidbtypes[[typeof(X@x)]]
+  if (is.null(type)) {
+    stop(paste("Unupported data type. The package presently supports: ",
+               paste(.scidbtypes, collapse=" "), ".", sep=""))
+  }
+  if (type != "double") stop("Sorry, the package only supports double-precision sparse matrices right now.")
+  schema = sprintf(
+    "< val : %s null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
+    nrow(X)-1+start[[1]], min(nrow(X), rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],
+    min(ncol(X), colChunkSize), colOverlap)
+  schema1d = sprintf("<i:int64 null, j:int64 null, val : %s null>[idx=0:*,100000,0]", type)
+  
+  # Obtain a session from shim for the upload process
+  if (!is.null(attr(db, "connection")$session)) { # if session already exists
+    session = attr(db, "connection")$session
+    release = 0
+  } else { # need to get new session every time
+    session = getSession(db)
+    if (length(session)<1) stop("SciDB http session error")
+    release = 1;
+  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  
+  # Compute the indices and assemble message to SciDB in the form
+  # double, double, double for indices i, j and data val.
+  dp = diff(X@p)
+  j  = rep(seq_along(dp), dp) - 1
+  
+  # Upload the data
+  bytes = .Call(C_scidb_raw, as.vector(t(matrix(c(X@i + start[[1]], j + start[[2]], X@x), length(X@x)))))
+  ans = .Post.shim(db, bytes, list(id=session))
+  ans = gsub("\n", "", gsub("\r", "", ans))
+  
+  # Create a temporary array 'name'
+  if(temp){ # Use scidb temporary array instead of regular versioned array
+    targetArraySchema = schema
+    create_temp_array(db, name, schema = targetArraySchema)
+  }
+  
+  # redimension into a matrix
+  query = sprintf("store(redimension(input(%s,'%s',-2,'(double null,double null,double null)'),%s),%s)", schema1d, ans, schema, name)
+  iquery(db, query)
+  scidb(db, name, gc=gc)
+}
+
+
+#' Internal function to upload an R vector, dense n-d array or matrix to SciDB
+#' @param db scidb database connection
+#' @param X a vector, dense n-d array or matrix
+#' @param name (character) SciDB array name
+#' @param start (int) dimension start value
+#' @param gc (boolean) set to TRUE to connect SciDB array to R's garbage collector
+#' @param temp (boolean) create a temporary SciDB array
+#' @param ... optional extra arguments.
+#' \itemize{
+#' \item {attr: } {attribute name}
+#' \item {reshape: } {(boolean) to control reshape}
+#' \item {type: } {(character) desired data type - however, limited type conversion available}
+#' \item {max_byte_size: } {(int) maximum size of each block (in bytes) while uploading vectors in
+#' a multi-part fashion. Minimum block size is 8 bytes. }
+#' }
+#' @return a \code{\link{scidb}} object
+#' @keywords internal
+.matvec2scidb.shim = function(db, X,
+                              name=tmpnam(db),
+                              start,
+                              gc=TRUE,
+                              temp=FALSE, ...)
+{
+  # Check for a bunch of optional hidden arguments
+  args = list(...)
+  attr_name = "val"
+  if (!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
+  do_reshape = TRUE
+  if ("factor" %in% class(X)) X = as.character(X)
+  type = force_type = .Rtypes[[typeof(X)]]
+  if ("Date" %in% class(X))
+  {
+    X = as.double(as.POSIXct(X, tz="UTC")) # XXX warn UTC?
+    force_type = "datetime"
+  }
+  if ("integer64" %in% class(X)) type = force_type = "int64"
+  if (is.null(type)) {
+    stop(paste("Unsupported data type. The package supports: ",
+               paste(unique(names(.Rtypes)), collapse=" "), ".", sep=""))
+  }
+  if (!is.null(args$reshape)) do_reshape = as.logical(args$reshape) # control reshape
+  if (!is.null(args$type)) force_type = as.character(args$type) # limited type conversion
+  chunkSize = c(min(1000L, nrow(X)), min(1000L, ncol(X)))
+  chunkSize = as.numeric(chunkSize)
+  if (length(chunkSize) == 1) chunkSize = c(chunkSize, chunkSize)
+  overlap = c(0, 0)
+  if (missing(start)) start = c(0, 0)
+  start     = as.numeric(start)
+  if (length(start) ==1) start = c(start, start)
+  D = dim(X)
+  start = as.integer(start)
+  overlap = as.integer(overlap)
+  dimname = make.unique_(attr_name, "i")
+  DEBUG = getOption("scidb.debug", FALSE)
+  if (is.null(D))
+  {
+    # X is a vector
+    do_reshape = FALSE
+    chunkSize = min(chunkSize[[1]], length(X))
+    X = as.matrix(X)
+    block_size = .get_multipart_post_load_block_size.shim(
+      data = X,
+      debug = DEBUG,
+      max_byte_size = if(is.null(args$max_byte_size)) getOption('scidb.max_byte_size', 500*(10^6)) else args$max_byte_size)
+    # Define schema for an initial SciDB upload and provide a template to
+    # load subsequent blocks of the vector
+    schema = sprintf(
+      "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
+      nrow(X) - 1 + start[[1]], min(nrow(X), chunkSize), overlap[[1]])
+    load_schema = schema
+    # Define a temporary schema for multi-part loading of blocks of the vector
+    temp_schema = sprintf(
+      "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
+      min((nrow(X) - 1 + start[[1]]), (block_size - 1 + start[[1]])),
+      min(nrow(X), chunkSize), overlap[[1]])
+  } else if (length(D) > 2)
+  {
+    # X is a dense n-d array
+    ndim = length(D)
+    chunkSize = rep(floor(10e6 ^ (1 / ndim)), ndim)
+    start = rep(0, ndim)
+    end = D - 1
+    dimNames = make.unique_(attr_name, paste("i", 1:length(D), sep=""))
+    schema = sprintf("< %s : %s null >[%s]", attr_name, force_type, paste(sprintf( "%s=%.0f:%.0f,%.0f,0", dimNames, start, end, chunkSize), collapse=","))
+    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type,  length(X))
+  } else {
+    # X is a matrix
+    schema = sprintf(
+      "< %s : %s  null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, start[[1]],
+      nrow(X) - 1 + start[[1]], chunkSize[[1]], overlap[[1]], start[[2]], ncol(X) - 1 + start[[2]],
+      chunkSize[[2]], overlap[[2]])
+    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type,  length(X))
+  }
+  if (!is.array(X)) stop ("X must be an array or vector")
+  
+  td1 = proc.time()
+  # Obtain a session from shim for the upload process
+  if (!is.null(attr(db, "connection")$session)) { # if session already exists
+    session = attr(db, "connection")$session
+    release = 0
+  } else { # need to get new session every time
+    session = getSession(db)
+    if (length(session)<1) stop("SciDB http session error")
+    release = 1;
+  }
+  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  shimcon_time = round((proc.time() - td1)[3], 4)
+  
+  if(is.null(D)) {
+    .multipart_post_load.shim(db, session,
+                              X, name,
+                              load_schema, schema, type,
+                              temp_schema, block_size,
+                              temp, DEBUG, shimcon_time)
+  } else {
+    td2 = proc.time()
+    bytes = .Call(C_scidb_raw, as.vector(aperm(X)))
+    ans = .Post.shim(db, bytes, list(id=session))
+    ans = gsub("\n", "", gsub("\r", "", ans))
+    post_time = round((proc.time() - td2)[3], 4)
+    
+    if (DEBUG)
+    {
+      message("Data upload time ", (shimcon_time + post_time))
+    }
+    
+    # Create a temporary array 'name'
+    if(temp){ # Use scidb temporary array instead of regular versioned array
+      targetArraySchema = schema
+      create_temp_array(db, name, schema = targetArraySchema)
+    }
+    
+    # Load query
+    if (do_reshape)
+    {
+      query = sprintf("store(reshape(input(%s,'%s', -2, '(%s null)'),%s),%s)", load_schema, ans, type, schema, name)
+    } else
+    {
+      query = sprintf("store(input(%s,'%s', -2, '(%s null)'),%s)", load_schema, ans, type, name)
+    }
+    iquery(db, query)
+  }
+  scidb(db, name, gc=gc)
+}
+
+.get_multipart_post_load_block_size.shim <- function(data, 
+                                                     debug,
+                                                     max_byte_size) 
+{
+  total_length = as.numeric(length(data))
+  
+  if(max_byte_size < 8) {
+    warning('Supplied max_byte_size is less than 8 bytes. Restoring it to default value of 500MB.')
+    max_byte_size=500*(10^6)
+  }
+  
+  if(typeof(data) %in% c('integer', 'double')) {
+    block_size = floor(max_byte_size / 8)
+    if(debug) message("Using ", block_size, " for numeric vector block_size")
+  } else {
+    est_col_byte_size = max(c(1,nchar(data, type="bytes")), na.rm = T) * as.numeric(total_length)
+    split_ratio = est_col_byte_size / max_byte_size
+    block_size = ceiling(as.numeric(total_length)/split_ratio)
+    if(debug) message("Using ", block_size, " for character vector block_size")
+  }
+  return(block_size)
+}
+
+.multipart_post_load.shim <- function(db, session,
+                                      data, name,
+                                      load_schema, schema, type,
+                                      temp_schema, block_size,
+                                      temp, debug, shimcon_time)
+{
+  
+  total_length = as.numeric(length(data))
+  
+  # Create a temporary array 'name'
+  if(temp){ # Use scidb temporary array instead of regular versioned array
+    targetArraySchema = schema
+    create_temp_array(db, name, schema = targetArraySchema)
+  }
+  
+  # Declare a numeric variable for storing post time
+  post_time = 0
+  
+  for(begin in seq(1, total_length, block_size)) {
+    
+    end = min((begin + block_size -1), total_length)
+    
+    # convert data to raw
+    td = proc.time()
+    data_part = as.matrix(data[begin:end])
+    bytes = .Call(C_scidb_raw, as.vector(aperm(data_part)))
+    post_time = post_time + round((proc.time() - td)[3], 4)
+    
+    # upload data
+    ans = .Post.shim(db, bytes, list(id=session))
+    ans = gsub("\n", "", gsub("\r", "", ans))
+    
+    if(debug) message("Uploading block ", ceiling(begin/block_size), " of ", ceiling(total_length/block_size))
+    # load query
+    if(begin == 1) {
+      query = sprintf("store(input(%s,'%s', -2, '(%s null)'), %s)", load_schema, ans, type, name)
+      iquery(db, query)
+    } else {
+      query = sprintf("input(%s,'%s', -2, '(%s null)')", temp_schema, ans, type)
+      iquery(db, sprintf("append(%s, %s, i)", query, name))
+    }
+  }
+  
+  if(debug) message("Data upload time ", shimcon_time + post_time)
+  
+  return(NULL)
+}
+
 # Normally called with raw data and args=list(id=whatever)
-POST = function(db, data, args=list(), err=TRUE)
+.Post.shim = function(db, data, args=list(), err=TRUE)
 {
   # check for new shim simple post option (/upload), otherwise use
   # multipart/file upload (/upload_file)
@@ -377,7 +812,7 @@ POST = function(db, data, args=list(), err=TRUE)
 #' @noRd
 .CloseShimSession <- function(conn) 
 {
-  is_debug = getOption("scidb.debug", TRUE)  # rsamuels TODO: change to FALSE
+  is_debug = getOption("scidb.debug", FALSE)
   if (is.null(conn$session)) {
     if (is_debug) {
       message("[Shim session] Session already closed. Nothing to do here.")

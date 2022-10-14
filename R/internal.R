@@ -16,10 +16,14 @@ scidb_arrow_to_dataframe = function(db, query, ...) {
   RESULT_SIZE_LIMIT = getOption("scidb.result_size_limit", 256)
   AIO = getOption("scidb.aio", TRUE)
 
+  if (inherits(db, "httpapi")) {
+    stop("scidb_arrow_to_dataframe not yet implemented for httpapi")
+  }
+  
   if (!AIO) {
     stop("AIO Must be TRUE for Arrow")
   }
-
+  
   args = list(...)
 
   # TODO: Look into this, but guarantees we have only_atts
@@ -53,7 +57,7 @@ scidb_arrow_to_dataframe = function(db, query, ...) {
   # Make the scidbquery
   if (DEBUG) message("Data query ", query)
   # if (DEBUG) message("Format ", format_string)
-  sessionid = scidbquery(
+  sessionid = scidbquery.shim(
     db,
     query,
     save="arrow",
@@ -284,7 +288,7 @@ get_setting_items_str = function(db, settings, sep=',') {
     }
 
     query = sprintf("store(%s,%s)", expr, newarray)
-    scidbquery(db, query, stream=0L)
+    Execute(db, query)
     ans = scidb(db, newarray, gc=gc)
     if (temp) ans@meta$temp = TRUE
   } else {
@@ -588,112 +592,6 @@ ParseVersion <- function(version)
   return(ans)  
 }
 
-#' Internal function to upload an R sparse matrix into SciDB
-#' @param db scidb database connection
-#' @param X a sparse matrix
-#' @param name (character) SciDB array name
-#' @param rowChuckSize,colChunkSize (int) optional value passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools
-#' @param start (int) dimension start values
-#' @param temp (boolean) create a temporary SciDB array
-#' @param gc (boolean) set to \code{TRUE} to connect SciDB array to R's garbage collector
-#' @return a \code{\link{scidb}} object
-#' @keywords internal
-.Matrix2scidb = function(db, X, name, rowChunkSize=1000, colChunkSize=1000, start=c(0, 0), temp=FALSE, gc=TRUE, ...)
-{
-  D = dim(X)
-  rowOverlap = 0L
-  colOverlap = 0L
-  if (missing(start)) start=c(0, 0)
-  if (length(start) < 1) stop ("Invalid starting coordinates")
-  if (length(start) > 2) start = start[1:2]
-  if (length(start) < 2) start = c(start, 0)
-  start = as.integer(start)
-  type = .scidbtypes[[typeof(X@x)]]
-  if (is.null(type)) {
-    stop(paste("Unupported data type. The package presently supports: ",
-       paste(.scidbtypes, collapse=" "), ".", sep=""))
-  }
-  if (type != "double") stop("Sorry, the package only supports double-precision sparse matrices right now.")
-  schema = sprintf(
-      "< val : %s null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
-      nrow(X)-1+start[[1]], min(nrow(X), rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],
-      min(ncol(X), colChunkSize), colOverlap)
-  schema1d = sprintf("<i:int64 null, j:int64 null, val : %s null>[idx=0:*,100000,0]", type)
-
-# Obtain a session from shim for the upload process
-  if (!is.null(attr(db, "connection")$session)) { # if session already exists
-    session = attr(db, "connection")$session
-    release = 0
-  } else { # need to get new session every time
-    session = getSession(db)
-    if (length(session)<1) stop("SciDB http session error")
-    release = 1;
-  }
-  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
-
-# Compute the indices and assemble message to SciDB in the form
-# double, double, double for indices i, j and data val.
-  dp = diff(X@p)
-  j  = rep(seq_along(dp), dp) - 1
-
-# Upload the data
-  bytes = .Call(C_scidb_raw, as.vector(t(matrix(c(X@i + start[[1]], j + start[[2]], X@x), length(X@x)))))
-  ans = POST(db, bytes, list(id=session))
-  ans = gsub("\n", "", gsub("\r", "", ans))
-
-# Create a temporary array 'name'
-  if(temp){ # Use scidb temporary array instead of regular versioned array
-    targetArraySchema = schema
-    create_temp_array(db, name, schema = targetArraySchema)
-  }
-
-# redimension into a matrix
-  query = sprintf("store(redimension(input(%s,'%s',-2,'(double null,double null,double null)'),%s),%s)", schema1d, ans, schema, name)
-  iquery(db, query)
-  scidb(db, name, gc=gc)
-}
-
-#' Internal function to upload an R raw value to special 1-element SciDB array
-#' @param db scidb database connection
-#' @param X a raw value
-#' @param name (character) SciDB array name
-#' @param gc (boolean) set to \code{TRUE} to connect SciDB array to R's garbage collector
-#' @param ... optional extra arguments
-#' \itemize{
-#' \item {temp:} {(boolean) create a temporary SciDB array}
-#' }
-#' @return a \code{\link{scidb}} object
-#' @keywords internal
-raw2scidb = function(db, X, name, gc=TRUE, ...)
-{
-  if (!is.raw(X)) stop("X must be a raw value")
-  args = list(...)
-# Obtain a session from shim for the upload process
-  if (!is.null(attr(db, "connection")$session)) { # if session already exists
-    session = attr(db, "connection")$session
-    release = 0
-  } else { # need to get new session every time
-    session = getSession(db)
-    if (length(session)<1) stop("SciDB http session error")
-    release = 1;
-  }
-  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
-
-  bytes = .Call(C_scidb_raw, X)
-  ans = POST(db, bytes, list(id=session))
-  ans = gsub("\n", "", gsub("\r", "", ans))
-
-  schema = "<val:binary null>[i=0:0,1,0]"
-  if (!is.null(args$temp))
-  {
-    if (args$temp) create_temp_array(db, name, schema)
-  }
-
-  query = sprintf("store(input(%s,'%s',-2,'(binary null)'),%s)", schema, ans, name)
-  iquery(db, query)
-  scidb(db, name, gc=gc)
-}
-
 # Internal utility function used to format numbers
 noE = function(w) sapply(w,
   function(x)
@@ -727,36 +625,96 @@ lazyeval = function(db, name)
        distribution = query$distribution)
 }
 
-#' Internal function to upload an R data frame to SciDB
-#' @param db scidb database connection
-#' @param X a data frame
-#' @param name SciDB array name
-#' @param chunk_size optional value passed to the aio_input operator see https://github.com/Paradigm4/accelerated_io_tools
-#' @param types SciDB attribute types
-#' @param gc set to \code{TRUE} to connect SciDB array to R's garbage collector
-#' @return a \code{\link{scidb}} object, or a character schema string if \code{schema_only=TRUE}.
+#' Fast write.table/textConnection substitute
+#'
+#' Conversions are vectorized and the entire output is buffered in memory and written in
+#' one shot. Great option for replacing writing to a textConnection (much much faster).
+#' Not such a great option for writing to files, marginal difference from write.table and
+#' obviously much greater memory use. This works for TSV or any character-
+#' delimited format which doesn't require quoting, as long as the delimiter
+#' doesn't appear in the data.
+#' @param x a data frame
+#' @param file a connection or \code{.Primitive("return")} to return character output directly (fast)
+#' @param sep column separator
+#' @param sprintf_template optional sprintf-style template, e.g. "%s,%s,%s"
+#' @return Use for the side effect of writing to the connection returning \code{NULL}, or
+#' return a character value when \code{file=return}.
+#' @importFrom utils write.table
 #' @keywords internal
-df2scidb = function(db, X,
-                    name=tmpnam(db),
-                    types=NULL,
-                    use_aio_input=FALSE,
-                    chunk_size,
-                    gc, format, temp=FALSE)
+.TsvWrite = function(x, file=stdout(), sep="\t", sprintf_template=NULL)
 {
-  if (!is.data.frame(X)) stop("X must be a data frame")
-  if (missing(gc)) gc = TRUE
-  nullable = TRUE
-  anames = make.names(names(X), unique=TRUE)
-  anames = gsub("\\.", "_", anames, perl=TRUE)
+  if (is.null(sprintf_template)) {
+    sprintf_template = paste(rep("%s", ncol(x)), collapse=sep)
+  }
+  if (length(sprintf_template) > 1) {
+    sprintf_template = paste(sprintf_template, collapse=sep)
+  }
+  foo = NULL
+  rm(list="foo") # avoid package R CMD check warnings of undeclared variable
+  if (!is.data.frame(x)) stop("x must be a data.frame")
+  
+  if (is.null(file) || ncol(x) > 97) # use slow write.table method
+  {
+    tc = textConnection("foo", open="w")
+    write.table(x, sep=sep, col.names=FALSE, row.names=FALSE, 
+                file=tc, quote=FALSE)
+    close(tc)
+    return(paste(foo, collapse="\n"))
+  }
+  
+  if (is.function(file)) {
+    return(paste(do.call("sprintf", args=c(sprintf_template, as.list(x))), 
+                 collapse="\n"))
+  }
+  write(paste(do.call("sprintf", args=c(sprintf_template, as.list(x))), 
+              collapse="\n"), 
+        file=file)
+  invisible()
+}
+
+#' Preprocess a dataframe to prepare it for being uploaded to SciDB. 
+#' Returns a structured list containing information about the attributes
+#' and data types to use for the upload, as well as a modified dataframe
+#' that is based on the original, but with some values converted into 
+#' SciDB-compatible datatypes and values.
+#' @param X the dataframe being prepared for upload
+#' @param types (optional) a list of datatypes, one for each column;
+#'   if omitted, this will be derived from the class of every R column in X.
+#' @param use_aio (optional) if TRUE, also prepares the dataframe for loading
+#'   via the aio_input() operator, and populates $aio_apply_args in the 
+#'   returned list.
+#' @return a list containing:
+#'   - $df: a copy of the input dataframe X, 
+#'          with values converted into SciDB-compatible values
+#'          and column names converted into SciDB-compatible identifiers
+#'   - $attr_types: a list of strings representing the SciDB type for each
+#'                  attribute
+#'   - $aio_apply_args: (only if use_aio==TRUE)
+#'                      a single string that can be pasted into the right-hand
+#'                      side of an AFL apply(, ...) operator, which renames
+#'                      the (a1, a2, ...) attributes created by the aio_input()
+#'                      operator back to their expected attribute names,
+#'                      and also does any post-load processing to convert the
+#'                      values into the proper SciDB types.
+.PreprocessDfTypes = function(X, types=NULL, use_aio=FALSE)
+{
+  stopifnot(ncol(X) > 0)
+  stopifnot(nrow(X) > 0)
+  
+  ## Turn the attribute names into unique SciDB identifiers
+  anames = make.names_(names(X))
   if (length(anames) != ncol(X)) anames = make.names(1:ncol(X))
   if (!all(anames == names(X))) warning("Attribute names have been changed")
+  names(X) = anames
 
-# Default type is string
+  ## Use caller-provided list of types, defaulting to string if absent
   typ = rep("string", ncol(X))
-  dcast = anames
-  if (!is.null(types)) {
+  if (is.present(types)) {
     for (j in 1:ncol(X)) typ[j] = types[j]
   }
+  
+  ## Collect SciDB types of X's columns into `typ`.
+  ## While doing so, adapt the values in X to conform to those types.
   for (j in 1:ncol(X)) {
     if ((! grepl("^int", typ[j])) && "numeric" %in% class(X[, j]))
     {
@@ -801,300 +759,29 @@ df2scidb = function(db, X,
       if(is.null(types)) typ[j] = "datetime"
     }
   }
-  for (j in 1:ncol(X))
-  {
-    if (typ[j] == "datetime") dcast[j] = sprintf("%s, datetime(a%d)", anames[j], j - 1)
-    else if (typ[j] == "string") dcast[j] = sprintf("%s, a%d", anames[j], j - 1)
-    else dcast[j] = sprintf("%s, dcast(a%d, %s(null))", anames[j], j - 1, typ[j])
-  }
-  args = sprintf("<%s>", paste(anames, ":", typ, " null", collapse=","))
-
-# Obtain a session from the SciDB http service for the upload process
-  if (!is.null(attr(db, "connection")$session)) { # if session already exists
-    session = attr(db, "connection")$session
-    release = 0
-  } else { # need to get new session every time
-    session = getSession(db)
-    if (length(session)<1) stop("SciDB http session error")
-    release = 1;
-  }
-  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
-
-  ncolX = ncol(X)
-  nrowX = nrow(X)
-  if(missing(format)) X = charToRaw(fwrite(X, file=.Primitive("return")))
-  else X = charToRaw(fwrite(X, file=.Primitive("return"), format=format))
-  tmp = POST(db, X, list(id=session))
-  tmp = gsub("\n", "", gsub("\r", "", tmp))
-
-# Generate a load_tools query
-  aio = length(grep("aio_input", names(db))) > 0
-  atts = paste(dcast, collapse=",")
-  if (use_aio_input && aio)
-  {
-    aioSettings = list(num_attributes = ncolX)
-    if(!missing(chunk_size))
-      aioSettings[['chunk_size']] = chunk_size
-    LOAD = sprintf("project(apply(aio_input('%s', %s),%s),%s)", tmp,
-                   get_setting_items_str(db, aioSettings), atts, paste(anames, collapse=","))
-  } else
-  {
-    if (missing(chunk_size))
-      LOAD = sprintf("input(%s, '%s', -2, 'tsv')", dfschema(anames, typ, nrowX), tmp)
-    else
-      LOAD = sprintf("input(%s, '%s', -2, 'tsv')", dfschema(anames, typ, nrowX, chunk_size), tmp)
-  }
-  ## Create a temporary array 'name'
-  if(temp){ # Use scidb temporary array instead of regular versioned array
-    targetArraySchema = lazyeval(db, LOAD)$schema
-    create_temp_array(db, name, schema = targetArraySchema)
-  }
-  ##
-  query = sprintf("store(%s,%s)", LOAD, name)
-  scidbquery(db, query, session=session, stream=0L)
-  scidb(db, name, gc=gc)
-}
-
-#' Fast write.table/textConnection substitute
-#'
-#' Conversions are vectorized and the entire output is buffered in memory and written in
-#' one shot. Great option for replacing writing to a textConnection (much much faster).
-#' Not such a great option for writing to files, marginal difference from write.table and
-#' obviously much greater memory use.
-#' @param x a data frame
-#' @param file a connection or \code{.Primitive("return")} to return character output directly (fast)
-#' @param sep column separator
-#' @param format optional fprint-style column format specifyer
-#' @return Use for the side effect of writing to the connection returning \code{NULL}, or
-#' return a character value when \code{file=return}.
-#' @importFrom utils write.table
-#' @keywords internal
-fwrite = function(x, file=stdout(), sep="\t", format=paste(rep("%s", ncol(x)), collapse=sep))
-{
-  if(length(format) > 1) format = paste(format, collapse=sep)
-  foo = NULL
-  rm(list="foo") # avoid package R CMD check warnings of undeclared variable
-  if (!is.data.frame(x)) stop("x must be a data.frame")
-  if (is.null(file) || ncol(x) > 97) # use slow write.table method
-  {
-    tc = textConnection("foo", open="w")
-    write.table(x, sep=sep, col.names=FALSE, row.names=FALSE, file=tc, quote=FALSE)
-    close(tc)
-    return(paste(foo, collapse="\n"))
-  }
-  if (is.function(file)) return(paste(do.call("sprintf", args=c(format, as.list(x))), collapse="\n"))
-  write(paste(do.call("sprintf", args=c(format, as.list(x))), collapse="\n"), file=file)
-  invisible()
-}
-
-#' Internal function to upload an R vector, dense n-d array or matrix to SciDB
-#' @param db scidb database connection
-#' @param X a vector, dense n-d array or matrix
-#' @param name (character) SciDB array name
-#' @param start (int) dimension start value
-#' @param gc (boolean) set to TRUE to connect SciDB array to R's garbage collector
-#' @param temp (boolean) create a temporary SciDB array
-#' @param ... optional extra arguments.
-#' \itemize{
-#' \item {attr: } {attribute name}
-#' \item {reshape: } {(boolean) to control reshape}
-#' \item {type: } {(character) desired data type - however, limited type conversion available}
-#' \item {max_byte_size: } {(int) maximum size of each block (in bytes) while uploading vectors in
-#' a multi-part fashion. Minimum block size is 8 bytes. }
-#' }
-#' @return a \code{\link{scidb}} object
-#' @keywords internal
-matvec2scidb = function(db, X,
-                        name=tmpnam(db),
-                        start,
-                        gc=TRUE,
-                        temp=FALSE, ...)
-{
-# Check for a bunch of optional hidden arguments
-  args = list(...)
-  attr_name = "val"
-  if (!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
-  do_reshape = TRUE
-  if ("factor" %in% class(X)) X = as.character(X)
-  type = force_type = .Rtypes[[typeof(X)]]
-  if ("Date" %in% class(X))
-  {
-    X = as.double(as.POSIXct(X, tz="UTC")) # XXX warn UTC?
-    force_type = "datetime"
-  }
-  if ("integer64" %in% class(X)) type = force_type = "int64"
-  if (is.null(type)) {
-    stop(paste("Unsupported data type. The package supports: ",
-       paste(unique(names(.Rtypes)), collapse=" "), ".", sep=""))
-  }
-  if (!is.null(args$reshape)) do_reshape = as.logical(args$reshape) # control reshape
-  if (!is.null(args$type)) force_type = as.character(args$type) # limited type conversion
-  chunkSize = c(min(1000L, nrow(X)), min(1000L, ncol(X)))
-  chunkSize = as.numeric(chunkSize)
-  if (length(chunkSize) == 1) chunkSize = c(chunkSize, chunkSize)
-  overlap = c(0, 0)
-  if (missing(start)) start = c(0, 0)
-  start     = as.numeric(start)
-  if (length(start) ==1) start = c(start, start)
-  D = dim(X)
-  start = as.integer(start)
-  overlap = as.integer(overlap)
-  dimname = make.unique_(attr_name, "i")
-  DEBUG = getOption("scidb.debug", FALSE)
-  if (is.null(D))
-  {
-# X is a vector
-    do_reshape = FALSE
-    chunkSize = min(chunkSize[[1]], length(X))
-    X = as.matrix(X)
-    block_size = get_multipart_post_load_block_size(
-      data = X,
-      debug = DEBUG,
-      max_byte_size = if(is.null(args$max_byte_size)) getOption('scidb.max_byte_size', 500*(10^6)) else args$max_byte_size)
-    # Define schema for an initial SciDB upload and provide a template to
-    # load subsequent blocks of the vector
-    schema = sprintf(
-        "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
-        nrow(X) - 1 + start[[1]], min(nrow(X), chunkSize), overlap[[1]])
-    load_schema = schema
-    # Define a temporary schema for multi-part loading of blocks of the vector
-    temp_schema = sprintf(
-      "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
-      min((nrow(X) - 1 + start[[1]]), (block_size - 1 + start[[1]])),
-      min(nrow(X), chunkSize), overlap[[1]])
-  } else if (length(D) > 2)
-  {
-# X is a dense n-d array
-    ndim = length(D)
-    chunkSize = rep(floor(10e6 ^ (1 / ndim)), ndim)
-    start = rep(0, ndim)
-    end = D - 1
-    dimNames = make.unique_(attr_name, paste("i", 1:length(D), sep=""))
-    schema = sprintf("< %s : %s null >[%s]", attr_name, force_type, paste(sprintf( "%s=%.0f:%.0f,%.0f,0", dimNames, start, end, chunkSize), collapse=","))
-    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type,  length(X))
-  } else {
-# X is a matrix
-    schema = sprintf(
-      "< %s : %s  null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, start[[1]],
-      nrow(X) - 1 + start[[1]], chunkSize[[1]], overlap[[1]], start[[2]], ncol(X) - 1 + start[[2]],
-      chunkSize[[2]], overlap[[2]])
-    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type,  length(X))
-  }
-  if (!is.array(X)) stop ("X must be an array or vector")
-
-  td1 = proc.time()
-# Obtain a session from shim for the upload process
-  if (!is.null(attr(db, "connection")$session)) { # if session already exists
-    session = attr(db, "connection")$session
-    release = 0
-  } else { # need to get new session every time
-    session = getSession(db)
-    if (length(session)<1) stop("SciDB http session error")
-    release = 1;
-  }
-  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
-  shimcon_time = round((proc.time() - td1)[3], 4)
-
-  if(is.null(D)) {
-    multipart_post_load(db, session,
-                        X, name,
-                        load_schema, schema, type,
-                        temp_schema, block_size,
-                        temp, DEBUG, shimcon_time)
-  } else {
-    td2 = proc.time()
-    bytes = .Call(C_scidb_raw, as.vector(aperm(X)))
-    ans = POST(db, bytes, list(id=session))
-    ans = gsub("\n", "", gsub("\r", "", ans))
-    post_time = round((proc.time() - td2)[3], 4)
-
-    if (DEBUG)
+  
+  result = list(df=X, attr_types=typ)
+  
+  if (use_aio) {
+    ## The caller is planning to use `aio_input()` to load the data.
+    ## aio_input() outputs all attribute names as (a1, a2, ...), so we need to
+    ## construct a string that the caller can use in an "apply()" operator
+    ## that maps the attributes back to their original names (while using
+    ## dcast() to typecast the attributes to their proper datatypes).
+    aio_apply_args = anames
+    for (j in 1:ncol(X))
     {
-      message("Data upload time ", (shimcon_time + post_time))
+      if (typ[j] == "datetime") {
+        aio_apply_args[j] = sprintf("%s, datetime(a%d)", anames[j], j - 1)
+      } else if (typ[j] == "string") {
+        aio_apply_args[j] = sprintf("%s, a%d", anames[j], j - 1) 
+      } else {
+        aio_apply_args[j] = sprintf(
+          "%s, dcast(a%d, %s(null))", anames[j], j - 1, typ[j])
+      }
     }
-
-    # Create a temporary array 'name'
-    if(temp){ # Use scidb temporary array instead of regular versioned array
-      targetArraySchema = schema
-      create_temp_array(db, name, schema = targetArraySchema)
-    }
-
-    # Load query
-    if (do_reshape)
-    {
-      query = sprintf("store(reshape(input(%s,'%s', -2, '(%s null)'),%s),%s)", load_schema, ans, type, schema, name)
-    } else
-    {
-      query = sprintf("store(input(%s,'%s', -2, '(%s null)'),%s)", load_schema, ans, type, name)
-    }
-    iquery(db, query)
+    result$aio_apply_args = paste(aio_apply_args, collapse=",")
   }
-  scidb(db, name, gc=gc)
-}
-
-get_multipart_post_load_block_size <- function(data, debug, max_byte_size) {
-  total_length = as.numeric(length(data))
-
-  if(max_byte_size < 8) {
-    warning('Supplied max_byte_size is less than 8 bytes. Restoring it to default value of 500MB.')
-    max_byte_size=500*(10^6)
-  }
-
-  if(typeof(data) %in% c('integer', 'double')) {
-    block_size = floor(max_byte_size / 8)
-    if(debug) message("Using ", block_size, " for numeric vector block_size")
-  } else {
-    est_col_byte_size = max(c(1,nchar(data, type="bytes")), na.rm = T) * as.numeric(total_length)
-    split_ratio = est_col_byte_size / max_byte_size
-    block_size = ceiling(as.numeric(total_length)/split_ratio)
-    if(debug) message("Using ", block_size, " for character vector block_size")
-  }
-  return(block_size)
-}
-
-multipart_post_load <- function(db, session,
-                                data, name,
-                                load_schema, schema, type,
-                                temp_schema, block_size,
-                                temp, debug, shimcon_time) {
-
-  total_length = as.numeric(length(data))
-
-  # Create a temporary array 'name'
-  if(temp){ # Use scidb temporary array instead of regular versioned array
-    targetArraySchema = schema
-    create_temp_array(db, name, schema = targetArraySchema)
-  }
-
-  # Declare a numeric variable for storing post time
-  post_time = 0
-
-  for(begin in seq(1, total_length, block_size)) {
-
-    end = min((begin + block_size -1), total_length)
-
-    # convert data to raw
-    td = proc.time()
-    data_part = as.matrix(data[begin:end])
-    bytes = .Call(C_scidb_raw, as.vector(aperm(data_part)))
-    post_time = post_time + round((proc.time() - td)[3], 4)
-
-    # upload data
-    ans = POST(db, bytes, list(id=session))
-    ans = gsub("\n", "", gsub("\r", "", ans))
-
-    if(debug) message("Uploading block ", ceiling(begin/block_size), " of ", ceiling(total_length/block_size))
-    # load query
-    if(begin == 1) {
-      query = sprintf("store(input(%s,'%s', -2, '(%s null)'), %s)", load_schema, ans, type, name)
-      iquery(db, query)
-    } else {
-      query = sprintf("input(%s,'%s', -2, '(%s null)')", temp_schema, ans, type)
-      iquery(db, sprintf("append(%s, %s, i)", query, name))
-    }
-  }
-
-  if(debug) message("Data upload time ", shimcon_time + post_time)
-
-  return(NULL)
+  
+  return(result)
 }

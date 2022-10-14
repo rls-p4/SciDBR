@@ -140,8 +140,17 @@ schema = function(x, what=c("schema", "attributes", "dimensions"))
   )
 }
 
-dfschema = function(names, types, len, chunk=10000)
+dfschema = function(names, types, len, chunk=NULL, start=NULL, dim_name=NULL)
 {
-  dimname = make.unique_(names, "i")
-  sprintf("<%s>[%s=1:%d,%d,0]", paste(paste(names, types, sep=":"), collapse=","), dimname, len, chunk)
+  if (!is.present(chunk)) chunk = 10000
+  if (!is.present(start)) start = 1
+  if (!is.present(dim_name)) dim_name = "i"
+
+  dim_name = make.unique_(names, only(dim_name))
+  sprintf("<%s>[%s=%d:%d:0:%d]", 
+          paste(paste(names, types, sep=":"), collapse=","),
+          only(dim_name),
+          only(start),
+          only(start+len-1),
+          only(chunk))
 }

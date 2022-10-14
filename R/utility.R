@@ -41,7 +41,7 @@ scidb = function(db, name, gc=FALSE, schema)
   obj@meta = new.env()
   obj@meta$db = db
   # can't call sprintf or paste in finalizer
-  obj@meta$query = sprintf("remove(%s)", name)
+  obj@meta$remove_query = sprintf("remove(%s)", name)
   if (missing(schema)) delayedAssign("state", lazyeval(db, name), assign.env=obj@meta)
   else assign("state", list(schema=schema), envir=obj@meta)
   delayedAssign("schema", get("state")$schema, eval.env=obj@meta, assign.env=obj@meta)
@@ -58,8 +58,11 @@ scidb = function(db, name, gc=FALSE, schema)
           if (e$remove && exists("name", envir=e))
             {
               DEBUG = getOption("scidb.debug", FALSE)
-              if (DEBUG) message("*** Deleted by scidb() finalizer")
-              scidbquery(e$db, e$query)
+              if (DEBUG) {
+                message("[SciDBR] array '", e$name, 
+                        "' deleted by scidb() finalizer")
+              }
+              Execute(e$db, e$remove_query)
               temp_arrays = attr(e$db, "connection")$temp_arrays
               if (e$name %in% temp_arrays) {
                 attr(e$db, "connection")$temp_arrays = temp_arrays[temp_arrays != e$name] # mark as removed
@@ -282,10 +285,10 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
 #' @param gc set to FALSE to disconnect the SciDB array from R's garbage collector
 #' @param ... other options, see 
 #' \itemize{
-#' \item{\code{\link{df2scidb}}:}{ for uploading R data frame}
-#' \item{\code{\link{.Matrix2scidb}}:}{ for uploading sparse matrices}
-#' \item{\code{\link{matvec2scidb}}:}{ for uploading dense R vectors, arrays or matrices}
-#' \item{\code{\link{raw2scidb}}:}{ for uploading raw values}
+#' \item{\code{\link{.df2scidb.shim}}:}{ for uploading R data frame}
+#' \item{\code{\link{.matrix2scidb.shim}}:}{ for uploading sparse matrices}
+#' \item{\code{\link{.matvec2scidb.shim}}:}{ for uploading dense R vectors, arrays or matrices}
+#' \item{\code{\link{.raw2scidb.shim}}:}{ for uploading raw values}
 #' }
 #' @note Supported R objects include data frames, scalars, vectors, dense matrices,
 #' and double-precision sparse matrices of class CsparseMatrix. Supported R scalar
@@ -326,19 +329,8 @@ as.scidb = function(db, x,
     gc = temp_array
   }
 
-  if (inherits(x, "raw"))
-  {
-    X = (raw2scidb(db, x, name=name, gc=gc, ...))
-  } else if (inherits(x, "data.frame"))
-  {
-    X = (df2scidb(db, x, name=name, gc=gc, ...))
-  } else if (inherits(x, "dgCMatrix"))
-  {
-    X = (.Matrix2scidb(db, x, name=name, start=start, gc=gc, ...))
-  } else {
-    X = (matvec2scidb(db, x, name=name, start=start, gc=gc, ...))
-  }
-
+  X = Upload(db, x, name=name, start=start, gc=gc, ...)
+  
   if (temp_array) {
     attr(db, "connection")$temp_arrays = c(
       attr(db, "connection")$temp_arrays,

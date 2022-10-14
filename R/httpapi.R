@@ -11,6 +11,17 @@
 #' We support these versions of the client API.
 httpapi_supported_versions <- c(1)
 
+## Helper functions
+`%||%` <- function(a, b) { if (length(a) > 0 && !is.na(a)) a else b }
+is.present <- function(a) { length(a) > 0 }
+has.chars <- function(a) { length(a) > 0 && all(nzchar(a)) }
+first <- function(a) { if (length(a) > 0) a[[1]] else NULL }
+only <- function(a)
+{
+  stopifnot(length(a) == 1) 
+  a[[1]]
+}
+
 #' @see GetServerVersion()
 #' @noRd
 GetServerVersion.httpapi <- function(db)
@@ -113,6 +124,16 @@ Close.httpapi <- function(db)
   .CloseHttpApiSession(attr(db, "connection"))
 }
 
+#' @see Execute()
+#' @noRd
+Execute.httpapi <- function(db, query_or_scidb, ...)
+{
+  Query.httpapi(db, query_or_scidb, 
+                `return`=FALSE, binary=FALSE, arrow=FALSE,
+                ...)
+  invisible()
+}
+
 #' @see iquery()
 #' @noRd
 Query.httpapi <- function(db, query_or_scidb, 
@@ -123,7 +144,7 @@ Query.httpapi <- function(db, query_or_scidb,
                           ...)
 {
   ## TODO: Currently ignoring `arrow`, waiting for SDB-7821
-  is_debug = getOption("scidb.debug", TRUE)  # rsamuels TODO change to FALSE
+  is_debug = getOption("scidb.debug", FALSE)
 
   ## For backward compatibility: defer to BinaryQuery if binary==TRUE
   if (binary) {
@@ -187,6 +208,7 @@ Query.httpapi <- function(db, query_or_scidb,
 }
 
 ## rsamuels TODO: set default page_size once binary output supports paging
+#' @see BinaryQuery()
 BinaryQuery.httpapi <- function(db,
                                 query_or_scidb, 
                                 binary=TRUE, 
@@ -215,7 +237,7 @@ BinaryQuery.httpapi <- function(db,
   conn <- attr(db, "connection")
   query <- .GetQueryString(query_or_scidb)
   
-  is_debug <- getOption("scidb.debug", TRUE)  # rsamuels TODO change to FALSE
+  is_debug <- getOption("scidb.debug", FALSE)
   use_int64 <- conn$int64
   result_size_limit_mb <- getOption("scidb.result_size_limit", 256)
   result_size_limit_bytes <- result_size_limit_mb * 1000000
@@ -338,6 +360,205 @@ BinaryQuery.httpapi <- function(db,
   return(ans)
 }
 
+## Use an S4 class to standardize fields for all upload methods
+setClass("UploadDesc",
+         slots=c(
+           ## Name of the SciDB array that will result from the upload
+           array_name="character",
+           ## If TRUE, the SciDB array will be temporary (not versioned)
+           temp="logical",
+           ## Name of the file used for uploading
+           filename="character",
+           ## Name of each attribute
+           attr_names="character",
+           ## SciDB type of each attribute
+           attr_types="character",
+           ## Name of each dimension
+           dim_names="character",
+           ## Start coordinate of each dimension
+           dim_start_coordinates="numeric",
+           ## Chunk size of each dimension
+           dim_chunk_sizes="numeric"
+         ))
+
+#' @see Upload()
+Upload.httpapi <- function(db, payload, 
+                           name=NULL,
+                           gc=TRUE,
+                           temp=FALSE, 
+                           attr_names=NULL,
+                           attr_types=NULL,
+                           dim_names=NULL,
+                           dim_start_coordinates=NULL,
+                           dim_chunk_sizes=NULL,
+                           ...)
+{
+  args <- list(...)
+  
+  if (is.null(name)) {
+    name <- tmpnam(db)
+  }
+  ## Sanitize the array name
+  name <- gsub("[^[:alnum:]]", "_", name)
+
+  Connect.httpapi(db, reconnect=FALSE)
+  conn <- attr(db, "connection")
+  
+  ## Collect "name" and implicit args into an upload descriptor
+  desc <- new("UploadDesc")
+  desc@array_name <- name
+  desc@temp <- temp
+  
+  ## Generate an upload filename of the form:
+  ##  upload.<connection-id>.<array-name>.<random-suffix>
+  desc@filename <- basename(tempfile(sprintf("upload.%s.%s.", conn$id, name)))
+  
+  ## Convert legacy parameter names (deprecated) to the new names
+  desc@attr_names <- as.character(attr_names %||% args$attr)
+  desc@attr_types <- as.character(attr_types %||% args$type)
+  desc@dim_names <- as.character(args$dim_names)
+  desc@dim_start_coordinates <- as.numeric(dim_start_coordinates 
+                                           %||% args$start)
+  desc@dim_chunk_sizes <- as.numeric(dim_chunk_sizes %||% args$chunk_size)
+  
+  if (inherits(payload, "raw")) {
+    .UploadRaw.httpapi(db, payload, desc)
+  } else if (inherits(payload, "data.frame")) {
+    .UploadDf.httpapi(db, payload, desc)
+  } else if (inherits(payload, "dgCMatrix")) {
+    .UploadMatrix.httpapi(db, payload, desc)
+  } else {
+    .UploadMatVec.httpapi(db, payload, desc)
+  }
+  
+  ## Wrap the SciDB array with a "scidb" object.
+  ## If gc==TRUE, the SciDB array will be removed from SciDB when this object
+  ## gets garbage-collected.
+  return(scidb(db, name, gc=gc))
+}
+
+New.httpquery <- function(conn, afl, options=list())
+{
+  ## Remove options whose values are NULL
+  options <- Filter(Negate(is.null), options)
+  
+  ## Prepare the JSON for posting
+  query_and_options <- append(list(query=afl), options)
+  query_json <- jsonlite::toJSON(query_and_options, auto_unbox=TRUE)
+  
+  ## Execute the POST
+  resp <- .HttpRequest(conn, "POST", URI(conn, conn$links$queries),
+                       data=query_json)
+  stopifnot(resp$status_code == 201)  # 201 Created
+  
+  ## Read the headers and JSON body
+  headers_list <- curl::parse_headers_list(resp$headers)
+  links <- .ParseLinkHeaders(headers_list)
+  json <- jsonlite::fromJSON(rawToChar(resp$content))
+  
+  ## Create an env for the result (use an env because it's always passed by
+  ## reference, not copy-on-write, and it can be assigned a finalizer)
+  query <- new.env()
+  class(query) <- "httpquery"
+  query$connection <- conn
+  query$options <- options
+  query$location <- headers_list[["location"]]
+  query$next_page_number <- 1
+  query$next_page_url <- links[["first"]]
+  query$id <- json[["queryId"]]
+  query$schema <- json[["schema"]]
+  query$is_selective <- json[["isSelective"]]
+  
+  ## When the query gets garbage-collected, call Close.httpquery(query)
+  reg.finalizer(query, Close.httpquery, onexit=TRUE)
+  
+  return(query)
+}
+
+Close.httpquery <- function(query)
+{
+  suspendInterrupts({
+    is_debug <- getOption("scidb.debug", FALSE)
+    if (is.null(query$location) || is.null(query$connection)) {
+      if (is_debug) {
+        message("[SciDBR] Query ", query$id, " already closed")
+      }
+      return(invisible(NULL));
+    }
+    
+    uri <- URI(query$connection, query$location)
+    if (is_debug) {
+      message("[SciDBR] Closing SciDB query ", query$id, " url=", uri)
+    }
+    tryCatch(
+      {
+        resp <- .HttpRequest(query$connection, "DELETE", uri)
+        ## We usually expect status 204 (No Content),
+        ## but we can get status 200 with a message if the query was
+        ## already closed or if it was canceled. In those cases, we can ignore
+        ## the message because the query got closed, which is what we wanted.
+        if (resp$status_code != 204 && resp$status_code != 200) {
+          stop("DELETE ", uri, " gave unexpected status ", resp$status_code,
+               ": ", rawToChar(resp$content))
+        }
+      },
+      error=function(err) {
+        warning("[SciDBR] Error closing SciDB query ", query$id, 
+                " (ignored): ", err)
+      })
+    
+    ## Set the location to NULL so we don't double-delete the session.
+    ## Because query is an env, this side effect should immediately take effect
+    ## outside of the current function call.
+    query$location <- NULL
+    query$next_page_url <- NULL
+    query$connection <- NULL
+  })
+}
+
+Next.httpquery <- function(query)
+{
+  is_debug <- getOption("scidb.debug", FALSE)
+  if (is.null(query$next_page_url) || is.null(query$location)) {
+    if (is_debug) {
+      message("[SciDBR] Query ", query$id, " already finished")
+    }
+    return(NULL)
+  }
+  if (is.null(query$connection)) {
+    stop("Query ", query$id, " has no connection")
+  }
+  
+  ## Get the next page of the query by following the query$next URL
+  uri <- URI(query$connection, query$next_page_url)
+  if (is_debug) {
+    message("[SciDBR] Fetching page ", query$next_page_number, 
+            " of query ", query$id)
+  }
+  resp <- .HttpRequest(query$connection, "GET", uri)
+  
+  if (resp$status_code == 204) {
+    ## 204 No Content means the last page has already been fetched
+    query$next_page_url <- NULL
+    return(NULL)
+  } 
+  if (resp$status_code != 200) {
+    stop("[SciDBR] GET request ", uri, 
+         " responded with unexpected status ", resp$status_code,
+         ": ", rawToChar(resp$content))
+  }
+  
+  headers_list <- curl::parse_headers_list(resp$headers)
+  links <- .ParseLinkHeaders(headers_list)
+  
+  ## The response header should contain a link to the next page,
+  ## or NULL if there is no next page.
+  query$next_page_url <- links[["next"]]
+  query$next_page_number <- 1 + query$next_page_number
+  
+  return(resp$content)
+}
+
 #' Close the session.
 #' This is registered as a finalizer on attr(db, "connection") so it closes 
 #' the session when the connection gets garbage-collected; it can also be called
@@ -348,7 +569,7 @@ BinaryQuery.httpapi <- function(db,
 .CloseHttpApiSession <- function(conn)
 {
   suspendInterrupts({
-    is_debug <- getOption("scidb.debug", TRUE)  # rsamuels TODO change to FALSE
+    is_debug <- getOption("scidb.debug", FALSE)
     if (is.null(conn$location)) {
       if (is_debug) {
         message("[SciDBR] Session ", conn$session, " already closed")
@@ -385,9 +606,10 @@ BinaryQuery.httpapi <- function(db,
 }
 
 #' @noRd
-.HttpRequest = function(db_or_conn, method, uri, data=NULL)
+.HttpRequest = function(db_or_conn, method, uri, data=NULL, 
+                        attachments=NULL)
 {
-  is_debug = getOption("scidb.debug", TRUE) # rsamuels TODO: change to FALSE
+  is_debug = getOption("scidb.debug", FALSE)
   conn <- .GetConnectionEnv(db_or_conn)
 
   ## data must be NULL or a 1-element vector containing a character element
@@ -413,8 +635,7 @@ BinaryQuery.httpapi <- function(db,
                                   if (is.null(data)) 0 else nchar(data)),
                                 postfields=data),
                     DELETE = list(customrequest="DELETE"),
-                    stop(sprintf("unsupported HTTP method %s", method))
-  )
+                    stop("unsupported HTTP method ", method))
   options <- c(options, list(
     http_version=2,
     ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
@@ -422,10 +643,42 @@ BinaryQuery.httpapi <- function(db,
   )
   curl::handle_setopt(h, .list=options)
   
+  ## Call curl::handle_setform to add the attachments, if any
+  if (length(attachments) > 0) {
+    setform_args <- list(h)
+    for (iatt in seq_along(attachments)) {
+      name <- names(attachments)[[iatt]]
+      att <- attachments[[iatt]]
+      
+      if (method != "POST") { 
+        stop("attachment not allowed for method ", method) 
+      }
+      if (is.null(name) || !nzchar(only(name))) { 
+        stop("no name given for attachment ", iatt) 
+      }
+      if (is.null(att$data)) { 
+        stop("no data given for attachment ", name)
+      }
+      if (is.null(att$content_type)) { 
+        stop("no content_type given for attachment ", name) 
+      }
+
+      setform_args[[name]] <- curl::form_data(att$data, type=att$content_type)
+      if (is_debug) {
+        message("[SciDBR] adding attachment ", iatt, " (name=", name, 
+                ", content-type=", att$content_type, 
+                ") to pending POST, with data:\n  ", att$data)
+      }
+    }
+    do.call(curl::handle_setform, setform_args)
+  }
+
   # curl::handle_setheaders(h, .list=list(Authorization=digest_auth(conn, action, uri)))
   if (is_debug) {
     if (method == "POST") {
-      message("[SciDBR] sending ", method, " ", uri, "\n  data=", data)
+      message("[SciDBR] sending ", method, " ", uri, "\n  data=", data,
+              if (is.null(attachments)) "" 
+              else sprintf(", with %d attachments", length(attachments)))
     } else {
       message("[SciDBR] sending ", method, " ", uri)
     }
@@ -438,7 +691,7 @@ BinaryQuery.httpapi <- function(db,
     if (startsWith(error_msg, "{")) {
       ## Treat it as a JSON error message
       json <- jsonlite::fromJSON(error_msg)
-      ## Add potentially useful client-side information to the JSON
+      ## Add potentially useful client-side information to the error JSON
       json[["http_method"]] <- method
       json[["http_uri"]] <- uri
       json[["http_status"]] <- resp$status_code
@@ -567,124 +820,169 @@ BinaryQuery.httpapi <- function(db,
   message(msg)
 }
 
-New.httpquery <- function(conn, afl, options=list())
+#' Upload an R raw value to a special 1-element SciDB array
+#' @see .raw2scidb.shim()
+.UploadRaw.httpapi <- function(db, payload, desc)
 {
-  ## Remove options whose values are NULL
-  options <- Filter(Negate(is.null), options)
+  is_debug <- getOption("scidb.debug", FALSE)
+  if (!is.raw(payload)) stop("payload must be a raw value")
+  if (!is.present(desc)) stop("No upload descriptor provided")
+  if (!has.chars(only(desc@array_name))) stop ("No array name provided")
+  if (!has.chars(only(desc@filename))) stop("No upload filename provided")
+
+  timings <- c(start=proc.time()[["elapsed"]])
+  bytes <- .Call(C_scidb_raw, payload)
+  timings <- c(timings, encode=proc.time()[["elapsed"]])
+
+  schema <- sprintf("<%s:binary null>[%s=%d:%d:0:%d]",
+                    first(desc@attr_names) %||% "val",
+                    first(desc@dim_names) %||% "i",
+                    first(desc@dim_start_coordinates) %||% 0,
+                    first(desc@dim_start_coordinates) %||% 0,
+                    first(desc@dim_chunk_sizes) %||% 1)
   
-  ## Prepare the JSON for posting
-  query_and_options <- append(list(query=afl), options)
+  query <- sprintf("store(input(%s, '%s', -2, '(binary null)'), %s)",
+                   schema, 
+                   only(desc@filename),
+                   only(desc@array_name))
+  
+  content_type <- "application/octet-stream"
+  
+  .UploadWithQuery.httpapi(db, bytes, query, schema, content_type, desc)
+  timings <- c(timings, upload=proc.time()[["elapsed"]])
+  
+  if (is_debug) {
+    .ReportTimings(paste0("[SciDBR] timings for raw upload to array '", 
+                          only(desc@array_name), "':"), 
+                   timings)
+  }
+}
+
+.UploadDf.httpapi <- function(db, payload, desc,
+                              use_aio_input=FALSE)
+{
+  timings <- c(start=proc.time()[["elapsed"]])
+  is_debug <- getOption("scidb.debug", FALSE)
+  if (!is.data.frame(payload)) stop("payload must be a dataframe")
+  if (!is.present(desc)) stop("No upload descriptor provided")
+  if (!has.chars(only(desc@array_name))) stop ("No array name provided")
+  if (!has.chars(only(desc@filename))) stop("No upload filename provided")
+  
+  ## Preprocess the dataframe to prepare it for upload
+  processed <- .PreprocessDfTypes(payload, desc@attr_types, use_aio_input)
+  payload <- processed$df
+  aio_apply_args <- processed$aio_apply_args
+  desc@attr_names <- names(payload)
+  desc@attr_types <- processed$attr_types
+  
+  timings <- c(timings, preprocess=proc.time()[["elapsed"]])
+  
+  ## Serialize the dataframe to TSV format
+  data <- charToRaw(.TsvWrite(payload, file=.Primitive("return")))
+  timings <- c(timings, encode=proc.time()[["elapsed"]])
+
+  ## Construct the schema
+  schema <- dfschema(desc@attr_names,
+                     desc@attr_types,
+                     nrow(payload),
+                     chunk=desc@dim_chunk_sizes,
+                     start=desc@dim_start_coordinates,
+                     dim_name=desc@dim_names)
+
+  ## Construct the AFL query used to process the data after uploading
+  has_aio <- (length(grep("aio_input", names(db))) > 0)
+  if (use_aio_input && has_aio) {
+    ## Use aio_input() to load the data. 
+    aioSettings = list(num_attributes=ncol(payload))
+    if (is.present(desc@dim_chunk_sizes) && only(desc@dim_chunk_sizes) > 0) {
+      aioSettings[['chunk_size']] = only(desc@dim_chunk_sizes)
+    }
+    
+    ## Wrap it in apply() to restore the attribute names, because aio_input()
+    ## returns a schema with attributes named (a1, a2, ...)
+    query <- sprintf("store(project(apply(aio_input('%s', %s), %s), %s), %s)",
+                     only(desc@filename),
+                     get_setting_items_str(db, aioSettings),
+                     only(aio_apply_args),
+                     paste(desc@attr_names, collapse=","),
+                     desc@array_name)
+  } else {
+    query <- sprintf("store(input(%s, '%s', -2, 'tsv'), %s)",
+                     schema,
+                     only(desc@filename),
+                     desc@array_name)
+  }
+
+  content_type <- "text/tab-separated-values"
+  
+  .UploadWithQuery.httpapi(db, data, query, schema, content_type, desc)
+  timings <- c(timings, upload=proc.time()[["elapsed"]])
+  
+  if (is_debug) {
+    .ReportTimings(paste0("[SciDBR] timings for dataframe upload to array '", 
+                          only(desc@array_name), "':"), 
+                   timings)
+  }
+}
+
+.UploadMatrix.httpapi <- function(db, payload, name, start, ...)
+{
+  stop("Not implemented")
+}
+
+.UploadMatVec.httpapi <- function(db, payload, name, start, ...)
+{
+  stop("Not implemented")
+}
+
+.UploadWithQuery.httpapi <- function(db, data, query, 
+                                     schema, content_type, desc)
+{
+  if (is.null(data)) stop("No attachment data provided")
+  if (!has.chars(only(query))) stop("No query provided")
+  if (!is.present(desc)) stop("No upload descriptor provided")
+  if (!has.chars(only(desc@array_name))) stop ("No array name provided")
+  if (!has.chars(only(desc@filename))) stop("No upload filename provided")
+
+  ## Pre-create the array if the client requested a temp array
+  success <- FALSE
+  
+  if (desc@temp) {
+    ## Caller asked for a temp array instead of a SciDB versioned array
+    if (!has.chars(schema)) stop("Temp array requested, but no schema provided")
+    create_temp_array(db, desc@array_name, schema)
+    on.exit(if (!success) {Execute(db, sprintf("remove(%s)", desc@array_name))},
+            add=TRUE)
+  }
+
+  ## Write the query JSON
+  query_and_options <- list(query=query,
+                            attachment=desc@filename)
   query_json <- jsonlite::toJSON(query_and_options, auto_unbox=TRUE)
   
-  ## Execute the POST
-  resp <- .HttpRequest(conn, "POST", URI(conn, conn$links$queries),
-                       data=query_json)
-  stopifnot(resp$status_code == 201)  # 201 Created
-
-  ## Read the headers and JSON body
-  headers_list <- curl::parse_headers_list(resp$headers)
-  links <- .ParseLinkHeaders(headers_list)
-  json <- jsonlite::fromJSON(rawToChar(resp$content))
-
-  ## Create an env for the result (use an env because it's always passed by
-  ## reference, not copy-on-write, and it can be assigned a finalizer)
-  query <- new.env()
-  class(query) <- "httpquery"
-  query$connection <- conn
-  query$options <- options
-  query$location <- headers_list[["location"]]
-  query$next_page_number <- 1
-  query$next_page_url <- links[["first"]]
-  query$id <- json[["queryId"]]
-  query$schema <- json[["schema"]]
-  query$is_selective <- json[["isSelective"]]
-
-  ## When the query gets garbage-collected, call Close.httpquery(query)
-  reg.finalizer(query, Close.httpquery, onexit=TRUE)
+  ## Collect the attachments: a "query" attachment with the query JSON,
+  ## and an "attachment" attachment with the uploaded data
+  attachments <- list(
+    query=list(data=query_json, content_type="application/json"),
+    attachment=list(data=data, content_type=content_type)
+  )
   
-  return(query)
-}
-
-Close.httpquery <- function(query)
-{
-  suspendInterrupts({
-    is_debug <- getOption("scidb.debug", TRUE)  # rsamuels TODO change to FALSE
-    if (is.null(query$location) || is.null(query$connection)) {
-      if (is_debug) {
-        message("[SciDBR] Query ", query$id, " already closed")
-      }
-      return(invisible(NULL));
-    }
-    
-    uri <- URI(query$connection, query$location)
-    if (is_debug) {
-      message("[SciDBR] Closing SciDB query ", query$id, " url=", uri)
-    }
-    tryCatch(
-      {
-        resp <- .HttpRequest(query$connection, "DELETE", uri)
-        ## We usually expect status 204 (No Content),
-        ## but we can get status 200 with a message if the query was
-        ## already closed or if it was canceled. In those cases, we can ignore
-        ## the message because the query got closed, which is what we wanted.
-        if (resp$status_code != 204 && resp$status_code != 200) {
-          stop("DELETE ", uri, " gave unexpected status ", resp$status_code,
-               ": ", rawToChar(resp$content))
-        }
-      },
-      error=function(err) {
-        warning("[SciDBR] Error closing SciDB query ", query$id, 
-                " (ignored): ", err)
-      })
-    
-    ## Set the location to NULL so we don't double-delete the session.
-    ## Because query is an env, this side effect should immediately take effect
-    ## outside of the current function call.
-    query$location <- NULL
-    query$next_page_url <- NULL
-    query$connection <- NULL
-  })
-}
-
-Next.httpquery <- function(query)
-{
-  is_debug <- getOption("scidb.debug", TRUE)  # rsamuels TODO change to FALSE
-  if (is.null(query$next_page_url) || is.null(query$location)) {
-    if (is_debug) {
-      message("[SciDBR] Query ", query$id, " already finished")
-    }
-    return(NULL)
-  }
-  if (is.null(query$connection)) {
-    stop("Query ", query$id, " has no connection")
-  }
+  ## Execute the POST, which uploads the data and executes the query
+  conn <- attr(db, "connection")
+  resp <- .HttpRequest(conn, "POST", URI(conn, conn$links$execute),
+                       data=NULL, 
+                       attachments=attachments)
   
-  ## Get the next page of the query by following the query$next URL
-  uri <- URI(query$connection, query$next_page_url)
-  if (is_debug) {
-    message("[SciDBR] Fetching page ", query$next_page_number, 
-            " of query ", query$id)
-  }
-  resp <- .HttpRequest(query$connection, "GET", uri)
-  
-  if (resp$status_code == 204) {
-    ## 204 No Content means the last page has already been fetched
-    query$next_page_url <- NULL
-    return(NULL)
-  } 
-  if (resp$status_code != 200) {
-    stop("[SciDBR] GET request ", uri, 
+  if (resp$status_code != 200 && resp$status_code != 204) {
+    stop("[SciDBR] Upload request ", uri, 
          " responded with unexpected status ", resp$status_code,
          ": ", rawToChar(resp$content))
   }
 
-  headers_list <- curl::parse_headers_list(resp$headers)
-  links <- .ParseLinkHeaders(headers_list)
-  
-  ## The response header should contain a link to the next page,
-  ## or NULL if there is no next page.
-  query$next_page_url <- links[["next"]]
-  query$next_page_number <- 1 + query$next_page_number
-  
+  success <- TRUE  
+  if (resp$status_code == 204) {
+    ## 204 No Content means the query returned no data
+    return(NULL)
+  } 
   return(resp$content)
 }
