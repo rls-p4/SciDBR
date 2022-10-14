@@ -17,7 +17,7 @@
 #'   In particular: attr(db, "connection")$scidb.version is the SciDB version,
 #'   and class(db) has either "httpapi" or "shim" in its inheritance list,
 #'   reflecting the interface that the connection uses.
-GetServerVersion = function(db) 
+GetServerVersion <- function(db) 
 {
   ## Dispatch to GetServerVersion.shim or GetServerVersion.httpapi.
   UseMethod("GetServerVersion")
@@ -30,7 +30,7 @@ GetServerVersion = function(db)
 #' @return db with modifications reflecting the new connection.
 #'   In particular: attr(db, "connection")$session is the session ID,
 #'   and attr(db, "connection")$id is a unique connection ID.
-Connect = function(db) 
+Connect <- function(db) 
 {
   ## Dispatch to Connect.shim or Connect.httpapi.
   UseMethod("Connect")
@@ -38,15 +38,22 @@ Connect = function(db)
 
 #' Close the connection and session.
 #' @param db scidb connection object from \code{\link{scidbconnect}}
-Close = function(db)
+Close <- function(db)
 {
   ## Dispatch to Close.shim or Close.httpapi.
   UseMethod("Close")
 }
 
+#' Execute an AFL command that is expected not to return any data.
+Execute <- function(db, query_or_scidb, ...)
+{
+  ## Dispatch to Execute.shim or Execute.httpapi.
+  UseMethod("Execute")
+}
+
 #' Run a query. Uses same interface as the iquery() function.
 #' @see iquery()
-Query = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
+Query <- function(db, query_or_scidb, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
 {
   ## Dispatch to Query.shim or Query.httpapi.
   UseMethod("Query")
@@ -72,13 +79,51 @@ Query = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
 #'    curl_fetch_memory handle_setform form_file
 #' @importFrom data.table  data.table
 #' @import bit64
-BinaryQuery = function(db, query_or_scidb, 
-                       binary=TRUE,
-                       buffer_size=NULL,     # implementation should decide
-                       only_attributes=NULL, # shim implementation needs to see
-                                             #    if query result is a dataframe
-                       schema=NULL, 
-                       ...)
+BinaryQuery <- function(db, query_or_scidb, 
+                        binary=TRUE,
+                        buffer_size=NULL,     # implementation should decide
+                        only_attributes=NULL, # shim implementation needs to see
+                                              #    if query result is a dataframe
+                        schema=NULL, 
+                        ...)
 {
+  ## Dispatch to BinaryQuery.shim or BinaryQuery.httpapi
   UseMethod("BinaryQuery")
+}
+
+#' Upload R data and store() it into a SciDB array.
+#' Return a scidb object wrapping the array.
+#' @param db a scidb database connection returned from \code{\link{scidbconnect}}
+#' @param payload an R data frame, raw value, Matrix, matrix, or vector object
+#' @param name a SciDB array name to store the payload into, or NULL to 
+#'    generate a unique name
+#' @param start starting coordinate index, or NULL to start at zero on
+#'    every dimension. Does not apply to data frames.
+#' @param gc if TRUE, the SciDB array will be removed when the return value
+#'    gets garbage-collected. Set to FALSE to disconnect the SciDB array 
+#'    from R's garbage collector, i.e. to persist the SciDB array beyond 
+#'    the lifetime of this session.
+#' @param temp (boolean) make the SciDB array a temporary array
+#'    (only lasting for the lifetime of the session)
+#' @param ... other options, see each subclass implementation
+#' @note Supported R objects include data frames, scalars, vectors, dense matrices,
+#' and double-precision sparse matrices of class CsparseMatrix. Supported R scalar
+#' types and their resulting SciDB types are:
+#'  \itemize{
+#'  \item{integer   -> }{int32}
+#'  \item{logical   -> }{int32}
+#'  \item{character -> }{string}
+#'  \item{double    -> }{double}
+#'  \item{integer64 -> }{int64}
+#'  \item{raw       -> }{binary}
+#'  \item{Date      -> }{datetime}
+#' }
+#' R factor values are converted to their corresponding character levels.
+#' @seealso as.scidb
+#' @return A \code{scidb} object
+#' @export
+Upload <- function(db, payload, name=NULL, start=NULL, gc=TRUE, temp=FALSE, ...)
+{
+  ## Dispatch to Upload.shim or Upload.httpapi
+  UseMethod("Upload")
 }
