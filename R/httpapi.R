@@ -251,9 +251,6 @@ BinaryQuery.httpapi <- function(db,
   http_query <- New.httpquery(conn, query, 
                               options=list(format=format, 
                                            pageSize=page_size))
-  schema <- http_query$schema
-  dimensions <- .dimsplitter(schema)
-  attributes <- .attsplitter(schema)
   timings <- c(timings, prepare=proc.time()[["elapsed"]])
   
   ## Since this function fetches all the pages it's interested in
@@ -268,15 +265,22 @@ BinaryQuery.httpapi <- function(db,
   
   ## These are the columns we expect to be encoded in the response:
   ## dimensions (if requested), followed by attributes
-  cols <- NULL
-  if (! only_attributes) {
-    ## Use stringsAsFactors=FALSE because we want the dataframe to contain
-    ## actual strings (instead of dictionary-encoding them, which would turn
-    ## every column of the dataframe into an integer vector)
-    cols <- data.frame(name=dimensions$name, type="int64", nullable=FALSE, 
-                       stringsAsFactors=FALSE)
+  schema <- http_query$schema
+  if (!is.null(schema)) {
+    dimensions <- .dimsplitter(schema)
+    attributes <- .attsplitter(schema)
+    
+    cols <- NULL
+    ## length(dimensions) can be 0 if the query returned a SciDB dataframe
+    if (length(dimensions) > 0 && !only_attributes) {
+      ## Use stringsAsFactors=FALSE because we want the dataframe to contain
+      ## actual strings (instead of dictionary-encoding them, which would turn
+      ## every column of the dataframe into an integer vector)
+      cols <- data.frame(name=dimensions$name, type="int64", nullable=FALSE, 
+                         stringsAsFactors=FALSE)
+    }
+    cols <- rbind(cols, attributes)
   }
-  cols <- rbind(cols, attributes)
   
   ## a %<?% b: return a<b, or TRUE if either is NULL or NA
   `%<?%` <- function(a, b) {
@@ -297,7 +301,8 @@ BinaryQuery.httpapi <- function(db,
     page_nbytes <- length(raw_page)
     total_nbytes <- total_nbytes + page_nbytes
 
-    if (is.null(raw_page) || !http_query$is_selective || page_nbytes == 0) {
+    if (is.null(raw_page) || !http_query$is_selective || page_nbytes == 0
+        || is.null(schema)) {
       ## We already got the last page, or the result is empty.
       message("[SciDBR] Query page ", page_number, " returned empty result",
               "(page_bytes=", page_nbytes, ")")
@@ -345,16 +350,23 @@ BinaryQuery.httpapi <- function(db,
   }
   
   if (is.null(ans)) {
-    ## The response had no data. Create an empty dataframe
-    ## with the correct column types.
-    if (is_debug) {
-      message("[SciDBR] Query returned no data; constructing empty dataframe")
+    ## The response had no data. 
+    ## If there was a schema, return an empty dataframe with the correct columns
+    if (is.null(schema)) {
+      if (is_debug) {
+        message("[SciDBR] Query returned no data and no schema; returning NULL")
+      }
+      return(invisible())
+    } else {
+      if (is_debug) {
+        message("[SciDBR] Query returned no data; constructing empty dataframe")
+      }
+      return(.Schema2EmptyDf(attributes, 
+                             if (only_attributes) NULL else dimensions))
     }
-    return(.Schema2EmptyDf(attributes, 
-                           if (only_attributes) NULL else dimensions))
   }
 
-  ## TODO: Uniqueify attribute names if !only_attributes
+  ## TODO: For compatibility, uniqueify attribute names if !only_attributes
   ## TODO: do we need to permute dimension columns? Compare results to Shim
   
   return(ans)
@@ -422,13 +434,13 @@ Upload.httpapi <- function(db, payload,
   desc@dim_chunk_sizes <- as.numeric(dim_chunk_sizes %||% args$chunk_size)
   
   if (inherits(payload, "raw")) {
-    .UploadRaw.httpapi(db, payload, desc)
+    .UploadRaw.httpapi(db, payload, desc, ...)
   } else if (inherits(payload, "data.frame")) {
-    .UploadDf.httpapi(db, payload, desc)
+    .UploadDf.httpapi(db, payload, desc, ...)
   } else if (inherits(payload, "dgCMatrix")) {
-    .UploadMatrix.httpapi(db, payload, desc)
+    .UploadMatrix.httpapi(db, payload, desc, ...)
   } else {
-    .UploadMatVec.httpapi(db, payload, desc)
+    .UploadMatVec.httpapi(db, payload, desc, ...)
   }
   
   ## Wrap the SciDB array with a "scidb" object.
@@ -466,8 +478,8 @@ New.httpquery <- function(conn, afl, options=list())
   query$next_page_number <- 1
   query$next_page_url <- links[["first"]]
   query$id <- json[["queryId"]]
-  query$schema <- json[["schema"]]
   query$is_selective <- json[["isSelective"]]
+  query$schema <- json[["schema"]]
   
   ## When the query gets garbage-collected, call Close.httpquery(query)
   reg.finalizer(query, Close.httpquery, onexit=TRUE)
@@ -878,7 +890,7 @@ Next.httpquery <- function(query)
   timings <- c(timings, preprocess=proc.time()[["elapsed"]])
   
   ## Serialize the dataframe to TSV format
-  data <- charToRaw(.TsvWrite(payload, file=.Primitive("return")))
+  data <- .TsvWrite(payload, file=.Primitive("return"))
   timings <- c(timings, encode=proc.time()[["elapsed"]])
 
   ## Construct the schema
@@ -904,7 +916,7 @@ Next.httpquery <- function(query)
                      only(desc@filename),
                      get_setting_items_str(db, aioSettings),
                      only(aio_apply_args),
-                     paste(desc@attr_names, collapse=","),
+                     paste(desc@attr_names, collapse=", "),
                      desc@array_name)
   } else {
     query <- sprintf("store(input(%s, '%s', -2, 'tsv'), %s)",

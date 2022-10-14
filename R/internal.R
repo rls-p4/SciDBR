@@ -780,7 +780,7 @@ lazyeval = function(db, name)
           "%s, dcast(a%d, %s(null))", anames[j], j - 1, typ[j])
       }
     }
-    result$aio_apply_args = paste(aio_apply_args, collapse=",")
+    result$aio_apply_args = paste(aio_apply_args, collapse=", ")
   }
   
   return(result)
