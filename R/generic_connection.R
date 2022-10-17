@@ -122,7 +122,7 @@ BinaryQuery <- function(db, query_or_scidb,
 #' @seealso as.scidb
 #' @return A \code{scidb} object
 #' @export
-Upload <- function(db, payload, name=NULL, start=NULL, gc=TRUE, temp=FALSE, ...)
+Upload <- function(db, payload, name=NULL, gc=TRUE, temp=FALSE, ...)
 {
   ## Dispatch to Upload.shim or Upload.httpapi
   UseMethod("Upload")

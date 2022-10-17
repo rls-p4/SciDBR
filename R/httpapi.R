@@ -393,6 +393,34 @@ setClass("UploadDesc",
            dim_chunk_sizes="numeric"
          ))
 
+.Attrs.UploadDesc <- function(desc)
+{
+  stopifnot(class(desc) == "UploadDesc")
+  attrs <- desc@attr_types
+  names(attrs) <- desc@attr_names
+  return(attrs)
+}
+
+.Dims.UploadDesc <- function(desc)
+{
+  dims <- mapply(
+    function(name, start, chunk) {
+      list(name=name, start=start, chunk=chunk)
+    },
+    desc@dim_names,
+    desc@dim_start_coordinates %||% replicate(length(desc@dim_names), 0),
+    desc@dim_chunk_sizes %||% replicate(length(desc@dim_names), NULL),
+    SIMPLIFY=FALSE)
+  return(dims)
+}
+
+.Desc2Schema <- function(db, desc)
+{
+  attrs <- .Attrs.UploadDesc(desc)
+  dims <- .Dims.UploadDesc(desc)
+  return(make.schema(db, attrs, dims, array_name=desc@array_name %||% ""))
+}
+
 #' @see Upload()
 Upload.httpapi <- function(db, payload, 
                            name=NULL,
@@ -403,10 +431,13 @@ Upload.httpapi <- function(db, payload,
                            dim_names=NULL,
                            dim_start_coordinates=NULL,
                            dim_chunk_sizes=NULL,
+                           ## Legacy arguments (deprecated)
+                           attr=NULL,       # -> attr_names
+                           type=NULL,       # -> attr_types
+                           start=NULL,      # -> dim_start_coordinates
+                           chunk_size=NULL, # -> dim_chunk_sizes
                            ...)
 {
-  args <- list(...)
-  
   if (is.null(name)) {
     name <- tmpnam(db)
   }
@@ -426,12 +457,12 @@ Upload.httpapi <- function(db, payload,
   desc@filename <- basename(tempfile(sprintf("upload.%s.%s.", conn$id, name)))
   
   ## Convert legacy parameter names (deprecated) to the new names
-  desc@attr_names <- as.character(attr_names %||% args$attr)
-  desc@attr_types <- as.character(attr_types %||% args$type)
-  desc@dim_names <- as.character(args$dim_names)
+  desc@attr_names <- as.character(attr_names %||% attr)
+  desc@attr_types <- as.character(attr_types %||% type)
+  desc@dim_names <- as.character(dim_names)
   desc@dim_start_coordinates <- as.numeric(dim_start_coordinates 
-                                           %||% args$start)
-  desc@dim_chunk_sizes <- as.numeric(dim_chunk_sizes %||% args$chunk_size)
+                                           %||% start)
+  desc@dim_chunk_sizes <- as.numeric(dim_chunk_sizes %||% chunk_size)
   
   if (inherits(payload, "raw")) {
     .UploadRaw.httpapi(db, payload, desc, ...)
@@ -836,13 +867,13 @@ Next.httpquery <- function(query)
 #' @see .raw2scidb.shim()
 .UploadRaw.httpapi <- function(db, payload, desc)
 {
+  timings <- c(start=proc.time()[["elapsed"]])
   is_debug <- getOption("scidb.debug", FALSE)
   if (!is.raw(payload)) stop("payload must be a raw value")
   if (!is.present(desc)) stop("No upload descriptor provided")
   if (!has.chars(only(desc@array_name))) stop ("No array name provided")
   if (!has.chars(only(desc@filename))) stop("No upload filename provided")
 
-  timings <- c(start=proc.time()[["elapsed"]])
   bytes <- .Call(C_scidb_raw, payload)
   timings <- c(timings, encode=proc.time()[["elapsed"]])
 
@@ -937,9 +968,74 @@ Next.httpquery <- function(query)
   }
 }
 
-.UploadMatrix.httpapi <- function(db, payload, name, start, ...)
+.UploadMatrix.httpapi <- function(db, payload, desc)
 {
-  stop("Not implemented")
+  timings <- c(start=proc.time()[["elapsed"]])
+  is_debug <- getOption("scidb.debug", FALSE)
+  if (!inherits(payload, "dgCMatrix")) stop("payload must be a dgCMatrix")
+  if (!is.present(desc)) stop("No upload descriptor provided")
+  if (!has.chars(only(desc@array_name))) stop ("No array name provided")
+  if (!has.chars(only(desc@filename))) stop("No upload filename provided")
+
+  if (!is.present(desc@dim_start_coordinates)) {
+    desc@dim_start_coordinates <- c(0,0)
+  }
+  desc@dim_start_coordinates <- as.integer(desc@dim_start_coordinates)
+  
+  type <- .scidbtypes[[typeof(payload@x)]]
+  if (is.null(type) || type != "double") {
+    stop("Sorry, the package only supports double-precision sparse matrices",
+         " right now.")
+  }
+
+  desc@attr_names <- desc@attr_names %||% "val"
+  desc@attr_types <- desc@attr_types %||% .scidbtypes[[typeof(payload@x)]]
+  attrs <- .Attrs.UploadDesc(desc)
+  if (length(attrs) > 1) stop("too many attributes")
+  
+  desc@dim_names <- desc@dim_names %||% c("i", "j")
+  if (length(desc@dim_names) != 2) stop("matrix should have 2 dimensions")
+  dims <- .Dims.UploadDesc(desc)
+  dims[[1]]$end <- nrow(payload)-1 + dims[[1]]$start
+  dims[[2]]$end <- ncol(payload)-1 + dims[[2]]$start
+  dims[[1]]$chunk <- min(nrow(payload), dims[[1]]$chunk)
+  dims[[2]]$chunk <- min(ncol(payload), dims[[2]]$chunk)
+  
+  schema <- make.schema(db, attrs, dims)
+  schema1d <- sprintf("<i:int64, j:int64, val:%s>[idx=0:*:0:100000]", 
+                      desc@attr_types[[1]])
+
+  col_binary_format <- sprintf("%s null", desc@attr_types[[1]])
+  binary_format_str <- sprintf("(%s)", paste(rep(col_binary_format, 3), 
+                                             collapse=", "))
+
+  # Compute the indices and assemble message to SciDB in the form
+  # (i:double, j:double, val:double) for indices (i, j) and data (val).
+  dp <- diff(payload@p)
+  j <- rep(seq_along(dp), dp) - 1
+  bytes <- .Call(C_scidb_raw, as.vector(
+    t(matrix(c(payload@i + dims[[1]]$start, j + dims[[2]]$start, payload@x),
+             length(payload@x)))))
+  timings <- c(timings, encode=proc.time()[["elapsed"]])
+
+  query <- sprintf(
+    "store(redimension(input(%s, '%s', -2, '%s'), %s), %s)",
+    only(schema1d), 
+    only(desc@filename), 
+    only(binary_format_str),
+    only(schema), 
+    only(desc@array_name))
+  
+  content_type <- "application/octet-stream"
+  
+  .UploadWithQuery.httpapi(db, bytes, query, schema, content_type, desc)
+  timings <- c(timings, upload=proc.time()[["elapsed"]])
+  
+  if (is_debug) {
+    .ReportTimings(paste0("[SciDBR] timings for matrix upload to array '", 
+                          only(desc@array_name), "':"), 
+                   timings)
+  }
 }
 
 .UploadMatVec.httpapi <- function(db, payload, name, start, ...)
