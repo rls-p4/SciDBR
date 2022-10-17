@@ -492,8 +492,6 @@ scidbquery.shim = function(db, query,
                               ...)
 {
   D = dim(X)
-  rowOverlap = 0L
-  colOverlap = 0L
   if (missing(start)) start=c(0, 0)
   if (length(start) < 1) stop ("Invalid starting coordinates")
   if (length(start) > 2) start = start[1:2]
@@ -501,16 +499,28 @@ scidbquery.shim = function(db, query,
   start = as.integer(start)
   type = .scidbtypes[[typeof(X@x)]]
   if (is.null(type)) {
-    stop(paste("Unupported data type. The package presently supports: ",
+    stop(paste("Unsupported data type. The package presently supports: ",
                paste(.scidbtypes, collapse=" "), ".", sep=""))
   }
   if (type != "double") stop("Sorry, the package only supports double-precision sparse matrices right now.")
   schema = sprintf(
-    "< val : %s null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", type, start[[1]],
-    nrow(X)-1+start[[1]], min(nrow(X), rowChunkSize), rowOverlap, start[[2]], ncol(X)-1+start[[2]],
-    min(ncol(X), colChunkSize), colOverlap)
-  schema1d = sprintf("<i:int64 null, j:int64 null, val : %s null>[idx=0:*,100000,0]", type)
+    "<val:%s null>[i=%.0f:%.0f:0:%.0f; j=%.0f:%.0f:0:%.0f]", 
+    type, 
+    start[[1]],
+    nrow(X)-1+start[[1]],
+    min(nrow(X), rowChunkSize), 
+    start[[2]], 
+    ncol(X)-1+start[[2]],
+    min(ncol(X), colChunkSize))
+  schema1d = sprintf("<i:int64 null, j:int64 null, val:%s null>[idx=0:*:0:100000]", type)
   
+  # Compute the indices and assemble message to SciDB in the form
+  # double, double, double for indices i, j and data val.
+  dp = diff(X@p)
+  j  = rep(seq_along(dp), dp) - 1
+  
+  bytes = .Call(C_scidb_raw, as.vector(t(matrix(c(X@i + start[[1]], j + start[[2]], X@x), length(X@x)))))
+
   # Obtain a session from shim for the upload process
   if (!is.null(attr(db, "connection")$session)) { # if session already exists
     session = attr(db, "connection")$session
@@ -520,15 +530,11 @@ scidbquery.shim = function(db, query,
     if (length(session)<1) stop("SciDB http session error")
     release = 1;
   }
-  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  if (release) {
+    on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  }
   
-  # Compute the indices and assemble message to SciDB in the form
-  # double, double, double for indices i, j and data val.
-  dp = diff(X@p)
-  j  = rep(seq_along(dp), dp) - 1
-  
-  # Upload the data
-  bytes = .Call(C_scidb_raw, as.vector(t(matrix(c(X@i + start[[1]], j + start[[2]], X@x), length(X@x)))))
+  # Upload the data  
   ans = .Post.shim(db, bytes, list(id=session))
   ans = gsub("\n", "", gsub("\r", "", ans))
   

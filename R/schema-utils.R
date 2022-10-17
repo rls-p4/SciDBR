@@ -154,3 +154,72 @@ dfschema = function(names, types, len, chunk=NULL, start=NULL, dim_name=NULL)
           only(start+len-1),
           only(chunk))
 }
+
+make.schema = function(db, attributes, dimensions=list(), array_name="")
+{
+  if (length(attributes) == 0) stop("at least one attribute is required")
+
+  if (! at_least(attr(db, "connection")$scidb.version, "16.9")) {
+    stop("SciDB version of at least 16.9 is required")
+  }
+  
+  ## In SciDB 16.9+, nullable is the default
+  nullable <- ""
+  not_nullable <- " NOT NULL"
+
+  attr_decls <- rep("", length(attributes))
+  for (iattr in seq_along(attributes)) {
+    ## Allow attributes to be defined in any of these ways:
+    ##  - list(name1="type1", name2="type2")  (assumes all are nullable)
+    ##  - list(name1=list(type="type1"[, nullable=TRUE/FALSE]),
+    ##         name2=list(type="type2"[, nullable=TRUE/FALSE]))
+    ##  - list(list(name="name1", type="type1"[, nullable=TRUE/FALSE]),
+    ##         list(name="name2", type="type2"[, nullable=TRUE/FALSE]))
+    attr <- attributes[[iattr]]
+    if (is.character(attr)) {
+      attr <- list(name=NULL, type=attr, nullable=TRUE)
+    }
+    attr_decls[[iattr]] <- sprintf(
+      "%s:%s%s",
+      only(attr$name %||% names(attributes)[[iattr]]),
+      only(attr$type),
+      if (attr$nullable %||% TRUE) nullable else not_nullable)
+  }
+  all_attr_decls <- paste(attr_decls, collapse=", ")
+
+  ## The parameters after a dimension name can be integers, or characters
+  ## (like "?", "*", etc). If we get a string, assume it's OK. If we get a
+  ## floating-point number, cast it to an integer to avoid extra digits
+  ## and decimal points.
+  as_int_or_string <- function(a) if (is.numeric(a)) as.integer(a) else a
+
+  dim_decls <- rep("", length(dimensions))
+  for (idim in seq_along(dimensions)) {
+    ## Allow dimensions to be defined in any of these ways:
+    ##  - list(name1, name2)  (every dim gets default parameters)
+    ##  - list(name1=list(start=1, end=100[, chunk=10]),
+    ##         name2=list(start=0, end="*"[, chunk="*"])
+    ##  - list(list(name="name1", start=1, end=100[, chunk=10]),
+    ##         list(name="name2", start=0, end="*"[, chunk="*"]))
+    dim <- dimensions[[idim]]
+    if (is.character(dim)) {
+      dim <- list(name=dim)
+    }
+    dim_decls[[idim]] <- sprintf(
+      "%s=%s:%s:%s:%s",
+      only(dim$name %||% names(dimensions)[[idim]]),
+      as_int_or_string(only(dim$start %||% 0)),
+      as_int_or_string(only(dim$end %||% "*")),
+      as_int_or_string(only(dim$overlap %||% 0)),
+      as_int_or_string(only(dim$chunk %||% "*")))
+  }
+  all_dim_decls <- paste(dim_decls, collapse="; ")
+  
+  if (has.chars(array_name)) {
+    array_name <- paste0(array_name, " ")
+  }
+  if (length(dimensions) > 0) {
+    return(sprintf("%s<%s>[%s]", array_name, all_attr_decls, all_dim_decls))
+  } 
+  return(sprintf("%s<%s>", array_name, all_attr_decls))
+}
