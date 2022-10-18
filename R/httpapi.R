@@ -11,17 +11,6 @@
 #' We support these versions of the client API.
 httpapi_supported_versions <- c(1)
 
-## Helper functions
-`%||%` <- function(a, b) { if (length(a) > 0 && !is.na(a)) a else b }
-is.present <- function(a) { length(a) > 0 }
-has.chars <- function(a) { length(a) > 0 && all(nzchar(a)) }
-first <- function(a) { if (length(a) > 0) a[[1]] else NULL }
-only <- function(a)
-{
-  stopifnot(length(a) == 1) 
-  a[[1]]
-}
-
 #' @see GetServerVersion()
 #' @noRd
 GetServerVersion.httpapi <- function(db)
@@ -393,23 +382,44 @@ setClass("UploadDesc",
            dim_chunk_sizes="numeric"
          ))
 
-.Attrs.UploadDesc <- function(desc)
+.Attrs.UploadDesc <- function(desc, default_names=NULL, default_types=NULL)
 {
   stopifnot(class(desc) == "UploadDesc")
-  attrs <- desc@attr_types
-  names(attrs) <- desc@attr_names
+  attrs <- mapply(
+    function(name, type) {
+      list(name=as.character(name), type=as.character(type))
+    },
+    desc@attr_names %||% default_names,
+    desc@attr_types %||% default_types,
+    SIMPLIFY=FALSE
+  )
   return(attrs)
 }
 
-.Dims.UploadDesc <- function(desc)
+.Dims.UploadDesc <- function(desc, 
+                             default_names=NULL, 
+                             default_chunk_sizes=NULL,
+                             lengths=NULL,
+                             make_unique=FALSE)
 {
+  dim_names <- desc@dim_names %||% default_names
+  if (make_unique) {
+    dim_names <- make.unique_(desc@attr_names, dim_names)
+  }
   dims <- mapply(
-    function(name, start, chunk) {
-      list(name=name, start=start, chunk=chunk)
+    function(name, start, length, chunk) {
+      list(name=as.character(name), 
+           start=as.integer(start),
+           end=(if (is.null(length)) NULL 
+                else as.integer(start) + as.integer(length) - 1),
+           chunk=as.integer(chunk))
     },
-    desc@dim_names,
-    desc@dim_start_coordinates %||% replicate(length(desc@dim_names), 0),
-    desc@dim_chunk_sizes %||% replicate(length(desc@dim_names), NULL),
+    dim_names,
+    desc@dim_start_coordinates %||% replicate(length(dim_names), 0),
+    lengths %||% replicate(length(dim_names), NULL),
+    (desc@dim_chunk_sizes 
+     %||% default_chunk_sizes 
+     %||% replicate(length(desc@dim_names), NULL)),
     SIMPLIFY=FALSE)
   return(dims)
 }
@@ -469,9 +479,11 @@ Upload.httpapi <- function(db, payload,
   } else if (inherits(payload, "data.frame")) {
     .UploadDf.httpapi(db, payload, desc, ...)
   } else if (inherits(payload, "dgCMatrix")) {
-    .UploadMatrix.httpapi(db, payload, desc, ...)
+    .UploadSparseMatrix.httpapi(db, payload, desc, ...)
+  } else if (is.null(dim(payload))) {
+    .UploadVector.httpapi(db, payload, desc, ...)
   } else {
-    .UploadMatVec.httpapi(db, payload, desc, ...)
+    .UploadDenseDimensioned.httpapi(db, payload, desc, ...)
   }
   
   ## Wrap the SciDB array with a "scidb" object.
@@ -761,7 +773,8 @@ Next.httpquery <- function(query)
   return(resp)
 }
 
-#' Given an HTTP response, return TRUE if the content is text.
+#' Given an HTTP response, return TRUE if the content is text,
+#' or FALSE if there are non-printable characters.
 #' @param resp the result of a call to curl_fetch_memory
 #' @return TRUE iff the resp$content is text-formatted, i.e. if we can use 
 #'  rawToChar(resp$content) without an error.
@@ -968,7 +981,7 @@ Next.httpquery <- function(query)
   }
 }
 
-.UploadMatrix.httpapi <- function(db, payload, desc)
+.UploadSparseMatrix.httpapi <- function(db, payload, desc)
 {
   timings <- c(start=proc.time()[["elapsed"]])
   is_debug <- getOption("scidb.debug", FALSE)
@@ -988,14 +1001,12 @@ Next.httpquery <- function(query)
          " right now.")
   }
 
-  desc@attr_names <- desc@attr_names %||% "val"
   desc@attr_types <- desc@attr_types %||% .scidbtypes[[typeof(payload@x)]]
-  attrs <- .Attrs.UploadDesc(desc)
+  attrs <- .Attrs.UploadDesc(desc, default_names="val")
   if (length(attrs) > 1) stop("too many attributes")
   
-  desc@dim_names <- desc@dim_names %||% c("i", "j")
-  if (length(desc@dim_names) != 2) stop("matrix should have 2 dimensions")
-  dims <- .Dims.UploadDesc(desc)
+  dims <- .Dims.UploadDesc(desc, default_names=c("i", "j"))
+  if (length(dims) != 2) stop("matrix should have 2 dimensions")
   dims[[1]]$end <- nrow(payload)-1 + dims[[1]]$start
   dims[[2]]$end <- ncol(payload)-1 + dims[[2]]$start
   dims[[1]]$chunk <- min(nrow(payload), dims[[1]]$chunk)
@@ -1038,9 +1049,154 @@ Next.httpquery <- function(query)
   }
 }
 
-.UploadMatVec.httpapi <- function(db, payload, name, start, ...)
+.UploadVector.httpapi <- function(db, payload, desc, 
+                                  max_byte_size=NULL)
 {
-  stop("Not implemented")
+  timings <- c(start=proc.time()[["elapsed"]])
+  is_debug <- getOption("scidb.debug", FALSE)
+  
+  processed <- .PreprocessArrayType(payload, type=desc@attr_types)
+  payload <- processed$array
+  load_type <- processed$load_type
+  desc@attr_types <- processed$attr_type
+  attrs <- .Attrs.UploadDesc(desc, default_names="val")
+  if (length(attrs) != 1) stop("expected 1 attribute")
+
+  ## dims_unbounded is [i=0:*:0:min(1000,n)]
+  dims_unbounded <- .Dims.UploadDesc(desc,
+                                     default_names="i",
+                                     default_chunk_sizes=min(1000, 
+                                                             length(payload)),
+                                     make_unique=TRUE)
+  if (length(dims_unbounded) != 1) stop("expected 1 dimension")
+  
+  ## dims is [i=0:n-1:0:min(1000,n)]
+  dims <- dims_unbounded
+  dims[[1]]$end <- dims[[1]]$start + length(payload) - 1
+
+  ## schema is <val:type>[i=0:n-1:0:min(1000,n)]
+  schema <- make.schema(db, attrs, dims)
+  ## schema_unbounded: the same as `schema` but with "*" for the dimension end.
+  ## Used for uploading a single page.
+  schema_unbounded <- make.schema(db, attrs, dims_unbounded)
+  
+  page_size <- .get_multipart_post_load_block_size(
+    data=payload,
+    debug=is_debug,
+    max_byte_size=max_byte_size %||% getOption("scidb.max_byte_size",
+                                               500*(10^6)))
+  
+  ## Upload page by page
+  page_number <- 0
+  npages <- ceiling(length(payload) / page_size)
+  total_nbytes <- 0
+  for (page_begin in seq(1, length(payload), page_size)) {
+    page_number <- page_number + 1
+    page_end <- min((page_begin + page_size - 1), length(payload))
+    
+    ## Convert data to raw
+    page_payload <- as.matrix(payload[page_begin:page_end])
+    page_bytes <- .Call(C_scidb_raw, as.vector(aperm(page_payload)))
+    total_nbytes <- total_nbytes + length(page_bytes)
+    timings[[paste0("encode_page_", page_number)]] <- proc.time()[["elapsed"]]
+
+    if (is_debug) {
+      message("Uploading page ", page_number, " of ", npages)
+    }
+    if (page_number == 1) {
+      query <- sprintf("store(input(%s, '%s', -2, '(%s null)'), %s)", 
+                       only(schema), 
+                       only(desc@filename),
+                       only(load_type),
+                       only(desc@array_name))
+    } else {
+      query <- sprintf("append(input(%s, '%s', -2, '(%s null)'), %s, i)", 
+                       only(schema_unbounded), 
+                       only(desc@filename),
+                       only(load_type),
+                       only(desc@array_name))
+      ## If we created a temp array for the first page, don't create it again!
+      desc@temp <- FALSE
+    }
+    
+    content_type <- "application/octet-stream"
+    .UploadWithQuery.httpapi(db, page_bytes, query, schema,
+                             content_type, desc)
+    timings[[paste0("upload_page_", page_number)]] <- proc.time()[["elapsed"]]
+  }
+  
+  if (is_debug) {
+    .ReportTimings(paste0("[SciDBR] timings for uploading R vector to array '",
+                          only(desc@array_name), "' (", 
+                          only(page_number), " pages, ",
+                          only(total_nbytes), " bytes): "), 
+                   timings)
+  }
+}
+
+.UploadDenseDimensioned.httpapi <- function(db, payload, desc, 
+                                            reshape=TRUE, ...)
+{
+  if (!is.array(payload)) stop ("payload must be an array or vector")
+  timings <- c(start=proc.time()[["elapsed"]])
+  is_debug <- getOption("scidb.debug", FALSE)
+  
+  processed <- .PreprocessArrayType(payload, type=desc@attr_types)
+  payload <- processed$array
+  load_type <- processed$load_type
+  desc@attr_types <- processed$attr_type
+  attrs <- .Attrs.UploadDesc(desc, default_names="val")
+  if (length(attrs) != 1) stop("expected 1 attribute")
+  
+  ## For a matrix, dimension names are (i, j)
+  ## For an n-dimensional array (n>2), dim names are (i1, i2, ...)
+  dim_lengths <- dim(payload)
+  ndims <- length(dim_lengths)
+  dim_names <- if (ndims == 2) c("i", "j") else paste0("i", 1:ndims)
+  dims <- .Dims.UploadDesc(desc,
+                           default_names=dim_names,
+                           default_chunk_sizes=floor(10e6 ^ (1/ndims)),
+                           lengths=dim_lengths,
+                           make_unique=TRUE)
+  
+  schema <- make.schema(db, attrs, dims)
+  load_schema <- sprintf("<%s:%s>[__row=1:%.0f:0:1000000]", 
+                         attrs[[1]]$name, 
+                         attrs[[1]]$type,
+                         length(payload))
+
+  ## Convert data to raw
+  bytes <- .Call(C_scidb_raw, as.vector(aperm(payload)))
+  timings[["encode"]] <- proc.time()[["elapsed"]]
+  
+  if (as.logical(reshape)) {
+    query <- sprintf("store(reshape(input(%s, '%s', -2, '(%s null)'), %s), %s)", 
+                     load_schema,
+                     desc@filename, 
+                     load_type, 
+                     schema, 
+                     desc@array_name)
+    action <- "upload_and_reshape"
+  } else {
+    query <- sprintf("store(input(%s, '%s', -2, '(%s null)'), %s)", 
+                     load_schema, 
+                     desc@filename, 
+                     load_type, 
+                     desc@array_name)
+    action <- "upload"
+  }
+  
+  content_type <- "application/octet-stream"
+  .UploadWithQuery.httpapi(db, bytes, query, schema, content_type, desc)
+  timings[[action]] <- proc.time()[["elapsed"]]
+  
+  if (is_debug) {
+    .ReportTimings(paste0("[SciDBR] timings for uploading dense ", 
+                          ndims, "-dimensional array '",
+                          desc@array_name, "', ", 
+                          nchar(bytes, type="bytes"), " bytes: "), 
+                   timings)
+  }
 }
 
 .UploadWithQuery.httpapi <- function(db, data, query, 
@@ -1068,7 +1224,7 @@ Next.httpquery <- function(query)
                             attachment=desc@filename)
   query_json <- jsonlite::toJSON(query_and_options, auto_unbox=TRUE)
   
-  ## Collect the attachments: a "query" attachment with the query JSON,
+  ## Prepare the attachments: a "query" attachment with the query JSON,
   ## and an "attachment" attachment with the uploaded data
   attachments <- list(
     query=list(data=query_json, content_type="application/json"),

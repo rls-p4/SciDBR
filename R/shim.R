@@ -578,24 +578,21 @@ scidbquery.shim = function(db, query,
   args = list(...)
   attr_name = "val"
   if (!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
+  
+  processed = .PreprocessArrayType(X, type=args$type)
+  X = processed$df
+  ## attr_type: the type of the attribute
+  attr_type = processed$attr_type
+  ## load_type: the type used internally for loading the data
+  load_type = processed$load_type
+  
   do_reshape = TRUE
-  if ("factor" %in% class(X)) X = as.character(X)
-  type = force_type = .Rtypes[[typeof(X)]]
-  if ("Date" %in% class(X))
-  {
-    X = as.double(as.POSIXct(X, tz="UTC")) # XXX warn UTC?
-    force_type = "datetime"
-  }
-  if ("integer64" %in% class(X)) type = force_type = "int64"
-  if (is.null(type)) {
-    stop(paste("Unsupported data type. The package supports: ",
-               paste(unique(names(.Rtypes)), collapse=" "), ".", sep=""))
-  }
   if (!is.null(args$reshape)) do_reshape = as.logical(args$reshape) # control reshape
-  if (!is.null(args$type)) force_type = as.character(args$type) # limited type conversion
+  
   chunkSize = c(min(1000L, nrow(X)), min(1000L, ncol(X)))
   chunkSize = as.numeric(chunkSize)
   if (length(chunkSize) == 1) chunkSize = c(chunkSize, chunkSize)
+  
   overlap = c(0, 0)
   if (missing(start)) start = c(0, 0)
   start     = as.numeric(start)
@@ -605,25 +602,26 @@ scidbquery.shim = function(db, query,
   overlap = as.integer(overlap)
   dimname = make.unique_(attr_name, "i")
   DEBUG = getOption("scidb.debug", FALSE)
+
   if (is.null(D))
   {
     # X is a vector
     do_reshape = FALSE
     chunkSize = min(chunkSize[[1]], length(X))
     X = as.matrix(X)
-    block_size = .get_multipart_post_load_block_size.shim(
+    block_size = .get_multipart_post_load_block_size(
       data = X,
       debug = DEBUG,
       max_byte_size = if(is.null(args$max_byte_size)) getOption('scidb.max_byte_size', 500*(10^6)) else args$max_byte_size)
     # Define schema for an initial SciDB upload and provide a template to
     # load subsequent blocks of the vector
     schema = sprintf(
-      "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
+      "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, attr_type, dimname, start[[1]],
       nrow(X) - 1 + start[[1]], min(nrow(X), chunkSize), overlap[[1]])
     load_schema = schema
     # Define a temporary schema for multi-part loading of blocks of the vector
     temp_schema = sprintf(
-      "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, dimname, start[[1]],
+      "< %s : %s null>  [%s=%.0f:%.0f,%.0f,%.0f]", attr_name, attr_type, dimname, start[[1]],
       min((nrow(X) - 1 + start[[1]]), (block_size - 1 + start[[1]])),
       min(nrow(X), chunkSize), overlap[[1]])
   } else if (length(D) > 2)
@@ -634,15 +632,15 @@ scidbquery.shim = function(db, query,
     start = rep(0, ndim)
     end = D - 1
     dimNames = make.unique_(attr_name, paste("i", 1:length(D), sep=""))
-    schema = sprintf("< %s : %s null >[%s]", attr_name, force_type, paste(sprintf( "%s=%.0f:%.0f,%.0f,0", dimNames, start, end, chunkSize), collapse=","))
-    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type,  length(X))
+    schema = sprintf("< %s : %s null >[%s]", attr_name, attr_type, paste(sprintf( "%s=%.0f:%.0f,%.0f,0", dimNames, start, end, chunkSize), collapse=","))
+    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, attr_type,  length(X))
   } else {
     # X is a matrix
     schema = sprintf(
-      "< %s : %s  null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", attr_name, force_type, start[[1]],
+      "< %s : %s  null>  [i=%.0f:%.0f,%.0f,%.0f, j=%.0f:%.0f,%.0f,%.0f]", attr_name, attr_type, start[[1]],
       nrow(X) - 1 + start[[1]], chunkSize[[1]], overlap[[1]], start[[2]], ncol(X) - 1 + start[[2]],
       chunkSize[[2]], overlap[[2]])
-    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, force_type,  length(X))
+    load_schema = sprintf("<%s:%s null>[__row=1:%.0f,1000000,0]", attr_name, attr_type,  length(X))
   }
   if (!is.array(X)) stop ("X must be an array or vector")
   
@@ -662,7 +660,7 @@ scidbquery.shim = function(db, query,
   if(is.null(D)) {
     .multipart_post_load.shim(db, session,
                               X, name,
-                              load_schema, schema, type,
+                              load_schema, schema, load_type,
                               temp_schema, block_size,
                               temp, DEBUG, shimcon_time)
   } else {
@@ -686,37 +684,14 @@ scidbquery.shim = function(db, query,
     # Load query
     if (do_reshape)
     {
-      query = sprintf("store(reshape(input(%s,'%s', -2, '(%s null)'),%s),%s)", load_schema, ans, type, schema, name)
+      query = sprintf("store(reshape(input(%s,'%s', -2, '(%s null)'),%s),%s)", load_schema, ans, load_type, schema, name)
     } else
     {
-      query = sprintf("store(input(%s,'%s', -2, '(%s null)'),%s)", load_schema, ans, type, name)
+      query = sprintf("store(input(%s,'%s', -2, '(%s null)'),%s)", load_schema, ans, load_type, name)
     }
     iquery(db, query)
   }
   scidb(db, name, gc=gc)
-}
-
-.get_multipart_post_load_block_size.shim <- function(data, 
-                                                     debug,
-                                                     max_byte_size) 
-{
-  total_length = as.numeric(length(data))
-  
-  if(max_byte_size < 8) {
-    warning('Supplied max_byte_size is less than 8 bytes. Restoring it to default value of 500MB.')
-    max_byte_size=500*(10^6)
-  }
-  
-  if(typeof(data) %in% c('integer', 'double')) {
-    block_size = floor(max_byte_size / 8)
-    if(debug) message("Using ", block_size, " for numeric vector block_size")
-  } else {
-    est_col_byte_size = max(c(1,nchar(data, type="bytes")), na.rm = T) * as.numeric(total_length)
-    split_ratio = est_col_byte_size / max_byte_size
-    block_size = ceiling(as.numeric(total_length)/split_ratio)
-    if(debug) message("Using ", block_size, " for character vector block_size")
-  }
-  return(block_size)
 }
 
 .multipart_post_load.shim <- function(db, session,

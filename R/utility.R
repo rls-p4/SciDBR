@@ -308,8 +308,8 @@ iquery = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
 #' @export
 as.scidb = function(db, x,
                     name,
-                    start,
-                    gc, ...)
+                    start=NULL,
+                    gc=NULL, ...)
 {
   if (missing(name))
   {

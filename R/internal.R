@@ -1,5 +1,16 @@
 # Non-exported utility functions
 
+## Helper functions
+`%||%` <- function(a, b) { if (length(a) > 0 && !is.na(a)) a else b }
+is.present <- function(a) { length(a) > 0 }
+has.chars <- function(a) { length(a) > 0 && all(nzchar(a)) }
+first <- function(a) { if (length(a) > 0) a[[1]] else NULL }
+only <- function(a)
+{
+  stopifnot(length(a) == 1) 
+
+  a[[1]]
+}
 #' Return a SciDB query expression as a data frame
 #' @param db scidb database connection object
 #' @param query A SciDB query expression or scidb object
@@ -784,4 +795,55 @@ lazyeval = function(db, name)
   }
   
   return(result)
+}
+
+.PreprocessArrayType = function(X, type=NULL)
+{
+  if ("factor" %in% class(X)) {
+    X = as.character(X)
+  }
+  
+  ## attr_type: the type of the attribute
+  ## load_type: the type used internally for loading the data
+  attr_type = load_type = .Rtypes[[typeof(X)]]
+  
+  if ("Date" %in% class(X))
+  {
+    X = as.double(as.POSIXct(X, tz="UTC")) # XXX warn UTC?
+    attr_type = "datetime"
+  }
+  if ("integer64" %in% class(X)) {
+    load_type = attr_type = "int64"
+  }
+  if (is.null(load_type)) {
+    stop(paste("Unsupported data type. The package supports: ",
+               paste(unique(names(.Rtypes)), collapse=" "), ".", sep=""))
+  }
+  if (has.chars(type)) {
+    # allow limited type conversion
+    attr_type = only(as.character(type))
+  }
+  
+  return(list(array=X, load_type=load_type, attr_type=attr_type))
+}
+
+.get_multipart_post_load_block_size <- function(data, debug, max_byte_size) 
+{
+  total_length = as.numeric(length(data))
+  
+  if(max_byte_size < 8) {
+    warning('Supplied max_byte_size is less than 8 bytes. Restoring it to default value of 500MB.')
+    max_byte_size=500*(10^6)
+  }
+  
+  if(typeof(data) %in% c('integer', 'double')) {
+    block_size = floor(max_byte_size / 8)
+    if(debug) message("Using ", block_size, " for numeric vector block_size")
+  } else {
+    est_col_byte_size = max(c(1,nchar(data, type="bytes")), na.rm = T) * as.numeric(total_length)
+    split_ratio = est_col_byte_size / max_byte_size
+    block_size = ceiling(as.numeric(total_length)/split_ratio)
+    if(debug) message("Using ", block_size, " for character vector block_size")
+  }
+  return(block_size)
 }
