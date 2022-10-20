@@ -60,6 +60,11 @@ Connect.httpapi <- function(db_or_conn, reconnect=FALSE)
   conn <- .GetConnectionEnv(db_or_conn)
   if (is.null(conn)) stop("no connection environment")
   
+  if (!at_least(conn$scidb.version, 22.6)) {
+    stop("HTTP API is only supported for SciDB server version 22.6 and later;",
+         " this server has version ", conn$scidb.version)
+  }
+  
   ## Create a new connection handle.
   ## Because we reuse one connection handle for all queries in a session,
   ## curl automatically deals with authorization cookies sent from the server -
@@ -92,7 +97,9 @@ Connect.httpapi <- function(db_or_conn, reconnect=FALSE)
   ## Give the connection the session ID.
   conn$session <- sid
   ## Give the connection a unique ID - in this case just reuse the session ID.
-  conn$id <- sid
+  ## But since temporary array names contain the connection ID,
+  ## replace all non-identifier characters with underscores.
+  conn$id <- make.names_(sid)
   ## Should not use password going forward: use the authorization cookies
   ## that were returned by the server and which curl automatically saves
   ## on the connection handle.
@@ -203,8 +210,9 @@ BinaryQuery.httpapi <- function(db,
                                 binary=TRUE, 
                                 buffer_size=NULL,
                                 only_attributes=NULL, 
+                                schema=NULL,
                                 page_size=NULL, 
-                                npages=NULL, 
+                                npages=NULL,
                                 ...)
 {
   ## In SciDBR <=3.1.0, the semantics of binary=TRUE queries are different from 
@@ -220,7 +228,7 @@ BinaryQuery.httpapi <- function(db,
                         binary=FALSE, `return`=TRUE, arrow=FALSE))
   }
   
-  only_attributes <- if (is.null(only_attributes)) FALSE else only_attributes
+  only_attributes <- only_attributes %||% FALSE
   
   Connect.httpapi(db, reconnect=FALSE)
   conn <- attr(db, "connection")
@@ -254,7 +262,10 @@ BinaryQuery.httpapi <- function(db,
   
   ## These are the columns we expect to be encoded in the response:
   ## dimensions (if requested), followed by attributes
-  schema <- http_query$schema
+  dimensions <- NULL
+  attributes <- NULL
+  ## If the caller provided a schema, it overrides the actual schema
+  schema <- schema %||% http_query$schema
   if (!is.null(schema)) {
     dimensions <- .dimsplitter(schema)
     attributes <- .attsplitter(schema)
@@ -293,13 +304,37 @@ BinaryQuery.httpapi <- function(db,
     if (is.null(raw_page) || !http_query$is_selective || page_nbytes == 0
         || is.null(schema)) {
       ## We already got the last page, or the result is empty.
-      message("[SciDBR] Query page ", page_number, " returned empty result",
-              "(page_bytes=", page_nbytes, ")")
+      if (is_debug) {
+        message("[SciDBR] Query page ", page_number, " returned empty result",
+                "(page_bytes=", page_nbytes, ")")
+      }
       break
     }
 
     ## Convert the binary data to a dataframe, and add it to the answer
     page_df <- .Binary2df(raw_page, cols, buffer_size, use_int64)
+
+    ## Special legacy behavior for "binary" datatype: 
+    ## if any column has type "binary", don't return a dataframe; 
+    ## instead, return a list containing that binary value as the _first_ item,
+    ## and the dimension (if present) as the _second_ item. 
+    ## Don't fetch any more pages (in fact, don't fetch anything but 
+    ## the first row).
+    ## See issue #163 and the test for issues #163 in tests/a.R,
+    ## as well as the test for issue #195 with the "binary" datatype in a.R.
+    if (typeof(page_df) == "list" && "binary" %in% attributes$type) {
+      page_list <- page_df  # (it isn't a dataframe)
+      if (only_attributes) {
+        return(page_list)
+      } else {
+        ## Move the dimensions to the last columns.
+        ndims <- length(dimensions$name)
+        ncols <- length(cols$name)
+        result <- page_list[c((ndims+1):ncols, 1:ndims)]
+        return(result)
+      }
+    }
+    
     ans <- rbind(ans, page_df)
     timings[[paste0("parse_page_", page_number)]] <- proc.time()[["elapsed"]]
 
@@ -361,25 +396,30 @@ BinaryQuery.httpapi <- function(db,
   return(ans)
 }
 
-## Use an S4 class to standardize fields for all upload methods
+## Use an S4 class to standardize field names for all upload methods.
+## Because so much SciDBR code uses is.null() to check for missing values,
+## it's important to allow any missing value to be NULL (instead of a
+## non-null empty vector).
+setClassUnion("NumericOrNull",members=c("numeric", "NULL"))
+setClassUnion("CharOrNull", members=c("character", "NULL"))
 setClass("UploadDesc",
          slots=c(
            ## Name of the SciDB array that will result from the upload
-           array_name="character",
+           array_name="CharOrNull",
            ## If TRUE, the SciDB array will be temporary (not versioned)
            temp="logical",
            ## Name of the file used for uploading
-           filename="character",
+           filename="CharOrNull",
            ## Name of each attribute
-           attr_names="character",
+           attr_names="CharOrNull",
            ## SciDB type of each attribute
-           attr_types="character",
+           attr_types="CharOrNull",
            ## Name of each dimension
-           dim_names="character",
+           dim_names="CharOrNull",
            ## Start coordinate of each dimension
-           dim_start_coordinates="numeric",
+           dim_start_coordinates="NumericOrNull",
            ## Chunk size of each dimension
-           dim_chunk_sizes="numeric"
+           dim_chunk_sizes="NumericOrNull"
          ))
 
 .Attrs.UploadDesc <- function(desc, default_names=NULL, default_types=NULL)
@@ -419,7 +459,7 @@ setClass("UploadDesc",
     lengths %||% replicate(length(dim_names), NULL),
     (desc@dim_chunk_sizes 
      %||% default_chunk_sizes 
-     %||% replicate(length(desc@dim_names), NULL)),
+     %||% replicate(length(dim_names), NULL)),
     SIMPLIFY=FALSE)
   return(dims)
 }
@@ -467,12 +507,15 @@ Upload.httpapi <- function(db, payload,
   desc@filename <- basename(tempfile(sprintf("upload.%s.%s.", conn$id, name)))
   
   ## Convert legacy parameter names (deprecated) to the new names
-  desc@attr_names <- as.character(attr_names %||% attr)
-  desc@attr_types <- as.character(attr_types %||% type)
-  desc@dim_names <- as.character(dim_names)
+  ## Because so much SciDBR code uses is.null() to check for missing values,
+  ## it's important to set missing values to NULL (instead of a non-null
+  ## empty vector).
+  desc@attr_names <- as.character(attr_names %||% attr) %||% NULL
+  desc@attr_types <- as.character(attr_types %||% type) %||% NULL
+  desc@dim_names <- as.character(dim_names) %||% NULL
   desc@dim_start_coordinates <- as.numeric(dim_start_coordinates 
-                                           %||% start)
-  desc@dim_chunk_sizes <- as.numeric(dim_chunk_sizes %||% chunk_size)
+                                           %||% start) %||% NULL
+  desc@dim_chunk_sizes <- as.numeric(dim_chunk_sizes %||% chunk_size) %||% NULL
   
   if (inherits(payload, "raw")) {
     .UploadRaw.httpapi(db, payload, desc, ...)
@@ -496,6 +539,12 @@ New.httpquery <- function(conn, afl, options=list())
 {
   ## Remove options whose values are NULL
   options <- Filter(Negate(is.null), options)
+  
+  ## If the query only consists of an identifier (alphanumeric + "_"),
+  ## assume it's an array name. Wrap it with scan().
+  if (! grepl("[^[:alnum:]_]", only(trimws(afl)))) {
+    afl <- sprintf("scan(%s)", afl)
+  }
   
   ## Prepare the JSON for posting
   query_and_options <- append(list(query=afl), options)

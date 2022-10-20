@@ -40,18 +40,20 @@ scidb = function(db, name, gc=FALSE, schema)
   obj = new("scidb", name=name)
   obj@meta = new.env()
   obj@meta$db = db
-  # can't call sprintf or paste in finalizer
-  obj@meta$remove_query = sprintf("remove(%s)", name)
   if (missing(schema)) delayedAssign("state", lazyeval(db, name), assign.env=obj@meta)
   else assign("state", list(schema=schema), envir=obj@meta)
   delayedAssign("schema", get("state")$schema, eval.env=obj@meta, assign.env=obj@meta)
 
+  if (length(grep("\\(", name)) == 0)
+  {
+    ## The query has no parentheses, so we assume it's a bare array name.
+    obj@meta$name = name
+    ## can't call sprintf or paste in finalizer
+    obj@meta$remove_query = sprintf("remove(%s)", name)
+  }
+  
   if (gc)
   {
-    if (length(grep("\\(", name)) == 0)
-    {
-      obj@meta$name = name
-    }
     obj@meta$remove = TRUE
     reg.finalizer(obj@meta, function(e)
         {
