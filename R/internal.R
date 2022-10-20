@@ -3,7 +3,7 @@
 ## Helper functions
 `%||%` <- function(a, b) { if (length(a) > 0 && !is.na(a)) a else b }
 is.present <- function(a) { length(a) > 0 }
-has.chars <- function(a) { length(a) > 0 && all(nzchar(a)) }
+has.chars <- function(a) { length(a) > 0 && any(nzchar(a[!is.na(a)])) }
 first <- function(a) { if (length(a) > 0) a[[1]] else NULL }
 only <- function(a)
 {
@@ -117,7 +117,8 @@ scidb_arrow_to_dataframe = function(db, query, ...) {
 #'    that parameter name is accepted too but it is deprecated.)
 #' @param only_attributes optional logical value. \code{TRUE} means
 #'    don't retrieve dimension coordinates, only return attribute values.
-#'    Defaults to \code{FALSE}.
+#'    Defaults to \code{NULL} which means "return coordinates unless the array
+#'    is a dataframe".
 #' @param schema optional result schema string, only applies when \code{query} 
 #'    is not a SciDB object. Supplying this avoids one extra metadata query to
 #'    determine result schema. Defaults to \code{schema(query)}.
@@ -127,7 +128,7 @@ scidb_arrow_to_dataframe = function(db, query, ...) {
 #' @importFrom data.table  data.table
 #' @import bit64
 scidb_unpack_to_dataframe = function(db, query, binary=TRUE, buffer=NULL, 
-                                     only_attributes=FALSE, schema=NULL, 
+                                     only_attributes=NULL, schema=NULL, 
                                      buffer_size=NULL, ...)
 {
   return(
@@ -340,7 +341,7 @@ tmpnam = function(db, prefix="R_array")
 {
   stopifnot(inherits(db, "afl"))
   salt = basename(tempfile(pattern=prefix))
-  paste(salt, getuid(db), sep="")
+  paste(salt, getuid(db), sep="_")
 }
 
 # Return a shim session ID or error
@@ -473,7 +474,14 @@ ParseVersion <- function(version)
     {
       if ("binary" %in% cols$type)
       {
-        if (DEBUG) message("  R rbind/df assembly time ", round( (proc.time() - dt2)[3], 4))
+        ## Replicate weird behavior for backward compatibility: 
+        ## if any column has type "binary", don't return a dataframe;
+        ## instead, return a list consisting of just that binary value. 
+        ## See issue #163 and the test for issue #163 in tests/a.R .
+        if (DEBUG) {
+          message("  R rbind/df assembly time ",
+                  round( (proc.time() - dt2)[3], 4))
+        }
         ans = lapply(1:n, function(j) tmp[[j]][1:lines])
         names(ans) = cols$name
         return(ans)

@@ -1,23 +1,70 @@
-library('Matrix')
+library("Matrix")
+library("scidb")
 
-message("Starting tests"); t1 = proc.time()
+test_with_security = (Sys.getenv("SCIDB_TEST_WITH_SECURITY", "") == "true")
+is_arrow_installed = !is.null(tryCatch(library(arrow), error=function(e) NULL))
+
+`%||%` = function(a, b) { if (length(a) > 0) a else b }
 
 check = function(a, b) {
   print(match.call())
   stopifnot(all.equal(a, b, check.attributes=FALSE, check.names=FALSE))
 }
 
-library("scidb")
-host = Sys.getenv("SCIDB_TEST_HOST")
-test_with_security = ifelse(Sys.getenv("SCIDB_TEST_WITH_SECURITY") == 'true',
-                            TRUE, FALSE)
-if (nchar(host) > 0) {
-  if (!test_with_security) {
-    db = scidbconnect(host)
-  } else {
-    db = scidbconnect(username = 'root', password = 'Paradigm4', 
-                      protocol = 'https', port = 8083) 
+connect = function(secure=NULL, port=NULL, ...) {
+  host = Sys.getenv("SCIDB_TEST_HOST")
+  if (is.null(host) || nchar(host) == 0) {
+    stop("No SciDB host found. Please set $SCIDB_TEST_HOST.")
   }
+  
+  if (is.null(secure)) {
+    secure = test_with_security
+  }
+  
+  if (!secure) {
+    db = scidbconnect(host, 
+                      port=port %||% Sys.getenv("SCIDB_TEST_PORT", 8080),
+                      ...)
+  } else {
+    db = scidbconnect(host,
+                      port=port %||% Sys.getenv("SCIDB_TEST_PORT", 8083),
+                      username="root", 
+                      password="Paradigm4", 
+                      protocol="https", 
+                      ...)
+  }
+  return(db)
+}
+
+#' Reconnect to the same SciDB server, overriding old settings with the ones
+#' specified in the optional argument list.
+reconnect = function(oldconn, ...) {
+  if (inherits(oldconn, "afl")) {
+    oldconn = attr(oldconn, "connection")
+  }
+  args = list(...)
+  username = args$username %||% oldconn$username
+  password = args$password %||% oldconn$password
+  if (is.null(password) && !is.null(username) && only(username) == "root") {
+    ## The password gets erased after connecting, so we need to resupply it.
+    password = "Paradigm4"
+  }
+  newdb = scidbconnect(
+    host=args$host %||% oldconn$host,
+    port=args$port %||% oldconn$port,
+    protocol=args$protocol %||% oldconn$protocol,
+    username=username,
+    password=password,
+    ...
+  )
+  return(newdb)
+}
+
+## Run tests in a function, so local variables get bound to function scope
+## and will be gc-able when the function ends.
+run_tests = function(db) {
+  message("Starting tests on ", class(db)[[1]], " connection")
+  t1 = proc.time()
 
 # 1 Data movement tests
 
@@ -31,7 +78,12 @@ if (nchar(host) > 0) {
 # iquery CSV download
   check(iris[, 1:4], iquery(db, x, return=TRUE, binary=FALSE)[, a][, 1:4])
 # iquery Arrow download
-  check(iris[, 1:4], iquery(db, x, return=TRUE, arrow=TRUE, binary = FALSE)[, a][, 1:4])
+  if (is_arrow_installed) {
+    check(iris[, 1:4], iquery(db, x, return=TRUE, 
+                              arrow=TRUE, binary = FALSE)[, a][, 1:4])
+  } else {
+    warning("Arrow test was skipped because arrow library isn't installed")
+  }
 # as.R only attributes
   check(iris[, 1],  as.R(x, only_attributes=TRUE)[, 1])
 
@@ -63,7 +115,34 @@ if (nchar(host) > 0) {
   check(df, as.R(x, only_attributes=TRUE))
 
 # upload n-d array
-# XXX WRITE ME, not implemented yet
+  brick = 1:60
+  dim(brick) = c(5, 4, 3)
+  x = as.scidb(db, brick)
+  ## Turn the brick into a dataframe like this, to compare against scidb:
+  ##    i1 i2 i3 val
+  ## 1   0  0  0   1  (the value at brick[[1, 1, 1]])
+  ## 2   0  0  1  21  (brick[[1, 1, 2]])
+  ## 3   0  0  2  41  (brick[[1, 1, 3]])
+  ## 4   0  1  0   6  (brick[[1, 2, 1]])
+  ## 5   0  1  1  26  ...
+  ## 6   0  1  2  46
+  ## ...
+  ## 58  4  3  0  20
+  ## 59  4  3  1  40
+  ## 60  4  3  2  60
+  brick_df = data.frame()
+  for (i1 in 1:dim(brick)[[1]]) {
+    for (i2 in 1:dim(brick)[[2]]) {
+      for (i3 in 1:dim(brick)[[3]]) {
+        brick_df <- rbind(brick_df, 
+                          list(i1=i1 - 1, 
+                               i2=i2 - 1, 
+                               i3=i3 - 1,
+                               val=brick[[i1, i2, i3]]))
+      }
+    }
+  }
+  check(brick_df, as.R(x))
 
 # garbage collection
   gc()
@@ -86,20 +165,13 @@ if (nchar(host) > 0) {
 # issue #156 type checks
 
 # int64 option
- if (!test_with_security) {
-   db = scidbconnect(host, int64=TRUE)
- } else {
-   db = scidbconnect(username = 'root', password = 'Paradigm4', 
-                     protocol = 'https', port = 8083, int64=TRUE) 
- }
+ db = reconnect(db, int64=TRUE)
+ 
  x = db$build("<v:int64>[i=1:2,2,0]", i)
  check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE))))
- if (!test_with_security) {
-   db = scidbconnect(host, int64=FALSE)
- } else {
-   db = scidbconnect(username = 'root', password = 'Paradigm4', 
-                     protocol = 'https', port = 8083, int64=FALSE) 
- }
+
+ db = reconnect(db, int64=FALSE)
+ 
  x = db$build("<v:int64>[i=1:2,2,0]", i)
  check(as.R(x), as.R(as.scidb(db, as.R(x, TRUE))))
 
@@ -180,8 +252,10 @@ if (nchar(host) > 0) {
   stopifnot(upload_data$a == download_data$a)
 
 # Issue 195 Empty data.frame(s)
-  for (scidb_type in names(scidb:::.scidbtypes))
+  for (scidb_type in names(scidb:::.scidbtypes)) {
     for (only_attributes in c(FALSE, TRUE)) {
+      cat("Testing empty data frame of type ", scidb_type, 
+          " with only_attributes=", only_attributes, sep="", fill=TRUE)
       one_df <- iquery(
         db,
         paste("build(<x:", scidb_type, ">[i=0:0], null)"),
@@ -202,6 +276,7 @@ if (nchar(host) > 0) {
         mapply(c, one_df, empty_df)
       }
     }
+  }
 
 # Issue 195 Coerce very small floating point values to 0
   small_df <- data.frame(a = .Machine$double.xmin,
@@ -313,6 +388,79 @@ if (nchar(host) > 0) {
   scidb_ret <- iquery(db, 'flatten(build(<value:double>[i=1:5:0:1], iif(i%2=0, 1, 0)))', return=T)
   scidb_ret <- scidb_ret[order(scidb_ret$i),]
   check(scidb_ret, data.frame(i = 1:5, value = abs(floor(1:5%%2) -1), stringsAsFactors = FALSE))
+  
+  message("Ran tests in: ", (proc.time()-t1)[[3]], " seconds")
 }
 
-message("Ran tests in: ", (proc.time()-t1)[[3]], " seconds")
+run_tests_with_gc = function(db) {
+  preexisting <- ls(db)$name
+  message("Pre-existing SciDB arrays: ", 
+          if (length(preexisting) == 0) "none"
+          else paste(preexisting, collapse=", "))
+  
+  run_tests(db)
+  
+  ## Garbage collection is only effective after the variables in run_tests()
+  ## have gone out of scope.
+  gc()
+  
+  remaining <- ls(db)$name
+  message("Remaining SciDB arrays after test: ", 
+          if (length(remaining) == 0) "none"
+          else paste(remaining, collapse=", "))
+  
+  unexpected <- setdiff(remaining, preexisting)
+  if (length(unexpected) > 0) {
+    stop("These arrays were created during the test and were not cleaned up: ",
+         paste(unexpected, collapse=", "))
+  }
+}
+
+http_port = Sys.getenv("SCIDB_HTTPAPI_TEST_PORT", 
+                       Sys.getenv("SCIDB_TEST_PORT", 8239))
+message("Attempting to connect to httpapi on port ", http_port)
+start = proc.time()[["elapsed"]]
+httpdb = tryCatch(connect(port=http_port),
+                   error=function(e) {
+                     message("Could not connect to httpapi: ", 
+                             conditionMessage(e))
+                   })
+if (!is.null(httpdb) && !inherits(httpdb, "httpapi")) {
+  message("Connection on port ", attr(httpdb, "connection")$port,
+          " is not an httpapi connection; skipping httpapi tests.")
+  httpdb = NULL
+}
+if (!is.null(httpdb)) {
+  message("Connected to httpapi in ", proc.time()[["elapsed"]]-start,
+          " seconds")
+  run_tests_with_gc(httpdb)
+}
+
+message("\n\nAttempting to connect to shim")
+start <- proc.time()[["elapsed"]]
+shimdb <- tryCatch(connect(), 
+                   error=function(e) {
+                     message("Could not connect to Shim: ", 
+                             conditionMessage(e))
+                   })
+if (!is.null(shimdb) && !inherits(shimdb, "shim")) {
+  message("Connection on port ", attr(httpdb, "connection")$port,
+          " is not a shim connection; skipping shim tests.")
+  shimdb = NULL
+}
+if (!is.null(shimdb)) {
+  message("Connected to shim in ", proc.time()[["elapsed"]]-start, " seconds")
+  run_tests_with_gc(shimdb)
+}
+
+if (!is.null(shimdb)) {
+  message("Successfully tested shim connection on port ", 
+          attr(shimdb, "connection")$port)
+}
+if (!is.null(httpdb)) {
+  message("Successfully tested httpapi connection on port ", 
+          attr(httpdb, "connection")$port)
+}
+if (is.null(httpdb) && is.null(shimdb)) {
+  stop("Didn't connect to shim or httpapi; tests were not run.")
+}

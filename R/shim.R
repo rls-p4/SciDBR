@@ -248,7 +248,17 @@ BinaryQuery.shim = function(db, query_or_scidb,
     return(.Schema2EmptyDf(attributes,
                            if (only_attributes) NULL else dimensions))
   }
-  
+
+  ## Special behavior for "binary" datatype: 
+  ## if any column has type "binary", don't return a dataframe; instead, return
+  ## a list containing just that binary value. Don't permute the columns
+  ## to put the dimension(s) first; the binary value should be the first element
+  ## in the returned list. See issue #163 and the test for issue #163 in 
+  ## tests/a.R .
+  if (typeof(ans) == "list" && "binary" %in% internal_attributes$type) {
+    return(ans)
+  }
+
   ## Permute dimension cols, see issue #125
   if (only_attributes) {
     colnames(ans) = make.names_(attributes$name)
@@ -263,21 +273,20 @@ BinaryQuery.shim = function(db, query_or_scidb,
 }
 
 #' @see Upload()
-Upload.shim = function(db, payload, name=NULL, 
-                       start=NULL, gc=TRUE, temp=FALSE, ...)
+Upload.shim = function(db, payload, name=NULL, ...)
 {
   if (is.null(name)) {
     name <- tmpnam(db)
   }
 
   if (inherits(payload, "raw")) {
-    X = (.raw2scidb.shim(db, payload, name=name, start=start, gc=gc, ...))
+    X = (.raw2scidb.shim(db, payload, name=name, ...))
   } else if (inherits(payload, "data.frame")) {
-    X = (.df2scidb.shim(db, payload, name=name, start=start, gc=gc, ...))
+    X = (.df2scidb.shim(db, payload, name=name, ...))
   } else if (inherits(payload, "dgCMatrix")) {
-    X = (.matrix2scidb.shim(db, payload, name=name, start=start, gc=gc, ...))
+    X = (.matrix2scidb.shim(db, payload, name=name, ...))
   } else {
-    X = (.matvec2scidb.shim(db, payload, name=name, start=start, gc=gc, ...))
+    X = (.matvec2scidb.shim(db, payload, name=name, ...))
   }
   return(X)
 }
@@ -486,13 +495,13 @@ scidbquery.shim = function(db, query,
 .matrix2scidb.shim = function(db, X, name, 
                               rowChunkSize=1000, 
                               colChunkSize=1000,
-                              start=c(0, 0), 
+                              start=NULL, 
                               temp=FALSE, 
                               gc=TRUE, 
                               ...)
 {
   D = dim(X)
-  if (missing(start)) start=c(0, 0)
+  if (is.null(start)) start=c(0, 0)
   if (length(start) < 1) stop ("Invalid starting coordinates")
   if (length(start) > 2) start = start[1:2]
   if (length(start) < 2) start = c(start, 0)
@@ -580,7 +589,7 @@ scidbquery.shim = function(db, query,
   if (!is.null(args$attr)) attr_name = as.character(args$attr)      # attribute name
   
   processed = .PreprocessArrayType(X, type=args$type)
-  X = processed$df
+  X = processed$array
   ## attr_type: the type of the attribute
   attr_type = processed$attr_type
   ## load_type: the type used internally for loading the data
@@ -594,7 +603,7 @@ scidbquery.shim = function(db, query,
   if (length(chunkSize) == 1) chunkSize = c(chunkSize, chunkSize)
   
   overlap = c(0, 0)
-  if (missing(start)) start = c(0, 0)
+  if (is.null(start)) start = c(0, 0)
   start     = as.numeric(start)
   if (length(start) ==1) start = c(start, start)
   D = dim(X)
