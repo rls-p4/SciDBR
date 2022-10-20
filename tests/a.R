@@ -95,6 +95,11 @@ run_tests = function(db) {
   a = scidb(db, x@name, schema=gsub("\\[.*", "", schema(x)))
   check(as.R(db$op_count(x))$count, nrow(as.R(a)))
 
+# upload data frame using aio_input, download using only_attributes (because
+# aio_input adds dimensions we don't care about)
+  x = as.scidb(db, iris, use_aio_input=TRUE)
+  check(iris[, 1:4], as.R(x, only_attributes=TRUE)[, 1:4])
+
 # upload vector
   check(1:5, as.R(as.scidb(db, 1:5))[, 2])
 # upload matrix
