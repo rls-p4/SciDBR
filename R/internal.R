@@ -78,39 +78,6 @@ scidb_unpack_to_dataframe = function(db, query, binary=TRUE, buffer=NULL,
   stop("Not a scidb object or query string: {", query_or_scidb, "}")
 }
 
-#' Convenience function for digest authentication.
-#' @param db_or_conn a scidb database connection object,
-#'    _or_ its "connection" attribute
-#' @param method digest method
-#' @param uri uri
-#' @param realm realm
-#' @param nonce nonce
-#' @keywords internal
-#' @importFrom digest digest
-digest_auth = function(db_or_conn, method, uri, realm="", nonce="123456")
-{
-  .scidbenv = .GetConnectionEnv(db_or_conn)
-  
-  if (!is.null(.scidbenv$authtype))
-  {
-   if (.scidbenv$authtype != "digest") return("")
-  }
-  uri = gsub(".*/", "/", uri)
-  userpwd = .scidbenv$digest
-  if (is.null(userpwd)) userpwd=":"
-  up = strsplit(userpwd, ":")[[1]]
-  user = up[1]
-  pwd  = up[2]
-  if (is.na(pwd)) pwd=""
-  ha1=digest(sprintf("%s:%s:%s", user, realm, pwd), algo="md5", serialize=FALSE)
-  ha2=digest(sprintf("%s:%s", method,  uri), algo="md5", serialize=FALSE)
-  cnonce="MDc1YmFhOWFkY2M0YWY2MDAwMDBlY2JhMDAwMmYxNTI="
-  nc="00000001"
-  qop="auth"
-  response=digest(sprintf("%s:%s:%s:%s:%s:%s", ha1, nonce, nc, cnonce, qop, ha2), algo="md5", serialize=FALSE)
-  sprintf('Digest username="%s", realm=%s, nonce="%s", uri="%s", cnonce="%s", nc=%s, qop=%s, response="%s"', user, realm, nonce, uri, cnonce, nc, qop, response)
-}
-
 # Some versions of RCurl seem to contain a broken URLencode function.
 oldURLencode = function (URL, reserved = FALSE)
 {
@@ -258,28 +225,28 @@ tmpnam = function(db, prefix="R_array")
 # db_or_conn: scidb database connection object _or_ its "connection" attribute
 # resource (string): A URI identifying the requested service
 # args (list): A list of named query parameters
-URI = function(db_or_conn, resource="", args=list())
+URI.default = function(db_or_conn, resource="", args=list())
 {
-  .scidbenv = .GetConnectionEnv(db_or_conn)
+  conn = .GetConnectionEnv(db_or_conn)
   
-  if (is.null(.scidbenv$host)) stop("Not connected...try scidbconnect")
-  if (!is.null(.scidbenv$auth)) {
-    args = c(args, list(auth=.scidbenv$auth))
+  if (is.null(conn$host)) stop("Not connected...try scidbconnect")
+
+  proto = paste(conn$protocol, "//", sep=":")
+  if ("password" %in% names(args) || "auth" %in% names(args)) {
+    proto = "https://"
   }
-  if (!is.null(.scidbenv$password)) args = c(args, list(password=.scidbenv$password))
-  if (!is.null(.scidbenv$username)) args = c(args, list(user=.scidbenv$username))
-  if (!is.null(.scidbenv$admin) && .scidbenv$admin) args = c(args, list(admin=1))
-  prot = paste(.scidbenv$protocol, "//", sep=":")
-  if ("password" %in% names(args) || "auth" %in% names(args)) prot = "https://"
-  if (!is.null(.scidbenv$port)) { # if port value is not NULL
-    ans = paste(prot, .scidbenv$host, ":", .scidbenv$port, sep="")
-  } else { # if port value is NULL, Shim port must have been forwarded to a URL
-           # and only having the URL is sufficient
-    ans = paste(prot, .scidbenv$host, sep = "")
+  if (!is.null(conn$port)) {
+    ans = paste(proto, conn$host, ":", conn$port, sep="")
+  } else { 
+    ## if port value is NULL, Shim port must have been forwarded to a URL
+    ## and only having the URL is sufficient
+    ans = paste(proto, conn$host, sep = "")
   }
   ans = paste(ans, resource, sep=if (substr(resource, 1, 1)!="/") "/" else "")
   if (length(args)>0) {
-    ans = paste(ans, paste(paste(names(args), args, sep="="), collapse="&"), sep="?")
+    ans = paste(ans, 
+                paste(paste(names(args), args, sep="="), collapse="&"), 
+                sep="?")
   }
   
   ## Mark this string as a URI

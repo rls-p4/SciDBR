@@ -42,6 +42,7 @@ GetServerVersion.httpapi <- function(db)
   
   ## If we got this far, the request succeeded - so the connected host and port
   ## supports the SciDB httpapi (no Shim).
+  class(conn) <- "httpapi"
   class(db) <- c("httpapi", "afl")
   
   ## We need to return db because we have modified its class,
@@ -55,7 +56,7 @@ GetServerVersion.httpapi <- function(db)
 #'   already exists. If FALSE and a session already exists, returns without
 #'   changing anything.
 #' @noRd
-Connect.httpapi <- function(db_or_conn, reconnect=FALSE)
+Connect.httpapi <- function(db_or_conn, reconnect=FALSE, ...)
 {
   conn <- .GetConnectionEnv(db_or_conn)
   if (is.null(conn)) stop("no connection environment")
@@ -66,10 +67,11 @@ Connect.httpapi <- function(db_or_conn, reconnect=FALSE)
   }
   
   ## Create a new connection handle.
-  ## Because we reuse one connection handle for all queries in a session,
-  ## curl automatically deals with authorization cookies sent from the server -
+  ## We reuse one connection handle for all queries in a session, so that curl
+  ## can automatically deal with authorization cookies sent from the server -
   ## sending them back to the server in each request, and keeping them 
   ## up to date when the server sends new cookies.
+  ## If the cookie expires, use the Reauthenticate() function.
   if (is.null(conn$handle)) {
     conn$handle <- curl::new_handle()
   }
@@ -78,6 +80,7 @@ Connect.httpapi <- function(db_or_conn, reconnect=FALSE)
                 && !is.null(conn$location) 
                 && !is.null(conn$links))
   if (connected && !reconnect) {
+    ## Caller asked not to reconnect if connection already exists
     return()
   }
   
@@ -100,10 +103,6 @@ Connect.httpapi <- function(db_or_conn, reconnect=FALSE)
   ## But since temporary array names contain the connection ID,
   ## replace all non-identifier characters with underscores.
   conn$id <- make.names_(sid)
-  ## Should not use password going forward: use the authorization cookies
-  ## that were returned by the server and which curl automatically saves
-  ## on the connection handle.
-  conn$password <- NULL
 
   ## Register the session to be closed when the connection env
   ## gets garbage-collected.
@@ -111,6 +110,23 @@ Connect.httpapi <- function(db_or_conn, reconnect=FALSE)
   
   ## We don't need to return db or conn because the only object we have modified
   ## is the connection env which is pass-by-reference.
+}
+
+#' @see Reauthenticate()
+#' @noRd
+Reauthenticate.httpapi <- function(db, password, defer=FALSE)
+{
+  conn <- .GetConnectionEnv(db)
+  if (is.null(conn)) stop("no connection environment")
+  if (!has.chars(password)) stop("no password provided")
+  
+  conn$password <- password
+  
+  if (!defer) {
+    ## Run an arbitrary query to re-activate the connection
+    ## with the new password
+    iquery(db, "show('help()' , 'afl')", return=TRUE)
+  }
 }
 
 #' @see Close()
@@ -732,6 +748,7 @@ Next.httpquery <- function(query)
            error=function(err) {conn$handle <- curl::new_handle()})
   h <- conn$handle
   
+  ## Call curl::handle_setopt to set options for curl
   options <- switch(method, 
                     GET = list(httpget=TRUE),
                     POST = list(post=TRUE, 
@@ -743,10 +760,19 @@ Next.httpquery <- function(query)
   options <- c(options, list(
     http_version=2,
     ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
-    ssl_verifypeer=0)
-  )
+    ssl_verifypeer=0
+  ))
+  if (!is.null(conn$username) && !is.null(conn$password)) {
+    options[["username"]] <- conn$username
+    options[["password"]] <- conn$password
+    ## Do not store the password after this connection attempt!
+    ## If successful, the server will return an authorization cookie; curl will
+    ## automatically save it on the connection handle and reuse it in 
+    ## future requests to continue the authenticated session.
+    conn$password <- NULL
+  }
   curl::handle_setopt(h, .list=options)
-  
+
   ## Call curl::handle_setform to add the attachments, if any
   if (length(attachments) > 0) {
     setform_args <- list(h)
@@ -777,7 +803,6 @@ Next.httpquery <- function(query)
     do.call(curl::handle_setform, setform_args)
   }
 
-  # curl::handle_setheaders(h, .list=list(Authorization=digest_auth(conn, action, uri)))
   if (is_debug) {
     if (method == "POST") {
       message("[SciDBR] sending ", method, " ", uri, "\n  data=", data,
@@ -789,9 +814,10 @@ Next.httpquery <- function(query)
   }
   
   resp <- curl::curl_fetch_memory(uri, h)
+  
   if (resp$status_code == 0 && conn$protocol == "http") {
     ## Attempted to access an https port using http
-    ## If this message is changed, also change the code that handles it 
+    ## If this "stop" message is changed, also change the code that handles it 
     ## in .Handshake() in utility.R
     stop("https required")
   }
@@ -838,7 +864,7 @@ Next.httpquery <- function(query)
   ## The slow way: look for non-printing characters
   return(length(grepRaw("[^[:print:][:space:]]", resp$content)) == 0)
   
-  ## TODO: Check the Content-Type header instead.
+  ## TODO after SDB-7833: Check the Content-Type header instead.
 }
 
 #' Given a list of HTTP response headers parsed by curl::parse_headers_list,

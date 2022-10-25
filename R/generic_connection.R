@@ -24,16 +24,29 @@ GetServerVersion <- function(db)
 }
 
 #' Start a new connection/session.
+#' When this function finishes:
+#'   - attr(db, "connection")$session is the session ID
+#'   - attr(db, "connection")$id is a unique connection ID
 #' The connection will automatically close when the connection object
 #' goes out of scope.
 #' @param db scidb connection object from \code{\link{scidbconnect}}
-#' @return db with modifications reflecting the new connection.
-#'   In particular: attr(db, "connection")$session is the session ID,
-#'   and attr(db, "connection")$id is a unique connection ID.
-Connect <- function(db) 
+Connect <- function(db, ...) 
 {
   ## Dispatch to Connect.shim or Connect.httpapi.
   UseMethod("Connect")
+}
+
+#' If a session's authentication cookie times out, call this function to
+#' supply the password again to resume the existing session.
+#' @param db scidb connection object from \code{\link{scidbconnect}}
+#' @param password the password to use for reauthenticating
+#' @param defer if TRUE, the actual reauthentication is deferred until the
+#'   next query is executed. This might delay feedback about whether the
+#'   authentication succeeded or not.
+Reauthenticate <- function(db, password, defer=FALSE)
+{
+  ## Dispatch to Reauthenticate.httpapi or Reauthenticate.shim
+  UseMethod("Reauthenticate")
 }
 
 #' Close the connection and session.
@@ -53,7 +66,8 @@ Execute <- function(db, query_or_scidb, ...)
 
 #' Run a query. Uses same interface as the iquery() function.
 #' @see iquery()
-Query <- function(db, query_or_scidb, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
+Query <- function(db, query_or_scidb, 
+                  `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
 {
   ## Dispatch to Query.shim or Query.httpapi.
   UseMethod("Query")
@@ -83,7 +97,7 @@ BinaryQuery <- function(db, query_or_scidb,
                         binary=TRUE,
                         buffer_size=NULL,     # implementation should decide
                         only_attributes=NULL, # shim implementation needs to see
-                                              #    if query result is a dataframe
+                                              #  if query result is a dataframe
                         schema=NULL, 
                         ...)
 {
@@ -126,4 +140,10 @@ Upload <- function(db, payload, name=NULL, gc=TRUE, temp=FALSE, ...)
 {
   ## Dispatch to Upload.shim or Upload.httpapi
   UseMethod("Upload")
+}
+
+URI <- function(db_or_conn, resource="", args=list())
+{
+  ## Dispatch to URI.shim, URI.httpapi, or URI.default
+  UseMethod("URI")
 }

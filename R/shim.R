@@ -17,6 +17,7 @@ GetServerVersion.shim <- function(db)
   
   ## If we got this far, the request succeeded - so the connected host and port
   ## is for the Shim.
+  class(attr(db, "connection")) <- "shim"
   class(db) <- c("shim", "afl")
   
   return(db)
@@ -24,8 +25,21 @@ GetServerVersion.shim <- function(db)
 
 #' @see Connect()
 #' @noRd
-Connect.shim <- function(db)
+Connect.shim <- function(db, auth_type=NULL)
 {
+  ## Check for login using either scidb or HTTP digest authentication
+  conn = attr(db, "connection")
+  if (has.chars(conn$username)) {
+    stopifnot(has.chars(auth_type))
+    conn$authtype = auth_type
+    if (auth_type=="scidb") {
+      conn$protocol = "https"
+    } else {
+      ## HTTP basic digest auth
+      conn$digest = paste(username, password, sep=":")
+    }
+  }
+  
   ## Run an arbitrary query via scidbquery.shim().
   ## scidbquery.shim() creates a new session, executes the query, and returns 
   ## a list(response=, session=) where session is the Shim session ID, and
@@ -38,7 +52,7 @@ Connect.shim <- function(db)
   
   ## Register the session to be closed when db's "connection" env
   ## gets garbage-collected.
-  reg.finalizer(attr(db, "connection"), 
+  reg.finalizer(conn, 
                 .CloseShimSession, 
                 onexit=TRUE)
   
@@ -48,14 +62,19 @@ Connect.shim <- function(db)
                        warning=invisible)
   
   ## Give the connection the session ID.
-  attr(db, "connection")$session <- x$session
+  conn$session <- x$session
   ## Give the connection a unique ID - in this case just use the query ID.
-  attr(db, "connection")$id <- query_id[[length(query_id)]]
+  conn$id <- query_id[[length(query_id)]]
   ## Should not use password going forward (session is stored)
-  attr(db, "connection")$password <- NULL
+  conn$password <- NULL
 
   ## We don't need to return db because the only object we have modified
   ## is attr(db, "connection") which is an env (pass-by-reference).
+}
+
+Reauthenticate.shim <- function(db, password, defer=FALSE)
+{
+  # Nothing to do here for shim
 }
 
 #' @see Close()
@@ -237,7 +256,7 @@ BinaryQuery.shim = function(db, query_or_scidb,
   dt2 = proc.time()
   uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
   h = new_handle()
-  handle_setheaders(h, .list=list(`Authorization`=digest_auth(db, "GET", uri)))
+  handle_setheaders(h, .list=list(`Authorization`=.digest_auth(db, "GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0, http_version=2))
   resp = curl_fetch_memory(uri, h)
@@ -320,7 +339,7 @@ SGET.shim = function(db_or_conn, resource, args=list(), err=TRUE, binary=FALSE)
   uri = oldURLencode(uri)
   uri = gsub("\\+", "%2B", uri, perl=TRUE)
   h = new_handle()
-  handle_setheaders(h, .list=list(Authorization=digest_auth(db_or_conn, "GET", uri)))
+  handle_setheaders(h, .list=list(Authorization=.digest_auth(db_or_conn, "GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0, http_version=2))
   ans = curl_fetch_memory(uri, h)
@@ -332,6 +351,17 @@ SGET.shim = function(db_or_conn, resource, args=list(), err=TRUE, binary=FALSE)
   }
   if (binary) return(ans$content)
   rawToChar(ans$content)
+}
+
+URI.shim = function(db_or_conn, resource="", args=list())
+{
+  ## For the shim, we need to pass authentication and admin settings
+  ## in the URL parameters.
+  if (!is.null(conn$auth)) args = c(args, list(auth=conn$auth))
+  if (!is.null(conn$password)) args = c(args, list(password=conn$password))
+  if (!is.null(conn$username)) args = c(args, list(user=conn$username))
+  if (!is.null(conn$admin) && conn$admin) args = c(args, list(admin=1))
+  return(URI.default(db_or_conn, resource, args))
 }
 
 #' Basic low-level query. Returns query id. This is an internal function.
@@ -489,7 +519,7 @@ scidb_arrow_to_dataframe.shim = function(db, query, ...) {
   dt2 = proc.time()
   uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
   h = new_handle()
-  handle_setheaders(h, .list=list(`Authorization`=digest_auth(db, "GET", uri)))
+  handle_setheaders(h, .list=list(`Authorization`=.digest_auth(db, "GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0, http_version=2))
   resp = curl_fetch_memory(uri, h)
@@ -921,7 +951,7 @@ scidb_arrow_to_dataframe.shim = function(db, query, ...) {
     uri = oldURLencode(uri)
     uri = gsub("\\+", "%2B", uri, perl=TRUE)
     h = new_handle()
-    handle_setheaders(h, .list=list(Authorization=digest_auth(db, "POST", uri)))
+    handle_setheaders(h, .list=list(Authorization=.digest_auth(db, "POST", uri)))
     handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                                 ssl_verifypeer=0, post=TRUE, http_version=2, postfieldsize=length(data),
                                 postfields=data))
@@ -933,7 +963,7 @@ scidb_arrow_to_dataframe.shim = function(db, query, ...) {
   uri = oldURLencode(uri)
   uri = gsub("\\+", "%2B", uri, perl=TRUE)
   h = new_handle()
-  handle_setheaders(h, .list=list(Authorization=digest_auth(db, "POST", uri)))
+  handle_setheaders(h, .list=list(Authorization=.digest_auth(db, "POST", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0, http_version=2))
   tmpf = tempfile()
@@ -975,3 +1005,35 @@ scidb_arrow_to_dataframe.shim = function(db, query, ...) {
   conn$session <- NULL
 }
 
+#' Convenience function for digest authentication.
+#' @param db_or_conn a scidb database connection object,
+#'    _or_ its "connection" attribute
+#' @param method digest method
+#' @param uri uri
+#' @param realm realm
+#' @param nonce nonce
+#' @keywords internal
+#' @importFrom digest digest
+.digest_auth = function(db_or_conn, method, uri, realm="", nonce="123456")
+{
+  .scidbenv = .GetConnectionEnv(db_or_conn)
+  
+  if (!is.null(.scidbenv$authtype))
+  {
+    if (.scidbenv$authtype != "digest") return("")
+  }
+  uri = gsub(".*/", "/", uri)
+  userpwd = .scidbenv$digest
+  if (is.null(userpwd)) userpwd=":"
+  up = strsplit(userpwd, ":")[[1]]
+  user = up[1]
+  pwd  = up[2]
+  if (is.na(pwd)) pwd=""
+  ha1=digest(sprintf("%s:%s:%s", user, realm, pwd), algo="md5", serialize=FALSE)
+  ha2=digest(sprintf("%s:%s", method,  uri), algo="md5", serialize=FALSE)
+  cnonce="MDc1YmFhOWFkY2M0YWY2MDAwMDBlY2JhMDAwMmYxNTI="
+  nc="00000001"
+  qop="auth"
+  response=digest(sprintf("%s:%s:%s:%s:%s:%s", ha1, nonce, nc, cnonce, qop, ha2), algo="md5", serialize=FALSE)
+  sprintf('Digest username="%s", realm=%s, nonce="%s", uri="%s", cnonce="%s", nc=%s, qop=%s, response="%s"', user, realm, nonce, uri, cnonce, nc, qop, response)
+}
