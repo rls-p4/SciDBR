@@ -151,7 +151,7 @@ scidb = function(db, name, gc=FALSE, schema)
 #' @export
 scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
                         port=getOption("scidb.default_shim_port", 8080L),
-                        username, password,
+                        username=NULL, password=NULL,
                         auth_type=c("scidb", "digest"), 
                         protocol=c("http", "https"),
                         admin=FALSE,
@@ -168,6 +168,8 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   attr(db, "connection")$protocol = protocol
   attr(db, "connection")$admin = admin
   attr(db, "connection")$int64 = int64
+  attr(db, "connection")$username = username
+  attr(db, "connection")$password = password
   
   ## class(db) needs to be set before .Handshake(db) (notably: before URI()), 
   ## but .Handshake(db) will change it to the proper subclass
@@ -179,35 +181,8 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   ## with the server.
   db <- .Handshake(db)
 
-# set this to TRUE if connecting to an older SciDB version than 16.9
-  password_digest = ! at_least(attr(db, "connection")$scidb.version, "16.9")
-
-  if (missing(username)) { username = c() }
-  if (missing(password)) { password = c() }
-# Check for login using either scidb or HTTP digest authentication
-  if (!is.null(username))
-  {
-    attr(db, "connection")$authtype = auth_type
-    if (auth_type=="scidb")
-    {
-      attr(db, "connection")$protocol = "https"
-      attr(db, "connection")$username = username
-      if (password_digest) {
-        attr(db, "connection")$password = base64_encode(
-                                  digest(charToRaw(password),
-                                         serialize=FALSE,
-                                         raw=TRUE,
-                                         algo="sha512"))
-      } else { # 16.9 no longer hashes the password
-        attr(db, "connection")$password = password
-      }
-    } else { # HTTP basic digest auth
-      attr(db, "connection")$digest = paste(username, password, sep=":")
-    }
-  }
-
   ## Dispatch to subclass to start a session
-  Connect(db)
+  Connect(db, auth_type=auth_type)
   
   ## Update available operators and macros and return afl object
   ops = iquery(
@@ -475,19 +450,28 @@ getpwd = function(prompt="Password:")
 {
   conn <- attr(db, "connection")
   
-  ## First assume the connection is for the HTTP API. Attempt to get 
-  ## the server's SciDB version.
-  httpapi_result <- tryCatch(
-    list(db=GetServerVersion.httpapi(db)),
-    error=function(err) { list(error=err) }
-  )
-  
-  ## If we tried http but https is required, try again with https. 
-  ## (Note failing from http to https is safe, 
-  ##  but failing from https to http would not be safe.)
-  if (!is.null(httpapi_result[["error"]]) 
-      && httpapi_result[["error"]] == "https required"
-      && conn$protocol == "http") {
+  ## First assume the hostname/port is for the HTTP API.
+  ## If protocol is "http" and no username is present, try it unencrypted.
+  httpapi_result <- NULL
+  if (conn$protocol == "http" && !is.present(conn$username)) {
+    httpapi_result <- tryCatch(
+      list(db=GetServerVersion.httpapi(db)),
+      error=function(err) { 
+        if (err == "https required") {
+          ## We tried HTTP, but HTTPS is required. Suppress the error,
+          ## and set httpapi_result to NULL so we try again with HTTPS below.
+          ## (Note failing from http to https is safe, 
+          ##  but failing from https to http would not be safe.)
+          NULL
+        }
+        list(error=err) 
+      }
+    )
+  }
+
+  ## If we didn't try the HTTP API yet - or if we got an "https required" 
+  ## error when we did - try the HTTP API via https.
+  if (is.null(httpapi_result)) {
     https_db <- db
     attr(https_db, "connection") <- rlang::env_clone(conn)
     attr(https_db, "connection")$protocol <- "https"
@@ -502,8 +486,8 @@ getpwd = function(prompt="Password:")
     return(httpapi_result[["db"]])
   }
 
-  ## That didn't work, so assume the connection is for the Shim.
-  ## Attempt to get the server's SciDB version.
+  ## The HTTP API endpoint didn't work, so assume this server/port is for 
+  ## the Shim.
   shim_result <- tryCatch(
     list(db=GetServerVersion.shim(db)),
     error=function(err) { list(error=err) }
