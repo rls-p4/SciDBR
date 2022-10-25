@@ -11,100 +11,6 @@ only <- function(a)
 
   a[[1]]
 }
-#' Return a SciDB query expression as a data frame
-#' @param db scidb database connection object
-#' @param query A SciDB query expression or scidb object
-#' @param ... optional extra arguments (see below)
-#' @note option extra arguments
-#' \itemize{
-#'   \item{only_attributes}{ optional logical value, TRUE if only attributes should be returned}
-#'   \item{schema}{ optional result schema string }
-#' }
-#' @keywords internal
-scidb_arrow_to_dataframe = function(db, query, ...) {
-  INT64 = attr(db, "connection")$int64
-  DEBUG = getOption("scidb.debug", FALSE)
-  RESULT_SIZE_LIMIT = getOption("scidb.result_size_limit", 256)
-  AIO = getOption("scidb.aio", TRUE)
-
-  if (inherits(db, "httpapi")) {
-    stop("scidb_arrow_to_dataframe not yet implemented for httpapi")
-  }
-  
-  if (!AIO) {
-    stop("AIO Must be TRUE for Arrow")
-  }
-  
-  args = list(...)
-
-  # TODO: Look into this, but guarantees we have only_atts
-  lazyeval_ret = lazyeval(db, query)
-  args$only_attributes = if (is.null(args$only_attributes)) {
-    dist = lazyeval_ret$distribution
-    if(is.na(dist)) FALSE else if(dist == 'dataframe') TRUE else FALSE
-  } else {
-    args$only_attributes
-  }
-
-  # Get the atts and dims so we can filter the results
-  if (!inherits(query, "scidb"))
-  {
-    # make a scidb object out of the query, optionally using a supplied schema to skip metadata query
-    if (is.null(args$schema)) {
-      query = if(is.na(lazyeval_ret$schema)) {
-        scidb(db, query)
-      } else {
-        scidb(db, query, schema=lazyeval_ret$schema)
-      }
-    } else {
-      query = scidb(db, query, schema=args$schema)
-    }
-  }
-
-  attributes = schema(query, "attributes")
-  dimensions = schema(query, "dimensions")
-  query = query@name
-
-  # Make the scidbquery
-  if (DEBUG) message("Data query ", query)
-  # if (DEBUG) message("Format ", format_string)
-  sessionid = scidbquery.shim(
-    db,
-    query,
-    save="arrow",
-    result_size_limit=RESULT_SIZE_LIMIT,
-    atts_only=ifelse(args$only_attributes, TRUE, ifelse(AIO, FALSE, TRUE)))
-  if (!is.null(attr(db, "connection")$session)) { # if session already exists
-    release = 0
-  } else { # need to get new session every time
-    release = 1;
-  }
-  if (release) on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
-
-  dt2 = proc.time()
-  uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
-  h = new_handle()
-  handle_setheaders(h, .list=list(`Authorization`=digest_auth(db, "GET", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
-                              ssl_verifypeer=0, http_version=2))
-  resp = curl_fetch_memory(uri, h)
-
-  if (resp$status_code > 299) stop("HTTP error", resp$status_code)
-  if (DEBUG) message("Data transfer time ", round((proc.time() - dt2)[3], 4))
-  if (DEBUG) message("Data size ", length(resp$content))
-  dt1 = proc.time()
-
-  res <- arrow::read_ipc_stream(resp$content, as_data_frame = T)
-  if (DEBUG) message("Total R parsing time ", round( (proc.time() - dt1)[3], 4))
-
-  # Reorganize
-  if (!args$only_attributes) {
-    res <- res[, c(dimensions$name, attributes$name)]
-  }
-
-  return(res)
-
-}
 
 #' Unpack and return a SciDB query expression as a data frame
 #' @param db scidb database connection object
@@ -344,16 +250,6 @@ tmpnam = function(db, prefix="R_array")
   paste(salt, getuid(db), sep="_")
 }
 
-# Return a shim session ID or error
-getSession = function(db)
-{
-  session = SGET(db, "/new_session")
-  if (length(session)<1) stop("SciDB http session error; are you connecting to a valid SciDB host?")
-  session = gsub("\r", "", session)
-  session = gsub("\n", "", session)
-  session
-}
-
 # Supply the base SciDB URI from the global host, port and auth
 # parameters stored in the "connection" environment in the db object
 # Every function that needs to talk to the shim interface should use
@@ -389,33 +285,6 @@ URI = function(db_or_conn, resource="", args=list())
   ## Mark this string as a URI
   class(ans) <- c("URI", class(ans))
   ans
-}
-
-# Issue an HTTP GET request.
-# db_or_conn: scidb database connection object _or_ its "connection" attribute
-# resource (string): A URI identifying the requested service
-# args (list): A list of named query parameters
-# err (boolean): If true, stop if the server returned an error code
-# binary (boolean): If true, return binary data, else convert to character data
-SGET = function(db_or_conn, resource, args=list(), err=TRUE, binary=FALSE)
-{
-  if (!(substr(resource, 1, 1)=="/")) resource = paste("/", resource, sep="")
-  uri = URI(db_or_conn, resource, args)
-  uri = oldURLencode(uri)
-  uri = gsub("\\+", "%2B", uri, perl=TRUE)
-  h = new_handle()
-  handle_setheaders(h, .list=list(Authorization=digest_auth(db_or_conn, "GET", uri)))
-  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
-                              ssl_verifypeer=0, http_version=2))
-  ans = curl_fetch_memory(uri, h)
-  if (ans$status_code > 299 && err)
-  {
-    msg = sprintf("HTTP error %s", ans$status_code)
-    if (ans$status_code >= 400) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
-    stop(msg)
-  }
-  if (binary) return(ans$content)
-  rawToChar(ans$content)
 }
 
 #' Parse a version string, returning only the major and minor versions
