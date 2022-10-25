@@ -789,8 +789,14 @@ Next.httpquery <- function(query)
   }
   
   resp <- curl::curl_fetch_memory(uri, h)
-  if (resp$status_code > 299) {
-    ## The server responded with an error
+  if (resp$status_code == 0 && conn$protocol == "http") {
+    ## Attempted to access an https port using http
+    ## If this message is changed, also change the code that handles it 
+    ## in .Handshake() in utility.R
+    stop("https required")
+  }
+  if (resp$status_code <= 199 || resp$status_code > 299) {
+    ## The server responded with an error or unexpected status code
     error_msg <- rawToChar(resp$content)
     if (startsWith(error_msg, "{")) {
       ## Treat it as a JSON error message
