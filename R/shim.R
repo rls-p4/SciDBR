@@ -12,7 +12,7 @@
 #' @noRd
 GetServerVersion.shim <- function(db)
 {
-  version = SGET(db, "/version")
+  version = SGET.shim(db, "/version")
   attr(db, "connection")$scidb.version <- ParseVersion(version)
   
   ## If we got this far, the request succeeded - so the connected host and port
@@ -94,7 +94,7 @@ Query.shim = function(db, query_or_scidb,
   }
   
   if (`return`) {
-    if (arrow) return(scidb_arrow_to_dataframe(db, query, ...))
+    if (arrow) return(scidb_arrow_to_dataframe.shim(db, query, ...))
     if (binary) return(scidb_unpack_to_dataframe(db, query, ...))
     
     ans = tryCatch(
@@ -108,16 +108,19 @@ Query.shim = function(db, query_or_scidb,
         dt1 = proc.time()
         result = tryCatch(
           {
-            SGET(db, "/read_lines", list(id=sessionid, n=as.integer(n + 1)))
+            SGET.shim(db, "/read_lines", 
+                      list(id=sessionid, n=as.integer(n + 1)))
           },
           error=function(e)
           {
-            SGET(db, "/cancel", list(id=sessionid))
-            if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+            SGET.shim(db, "/cancel", list(id=sessionid))
+            if (release) {
+              SGET.shim(db, "/release_session", list(id=sessionid), err=FALSE)
+            }
             stop(e)
           })
         if (release) {
-          SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+          SGET.shim(db, "/release_session", list(id=sessionid), err=FALSE)
         }
         if (DEBUG) message("Data transfer time ", round((proc.time() - dt1)[3], 4))
         dt1 = proc.time()
@@ -225,7 +228,10 @@ BinaryQuery.shim = function(db, query_or_scidb,
   } else { # need to get new session every time
     release = 1;
   }
-  if (release) on.exit( SGET(db, "/release_session", list(id=sessionid), err=FALSE), add=TRUE)
+  if (release) {
+    on.exit(SGET.shim(db, "/release_session", list(id=sessionid), err=FALSE), 
+            add=TRUE)
+  }
 
   ## Fetch the query output data in binary format  
   dt2 = proc.time()
@@ -291,6 +297,43 @@ Upload.shim = function(db, payload, name=NULL, ...)
   return(X)
 }
 
+# Return a shim session ID or error
+getSession.shim = function(db)
+{
+  session = SGET.shim(db, "/new_session")
+  if (length(session)<1) stop("SciDB http session error; are you connecting to a valid SciDB host?")
+  session = gsub("\r", "", session)
+  session = gsub("\n", "", session)
+  session
+}
+
+# Issue an HTTP GET request.
+# db_or_conn: scidb database connection object _or_ its "connection" attribute
+# resource (string): A URI identifying the requested service
+# args (list): A list of named query parameters
+# err (boolean): If true, stop if the server returned an error code
+# binary (boolean): If true, return binary data, else convert to character data
+SGET.shim = function(db_or_conn, resource, args=list(), err=TRUE, binary=FALSE)
+{
+  if (!(substr(resource, 1, 1)=="/")) resource = paste("/", resource, sep="")
+  uri = URI(db_or_conn, resource, args)
+  uri = oldURLencode(uri)
+  uri = gsub("\\+", "%2B", uri, perl=TRUE)
+  h = new_handle()
+  handle_setheaders(h, .list=list(Authorization=digest_auth(db_or_conn, "GET", uri)))
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
+                              ssl_verifypeer=0, http_version=2))
+  ans = curl_fetch_memory(uri, h)
+  if (ans$status_code > 299 && err)
+  {
+    msg = sprintf("HTTP error %s", ans$status_code)
+    if (ans$status_code >= 400) msg = sprintf("%s\n%s", msg, rawToChar(ans$content))
+    stop(msg)
+  }
+  if (binary) return(ans$content)
+  rawToChar(ans$content)
+}
+
 #' Basic low-level query. Returns query id. This is an internal function.
 #' @param db scidb database connection object
 #' @param query a character query string
@@ -329,7 +372,7 @@ scidbquery.shim = function(db, query,
   sessionid = session
   if (is.null(session))
   {
-    sessionid = getSession(db) # Obtain a session from shim
+    sessionid = getSession.shim(db) # Obtain a session from shim
   }
   if (is.null(save)) save=""
   if (is.null(result_size_limit)) result_size_limit=""
@@ -347,22 +390,124 @@ scidbquery.shim = function(db, query,
       args$save = save
       args$result_size_limit = result_size_limit
       if (!is.null(args$save)) args$atts_only=ifelse(atts_only, 1L, 0L)
-      do.call("SGET", args=list(db=db, resource="/execute_query", args=args))
+      do.call("SGET.shim", 
+              args=list(db=db, resource="/execute_query", args=args))
     }, error=function(e)
     {
-      SGET(db, "/cancel", list(id=sessionid), err=FALSE)
-      if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+      SGET.shim(db, "/cancel", list(id=sessionid), err=FALSE)
+      if (release) {
+        SGET.shim(db, "/release_session", list(id=sessionid), err=FALSE)
+      }
       e$call = NULL
       stop(e)
     }, interrupt=function(e)
     {
-      SGET(db, "/cancel", list(id=sessionid), err=FALSE)
-      if (release) SGET(db, "/release_session", list(id=sessionid), err=FALSE)
+      SGET.shim(db, "/cancel", list(id=sessionid), err=FALSE)
+      if (release) {
+        SGET.shim(db, "/release_session", list(id=sessionid), err=FALSE)
+      }
       stop("cancelled")
     }, warning=invisible)
   if (DEBUG) message("Query time ", round( (proc.time() - t1)[3], 4))
   if (resp) return(list(session=sessionid, response=ans))
   sessionid
+}
+
+#' Return a SciDB query expression as a data frame
+#' @param db scidb database connection object
+#' @param query A SciDB query expression or scidb object
+#' @param ... optional extra arguments (see below)
+#' @note option extra arguments
+#' \itemize{
+#'   \item{only_attributes}{ optional logical value, TRUE if only attributes should be returned}
+#'   \item{schema}{ optional result schema string }
+#' }
+#' @keywords internal
+scidb_arrow_to_dataframe.shim = function(db, query, ...) {
+  INT64 = attr(db, "connection")$int64
+  DEBUG = getOption("scidb.debug", FALSE)
+  RESULT_SIZE_LIMIT = getOption("scidb.result_size_limit", 256)
+  AIO = getOption("scidb.aio", TRUE)
+  
+  if (inherits(db, "httpapi")) {
+    stop("scidb_arrow_to_dataframe not yet implemented for httpapi")
+  }
+  
+  if (!AIO) {
+    stop("AIO Must be TRUE for Arrow")
+  }
+  
+  args = list(...)
+  
+  # TODO: Look into this, but guarantees we have only_atts
+  lazyeval_ret = lazyeval(db, query)
+  args$only_attributes = if (is.null(args$only_attributes)) {
+    dist = lazyeval_ret$distribution
+    if(is.na(dist)) FALSE else if(dist == 'dataframe') TRUE else FALSE
+  } else {
+    args$only_attributes
+  }
+  
+  # Get the atts and dims so we can filter the results
+  if (!inherits(query, "scidb"))
+  {
+    # make a scidb object out of the query, optionally using a supplied schema to skip metadata query
+    if (is.null(args$schema)) {
+      query = if(is.na(lazyeval_ret$schema)) {
+        scidb(db, query)
+      } else {
+        scidb(db, query, schema=lazyeval_ret$schema)
+      }
+    } else {
+      query = scidb(db, query, schema=args$schema)
+    }
+  }
+  
+  attributes = schema(query, "attributes")
+  dimensions = schema(query, "dimensions")
+  query = query@name
+  
+  # Make the scidbquery
+  if (DEBUG) message("Data query ", query)
+  # if (DEBUG) message("Format ", format_string)
+  sessionid = scidbquery.shim(
+    db,
+    query,
+    save="arrow",
+    result_size_limit=RESULT_SIZE_LIMIT,
+    atts_only=ifelse(args$only_attributes, TRUE, ifelse(AIO, FALSE, TRUE)))
+  if (!is.null(attr(db, "connection")$session)) { # if session already exists
+    release = 0
+  } else { # need to get new session every time
+    release = 1;
+  }
+  if (release) {
+    on.exit(SGET.shim(db, "/release_session", list(id=sessionid), err=FALSE), 
+            add=TRUE)
+  }
+  
+  dt2 = proc.time()
+  uri = URI(db, "/read_bytes", list(id=sessionid, n=0))
+  h = new_handle()
+  handle_setheaders(h, .list=list(`Authorization`=digest_auth(db, "GET", uri)))
+  handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
+                              ssl_verifypeer=0, http_version=2))
+  resp = curl_fetch_memory(uri, h)
+  
+  if (resp$status_code > 299) stop("HTTP error", resp$status_code)
+  if (DEBUG) message("Data transfer time ", round((proc.time() - dt2)[3], 4))
+  if (DEBUG) message("Data size ", length(resp$content))
+  dt1 = proc.time()
+  
+  res <- arrow::read_ipc_stream(resp$content, as_data_frame = T)
+  if (DEBUG) message("Total R parsing time ", round( (proc.time() - dt1)[3], 4))
+  
+  # Reorganize
+  if (!args$only_attributes) {
+    res <- res[, c(dimensions$name, attributes$name)]
+  }
+  
+  return(res)
 }
 
 #' Internal function to upload an R raw value to special 1-element SciDB array
@@ -385,11 +530,14 @@ scidbquery.shim = function(db, query,
     session = attr(db, "connection")$session
     release = 0
   } else { # need to get new session every time
-    session = getSession(db)
+    session = getSession.shim(db)
     if (length(session)<1) stop("SciDB http session error")
     release = 1;
   }
-  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  if (release) {
+    on.exit(SGET.shim(db, "/release_session", list(id=session), err=FALSE), 
+            add=TRUE)
+  }
   
   bytes = .Call(C_scidb_raw, X)
   ans = .Post.shim(db, bytes, list(id=session))
@@ -445,9 +593,10 @@ scidbquery.shim = function(db, query,
     session = attr(db, "connection")$session
   } else { 
     ## need to get new session
-    session = getSession(db)
+    session = getSession.shim(db)
     if (length(session)<1) stop("SciDB http session error")
-    on.exit(SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+    on.exit(SGET.shim(db, "/release_session", list(id=session), err=FALSE),
+            add=TRUE)
   }
 
   tmp = .Post.shim(db, data, list(id=session))
@@ -535,12 +684,13 @@ scidbquery.shim = function(db, query,
     session = attr(db, "connection")$session
     release = 0
   } else { # need to get new session every time
-    session = getSession(db)
+    session = getSession.shim(db)
     if (length(session)<1) stop("SciDB http session error")
     release = 1;
   }
   if (release) {
-    on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+    on.exit(SGET.shim(db, "/release_session", list(id=session), err=FALSE), 
+            add=TRUE)
   }
   
   # Upload the data  
@@ -659,11 +809,14 @@ scidbquery.shim = function(db, query,
     session = attr(db, "connection")$session
     release = 0
   } else { # need to get new session every time
-    session = getSession(db)
+    session = getSession.shim(db)
     if (length(session)<1) stop("SciDB http session error")
     release = 1;
   }
-  if (release) on.exit( SGET(db, "/release_session", list(id=session), err=FALSE), add=TRUE)
+  if (release) {
+    on.exit(SGET.shim(db, "/release_session", list(id=session), err=FALSE), 
+            add=TRUE)
+  }
   shimcon_time = round((proc.time() - td1)[3], 4)
   
   if(is.null(D)) {
@@ -814,7 +967,7 @@ scidbquery.shim = function(db, query,
     message("[Shim session] automatically cleaning up db session ", 
             conn$session)
   }
-  SGET(conn, "/release_session", list(id=conn$session), err=FALSE)
+  SGET.shim(conn, "/release_session", list(id=conn$session), err=FALSE)
   
   ## Set the session to NULL so we don't double-release the session.
   ## Because conn is an env, this side effect should persist
