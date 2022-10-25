@@ -188,7 +188,6 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   if (!is.null(username))
   {
     attr(db, "connection")$authtype = auth_type
-    attr(db, "connection")$authenv = new.env()
     if (auth_type=="scidb")
     {
       attr(db, "connection")$protocol = "https"
@@ -474,17 +473,35 @@ getpwd = function(prompt="Password:")
 #' @noRd
 .Handshake = function(db)
 {
+  conn <- attr(db, "connection")
+  
   ## First assume the connection is for the HTTP API. Attempt to get 
   ## the server's SciDB version.
   httpapi_result <- tryCatch(
     list(db=GetServerVersion.httpapi(db)),
     error=function(err) { list(error=err) }
   )
+  
+  ## If we tried http but https is required, try again with https. 
+  ## (Note failing from http to https is safe, 
+  ##  but failing from https to http would not be safe.)
+  if (!is.null(httpapi_result[["error"]]) 
+      && httpapi_result[["error"]] == "https required"
+      && conn$protocol == "http") {
+    https_db <- db
+    attr(https_db, "connection") <- rlang::env_clone(conn)
+    attr(https_db, "connection")$protocol <- "https"
+    httpapi_result <- tryCatch(
+      list(db=GetServerVersion.httpapi(https_db)),
+      error=function(err) { list(error=err) }
+    )
+  }
   if (!is.null(httpapi_result[["db"]])) {
     ## Return the copy of db with modifications made in GetServerVersion.httpapi
+    ## (and possibly using https instead of http)
     return(httpapi_result[["db"]])
   }
-  
+
   ## That didn't work, so assume the connection is for the Shim.
   ## Attempt to get the server's SciDB version.
   shim_result <- tryCatch(
