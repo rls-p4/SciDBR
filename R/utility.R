@@ -171,18 +171,18 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
   attr(db, "connection")$username = username
   attr(db, "connection")$password = password
   
-  ## class(db) needs to be set before .Handshake(db) (notably: before URI()), 
+  ## class(db) needs to be set before Handshake(db) (notably: before URI()), 
   ## but .Handshake(db) will change it to the proper subclass
   ## for handling API calls to the server.
   class(db) <- "afl"
 
-  ## Make a handshake connection to determine which API to use.
+  ## Make a handshake with the server to determine which API to use.
   ## After this, class(db) is set to the correct subclass for communicating
   ## with the server.
-  db <- .Handshake(db)
+  db <- Handshake(db)
 
-  ## Dispatch to subclass to start a session
-  Connect(db, auth_type=auth_type)
+  ## Dispatch to subclass to start a new session
+  NewSession(db, auth_type=auth_type)
   
   ## Update available operators and macros and return afl object
   ops = iquery(
@@ -436,71 +436,3 @@ getpwd = function(prompt="Password:")
   a
 }
 
-#' Make a "handshake" connection to the server to figure out what API
-#' to use when talking to the server. When this function returns value "rv":
-#'   - attr(rv, "connection")$scidb.version will be the server version
-#'   - class(rv) will be the correct class to handle API calls
-#'   - Other fields on rv and attr(rv, "connection") will contain necessary
-#'     information for the subclass to talk to the server
-#'   - All other fields are inherited from the input argument "db".
-#' @param db a scidb database connection from \code{\link{scidbconnect}}
-#' @return db with modifications reflecting information from the handshake
-#' @noRd
-.Handshake = function(db)
-{
-  conn <- attr(db, "connection")
-  
-  ## First assume the hostname/port is for the HTTP API.
-  ## If protocol is "http" and no username is present, try it unencrypted.
-  httpapi_result <- NULL
-  if (conn$protocol == "http" && !is.present(conn$username)) {
-    httpapi_result <- tryCatch(
-      list(db=GetServerVersion.httpapi(db)),
-      error=function(err) { 
-        if (err == "https required") {
-          ## We tried HTTP, but HTTPS is required. Suppress the error,
-          ## and set httpapi_result to NULL so we try again with HTTPS below.
-          ## (Note failing from http to https is safe, 
-          ##  but failing from https to http would not be safe.)
-          NULL
-        }
-        list(error=err) 
-      }
-    )
-  }
-
-  ## If we didn't try the HTTP API yet - or if we got an "https required" 
-  ## error when we did - try the HTTP API via https.
-  if (is.null(httpapi_result)) {
-    https_db <- db
-    attr(https_db, "connection") <- rlang::env_clone(conn)
-    attr(https_db, "connection")$protocol <- "https"
-    httpapi_result <- tryCatch(
-      list(db=GetServerVersion.httpapi(https_db)),
-      error=function(err) { list(error=err) }
-    )
-  }
-  if (!is.null(httpapi_result[["db"]])) {
-    ## Return the copy of db with modifications made in GetServerVersion.httpapi
-    ## (and possibly using https instead of http)
-    return(httpapi_result[["db"]])
-  }
-
-  ## The HTTP API endpoint didn't work, so assume this server/port is for 
-  ## the Shim.
-  shim_result <- tryCatch(
-    list(db=GetServerVersion.shim(db)),
-    error=function(err) { list(error=err) }
-  )
-  if (!is.null(shim_result[["db"]])) {
-    ## Return the copy of db with modifications made in GetServerVersion.shim
-    return(shim_result[["db"]])
-  }
-  
-  ## Neither worked, so throw an error with both error messages.
-  conn <- attr(db, "connection")
-  stop("Could not connect to either httpapi or shim on ", 
-       conn$host, ":", conn$port, ".\n",
-       "  httpapi connection error: ", httpapi_result[["error"]], "\n",
-       "  shim connection error: ", shim_result[["error"]])
-}

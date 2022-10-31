@@ -421,7 +421,7 @@ run_tests_with_gc = function(db) {
   }
 }
 
-http_port = Sys.getenv("SCIDB_HTTPAPI_TEST_PORT", 
+http_port = Sys.getenv("SCIDB_HTTPAPI_PORT", 
                        Sys.getenv("SCIDB_TEST_PORT", 8239))
 message("Attempting to connect to httpapi on port ", http_port)
 start = proc.time()[["elapsed"]]
