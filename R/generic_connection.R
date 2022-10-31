@@ -30,10 +30,19 @@ GetServerVersion <- function(db)
 #' The connection will automatically close when the connection object
 #' goes out of scope.
 #' @param db scidb connection object from \code{\link{scidbconnect}}
-Connect <- function(db, ...) 
+NewSession <- function(db, ...) 
 {
-  ## Dispatch to Connect.shim or Connect.httpapi.
-  UseMethod("Connect")
+  ## Dispatch to NewSession.shim or NewSession.httpapi.
+  UseMethod("NewSession")
+}
+
+#' Make sure that we are connected to an active session in httpapi or shim,
+#' creating a a session if we don't have one already.
+#' @param db scidb connection object from \code{\link{scidbconnect}}
+EnsureSession <- function(db, ...)
+{
+  ## Dispatch to EnsureSession.shim or EnsureSession.httpapi.
+  UseMethod("EnsureSession")
 }
 
 #' If a session's authentication cookie times out, call this function to

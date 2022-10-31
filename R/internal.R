@@ -1,15 +1,92 @@
 # Non-exported utility functions
 
 ## Helper functions
-`%||%` <- function(a, b) { if (length(a) > 0 && !is.na(a)) a else b }
 is.present <- function(a) { length(a) > 0 }
-has.chars <- function(a) { length(a) > 0 && any(nzchar(a[!is.na(a)])) }
+has.chars <- function(a) { is.present(a) && any(nzchar(a[!is.na(a)])) }
+`%||%` <- function(a, b) { if (is.present(a)) a else b }
 first <- function(a) { if (length(a) > 0) a[[1]] else NULL }
-only <- function(a)
-{
-  stopifnot(length(a) == 1) 
+only <- function(a) {
+  if (length(a) == 1) a[[1]] else stop("Expected 1 item, got ", length(a))
+}
 
-  a[[1]]
+## To enable debug printing: options(scidb.debug=TRUE)
+is.debug <- function() { as.logical(getOption("scidb.debug", FALSE)) }
+## To enable trace printing, use either: options(scidb.debug=2)
+##  or: options(scidb.debug=TRUE, scidb.trace=TRUE)
+is.trace <- function() {
+  getOption("scidb.trace", getOption("scidb.debug", 0) >= 2)
+}
+msg.debug <- function(...) { if (is.debug()) message("[SciDBR] ", ...) }
+msg.trace <- function(...) { if (is.trace()) message("[SciDBR] ", ...) }
+
+
+#' Make a "handshake" with the server to figure out which API to use.
+#' When this function returns value "rv":
+#'   - attr(rv, "connection")$scidb.version will be the server version
+#'   - class(rv) will be the correct class to handle API calls
+#'   - Other fields on rv and attr(rv, "connection") will contain necessary
+#'     information for the subclass to talk to the server
+#'   - All other fields are inherited from the input argument "db".
+#' @param db a scidb database connection from \code{\link{scidbconnect}}
+#' @return db with modifications reflecting information from the handshake
+#' @noRd
+Handshake = function(db)
+{
+  conn <- attr(db, "connection")
+  
+  ## First assume the hostname/port is for the HTTP API.
+  ## If protocol is "http" and no username is present, try it unencrypted.
+  httpapi_result <- NULL
+  if (conn$protocol == "http" && !is.present(conn$username)) {
+    httpapi_result <- tryCatch(
+      list(db=GetServerVersion.httpapi(db)),
+      error=function(err) { 
+        if (length(err) == 1 && err[[1]] == "https required") {
+          ## We tried HTTP, but HTTPS is required. Suppress the error,
+          ## and set httpapi_result to NULL so we try again with HTTPS below.
+          ## (Note failing from http to https is safe, 
+          ##  but failing from https to http would not be safe.)
+          NULL
+        }
+        list(error=err) 
+      }
+    )
+  }
+  
+  ## If we didn't try the HTTP API yet - or if we got an "https required" 
+  ## error when we did - try the HTTP API via https.
+  if (is.null(httpapi_result)) {
+    https_db <- db
+    attr(https_db, "connection") <- rlang::env_clone(conn)
+    attr(https_db, "connection")$protocol <- "https"
+    httpapi_result <- tryCatch(
+      list(db=GetServerVersion.httpapi(https_db)),
+      error=function(err) { list(error=err) }
+    )
+  }
+  if (!is.null(httpapi_result[["db"]])) {
+    ## Return the copy of db with modifications made in GetServerVersion.httpapi
+    ## (and possibly using https instead of http)
+    return(httpapi_result[["db"]])
+  }
+  
+  ## The HTTP API endpoint didn't work, so assume this server/port is for 
+  ## the Shim.
+  shim_result <- tryCatch(
+    list(db=GetServerVersion.shim(db)),
+    error=function(err) { list(error=err) }
+  )
+  if (!is.null(shim_result[["db"]])) {
+    ## Return the copy of db with modifications made in GetServerVersion.shim
+    return(shim_result[["db"]])
+  }
+  
+  ## Neither worked, so throw an error with both error messages.
+  conn <- attr(db, "connection")
+  stop("Could not connect to either httpapi or shim on ", 
+       conn$host, ":", conn$port, ".\n",
+       "  httpapi connection error: ", httpapi_result[["error"]], "\n",
+       "  shim connection error: ", shim_result[["error"]])
 }
 
 #' Unpack and return a SciDB query expression as a data frame
@@ -33,6 +110,7 @@ only <- function(a)
 #'    handle_setform form_file
 #' @importFrom data.table  data.table
 #' @import bit64
+#' @noRd
 scidb_unpack_to_dataframe = function(db, query, binary=TRUE, buffer=NULL, 
                                      only_attributes=NULL, schema=NULL, 
                                      buffer_size=NULL, ...)
@@ -52,6 +130,7 @@ scidb_unpack_to_dataframe = function(db, query, binary=TRUE, buffer=NULL,
 #' @param db_or_conn a scidb database connection object,
 #'    _or_ a connection env 
 #' @return a connection env
+#' @noRd
 .GetConnectionEnv = function(db_or_conn)
 {
   if (inherits(db_or_conn, "afl")) {
@@ -67,6 +146,7 @@ scidb_unpack_to_dataframe = function(db, query, binary=TRUE, buffer=NULL,
 #' return the query string.
 #' @param query_or_scidb a query string, _or_ an object of class "scidb"
 #' @return a query string
+#' @noRd
 .GetQueryString = function(query_or_scidb)
 {
   if (inherits(query_or_scidb, "scidb")) {
@@ -146,6 +226,7 @@ get_setting_items_str = function(db, settings, sep=',') {
 #'               (requires scidb >= 14.8)
 #' @return A \code{scidb} array object
 #' @note Only AFL supported.
+#' @noRd
 `.scidbeval` = function(db, expr, eval=FALSE, name, gc, depend, schema, temp)
 {
   ans = c()
@@ -258,6 +339,7 @@ URI.default = function(db_or_conn, resource="", args=list())
 #' @param version a version string
 #' @return the version string with alphabetic characters removed, and
 #'   the string trimmed to just the major and minor version
+#' @noRd
 ParseVersion <- function(version)
 {
   v <- strsplit(gsub("[A-z\\-]", "", gsub("-.*", "", version)), "\\.")[[1]]
@@ -275,6 +357,7 @@ ParseVersion <- function(version)
 #' @param use_int64 if true, use the `integer64` package for large numbers; 
 #'    if false, estimate large numbers with a float (loses precision) 
 #' @return a data frame
+#' @noRd
 .Binary2df = function(data, cols, buffer_size=NULL, use_int64=TRUE)
 {
   DEBUG = getOption("scidb.debug", FALSE)
@@ -365,6 +448,7 @@ ParseVersion <- function(version)
 #' @param ... remaining arguments are passed to read.table()
 #' @return a data frame
 #' @seealso read.table()
+#' @noRd
 .Csv2df <- function(csvdata, ...)
 {
   # Handle escaped quotes
@@ -393,6 +477,7 @@ ParseVersion <- function(version)
 #' @param attributes the schema's attributes (a dataframe with `name`, `type`)
 #' @param dimensions the schema's dimensions (a dataframe with `name`)
 #' @return an empty data frame with columns for the dimensions and attributes
+#' @noRd
 .Schema2EmptyDf <- function(attributes, dimensions=NULL)
 {
   xa = attributes$name
@@ -460,6 +545,7 @@ noE = function(w) sapply(w,
 #' @param x version string like "12.1", "15.12", etc. (non-numeric ignored)
 #' @param y version string like "12.1", "15.12", etc. (non-numeric ignored)
 #' @return logical TRUE if x is greater than or equal to y
+#' @noRd
 at_least = function(x, y)
 {
   b = as.numeric(gsub("-.*", "", gsub("[A-z].*", "", strsplit(sprintf("%s.0", x), "\\.")[[1]])))
@@ -496,6 +582,7 @@ lazyeval = function(db, name)
 #' return a character value when \code{file=return}.
 #' @importFrom utils write.table
 #' @keywords internal
+#' @noRd
 .TsvWrite = function(x, file=stdout(), sep="\t", sprintf_template=NULL)
 {
   if (is.null(sprintf_template)) {
@@ -551,6 +638,7 @@ lazyeval = function(db, name)
 #'                      operator back to their expected attribute names,
 #'                      and also does any post-load processing to convert the
 #'                      values into the proper SciDB types.
+#' @noRd
 .PreprocessDfTypes = function(X, types=NULL, use_aio=FALSE)
 {
   stopifnot(ncol(X) > 0)

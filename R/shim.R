@@ -23,9 +23,9 @@ GetServerVersion.shim <- function(db)
   return(db)
 }
 
-#' @see Connect()
+#' @see NewSession()
 #' @noRd
-Connect.shim <- function(db, auth_type=NULL)
+NewSession.shim <- function(db, auth_type=NULL)
 {
   ## Check for login using either scidb or HTTP digest authentication
   conn = attr(db, "connection")
@@ -70,6 +70,14 @@ Connect.shim <- function(db, auth_type=NULL)
 
   ## We don't need to return db because the only object we have modified
   ## is attr(db, "connection") which is an env (pass-by-reference).
+}
+
+EnsureSession.shim <- function(db_or_conn, ...)
+{
+  conn = attr(db, "connection")
+  if (is.null(conn) || is.null(conn$session) || is.null(conn$id)) {
+    NewSession.shim(db_or_conn)
+  }
 }
 
 Reauthenticate.shim <- function(db, password, defer=FALSE)
@@ -355,6 +363,8 @@ SGET.shim = function(db_or_conn, resource, args=list(), err=TRUE, binary=FALSE)
 
 URI.shim = function(db_or_conn, resource="", args=list())
 {
+  conn <- .GetConnectionEnv(db_or_conn)
+
   ## For the shim, we need to pass authentication and admin settings
   ## in the URL parameters.
   if (!is.null(conn$auth)) args = c(args, list(auth=conn$auth))
