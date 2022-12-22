@@ -116,13 +116,13 @@ scidb_unpack_to_dataframe = function(db, query, binary=TRUE, buffer=NULL,
                                      buffer_size=NULL, ...)
 {
   return(
-    BinaryQuery(db, 
-                query,
-                binary=binary, 
-                buffer_size=if (is.null(buffer_size)) buffer else buffer_size, 
-                only_attributes=only_attributes, 
-                schema=schema,
-                ...))
+    Query(db, 
+          query,
+          binary=binary, 
+          buffer_size=if (is.null(buffer_size)) buffer else buffer_size, 
+          only_attributes=only_attributes, 
+          schema=schema,
+          ...))
 }
 
 #' Given _either_ a scidb database connection object _or_ 
@@ -443,34 +443,106 @@ ParseVersion <- function(version)
   return(ans)
 }
 
+#' Decode Apache Arrow-encoded data into a data frame
+#' @param arrow_data the Arrow-encoded data
+#' @noRd
+.Arrow2df <- function(arrow_data)
+{
+  return(arrow::read_ipc_stream(arrow_data, as_data_frame=TRUE))
+}
+
+.mapNullToNA <- function(textdata)
+{
+  # Map SciDB missing (aka null) to NA, but preserve DEFAULT null.
+  # This sucky parsing is not a problem for binary transfers.
+  textdata = gsub("DEFAULT null", "@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", 
+                  textdata, perl=TRUE)
+  textdata = gsub("null", "NA", 
+                  textdata, perl=TRUE)
+  textdata = gsub("@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", "DEFAULT null", 
+                  textdata, perl=TRUE)
+  return(textdata)
+}
+
 #' Parse CSV-formatted data into a data frame
 #' @param csvdata the CSV-formatted string
+#' @param header TRUE iff the first line of the CSV data is a header line
 #' @param ... remaining arguments are passed to read.table()
 #' @return a data frame
 #' @seealso read.table()
 #' @noRd
-.Csv2df <- function(csvdata, ...)
+.Csv2df <- function(csvdata, header=TRUE, ...)
 {
   # Handle escaped quotes
   csvdata = gsub("\\\\'", "''", csvdata, perl=TRUE)
   csvdata = gsub("\\\\\"", "''", csvdata, perl=TRUE)
-  # Map SciDB missing (aka null) to NA, but preserve DEFAULT null.
-  # This sucky parsing is not a problem for binary transfers.
-  csvdata = gsub("DEFAULT null", "@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", csvdata, perl=TRUE)
-  csvdata = gsub("null", "NA", csvdata, perl=TRUE)
-  csvdata = gsub("@#@#@#kjlkjlkj@#@#@555namnsaqnmnqqqo", "DEFAULT null", csvdata, perl=TRUE)
+  csvdata = .mapNullToNA(csvdata)
+  
   val = textConnection(csvdata)
   on.exit(close(val), add=TRUE)
   ret = c()
   if (length(val) > 0)
   {
-    args = list(file=val, ..., sep=",", stringsAsFactors=FALSE, header=TRUE)
+    args = list(file=val, 
+                ..., 
+                sep=",", 
+                stringsAsFactors=FALSE, 
+                header=header)
     args$only_attributes = NULL
     args = args[! duplicated(names(args))]
     ret = tryCatch(do.call("read.table", args=args),
-                   error = function(e) stop("Query result parsing error ", as.character(e)))
+                   error = function(e) {
+                     stop("Query result parsing error ", as.character(e))
+                   })
   }
   return(ret)
+}
+
+#' Parse TSV-formatted data into a data frame
+#' @param tsvdata the TSV-formatted string
+#' @param header TRUE iff the first line of the TSV data is a header line
+#' @param ... remaining arguments are passed to read.delim()
+#' @return a data frame
+#' @seealso read.table()
+#' @noRd
+.Tsv2df <- function(tsvdata, header=TRUE, ...)
+{
+  tsvdata = .mapNullToNA(tsvdata)
+  
+  val = textConnection(tsvdata)
+  on.exit(close(val), add=TRUE)
+  ret = c()
+  if (length(val) > 0)
+  {
+    args = list(file=val, 
+                ..., 
+                quote="",
+                sep="\t",
+                stringsAsFactors=FALSE, 
+                header=header)
+    args$only_attributes = NULL
+    args = args[! duplicated(names(args))]
+    ret = tryCatch(do.call("read.delim", args=args),
+                   error = function(e) {
+                     stop("Query result parsing error ", as.character(e))
+                   })
+  }
+  return(ret)
+}
+
+.Text2df <- function(textdata, format, ...)
+{
+  if (startsWith(format, "aio_")) {
+    format <- substring(format, 5)
+  }
+  header <- grepl(":.*l", format, perl=TRUE)
+  if (startsWith(format, "csv")) {
+    return(.Csv2df(textdata, header=header, ...))
+  }
+  if (startsWith(format, "tsv") || startsWith(format, "tdv")) {
+    return(.Tsv2df(textdata, header=header, ...))
+  }
+  stop("Unknown text format '", format, "'")
 }
 
 #' Given a schema, return an empty dataframe for that schema.

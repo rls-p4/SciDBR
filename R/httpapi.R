@@ -131,35 +131,99 @@ Close.httpapi <- function(db)
   .CloseSession.httpapi(attr(db, "connection"))
 }
 
-#' @see Execute()
-#' @noRd
-Execute.httpapi <- function(db, query_or_scidb, ...)
-{
-  Query.httpapi(db, query_or_scidb, 
-                `return`=FALSE, binary=FALSE, arrow=FALSE,
-                ...)
-  invisible()
-}
-
 #' @see iquery()
 #' @noRd
 Query.httpapi <- function(db, query_or_scidb, 
                           `return`=FALSE,
                           binary=TRUE,
                           arrow=FALSE,
-                          format="csv+:l",
                           ...)
 {
-  ## TODO: Currently ignoring `arrow` argument, waiting for SDB-7821
-
-  ## For backward compatibility: defer to BinaryQuery if binary==TRUE
-  if (binary) {
-    return(scidb_unpack_to_dataframe(db, query_or_scidb, ...))
+  if (!`return`) {
+    Execute.httpapi(db, query_or_scidb, ...)
+    return(invisible(NULL))
   }
-  
+  if (binary || arrow) {
+    return(BinaryQuery.httpapi(db,
+                               query_or_scidb,
+                               arrow=arrow,
+                               ...))
+  }
+  return(TextQuery.httpapi(db, query_or_scidb, ...))
+}
+
+#' @see Execute()
+#' @noRd
+Execute.httpapi <- function(db, query_or_scidb, ...)
+{
   EnsureSession.httpapi(db, reconnect=FALSE)
   conn <- attr(db, "connection")
   query <- .GetQueryString(query_or_scidb)
+  
+  ## Start a new query
+  ## Even though there is nothing to return, we still use the paged workflow
+  ## because it allows us to cancel the query by issuing a DELETE request
+  ## before it completes. This can change once SDB-7403 is addressed.
+  msg.trace("Execute query (", format, "): ", query)
+  timings <- c(start=proc.time()[["elapsed"]])
+  http_query <- New.httpquery(conn, query, options=list(format=format))
+  timings <- c(timings, prepare=proc.time()[["elapsed"]])
+  
+  on.exit(
+    suspendInterrupts(
+      tryCatch(Close.httpquery(http_query),
+               error=function (err) {
+                 warning("[SciDBR] Error while closing query ", http_query$id, 
+                         "(ignored): ", err)
+               })),
+    add=TRUE)
+  
+  if (http_query$is_selective) {
+    first_operator <- strsplit(query_or_scidb, "(", fixed=TRUE)[[1]]
+    stop("The AFL query '", first_operator, "(...)' returns data, ",
+         "so it should be executed using Query.httpapi() with return=TRUE")
+  }
+  
+  ## Fetch the first (and only) page from the query.
+  ## We must do this even though the page won't contain any data, because
+  ## any DDL action only gets committed if the query is fetched to completion.
+  ## If there is an error, the on.exit() above will close the query,
+  ## and the error will be propagated to the caller.
+  empty_page <- Next.httpquery(http_query)
+  timings <- c(timings, fetch=proc.time()[["elapsed"]])
+  
+  .ReportTimings(paste0("Timings for query ", http_query$id, ":"), 
+                 timings)
+  
+  return(invisible(NULL))
+}
+
+TextQuery.httpapi <- function(db, query_or_scidb, 
+                              format=NULL,
+                              use_aio=NULL,
+                              only_attributes=NULL,
+                              ...)
+{
+  use_aio <- use_aio %||% getOption("scidb.aio", FALSE)
+  only_attributes <- only_attributes %||% FALSE
+  if (!has.chars(format)) {
+    format <- if (use_aio) "tdv" else "csv+:l"
+  }
+  if (use_aio && !startsWith(format, "aio_")) {
+    format <- paste0("aio_", format)
+  }
+
+  EnsureSession.httpapi(db, reconnect=FALSE)
+  conn <- attr(db, "connection")
+  query <- .GetQueryString(query_or_scidb)
+  
+  if (use_aio && !only_attributes) {
+    ## The HTTP API doesn't let us pass the "atts_only" parameter to
+    ## aio_save, so instead we'll use flatten() to turn dims into attrs.
+    ## An added advantage of this is that flatten() returns dims followed
+    ## by attributes, so we won't need to permute columns after reading.
+    query <- sprintf("flatten(%s)", query)
+  }
   
   ## Start a new query
   msg.trace("Text query (", format, "): ", query)
@@ -175,21 +239,22 @@ Query.httpapi <- function(db, query_or_scidb,
                error=function (err) {
                  warning("[SciDBR] Error while closing query ", http_query$id, 
                          "(ignored): ", err)
-               })))
-  
-  ## TODO: In the future, once we have confirmed that all application code uses
-  ## `return` in the expected way (i.e. nobody sets return=FALSE to ignore data 
-  ## from a selective query), we can deprecate the `return` argument, ignore it,
-  ## and just use is_selective instead.
-  if (`return` == FALSE && http_query$is_selective) {
-    stop("`return` argument must be TRUE for a selective query")
-  }
-  if (`return` == TRUE && !http_query$is_selective) {
-    stop("`return` argument must be FALSE for a DDL or update query")
+               })),
+    add=TRUE)
+
+  ## If this stop() triggers, it means someone called Query(`return`=TRUE)
+  ## with a non-selective query (using a DDL or updating operator).
+  ## For now, we stop() so callers must use the `return` parameter correctly,
+  ## but in the future we could disable this check - in which case the function
+  ## would just return NULL if the query was non-selective.
+  if (!http_query$is_selective) {
+    first_operator <- strsplit(query_or_scidb, "(", fixed=TRUE)[[1]]
+    stop("The AFL query '", first_operator, "(...)' does not return data, ",
+         "so it should be executed using Query.httpapi() with return=FALSE")
   }
   
   ## Fetch the first (and only) page from the query.
-  ## We must do this even if return==FALSE, because any DDL action only 
+  ## We must do this even if it was, because any DDL action only 
   ## gets committed if the query is fetched to completion.
   ## If there is an error, the on.exit() above will close the query,
   ## and the error will be propagated to the caller.
@@ -197,9 +262,9 @@ Query.httpapi <- function(db, query_or_scidb,
   timings <- c(timings, fetch=proc.time()[["elapsed"]])
   
   df <- NULL
-  if (`return` && http_query$is_selective && !is.null(raw_page)) {
-    ## Convert the CSV data to an R dataframe
-    df <- .Csv2df(rawToChar(raw_page))
+  if (http_query$is_selective && !is.null(raw_page)) {
+    ## Convert the text data to an R dataframe
+    df <- .Text2df(rawToChar(raw_page), format=format)
     timings <- c(timings, parse_csv=proc.time()[["elapsed"]])
   }
   
@@ -214,7 +279,8 @@ Query.httpapi <- function(db, query_or_scidb,
 #' @noRd
 BinaryQuery.httpapi <- function(db,
                                 query_or_scidb, 
-                                binary=TRUE, 
+                                arrow=FALSE,
+                                use_aio=NULL,
                                 buffer_size=NULL,
                                 only_attributes=NULL, 
                                 schema=NULL,
@@ -228,15 +294,9 @@ BinaryQuery.httpapi <- function(db,
   ## implemented using separate functions rather than trying to combine the
   ## different behaviors into a single function.
   
-  ## For backward compatibility: defer to Query.httpapi if binary==FALSE
-  binary <- if (is.null(binary)) TRUE else binary
-  if (!binary) {
-    return(Query.httpapi(db, query_or_scidb, 
-                        binary=FALSE, `return`=TRUE, arrow=FALSE))
-  }
-  
   only_attributes <- only_attributes %||% FALSE
-  
+  use_aio <- arrow || (use_aio %||% getOption("scidb.aio", FALSE))
+
   EnsureSession.httpapi(db, reconnect=FALSE)
   conn <- attr(db, "connection")
   query <- .GetQueryString(query_or_scidb)
@@ -244,8 +304,28 @@ BinaryQuery.httpapi <- function(db,
   use_int64 <- conn$int64
   result_size_limit_mb <- getOption("scidb.result_size_limit", 256)
   result_size_limit_bytes <- result_size_limit_mb * 1000000
-  format <- if (only_attributes) "binary" else "binary+"
-
+  
+  format <- if (arrow) {
+              "arrow"
+            } else if (only_attributes || use_aio) {
+              "binary"
+            } else {
+              ## binary+ is not supported by aio_save; instead we use the
+              ## "flatten" hack below with format="binary"
+              "binary+"
+            }
+  if (use_aio && !startsWith(format, "aio_")) {
+    format <- paste0("aio_", format)
+  }
+  
+  if (use_aio && !only_attributes) {
+    ## The HTTP API doesn't let us pass the "atts_only" parameter to
+    ## aio_save, so instead we'll use flatten() to turn dims into attrs.
+    ## An added advantage of this is that flatten() returns dims followed
+    ## by attributes, so we won't need to permute columns after reading.
+    query <- sprintf("flatten(%s)", query)
+  }
+  
   ## Start a new query
   msg.trace("Data query (format=", format, "): ", query)
   timings <- c(start=proc.time()[["elapsed"]])
@@ -262,7 +342,8 @@ BinaryQuery.httpapi <- function(db,
                error=function (err) {
                  warning("[SciDBR] Error while closing query ", http_query$id, 
                          "(ignored): ", err)
-               })))
+               })),
+    add=TRUE)
   
   ## These are the columns we expect to be encoded in the response:
   ## dimensions (if requested), followed by attributes
@@ -314,7 +395,11 @@ BinaryQuery.httpapi <- function(db,
     }
 
     ## Convert the binary data to a dataframe, and add it to the answer
-    page_df <- .Binary2df(raw_page, cols, buffer_size, use_int64)
+    if (arrow) {
+      page_df <- .Arrow2df(raw_page)
+    } else {
+      page_df <- .Binary2df(raw_page, cols, buffer_size, use_int64)
+    }
 
     ## Special legacy behavior for "binary" datatype: 
     ## if any column has type "binary", don't return a dataframe; 
@@ -1250,7 +1335,9 @@ Next.httpquery <- function(query)
     ## Caller asked for a temp array instead of a SciDB versioned array
     if (!has.chars(schema)) stop("Temp array requested, but no schema provided")
     create_temp_array(db, desc@array_name, schema)
-    on.exit(if (!success) {Execute(db, sprintf("remove(%s)", desc@array_name))},
+    on.exit(if (!success) {
+              Execute(db, sprintf("remove(%s)", desc@array_name))
+            },
             add=TRUE)
   }
 

@@ -122,7 +122,7 @@ Query.shim = function(db, query_or_scidb,
   
   if (`return`) {
     if (arrow) return(scidb_arrow_to_dataframe.shim(db, query, ...))
-    if (binary) return(scidb_unpack_to_dataframe(db, query, ...))
+    if (binary) return(BinaryQuery.shim(db, query, ...))
     
     ans = tryCatch(
       {
