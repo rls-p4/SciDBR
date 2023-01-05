@@ -559,6 +559,7 @@ Upload.httpapi <- function(db, payload,
                            dim_chunk_sizes=NULL,
                            ## Legacy arguments (deprecated)
                            attr=NULL,       # -> attr_names
+                           types=NULL,      # -> attr_types
                            type=NULL,       # -> attr_types
                            start=NULL,      # -> dim_start_coordinates
                            chunk_size=NULL, # -> dim_chunk_sizes
@@ -587,7 +588,7 @@ Upload.httpapi <- function(db, payload,
   ## it's important to set missing values to NULL (instead of a non-null
   ## empty vector).
   desc@attr_names <- as.character(attr_names %||% attr) %||% NULL
-  desc@attr_types <- as.character(attr_types %||% type) %||% NULL
+  desc@attr_types <- as.character(attr_types %||% types %||% type) %||% NULL
   desc@dim_names <- as.character(dim_names) %||% NULL
   desc@dim_start_coordinates <- as.numeric(dim_start_coordinates 
                                            %||% start) %||% NULL
