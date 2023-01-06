@@ -164,9 +164,9 @@ Execute.httpapi <- function(db, query_or_scidb, ...)
   ## Even though there is nothing to return, we still use the paged workflow
   ## because it allows us to cancel the query by issuing a DELETE request
   ## before it completes. This can change once SDB-7403 is addressed.
-  msg.trace("Execute query (", format, "): ", query)
+  msg.trace("Execute query: ", query)
   timings <- c(start=proc.time()[["elapsed"]])
-  http_query <- New.httpquery(conn, query, options=list(format=format))
+  http_query <- New.httpquery(conn, query)
   timings <- c(timings, prepare=proc.time()[["elapsed"]])
   
   on.exit(
