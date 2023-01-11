@@ -62,7 +62,8 @@ NewSession.httpapi <- function(db_or_conn, ...)
 {
   conn <- .GetConnectionEnv(db_or_conn)
   if (is.null(conn)) stop("no connection environment")
-  msg.trace("NewSession.httpapi(", jsonlite::toJSON(as.list(conn)), ")")
+  msg.trace("NewSession.httpapi(",
+            jsonlite::toJSON(as.list.environment(conn)), ")")
   
   if (!at_least(conn$scidb.version, 22.6)) {
     stop("HTTP API is only supported for SciDB server version 22.6 and later;",
