@@ -62,6 +62,7 @@ NewSession.httpapi <- function(db_or_conn, ...)
 {
   conn <- .GetConnectionEnv(db_or_conn)
   if (is.null(conn)) stop("no connection environment")
+  msg.trace("NewSession.httpapi(", jsonlite::toJSON(as.list(conn)), ")")
   
   if (!at_least(conn$scidb.version, 22.6)) {
     stop("HTTP API is only supported for SciDB server version 22.6 and later;",
@@ -91,6 +92,8 @@ NewSession.httpapi <- function(db_or_conn, ...)
   ## Register the session to be closed when the connection env
   ## gets garbage-collected.
   reg.finalizer(conn, .CloseSession.httpapi, onexit=TRUE)
+
+  msg.trace("NewSession.httpapi() created session id ", sid)
   
   ## We don't need to return db or conn because the only object we have modified
   ## is the connection env which is pass-by-reference.
@@ -164,7 +167,8 @@ Execute.httpapi <- function(db, query_or_scidb, ...)
   ## Even though there is nothing to return, we still use the paged workflow
   ## because it allows us to cancel the query by issuing a DELETE request
   ## before it completes. This can change once SDB-7403 is addressed.
-  msg.trace("Execute query: ", query)
+  msg.trace("Execute.httpapi(\"", query, "\"",
+            ", args=", jsonlite::toJSON(list(...)), ")")
   timings <- c(start=proc.time()[["elapsed"]])
   http_query <- New.httpquery(conn, query)
   timings <- c(timings, prepare=proc.time()[["elapsed"]])
@@ -226,7 +230,10 @@ TextQuery.httpapi <- function(db, query_or_scidb,
   }
   
   ## Start a new query
-  msg.trace("Text query (", format, "): ", query)
+  msg.trace("TextQuery.httpapi(\"", query, "\"",
+            ", format=", format, ", use_aio=", use_aio,
+            ", only_attributes=", only_attributes,
+            ", args=", jsonlite::toJSON(list(...)), ")")
   timings <- c(start=proc.time()[["elapsed"]])
   http_query <- New.httpquery(conn, query, options=list(format=format))
   timings <- c(timings, prepare=proc.time()[["elapsed"]])
@@ -327,7 +334,14 @@ BinaryQuery.httpapi <- function(db,
   }
   
   ## Start a new query
-  msg.trace("Data query (format=", format, "): ", query)
+  msg.trace("BinaryQuery.httpapi(\"", query, "\"",
+            ", format=", format, ", use_aio=", use_aio,
+            ", buffer_size=", buffer_size,
+            ", only_attributes=", only_attributes,
+            ", schema=", schema,
+            ", page_size=", page_size,
+            ", npages=", npages,
+            ", args=", jsonlite::toJSON(list(...)), ")")
   timings <- c(start=proc.time()[["elapsed"]])
   http_query <- New.httpquery(conn, query, 
                               options=list(format=format, 
@@ -498,6 +512,14 @@ setClass("UploadDesc",
            dim_chunk_sizes="NumericOrNull"
          ))
 
+## Define as.list(UploadDesc) to assist with printing and debugging
+as.list.UploadDesc <- function(desc)
+{
+  return(mapply(function(x) {slot(desc,x)},
+                slotNames("UploadDesc"),
+                SIMPLIFY=FALSE))
+}
+
 .Attrs.UploadDesc <- function(desc, default_names=NULL, default_types=NULL)
 {
   stopifnot(class(desc) == "UploadDesc")
@@ -594,7 +616,14 @@ Upload.httpapi <- function(db, payload,
   desc@dim_start_coordinates <- as.numeric(dim_start_coordinates 
                                            %||% start) %||% NULL
   desc@dim_chunk_sizes <- as.numeric(dim_chunk_sizes %||% chunk_size) %||% NULL
-  
+
+  msg.trace("Upload.httpapi(",
+            "class(payload)=", paste(class(payload), collapse=","),
+            ", name=", name,
+            ", UploadDesc=", jsonlite::toJSON(as.list(desc)),
+            ", gc=", gc, ", temp=", temp,
+            ", args=", jsonlite::toJSON(list(...)), ")")
+            
   if (inherits(payload, "raw")) {
     .UploadRaw.httpapi(db, payload, desc, ...)
   } else if (inherits(payload, "data.frame")) {
