@@ -84,7 +84,6 @@ NULL
 # Maximum vector size while being posted/uploaded via as.scidb(). 
 # This will enable loading vectors of long length.
   options(scidb.max_byte_size=500*(10^6)) # 500 MB
-  
 }
 
 # Reset the various package options

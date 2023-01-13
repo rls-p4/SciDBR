@@ -19,7 +19,6 @@
   cat("\n")
 }
 
-
 .aflstr = function(object)
 {
   conn = attr(object, "connection")
@@ -174,3 +173,18 @@ setMethod("%as%", signature(x="scidb", y="ANY"),
   a = as.character(as.list(match.call())[[3]])
   attributes(x)$meta$db$project(x, a)
 }
+
+## #' Encode a \code{scidb} object as a JSON string
+## #' @importFrom jsonlite toJSON
+## #' @param x a \code{scidb} object
+## #' @return a string representing the object in JSON form.
+## #'   The JSON format should not be relied on and is subject to change in the future.
+## toJSON.scidb = function(obj)
+## {
+##   struct <- list(name=obj@name,
+##                  schema=list(dimensions=schema(obj, "dimensions"),
+##                              attributes=schema(obj, "attributes")))
+##   return(jsonlite::toJSON(struct))
+## }
+
+## setMethod("toJSON", signature(x="scidb"), function(x) .scidb2Json(x))
