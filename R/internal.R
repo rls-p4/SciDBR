@@ -9,17 +9,6 @@ only <- function(a) {
   if (length(a) == 1) a[[1]] else stop("Expected 1 item, got ", length(a))
 }
 
-## To enable debug printing: options(scidb.debug=TRUE)
-is.debug <- function() { as.logical(getOption("scidb.debug", FALSE)) }
-## To enable trace printing, use either: options(scidb.debug=2)
-##  or: options(scidb.debug=TRUE, scidb.trace=TRUE)
-is.trace <- function() {
-  getOption("scidb.trace", getOption("scidb.debug", 0) >= 2)
-}
-msg.debug <- function(...) { if (is.debug()) message("[SciDBR] ", ...) }
-msg.trace <- function(...) { if (is.trace()) message("[SciDBR] ", ...) }
-
-
 #' Make a "handshake" with the server to figure out which API to use.
 #' When this function returns value "rv":
 #'   - attr(rv, "connection")$scidb.version will be the server version

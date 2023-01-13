@@ -158,11 +158,20 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
                         int64=FALSE,
                         doc)
 {
+  auth_type = match.arg(auth_type)
+  protocol = match.arg(protocol)
+  trace <- .TraceEnter("scidbconnect",
+                       host=host, port=port, username=username,
+                       # skip password
+                       auth_type=auth_type, protocol=protocol,
+                       admin=admin, int64=int64
+                       # skip doc
+                       )
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
 # Set up a db object
   db = list()
   attr(db, "connection") = new.env()
-  auth_type = match.arg(auth_type)
-  protocol = match.arg(protocol)
   attr(db, "connection")$host = host
   attr(db, "connection")$port = port
   attr(db, "connection")$protocol = protocol
@@ -183,7 +192,7 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 
   ## Dispatch to subclass to start a new session
   NewSession(db, auth_type=auth_type)
-  
+
   ## Update available operators and macros and return afl object
   ops = iquery(
     db, 
@@ -248,6 +257,14 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 #' @export
 iquery = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
 {
+  message("starting iquery!!!")
+  trace <- .TraceEnter("iquery",
+                       query=.Condense(query),
+                       `return`=`return`,
+                       binary=binary, arrow=arrow, ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
+  message("in iquery!!!")
   ## dispatch to Query.shim or Query.httpapi
   Query(db, query, `return`, binary, arrow, ...)
 }
@@ -305,6 +322,11 @@ as.scidb = function(db, x,
     gc = temp_array
   }
 
+  trace <- .TraceEnter("as.scidb",
+                       `class(x)`=class(x), x=x,
+                       name=name, start=start, gc=gc, ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+  
   X = Upload(db, x, name=name, start=start, gc=gc, ...)
   
   if (temp_array) {
@@ -370,8 +392,13 @@ as.scidb = function(db, x,
 #' @export
 as.R = function(x, only_attributes=FALSE, binary=TRUE)
 {
+  trace <- .TraceEnter("as.R", x=x,
+                       only_attributes=only_attributes, binary=binary)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+  
   stopifnot(inherits(x, "scidb"))
   if (is.null(schema(x, "dimensions"))) only_attributes = TRUE
+  
   if (only_attributes) return(scidb_unpack_to_dataframe(x@meta$db, x, only_attributes=TRUE))
   scidb_unpack_to_dataframe(x@meta$db, x, binary=binary)
 }
@@ -408,6 +435,9 @@ as.R.array = function(x)
 #' @export
 scidb_prefix = function(db, expression=NULL)
 {
+  trace <- .TraceEnter("scidb_prefix", expression=expression)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+  
   stopifnot(inherits(db, "afl"))
   e = as.list(attributes(db)$connection)
   ans = list()
@@ -415,6 +445,7 @@ scidb_prefix = function(db, expression=NULL)
   attr(ans, "connection") = as.environment(e)
   if (is.null(expression)) attributes(ans)$connection$prefix = c()
   else attributes(ans)$connection$prefix = expression
+
   if (is.null(ans$connection$doc))
     return(update.afl(ans, attributes(ans)$connection$ops))
   update.afl(ans, attributes(ans)$connection$ops, attributes(ans)$connection$doc)
@@ -435,4 +466,3 @@ getpwd = function(prompt="Password:")
   cat("\n")
   a
 }
-

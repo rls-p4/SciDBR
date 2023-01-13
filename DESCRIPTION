@@ -26,6 +26,7 @@ Imports:
     curl,
     data.table,
     digest,
+    jsonlite,
     methods,
     openssl
 Suggests:
