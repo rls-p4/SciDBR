@@ -62,9 +62,6 @@ NewSession.httpapi <- function(db_or_conn, ...)
 {
   conn <- .GetConnectionEnv(db_or_conn)
   if (is.null(conn)) stop("no connection environment")
-  msg.trace("NewSession.httpapi(",
-            jsonlite::toJSON(as.list.environment(conn)), ")")
-  
   if (!at_least(conn$scidb.version, 22.6)) {
     stop("HTTP API is only supported for SciDB server version 22.6 and later;",
          " this server has version ", conn$scidb.version)
@@ -94,8 +91,6 @@ NewSession.httpapi <- function(db_or_conn, ...)
   ## gets garbage-collected.
   reg.finalizer(conn, .CloseSession.httpapi, onexit=TRUE)
 
-  msg.trace("NewSession.httpapi() created session id ", sid)
-  
   ## We don't need to return db or conn because the only object we have modified
   ## is the connection env which is pass-by-reference.
 }
@@ -168,8 +163,6 @@ Execute.httpapi <- function(db, query_or_scidb, ...)
   ## Even though there is nothing to return, we still use the paged workflow
   ## because it allows us to cancel the query by issuing a DELETE request
   ## before it completes. This can change once SDB-7403 is addressed.
-  msg.trace("Execute.httpapi(\"", query, "\"",
-            ", args=", jsonlite::toJSON(list(...)), ")")
   timings <- c(start=proc.time()[["elapsed"]])
   http_query <- New.httpquery(conn, query)
   timings <- c(timings, prepare=proc.time()[["elapsed"]])
@@ -184,9 +177,9 @@ Execute.httpapi <- function(db, query_or_scidb, ...)
     add=TRUE)
   
   if (http_query$is_selective) {
-    first_operator <- strsplit(query_or_scidb, "(", fixed=TRUE)[[1]]
-    stop("The AFL query '", first_operator, "(...)' returns data, ",
-         "so it should be executed using Query.httpapi() with return=TRUE")
+    first_operator <- strsplit(query, "(", fixed=TRUE)[[1]]
+    stop("The AFL query returns data, so it should be executed using",
+         " Query.httpapi() with return=TRUE. Query text: \"", query, "\"")
   }
   
   ## Fetch the first (and only) page from the query.
@@ -231,10 +224,6 @@ TextQuery.httpapi <- function(db, query_or_scidb,
   }
   
   ## Start a new query
-  msg.trace("TextQuery.httpapi(\"", query, "\"",
-            ", format=", format, ", use_aio=", use_aio,
-            ", only_attributes=", only_attributes,
-            ", args=", jsonlite::toJSON(list(...)), ")")
   timings <- c(start=proc.time()[["elapsed"]])
   http_query <- New.httpquery(conn, query, options=list(format=format))
   timings <- c(timings, prepare=proc.time()[["elapsed"]])
@@ -335,14 +324,6 @@ BinaryQuery.httpapi <- function(db,
   }
   
   ## Start a new query
-  msg.trace("BinaryQuery.httpapi(\"", query, "\"",
-            ", format=", format, ", use_aio=", use_aio,
-            ", buffer_size=", buffer_size,
-            ", only_attributes=", only_attributes,
-            ", schema=", schema,
-            ", page_size=", page_size,
-            ", npages=", npages,
-            ", args=", jsonlite::toJSON(list(...)), ")")
   timings <- c(start=proc.time()[["elapsed"]])
   http_query <- New.httpquery(conn, query, 
                               options=list(format=format, 
@@ -618,13 +599,6 @@ Upload.httpapi <- function(db, payload,
                                            %||% start) %||% NULL
   desc@dim_chunk_sizes <- as.numeric(dim_chunk_sizes %||% chunk_size) %||% NULL
 
-  msg.trace("Upload.httpapi(",
-            "class(payload)=", paste(class(payload), collapse=","),
-            ", name=", name,
-            ", UploadDesc=", jsonlite::toJSON(as.list(desc)),
-            ", gc=", gc, ", temp=", temp,
-            ", args=", jsonlite::toJSON(list(...)), ")")
-            
   if (inherits(payload, "raw")) {
     .UploadRaw.httpapi(db, payload, desc, ...)
   } else if (inherits(payload, "data.frame")) {
@@ -660,7 +634,7 @@ New.httpquery <- function(conn, afl, options=list())
   
   ## Execute the POST
   resp <- .HttpRequest(conn, "POST", URI(conn, conn$links$queries),
-                       data=query_json)
+                       data=query_json, content_type="application/json")
   stopifnot(resp$status_code == 201)  # 201 Created
   
   ## Read the headers and JSON body
@@ -803,8 +777,8 @@ Next.httpquery <- function(query)
 }
 
 #' @noRd
-.HttpRequest = function(db_or_conn, method, uri, data=NULL, 
-                        attachments=NULL)
+.HttpRequest = function(db_or_conn, method, uri, content_type=NULL,
+                        headers=list(), data=NULL, attachments=NULL)
 {
   conn <- .GetConnectionEnv(db_or_conn)
   if (is.null(conn)) stop("No connection environment")
@@ -859,6 +833,14 @@ Next.httpquery <- function(query)
   }
   curl::handle_setopt(h, .list=options)
 
+  ## Call curl::handle_setheaders to add the headers, if any
+  if (has.chars(content_type)) {
+    headers[['Content-Type']] <- content_type
+  }
+  if (length(headers) > 0) {
+    curl::handle_setheaders(h, .list=headers)
+  }
+
   ## Call curl::handle_setform to add the attachments, if any
   if (length(attachments) > 0) {
     setform_args <- list(h)
@@ -880,22 +862,15 @@ Next.httpquery <- function(query)
       }
 
       setform_args[[name]] <- curl::form_data(att$data, type=att$content_type)
-      msg.trace("Adding attachment ", iatt, " (name=", name, 
-                ", content-type=", att$content_type, 
-                ") to pending POST, with data:\n  ", att$data)
     }
     do.call(curl::handle_setform, setform_args)
   }
 
-  if (method == "POST") {
-    msg.trace("Sending ", method, " ", uri, "\n  data=", data,
-              if (is.null(attachments)) "" 
-              else sprintf(", with %d attachments", length(attachments)))
-  } else {
-    msg.trace("Sending ", method, " ", uri)
-  }
-  
+  LogSendingHttp(method, uri, headers, data, attachments)
+
   resp <- curl::curl_fetch_memory(uri, h)
+
+  LogHttpReceived(method, uri, resp)
   
   if (resp$status_code == 0 && conn$protocol == "http") {
     ## Attempted to access an https port using http
@@ -920,35 +895,7 @@ Next.httpquery <- function(query)
     }
   }
   
-  ## Make sure we don't incur the overhead of parsing headers and content
-  ## unless we're in trace mode
-  if (is.trace()) {
-    msg.trace("Received headers: ", 
-              paste(curl::parse_headers(resp$headers), collapse=" | "))
-    if (length(resp$content) > 0) {
-      is_text <- .HttpResponseIsText(resp)
-      msg.trace("Received body", 
-                if (!is_text) " (binary)", 
-                ":\n>>>>>\n  ",
-                if (is_text) rawToChar(resp$content) else resp$content,
-                "\n<<<<<")
-    }
-  }
-  
   return(resp)
-}
-
-#' Given an HTTP response, return TRUE if the content is text,
-#' or FALSE if there are non-printable characters.
-#' @param resp the result of a call to curl_fetch_memory
-#' @return TRUE iff the resp$content is text-formatted, i.e. if we can use 
-#'  rawToChar(resp$content) without an error.
-.HttpResponseIsText <- function(resp)
-{
-  ## The slow way: look for non-printing characters
-  return(length(grepRaw("[^[:print:][:space:]]", resp$content)) == 0)
-  
-  ## TODO after SDB-7833: Check the Content-Type header instead.
 }
 
 #' Given a list of HTTP response headers parsed by curl::parse_headers_list,

@@ -1,3 +1,13 @@
+options(scidb.trace.api=TRUE,
+        scidb.trace.http=TRUE)
+options(error=function() {
+  traceback(3)
+  options(error=NULL,
+          scidb.trace.api=NULL,
+          scidb.trace.http=NULL)
+  stop("Test a.R exited with error")
+})
+
 library("Matrix")
 library("scidb")
 

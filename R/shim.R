@@ -267,7 +267,9 @@ BinaryQuery.shim = function(db, query_or_scidb,
   handle_setheaders(h, .list=list(`Authorization`=.digest_auth(db, "GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0, http_version=2))
+  LogSendingHttp("GET", uri)
   resp = curl_fetch_memory(uri, h)
+  LogHttpReceived("GET", uri, resp)
   if (resp$status_code > 299) stop("HTTP error", resp$status_code)
   if (DEBUG) message("Data transfer time ", round((proc.time() - dt2)[3], 4))
 
@@ -350,7 +352,9 @@ SGET.shim = function(db_or_conn, resource, args=list(), err=TRUE, binary=FALSE)
   handle_setheaders(h, .list=list(Authorization=.digest_auth(db_or_conn, "GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0, http_version=2))
+  LogSendingHttp("GET", uri)
   ans = curl_fetch_memory(uri, h)
+  LogHttpReceived("GET", uri, ans)
   if (ans$status_code > 299 && err)
   {
     msg = sprintf("HTTP error %s", ans$status_code)
@@ -532,7 +536,9 @@ scidb_arrow_to_dataframe.shim = function(db, query, ...) {
   handle_setheaders(h, .list=list(`Authorization`=.digest_auth(db, "GET", uri)))
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0, http_version=2))
+  LogSendingHttp("GET", uri)
   resp = curl_fetch_memory(uri, h)
+  LogHttpReceived("GET", uri, resp)
   
   if (resp$status_code > 299) stop("HTTP error", resp$status_code)
   if (DEBUG) message("Data transfer time ", round((proc.time() - dt2)[3], 4))
@@ -965,7 +971,9 @@ scidb_arrow_to_dataframe.shim = function(db, query, ...) {
     handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                                 ssl_verifypeer=0, post=TRUE, http_version=2, postfieldsize=length(data),
                                 postfields=data))
+    LogSendingHttp("POST", uri, data)
     ans = curl_fetch_memory(uri, h)
+    LogHttpReceived("POST", uri, ans)
     if (ans$status_code > 299 && err) stop("HTTP error ", ans$status_code)
     return(rawToChar(ans$content))
   }
@@ -977,10 +985,12 @@ scidb_arrow_to_dataframe.shim = function(db, query, ...) {
   handle_setopt(h, .list=list(ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
                               ssl_verifypeer=0, http_version=2))
   tmpf = tempfile()
+  LogSendingHttp("POST", uri, data)
   if (is.character(data)) data = charToRaw(data)
   writeBin(data, tmpf)
   handle_setform(h, file=form_file(tmpf))
   ans = curl_fetch_memory(uri, h)
+  LogHttpReceived("POST", uri, ans)
   unlink(tmpf)
   if (ans$status_code > 299 && err) stop("HTTP error", ans$status_code)
   return(rawToChar(ans$content))

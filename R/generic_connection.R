@@ -19,6 +19,9 @@
 #'   reflecting the interface that the connection uses.
 GetServerVersion <- function(db) 
 {
+  trace <- .TraceEnterInternalFn("GetServerVersion", db=db)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
   ## Dispatch to GetServerVersion.shim or GetServerVersion.httpapi.
   UseMethod("GetServerVersion")
 }
@@ -32,6 +35,9 @@ GetServerVersion <- function(db)
 #' @param db scidb connection object from \code{\link{scidbconnect}}
 NewSession <- function(db, ...) 
 {
+  trace <- .TraceEnterInternalFn("NewSession", db=db, ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
   ## Dispatch to NewSession.shim or NewSession.httpapi.
   UseMethod("NewSession")
 }
@@ -62,6 +68,9 @@ Reauthenticate <- function(db, password, defer=FALSE)
 #' @param db scidb connection object from \code{\link{scidbconnect}}
 Close <- function(db)
 {
+  trace <- .TraceEnterInternalFn("Close", db=db)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
   ## Dispatch to Close.shim or Close.httpapi.
   UseMethod("Close")
 }
@@ -69,6 +78,11 @@ Close <- function(db)
 #' Execute an AFL command that is expected not to return any data.
 Execute <- function(db, query_or_scidb, ...)
 {
+  trace <- .TraceEnterInternalFn("Execute",
+                                 query_or_scidb=.Condense(query_or_scidb),
+                                 ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
   ## Dispatch to Execute.shim or Execute.httpapi.
   UseMethod("Execute")
 }
@@ -78,6 +92,12 @@ Execute <- function(db, query_or_scidb, ...)
 Query <- function(db, query_or_scidb, 
                   `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
 {
+  trace <- .TraceEnterInternalFn("Query",
+                                 query_or_scidb=.Condense(query_or_scidb),
+                                 `return`=`return`, binary=binary,
+                                 arrow=arrow, ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
   ## Dispatch to Query.shim or Query.httpapi.
   UseMethod("Query")
 }
@@ -110,6 +130,13 @@ BinaryQuery <- function(db, query_or_scidb,
                         schema=NULL, 
                         ...)
 {
+  trace <- .TraceEnterInternalFn("BinaryQuery",
+                                 query_or_scidb=.Condense(query_or_scidb),
+                                 binary=binary, buffer_size=buffer_size,
+                                 only_attributes=only_attributes,
+                                 schema=schema, ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
   ## Dispatch to BinaryQuery.shim or BinaryQuery.httpapi
   UseMethod("BinaryQuery")
 }
@@ -147,6 +174,10 @@ BinaryQuery <- function(db, query_or_scidb,
 #' @export
 Upload <- function(db, payload, name=NULL, gc=TRUE, temp=FALSE, ...)
 {
+  trace <- .TraceEnterInternalFn("Upload", payload=payload, name=name,
+                                 gc=gc, temp=temp, ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
   ## Dispatch to Upload.shim or Upload.httpapi
   UseMethod("Upload")
 }
