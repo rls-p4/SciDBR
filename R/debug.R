@@ -147,8 +147,9 @@ is.trace.api <- function() {
 ## For now these are to stderr; they could easily be written to a log file instead
 msg <- function(..., tag="[SciDBR]") {
   substituted_args <- sapply(list(...), function(s) {
-    gsub("conn@\\w+", "conn@...", s)
+    gsub("conn@\\w+", "conn", s)
     gsub("R_array\\w+", "R_array", s)
+    gsub("shim_input_buf_\\w+", "shim_input_buf", s)
   })
   message(tag, " ", substituted_args)
 }
