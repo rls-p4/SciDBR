@@ -257,14 +257,12 @@ scidbconnect = function(host=getOption("scidb.default_shim_host", "127.0.0.1"),
 #' @export
 iquery = function(db, query, `return`=FALSE, binary=TRUE, arrow=FALSE, ...)
 {
-  message("starting iquery!!!")
   trace <- .TraceEnter("iquery",
                        query=.Condense(query),
                        `return`=`return`,
                        binary=binary, arrow=arrow, ...)
   on.exit(.TraceExit(trace, returnValue()), add=TRUE)
 
-  message("in iquery!!!")
   ## dispatch to Query.shim or Query.httpapi
   Query(db, query, `return`, binary, arrow, ...)
 }
