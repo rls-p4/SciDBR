@@ -1,5 +1,5 @@
 options(scidb.trace.api=TRUE,
-        scidb.trace.http=TRUE)
+        scidb.trace.http=FALSE)
 options(error=function() {
   traceback(3)
   options(error=NULL,
