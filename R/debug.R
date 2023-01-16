@@ -47,9 +47,8 @@ is.trace.api <- function() {
                                   item_delimiter=", ")
 {
   if (length(vec) == 0) {
-    return ("")
+    return("NULL")
   }
-  stopifnot(is.character(vec))
   paste0(sapply(seq_along(vec),
                 function(ii) {
                   name <- names(vec)[[ii]]
@@ -118,9 +117,12 @@ is.trace.api <- function() {
   if (length(val) == 0) {
     return("NULL")
   }
+  if (is.numeric(val) || is.logical(val)) {
+    return(as.character(val))
+  }
   if (is.character(val)) {
     if (length(val) == 1) {
-      return(val)
+      return(paste0('"', val, '"'))
     }
     return(paste0("(", .FormatNameValuePairs(val), ")"))
   }
@@ -128,7 +130,7 @@ is.trace.api <- function() {
     return(paste0("conn@", attr(val, "connection")$id))
   }
   if (inherits(val, "scidb")) {
-    return(val@name)
+    return(paste0("scidb(", val@name, ")"))
   }
   
   ## Use toJSON() just because it's able to print many kinds of objects
@@ -147,9 +149,10 @@ is.trace.api <- function() {
 ## For now these are to stderr; they could easily be written to a log file instead
 msg <- function(..., tag="[SciDBR]") {
   substituted_args <- sapply(list(...), function(s) {
-    gsub("conn@\\w+", "conn", s)
-    gsub("R_array\\w+", "R_array", s)
-    gsub("shim_input_buf_\\w+", "shim_input_buf", s)
+    s <- gsub("conn@\\w+", "conn", s)
+    s <- gsub("R_array\\w+", "R_array", s)
+    s <- gsub("shim_input_buf_\\w+", "shim_input_buf", s)
+    s
   })
   message(tag, " ", substituted_args)
 }
