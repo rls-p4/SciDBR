@@ -122,7 +122,7 @@ is.trace.api <- function() {
   }
   if (is.character(val)) {
     if (length(val) == 1) {
-      return(paste0('"', val, '"'))
+      return(if (startsWith(val, '"')) val else dQuote(val))
     }
     return(paste0("(", .FormatNameValuePairs(val), ")"))
   }
