@@ -1,5 +1,18 @@
-options(scidb.trace.api=TRUE,
-        scidb.trace.http=TRUE)
+## Enable this line to log every significant API call made from the application
+## to SciDBR.
+options(scidb.trace.api="internal")
+
+## Enable this line to log every HTTP interaction between SciDBR and
+## the SciDB server.
+options(scidb.trace.http=TRUE)
+
+## Enable this line to mask out IDs and hashes in the log
+## to make it easier to compare logs across multiple runs.
+options(scidb.log.mask=TRUE)
+
+
+## After an error, display a stack trace and stop logging.
+## This makes it less confusing to find where the error happened in the log.
 options(error=function() {
   traceback(3)
   options(error=NULL,
@@ -73,7 +86,8 @@ reconnect = function(oldconn, ...) {
 ## Run tests in a function, so local variables get bound to function scope
 ## and will be gc-able when the function ends.
 run_tests = function(db) {
-  message("Starting tests on ", class(db)[[1]], " connection")
+  conn_type = class(db)[[1]]
+  message("\n\n===== Starting tests on ", conn_type, " connection =====")
   t1 = proc.time()
 
   message("--- 1. Data movement tests ---")
@@ -424,7 +438,7 @@ run_tests = function(db) {
 
   message("\n")
   message("Ran tests on ", conn_type, " connection",
-          "in: ", (proc.time()-t1)[[3]], " seconds")
+          " in ", (proc.time()-t1)[[3]], " seconds")
   message("===== Finished tests on ", conn_type, " connection =====")
 }
 
