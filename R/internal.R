@@ -104,6 +104,12 @@ scidb_unpack_to_dataframe = function(db, query, binary=TRUE, buffer=NULL,
                                      only_attributes=NULL, schema=NULL, 
                                      buffer_size=NULL, ...)
 {
+  trace <- .TraceEnterInternalFn("scidb_unpack_to_dataframe", query=query,
+                                 binary=binary, buffer=buffer,
+                                 only_attributes=only_attributes,
+                                 schema=schema, buffer_size=buffer_size, ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
   return(
     Query(db, 
           query,
@@ -111,6 +117,7 @@ scidb_unpack_to_dataframe = function(db, query, binary=TRUE, buffer=NULL,
           buffer_size=if (is.null(buffer_size)) buffer else buffer_size, 
           only_attributes=only_attributes, 
           schema=schema,
+          `return`=TRUE,
           ...))
 }
 
@@ -472,13 +479,26 @@ ParseVersion <- function(version)
   ret = c()
   if (length(val) > 0)
   {
+    # Remaining "..." arguments get passed to read.table,
+    # overriding the defaults of sep=",", stringsAsFactors=FALSE, etc.
     args = list(file=val, 
-                ..., 
+                ...,  # Any settings in "..." override the ones below
                 sep=",", 
                 stringsAsFactors=FALSE, 
                 header=header)
-    args$only_attributes = NULL
+
+    # Remove any NULL values passed to args via "..."
+    args = args[lengths(args) > 0]
+    
+    # If "..." contained "sep", "stringsAsFactors", or "header", ensure that
+    # the value from "..." overrides the one hard-coded in this function.
     args = args[! duplicated(names(args))]
+
+    # Silently ignore any arguments that would be rejected by read.table().
+    # These can sometimes be passed unintentionally via default arguments
+    # declared in another function.
+    args = args[names(args) %in% names(as.list(args(read.table)))]
+    
     ret = tryCatch(do.call("read.table", args=args),
                    error = function(e) {
                      stop("Query result parsing error ", as.character(e))
