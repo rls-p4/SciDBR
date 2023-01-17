@@ -24,6 +24,12 @@ is.trace.api <- function() {
   is.trace() || opt == TRUE || has.chars(opt)
 }
 
+# Use options(scidb.log.mask=TRUE) to mask UIDs and hashes in logging output
+# to make it easier to compare logs between two different runs.
+is.mask.enabled <- function() {
+  getOption("scidb.log.mask", FALSE)
+}
+
 .Condense <- function(val)
 {
   gsub("\\s+", " ", .ToString(val), perl=TRUE)
@@ -79,10 +85,9 @@ is.trace.api <- function() {
   options(.trace_depth = depth)
   max_chars <- as.numeric(getOption("scidb.trace.api.max-length", 999))
   
-  msg(tag="[SciDBR-API]",
-      .Indent(depth - 1),
-      "->(", depth, ") ",
-      .Trunc(invocation, max_chars))
+  msg.trace.api(.Indent(depth - 1),
+                "->(", depth, ") ",
+                .Trunc(invocation, max_chars))
 
   return(invocation)
 }
@@ -102,13 +107,12 @@ is.trace.api <- function() {
 
   depth <- as.numeric(getOption(".trace_depth"))
   max_chars <- getOption("scidb.trace.api.max-length", 999)
-  msg(tag="[SciDBR-API]",
-      .Indent(depth - 1),
-      "<-(", depth, ") ",
-      .Trunc(invocation, 30),
-      " returns ",
-      tryCatch(.Trunc(.ToString(retval), max_chars),
-               error=function(err) "<unknown>"))
+  msg.trace.api(.Indent(depth - 1),
+                "<-(", depth, ") ",
+                .Trunc(invocation, 30),
+                " returns ",
+                tryCatch(.Trunc(.ToString(retval), max_chars),
+                         error=function(err) "<unknown>"))
   options(.trace_depth = depth - 1)
 }
 
@@ -148,13 +152,8 @@ is.trace.api <- function() {
 ## Functions for writing diagnostic messages
 ## For now these are to stderr; they could easily be written to a log file instead
 msg <- function(..., tag="[SciDBR]") {
-  substituted_args <- sapply(list(...), function(s) {
-    s <- gsub("conn@\\w+", "conn", s)
-    s <- gsub("R_array\\w+", "R_array", s)
-    s <- gsub("shim_input_buf_\\w+", "shim_input_buf", s)
-    s
-  })
-  message(tag, " ", substituted_args)
+  args <- if (is.mask.enabled()) .mask.msg(...) else list(...)
+  do.call("message", c(list(tag, " "), args))
 }
 msg.debug <- function(..., tag="[SciDBR]") {
   if (is.debug()) msg(tag=tag, ...)
@@ -164,6 +163,21 @@ msg.trace <- function(..., tag="[SciDBR-trace]") {
 }
 msg.trace.http <- function(..., tag="[SciDBR-HTTP]") {
   if (is.trace.http()) msg(tag=tag, ...)
+}
+msg.trace.api <- function(..., tag="[SciDBR-API]") {
+  if (is.trace.api()) msg(tag=tag, ...)
+}
+
+
+## Mask out variable parts of names so that two logs can be diffed more easily
+.mask.msg <- function(...) {
+  sapply(list(...), function(s) {
+    s <- gsub("conn@\\w+", "conn@<masked>", s)
+    s <- gsub("R_array\\w+", "R_array<masked>", s)
+    s <- gsub("shim_input_buf_\\w+", "shim_input_buf_<masked>", s)
+    s <- gsub('session="\\w+"', 'session="<masked>"', s)
+    s
+  })
 }
 
 .TruncateHttpData <- function(data, content_type)

@@ -400,6 +400,12 @@ scidbquery.shim = function(db, query,
                            prefix=attributes(db)$connection$prefix, 
                            atts_only=TRUE)
 {
+  trace <- .TraceEnterInternalFn("scidbquery", query=query, save=save, 
+                                 result_size_limit=result_size_limit,
+                                 session=session, resp=resp,
+                                 prefix=prefix, atts_only=atts_only)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+  
   DEBUG = FALSE
   STREAM = 0L
   DEBUG = getOption("scidb.debug", FALSE)
@@ -468,6 +474,10 @@ scidbquery.shim = function(db, query,
 #' }
 #' @keywords internal
 scidb_arrow_to_dataframe.shim = function(db, query, ...) {
+  trace <- .TraceEnterInternalFn("scidb_arrow_to_dataframe", 
+                                 query=query, ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
   INT64 = attr(db, "connection")$int64
   DEBUG = getOption("scidb.debug", FALSE)
   RESULT_SIZE_LIMIT = getOption("scidb.result_size_limit", 256)
@@ -569,6 +579,11 @@ scidb_arrow_to_dataframe.shim = function(db, query, ...) {
 #' @keywords internal
 .raw2scidb.shim = function(db, X, name, gc=TRUE, ...)
 {
+  trace <- .TraceEnterInternalFn("raw2scidb", X=X,
+                                 name=name, 
+                                 gc=gc, ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
   if (!is.raw(X)) stop("X must be a raw value")
   args = list(...)
   # Obtain a session from shim for the upload process
@@ -619,6 +634,16 @@ scidb_arrow_to_dataframe.shim = function(db, query, ...) {
                           start=NULL,
                           ...)
 {
+  trace <- .TraceEnterInternalFn("df2scidb", X=X,
+                                 name=name, types=types,
+                                 use_aio_input=use_aio_input,
+                                 chunk_size=if (missing(chunk_size)) NULL else chunk_size,
+                                 gc=if (missing(gc)) NULL else gc,
+                                 temp=temp,
+                                 start=start,
+                                 ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
   if (!is.data.frame(X)) stop("X must be a data frame")
 
   ## Preprocess the dataframe to prepare it for upload
@@ -695,6 +720,13 @@ scidb_arrow_to_dataframe.shim = function(db, query, ...) {
                               gc=TRUE, 
                               ...)
 {
+ trace <- .TraceEnterInternalFn(".Matrix2scidb", X=X, name=name,
+                                 rowChunkSize=rowChunkSize, 
+                                 colChunkSize=colChunkSize,
+                                 start=if (missing(start)) NULL else start,
+                                 temp=temp, gc=gc, ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)  
+
   D = dim(X)
   if (is.null(start)) start=c(0, 0)
   if (length(start) < 1) stop ("Invalid starting coordinates")
@@ -779,6 +811,11 @@ scidb_arrow_to_dataframe.shim = function(db, query, ...) {
                               gc=TRUE,
                               temp=FALSE, ...)
 {
+  trace <- .TraceEnterInternalFn("matvec2scidb", X=X, name=name,
+                                 start=if (missing(start)) NULL else start,
+                                 gc=gc, temp=temp, ...)
+  on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
   # Check for a bunch of optional hidden arguments
   args = list(...)
   attr_name = "val"
