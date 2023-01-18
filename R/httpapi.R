@@ -205,7 +205,10 @@ TextQuery.httpapi <- function(db, query_or_scidb,
   use_aio <- use_aio %||% getOption("scidb.aio", FALSE)
   only_attributes <- only_attributes %||% FALSE
   if (!has.chars(format)) {
-    format <- "csv+:l"
+    ## If using AIO: aio_save doesn't understand csv+:l so we can't use it.
+    ## But it adds a header line to its output when given format "csv+",
+    ## so aio_save(format:'csv+') is equivalent to save(format:'csv+:l').
+    format <- if (use_aio) "csv+" else "csv+:l"
   }
   if (use_aio && !startsWith(format, "aio_")) {
     format <- paste0("aio_", format)
