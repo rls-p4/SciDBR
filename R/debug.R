@@ -52,16 +52,26 @@ is.mask.enabled <- function() {
                                   name_value_delimiter="=",
                                   item_delimiter=", ")
 {
+  if (is.null(vec)) {
+    return("(R NULL value)^1")
+  }
   if (length(vec) == 0) {
-    return("NULL")
+    return(paste0("(0-length vector of type ", typeof(vec), ")^1"))
   }
   paste0(sapply(seq_along(vec),
                 function(ii) {
                   name <- names(vec)[[ii]]
-                  if (has.chars(name)) {
-                    paste0(name, name_value_delimiter, vec[[ii]])
+                  val <- if (is.null(vec[[ii]])) {
+                    "(R NULL value)^2"
+                  } else if (length(vec[[ii]]) == 0) {
+                    paste0("(0-length vector of type ", typeof(vec[[ii]]), ")^2")
                   } else {
                     vec[[ii]]
+                  }
+                  if (has.chars(name)) {
+                    paste0(name, name_value_delimiter, val)
+                  } else {
+                    val
                   }
                 }),
          collapse=item_delimiter)
@@ -118,15 +128,18 @@ is.mask.enabled <- function() {
 
 .ToString <- function(val)
 {
+  if (is.null(val)) {
+    return("(R NULL value)^3")
+  }
   if (length(val) == 0) {
-    return("NULL")
+    return(paste0("(0-length vector of type ", typeof(val), ")^3"))
   }
   if (is.numeric(val) || is.logical(val)) {
     return(as.character(val))
   }
   if (is.character(val)) {
     if (length(val) == 1) {
-      return(if (startsWith(val, '"')) val else dQuote(val))
+      return(if (startsWith(val, '"')) val else paste0('"', val, '"'))
     }
     return(paste0("(", .FormatNameValuePairs(val), ")"))
   }

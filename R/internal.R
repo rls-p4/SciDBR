@@ -145,6 +145,7 @@ scidb_unpack_to_dataframe = function(db, query, binary=TRUE, buffer=NULL,
 #' @noRd
 .GetQueryString = function(query_or_scidb)
 {
+  stopifnot(is.present(query_or_scidb))
   if (inherits(query_or_scidb, "scidb")) {
     return(query_or_scidb@name)
   }
