@@ -202,7 +202,14 @@ TextQuery.httpapi <- function(db, query_or_scidb,
                               only_attributes=NULL,
                               ...)
 {
-  use_aio <- use_aio %||% getOption("scidb.aio", FALSE)
+
+  ## It turns out that Shim hasn't been using AIO for text formats
+  ## since maybe 15.12 or even earlier. To support AIO with text formats,
+  ## we'd need to fix SDB-7925 and accelerated-io-tools issue #65.
+  ## Once those are fixed, remove the FALSE line and uncomment the next line.
+  use_aio <- FALSE
+  # use_aio <- use_aio %||% getOption("scidb.aio", FALSE)
+  
   only_attributes <- only_attributes %||% FALSE
   if (!has.chars(format)) {
     ## If using AIO: aio_save doesn't understand csv+:l so we can't use it.
