@@ -205,7 +205,7 @@ TextQuery.httpapi <- function(db, query_or_scidb,
   use_aio <- use_aio %||% getOption("scidb.aio", FALSE)
   only_attributes <- only_attributes %||% FALSE
   if (!has.chars(format)) {
-    format <- if (use_aio) "tdv" else "csv+:l"
+    format <- "csv+:l"
   }
   if (use_aio && !startsWith(format, "aio_")) {
     format <- paste0("aio_", format)
