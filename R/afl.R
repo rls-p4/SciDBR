@@ -38,17 +38,28 @@ update.afl = function(.db, .new, .ops)
                    else .x
                }, error=function(e) .x)),
          collapse=",")
+
       expr = sprintf("%s(%s)", .name, .args)
       # handle aliasing
       expr = gsub("%as%", " as ", expr)
       # handle R scalar variable substitutions
       expr = rsub(expr, parent.frame())
+
+      is_ddl = any(grepl(.name, getOption("scidb.ddl"), ignore.case=TRUE))
+      
+      trace <- .TraceEnter(paste0("afl!", .name),
+                           args=args,
+                           .depend=.depend,
+                           expr=expr,
+                           is_ddl=is_ddl)
+      on.exit(.TraceExit(trace, returnValue()), add=TRUE)
+
+      if (getOption("scidb.debug", FALSE)) message("AFL EXPRESSION: ", expr)
       # Some special AFL non-operator expressions don't return arrays
-      if (any(grepl(.name, getOption("scidb.ddl"), ignore.case=TRUE)))
+      if (is_ddl)
       {
         return(iquery(.db, expr))
       }
-      if (getOption("scidb.debug", FALSE)) message("AFL EXPRESSION: ", expr)
       ans = scidb(.db, expr)
       ans@meta$depend = as.list(.depend)
       ans

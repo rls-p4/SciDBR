@@ -93,7 +93,7 @@ is.mask.enabled <- function() {
   
   depth <- as.numeric(getOption(".trace_depth", 0)) + 1
   options(.trace_depth = depth)
-  max_chars <- as.numeric(getOption("scidb.trace.api.max-length", 999))
+  max_chars <- as.numeric(getOption("scidb.trace.api.maxlength", 999))
   
   msg.trace.api(.Indent(depth - 1),
                 "->(", depth, ") ",
@@ -116,7 +116,7 @@ is.mask.enabled <- function() {
   }
 
   depth <- as.numeric(getOption(".trace_depth"))
-  max_chars <- getOption("scidb.trace.api.max-length", 999)
+  max_chars <- getOption("scidb.trace.api.maxlength", 999)
   msg.trace.api(.Indent(depth - 1),
                 "<-(", depth, ") ",
                 .Trunc(invocation, 30),
@@ -197,13 +197,13 @@ msg.trace.api <- function(..., tag="[SciDBR-API]") {
 {
   content_type <- content_type %||% ""
   if (startsWith(content_type, "application/json")) {
-    max_chars <- getOption("scidb.trace.http.max-length.json", 2999)
+    max_chars <- getOption("scidb.trace.http.maxlength.json", 2999)
     is_text <- TRUE
   } else if (startsWith(content_type, "text/") || is.character(data)) {
-    max_chars <- getOption("scidb.trace.http.max-length.text", 999)
+    max_chars <- getOption("scidb.trace.http.maxlength.text", 999)
     is_text <- TRUE
   } else {
-    max_chars <- getOption("scidb.trace.http.max-length.binary", 19)
+    max_chars <- getOption("scidb.trace.http.maxlength.binary", 19)
     is_text <- FALSE
   }
 
