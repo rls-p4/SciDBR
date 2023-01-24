@@ -77,7 +77,7 @@ NewSession.httpapi <- function(db_or_conn, ...)
 
   ## Parse the Location and Link headers and store them
   conn$location <- resp$parsed_headers[["location"]]
-  conn$links <- .ParseLinkHeaders(headers_list)
+  conn$links <- .ParseLinkHeaders(resp$parsed_headers)
   
   ## Give the connection the session ID.
   conn$session <- sid
@@ -656,7 +656,7 @@ New.httpquery <- function(conn, afl, options=list())
   class(query) <- "httpquery"
   query$connection <- conn
   query$options <- options
-  query$location <- headers_list[["location"]]
+  query$location <- resp$parsed_headers[["location"]]
   query$next_page_number <- 1
   query$next_page_url <- links[["first"]]
   query$id <- json[["queryId"]]
