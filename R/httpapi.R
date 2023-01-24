@@ -76,8 +76,7 @@ NewSession.httpapi <- function(db_or_conn, ...)
   sid <- json[["sid"]]
 
   ## Parse the Location and Link headers and store them
-  headers_list <- curl::parse_headers_list(resp$headers)
-  conn$location <- headers_list[["location"]]
+  conn$location <- resp$parsed_headers[["location"]]
   conn$links <- .ParseLinkHeaders(headers_list)
   
   ## Give the connection the session ID.
@@ -648,8 +647,7 @@ New.httpquery <- function(conn, afl, options=list())
   stopifnot(resp$status_code == 201)  # 201 Created
   
   ## Read the headers and JSON body
-  headers_list <- curl::parse_headers_list(resp$headers)
-  links <- .ParseLinkHeaders(headers_list)
+  links <- .ParseLinkHeaders(resp$parsed_headers)
   json <- jsonlite::fromJSON(rawToChar(resp$content))
   
   ## Create an env for the result (use an env because it's always passed by
@@ -734,8 +732,7 @@ Next.httpquery <- function(query)
          ": ", rawToChar(resp$content))
   }
   
-  headers_list <- curl::parse_headers_list(resp$headers)
-  links <- .ParseLinkHeaders(headers_list)
+  links <- .ParseLinkHeaders(resp$parsed_headers)
   
   ## The response header should contain a link to the next page,
   ## or NULL if there is no next page.
@@ -786,9 +783,126 @@ Next.httpquery <- function(query)
   })
 }
 
+.CurlSetOptions <- function(handle, conn, method, data)
+{
+  options <- switch(method, 
+                    GET = list(httpget=TRUE),
+                    POST = list(post=TRUE, 
+                                postfieldsize=(
+                                  if (is.null(data)) 0 else nchar(data)),
+                                postfields=data),
+                    DELETE = list(customrequest="DELETE"),
+                    stop("unsupported HTTP method ", method))
+  
+  options$http_version <- 2
+  options$ssl_verifyhost <- as.integer(getOption("scidb.verifyhost", FALSE))
+  options$ssl_verifypeer <- 0
+  
+  if (!is.null(conn$username) && !is.null(conn$password)) {
+    options$username <- conn$username
+    options$password <- conn$password
+    ## Do not store the password after this connection attempt!
+    ## If successful, the server will return an authorization cookie; curl will
+    ## automatically save it on the connection handle and reuse it in 
+    ## future requests to continue the authenticated session.
+    conn$password <- NULL
+  }
+  curl::handle_setopt(handle, .list=options)
+}
+
+.CurlUseCookies <- function(handle, cookies)
+{
+  ## Copy cookies to the handle.
+  ## If we were reusing the same handle for all requests, we wouldn't need
+  ## to do this because curl would track the cookies for us. But we use a 
+  ## new handle for each request to allow concurrent HTTP requests to happen
+  ## during garbage collection, so we need to copy the cookies ourselves.
+  for (cookie in cookies) {
+    ## Prefix the cookie with "Set-Cookie:" to tell curl to parse it
+    ## as if it came from the server in a response header.
+    curl::handle_setopt(handle, "cookielist", paste0("Set-Cookie: ", cookie))
+  }
+}
+
+.CurlSetHeaders <- function(handle, headers, content_type)
+{
+  if (has.chars(content_type)) {
+    headers[['Content-Type']] <- content_type
+  }
+  if (length(headers) > 0) {
+    curl::handle_setheaders(handle, .list=headers)
+  }
+}
+
+.CurlAddAttachments <- function(handle, method, attachments)
+{
+  if (length(attachments) == 0) {
+    return()
+  }
+  if (method != "POST") { 
+    stop("attachment not allowed for method ", method) 
+  }
+
+  setform_args <- list(handle)
+  for (iatt in seq_along(attachments)) {
+    name <- names(attachments)[[iatt]]
+    att <- attachments[[iatt]]
+    
+    if (is.null(name) || !nzchar(only(name))) { 
+      stop("no name given for attachment ", iatt) 
+    }
+    if (is.null(att$data)) { 
+      stop("no data given for attachment ", name)
+    }
+    if (is.null(att$content_type)) { 
+      stop("no content_type given for attachment ", name) 
+    }
+
+    setform_args[[name]] <- curl::form_data(att$data, type=att$content_type)
+  }
+  do.call(curl::handle_setform, setform_args)
+}
+
+.SaveCookies <- function(resp, conn)
+{
+  if (!is.present(resp$parsed_headers)) {
+    return()
+  }
+  headers <- resp$parsed_headers
+
+  ## There might be more than one cookie, so headers["set-cookie"] won't work.
+  cookies <- headers[names(headers) == "set-cookie"]
+
+  ## Store the cookies on the connection (but if there are no new cookies,
+  ## take care not to erase the old ones!)
+  if (length(cookies) > 0) {
+    conn$cookies <- cookies
+  }
+}
+
+.HandleHttpError <- function(method, uri, resp)
+{
+  error_msg <- rawToChar(resp$content)
+  if (startsWith(error_msg, "{")) {
+    ## Treat it as a JSON error message
+    json <- jsonlite::fromJSON(error_msg)
+    ## Add potentially useful client-side information to the error JSON
+    json[["http_method"]] <- method
+    json[["http_uri"]] <- uri
+    json[["http_status"]] <- resp$status_code
+    ## Unparse the JSON back into a string and throw it as an exception
+    stop(jsonlite::toJSON(json, auto_unbox=TRUE))
+  } else {
+    stop(sprintf("HTTP error %s\n%s", resp$status_code, error_msg))
+  }
+}
+
+# This function allows multiple threads to issue requests concurrently,
+# so the GC thread can issue DELETE requests while the main thread
+# is in the middle of another request.
 #' @noRd
-.HttpRequest = function(db_or_conn, method, uri, content_type=NULL,
-                        headers=list(), data=NULL, attachments=NULL)
+.HttpRequest <- function(db_or_conn, method, uri, content_type=NULL,
+                         headers=list(), data=NULL, attachments=NULL)
 {
   conn <- .GetConnectionEnv(db_or_conn)
   if (is.null(conn)) stop("No connection environment")
@@ -802,84 +916,26 @@ Next.httpquery <- function(query)
   }
   uri <- .SanitizeUri(uri)
 
-  ## Create a new connection handle if one doesn't exist.
-  ## We reuse one connection handle for all queries in a session, so that curl
-  ## can automatically deal with authorization cookies sent from the server -
-  ## sending them back to the server in each request, and keeping them 
-  ## up to date when the server sends new cookies.
-  if (is.null(conn$handle)) {
-    conn$handle <- curl::new_handle()
-  }  
-    
-  ## Reset the connection handle so we can reuse it for the new request.
-  ## Cookies are preserved (they don't get erased by handle_reset()).
-  ## If there is no handle or if it is dead, create a new handle.
-  tryCatch(curl::handle_reset(conn$handle), 
-           error=function(err) {conn$handle <- curl::new_handle()})
-  h <- conn$handle
+  ## Create a new connection handle and populate it for this request.
+  ## We create a new handle for each request so that multiple requests
+  ## can execute concurrently without interfering with each other.
+  h <- curl::new_handle()
+  .CurlSetOptions(h, conn, method, data)
+  .CurlUseCookies(h, conn$cookies)
+  .CurlSetHeaders(h, headers, content_type)
+  .CurlAddAttachments(h, method, attachments)
   
-  ## Call curl::handle_setopt to set options for curl
-  options <- switch(method, 
-                    GET = list(httpget=TRUE),
-                    POST = list(post=TRUE, 
-                                postfieldsize=(
-                                  if (is.null(data)) 0 else nchar(data)),
-                                postfields=data),
-                    DELETE = list(customrequest="DELETE"),
-                    stop("unsupported HTTP method ", method))
-  options <- c(options, list(
-    http_version=2,
-    ssl_verifyhost=as.integer(getOption("scidb.verifyhost", FALSE)),
-    ssl_verifypeer=0
-  ))
-  if (!is.null(conn$username) && !is.null(conn$password)) {
-    options[["username"]] <- conn$username
-    options[["password"]] <- conn$password
-    ## Do not store the password after this connection attempt!
-    ## If successful, the server will return an authorization cookie; curl will
-    ## automatically save it on the connection handle and reuse it in 
-    ## future requests to continue the authenticated session.
-    conn$password <- NULL
-  }
-  curl::handle_setopt(h, .list=options)
-
-  ## Call curl::handle_setheaders to add the headers, if any
-  if (has.chars(content_type)) {
-    headers[['Content-Type']] <- content_type
-  }
-  if (length(headers) > 0) {
-    curl::handle_setheaders(h, .list=headers)
-  }
-
-  ## Call curl::handle_setform to add the attachments, if any
-  if (length(attachments) > 0) {
-    setform_args <- list(h)
-    for (iatt in seq_along(attachments)) {
-      name <- names(attachments)[[iatt]]
-      att <- attachments[[iatt]]
-      
-      if (method != "POST") { 
-        stop("attachment not allowed for method ", method) 
-      }
-      if (is.null(name) || !nzchar(only(name))) { 
-        stop("no name given for attachment ", iatt) 
-      }
-      if (is.null(att$data)) { 
-        stop("no data given for attachment ", name)
-      }
-      if (is.null(att$content_type)) { 
-        stop("no content_type given for attachment ", name) 
-      }
-
-      setform_args[[name]] <- curl::form_data(att$data, type=att$content_type)
-    }
-    do.call(curl::handle_setform, setform_args)
-  }
-
   LogSendingHttp(method, uri, headers, data, attachments)
 
+  ## Make the HTTP request
   resp <- curl::curl_fetch_memory(uri, h)
-
+  if (is.present(resp$headers)) {
+    resp$parsed_headers <- curl::parse_headers_list(resp$headers)
+  }
+  
+  ## If we received a authorization cookies, store them on the connection
+  .SaveCookies(resp, conn)
+  
   LogHttpReceived(method, uri, resp)
   
   if (resp$status_code == 0 && conn$protocol == "http") {
@@ -890,19 +946,7 @@ Next.httpquery <- function(query)
   }
   if (resp$status_code <= 199 || resp$status_code > 299) {
     ## The server responded with an error or unexpected status code
-    error_msg <- rawToChar(resp$content)
-    if (startsWith(error_msg, "{")) {
-      ## Treat it as a JSON error message
-      json <- jsonlite::fromJSON(error_msg)
-      ## Add potentially useful client-side information to the error JSON
-      json[["http_method"]] <- method
-      json[["http_uri"]] <- uri
-      json[["http_status"]] <- resp$status_code
-      ## Unparse the JSON back into a string and throw it as an exception
-      stop(jsonlite::toJSON(json, auto_unbox=TRUE))
-    } else {
-      stop(sprintf("HTTP error %s\n%s", resp$status_code, error_msg))
-    }
+    .HandleHttpError(method, uri, resp)
   }
   
   return(resp)
