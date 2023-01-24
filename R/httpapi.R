@@ -820,7 +820,7 @@ Next.httpquery <- function(query)
   for (cookie in cookies) {
     ## Prefix the cookie with "Set-Cookie:" to tell curl to parse it
     ## as if it came from the server in a response header.
-    curl::handle_setopt(handle, "cookielist", paste0("Set-Cookie: ", cookie))
+    curl::handle_setopt(handle, cookielist=paste0("Set-Cookie: ", cookie))
   }
 }
 
