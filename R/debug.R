@@ -250,7 +250,7 @@ LogHttpReceived <- function(method, uri, resp)
   
   msg.trace.http("<<< Received HTTP status code ", resp$status_code, " from ", method, " ", uri)
 
-  headers <- curl::parse_headers_list(resp$headers)
+  headers <- resp$parsed_headers
   for (ii in seq_along(headers)) {
     msg.trace.http("     Header: ", names(headers)[[ii]], ": ", headers[[ii]])
   }
