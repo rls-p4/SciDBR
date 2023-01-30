@@ -35,12 +35,23 @@ is.mask.enabled <- function() {
   gsub("\\s+", " ", .ToString(val), perl=TRUE)
 }
 
-.Trunc <- function(str, newlen)
+.Trunc <- function(str, newlen=NULL)
 {
+  newlen <- newlen %||% as.numeric(getOption("scidb.trace.api.maxlength", 999))
   if (nchar(str) <= newlen) {
     return(str)
   }
   return(paste0(strtrim(str, newlen-3), "..."))
+}
+
+# Remove all items after the first n items.
+# It's good to do this before printing a long list, especially when the string
+# will itself be truncated, to avoid spending significant amounts of time
+# concatenating strings for list items that won't be printed.
+.TruncItems <- function(val, n=NULL)
+{
+  n <- n %||% getOption("scidb.trace.api.maxitems", 99)
+  return(val[1:min(length(val), n)])
 }
 
 .Indent <- function(n)
@@ -53,18 +64,18 @@ is.mask.enabled <- function() {
                                   item_delimiter=", ")
 {
   if (is.null(vec)) {
-    return("(R NULL value)^1")
+    return("(R NULL value)")
   }
   if (length(vec) == 0) {
-    return(paste0("(0-length vector of type ", typeof(vec), ")^1"))
+    return(paste0("(0-length vector of type ", typeof(vec), ")"))
   }
-  paste0(sapply(seq_along(vec),
+  paste0(sapply(seq_along(.TruncItems(vec)),
                 function(ii) {
                   name <- names(vec)[[ii]]
                   val <- if (is.null(vec[[ii]])) {
-                    "(R NULL value)^2"
+                    "(R NULL value)"
                   } else if (length(vec[[ii]]) == 0) {
-                    paste0("(0-length vector of type ", typeof(vec[[ii]]), ")^2")
+                    paste0("(0-length vector of type ", typeof(vec[[ii]]), ")")
                   } else {
                     vec[[ii]]
                   }
@@ -93,11 +104,10 @@ is.mask.enabled <- function() {
   
   depth <- as.numeric(getOption(".trace_depth", 0)) + 1
   options(.trace_depth = depth)
-  max_chars <- as.numeric(getOption("scidb.trace.api.maxlength", 999))
   
   msg.trace.api(.Indent(depth - 1),
                 "->(", depth, ") ",
-                .Trunc(invocation, max_chars))
+                .Trunc(invocation))
 
   return(invocation)
 }
@@ -116,12 +126,11 @@ is.mask.enabled <- function() {
   }
 
   depth <- as.numeric(getOption(".trace_depth"))
-  max_chars <- getOption("scidb.trace.api.maxlength", 999)
   msg.trace.api(.Indent(depth - 1),
                 "<-(", depth, ") ",
                 .Trunc(invocation, 30),
                 " returns ",
-                tryCatch(.Trunc(.ToString(retval), max_chars),
+                tryCatch(.Trunc(.ToString(retval)),
                          error=function(err) "<unknown>"))
   options(.trace_depth = depth - 1)
 }
@@ -129,10 +138,10 @@ is.mask.enabled <- function() {
 .ToString <- function(val)
 {
   if (is.null(val)) {
-    return("(R NULL value)^3")
+    return("(R NULL value)")
   }
   if (length(val) == 0) {
-    return(paste0("(0-length vector of type ", typeof(val), ")^3"))
+    return(paste0("(0-length vector of type ", typeof(val), ")"))
   }
   if (is.numeric(val) || is.logical(val)) {
     return(as.character(val))
@@ -154,7 +163,8 @@ is.mask.enabled <- function() {
   ##   including envs - better than format(), as.character(),
   ##   or other alternatives.
   ## Use force=TRUE to treat an unknown class as a plain list/env.
-  result <- tryCatch(jsonlite::toJSON(val, force=TRUE, auto_unbox=TRUE),
+  result <- tryCatch(jsonlite::toJSON(.TruncItems(val),
+                                      force=TRUE, auto_unbox=TRUE),
                      error=function(err) NULL)
   if (has.chars(result)) {
     return(result)
