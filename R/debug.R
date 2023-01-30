@@ -50,7 +50,7 @@ is.mask.enabled <- function() {
 # concatenating strings for list items that won't be printed.
 .TruncItems <- function(val, n=NULL)
 {
-  n <- n %||% getOption("scidb.trace.api.maxitems", 99)
+  n <- n %||% as.numeric(getOption("scidb.trace.api.maxitems", 99))
   return(val[1:min(length(val), n)])
 }
 
